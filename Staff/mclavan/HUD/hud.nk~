@@ -1,0 +1,323 @@
+#! /Applications/Nuke5.2v1/Nuke5.2v1.app/Contents/MacOS/Nuke5.2v1 -nx
+version 5.2100
+define_window_layout_xml {<?xml version="1.0" encoding="UTF-8"?>
+<layout version="1.0">
+    <window x="0" y="22" w="1440" h="829" screen="0">
+        <splitter orientation="1">
+            <split size="910"></split>
+            <splitter orientation="1">
+                <split size="40"></split>
+                <dock id="" hideTitles="1" activePageId="Toolbar.1">
+                    <page id="Toolbar.1"></page>
+                </dock>
+                <split size="866"></split>
+                <splitter orientation="2">
+                    <split size="402"></split>
+                    <dock id=""></dock>
+                    <split size="401"></split>
+                    <dock id="" activePageId="DAG.1">
+                        <page id="DAG.1"></page>
+                        <page id="Curve Editor.1"></page>
+                    </dock>
+                </splitter>
+            </splitter>
+            <split size="526"></split>
+            <dock id="" activePageId="Properties.1">
+                <page id="Properties.1"></page>
+            </dock>
+        </splitter>
+    </window>
+    <window x="1472" y="46" w="1005" h="852" screen="1">
+        <splitter orientation="2">
+            <split size="836"></split>
+            <dock id="" activePageId="Script Editor.1">
+                <page id="Script Editor.1"></page>
+            </dock>
+        </splitter>
+    </window>
+    <window x="1744" y="-137" w="1108" h="1129" screen="1">
+        <splitter orientation="2">
+            <split size="1113"></split>
+            <dock id="" activePageId="Viewer.1">
+                <page id="Viewer.1"></page>
+            </dock>
+        </splitter>
+    </window>
+</layout>
+}
+Root {
+ inputs 0
+ name /Users/mclavan/Documents/Projects/HUD/hud.nk
+ frame 100
+ lock_range true
+ format "1920 1080 0 0 1920 1080 1 HD"
+ proxy_type scale
+ proxy_format "1024 778 0 0 1024 778 1 1K_Super_35(full-ap)"
+}
+Read {
+ inputs 0
+ file /Users/mclavan/Documents/Projects/HUD/fireH.png
+ format "1920 1080 0 0 1920 1080 1 HD"
+ name Read4
+ xpos -105
+ ypos -194
+}
+Read {
+ inputs 0
+ file /Users/mclavan/Documents/Projects/HUD/fireH.iff
+ format "1920 1080 0 0 1920 1080 1 HD"
+ name Read3
+ xpos -55
+ ypos 35
+}
+Read {
+ inputs 0
+ file /Users/mclavan/Documents/Projects/HUD/Up_Overlay_1920_nbg.psd
+ format "1920 1080 0 0 1920 1080 1 HD"
+ name Read2
+ xpos -570
+ ypos -193
+}
+Text {
+ inputs 0
+ message "Fire Hydrant"
+ font /Library/Fonts/Arial.ttf
+ size 24
+ yjustify center
+ box {425 890 689 918.4}
+ translate {-318 1}
+ center {960 540}
+ color {0 0 0 1}
+ name asset_1
+ xpos -424
+ ypos -206
+ disable true
+}
+Text {
+ message 09/30/11
+ font /Library/Fonts/Arial.ttf
+ size 24.5
+ yjustify center
+ box {425 794 689 822.4}
+ translate {-318 1}
+ center {960 540}
+ color {0 0 0 1}
+ name date_1
+ xpos -424
+ ypos -182
+ disable true
+}
+Text {
+ message Modeling
+ font /Library/Fonts/Arial.ttf
+ size 24
+ yjustify center
+ box {425 746 689 774.4}
+ translate {-318 1}
+ center {960 540}
+ color {0 0 0 1}
+ name department_1
+ xpos -424
+ ypos -150
+ disable true
+}
+Text {
+ message "Katie Neylon"
+ font /Library/Fonts/Arial.ttf
+ size 24
+ yjustify center
+ box {426 937 690 965.4}
+ translate {-318 1}
+ center {960 540}
+ color {0 0 0 1}
+ name artist_1
+ xpos -424
+ ypos -114
+ disable true
+}
+Text {
+ message TBA
+ font /Library/Fonts/Arial.ttf
+ size 24
+ yjustify center
+ box {425 844 689 872.4}
+ translate {-318 1}
+ center {960 540}
+ color {0 0 0 1}
+ name production_1
+ xpos -424
+ ypos -90
+ disable true
+}
+Text {
+ message "Prop WIP"
+ font /Library/Fonts/Arial.ttf
+ size 24
+ yjustify center
+ box {427 986 691 1013.4}
+ translate {-318 1}
+ center {960 540}
+ color {0 0 0 1}
+ name seq_shot_1
+ xpos -424
+ ypos -66
+ disable true
+}
+Read {
+ inputs 0
+ file /Users/mclavan/Documents/Projects/HUD/Up_Overlay_1920_noText.psd
+ format "1920 1080 0 0 1920 1080 1 HD"
+ name Read1
+ xpos -693
+ ypos -160
+}
+Premult {
+ name Premult1
+ xpos -544
+ ypos -12
+}
+Text {
+ inputs 0
+ message Bench
+ font /Library/Fonts/Arial.ttf
+ size 24
+ yjustify center
+ box {1013 40.5 1277 68.9}
+ translate {-318 1}
+ center {960 540}
+ color {0 0 0 1}
+ name asset
+ xpos -313
+ ypos -191
+}
+Text {
+ message 10/4/11
+ font /Library/Fonts/Arial.ttf
+ size 24.5
+ yjustify center
+ box {1620.5 104 1884.5 132.4}
+ translate {-318 1}
+ center {960 540}
+ color {0 0 0 1}
+ name date
+ xpos -313
+ ypos -167
+}
+Text {
+ message Modeling
+ font /Library/Fonts/Arial.ttf
+ size 24
+ yjustify center
+ box {1618.5 40.5 1882.5 68.9}
+ translate {-318 1}
+ center {960 540}
+ color {0 0 0 1}
+ name department
+ xpos -313
+ ypos -143
+}
+Text {
+ message "David Spade"
+ font /Library/Fonts/Arial.ttf
+ size 24
+ yjustify center
+ box {1013 104 1277 132.4}
+ translate {-318 1}
+ center {960 540}
+ color {0 0 0 1}
+ name artist
+ xpos -313
+ ypos -119
+}
+Text {
+ message "Awesome Clip"
+ font /Library/Fonts/Arial.ttf
+ size 24
+ yjustify center
+ box {1619.5 167.5 1883.5 195.9}
+ translate {-318 1}
+ center {960 540}
+ color {0 0 0 1}
+ name production
+ xpos -313
+ ypos -95
+}
+Text {
+ inject true
+ message Prop
+ font /Library/Fonts/Arial.ttf
+ size 24
+ yjustify center
+ box {1013.2 168.4 1277.2 195.8}
+ translate {-318 1}
+ center {960 540}
+ color {0 0 0 1}
+ name seq_shot
+ xpos -313
+ ypos -71
+}
+Merge2 {
+ inputs 2
+ name Merge2
+ xpos -441
+ ypos 48
+}
+Read {
+ inputs 0
+ file /Users/mclavan/Documents/Projects/HUD/img/FireHydrant_LightTest.%03d.iff
+ format "1920 1080 0 0 1920 1080 1 HD"
+ last 100
+ name Read5
+ xpos -262
+ ypos -6
+}
+Merge2 {
+ inputs 2
+ name Merge1
+ xpos -354
+ ypos 80
+}
+Write {
+ channels rgba
+ file /Users/mclavan/Documents/Projects/HUD/still_test_high.mov
+ file_type mov
+ codec avc1
+ quality High
+ settings 0000000000000000000000000000019a7365616e0000000100000001000000000000018676696465000000010000000e00000000000000227370746c0000000100000000000000006176633100000000001800000204000000207470726c000000010000000000000000000002040018000000000001000000246472617400000001000000000000000000016800000000530000010000000100000000156d70736f00000001000000000000000000000000186d66726100000001000000000000000000000000000000187073667200000001000000000000000000000000000000156266726100000001000000000000000001000000166d70657300000001000000000000000000000000002868617264000000010000000000000000000000000000000000000000000000000000000000000016656e647300000001000000000000000000000000001663666c67000000010000000000000000004400000018636d66720000000100000000000000006170706c00000014636c75740000000100000000000000000000001c766572730000000100000000000000000003001c00010000
+ checkHashOnRead false
+ version 9
+ name Write1
+ xpos -354
+ ypos 104
+}
+set N18e35550 [stack 0]
+Reformat {
+ format "720 405 0 0 720 405 1 720x405"
+ name Reformat1
+ xpos -354
+ ypos 138
+}
+Write {
+ channels rgba
+ file /Users/mclavan/Documents/Projects/HUD/still_test_low.mov
+ file_type mov
+ codec avc1
+ quality Lossless
+ settings 0000000000000000000000000000019a7365616e0000000100000001000000000000018676696465000000010000000e00000000000000227370746c0000000100000000000000006176633100000000001800000400000000207470726c000000010000000000000000000004000018000000000001000000246472617400000001000000000000000000016800000000530000010000000100000000156d70736f00000001000000000000000000000000186d66726100000001000000000000000000000000000000187073667200000001000000000000000000000000000000156266726100000001000000000000000001000000166d70657300000001000000000000000000000000002868617264000000010000000000000000000000000000000000000000000000000000000000000016656e647300000001000000000000000000000000001663666c67000000010000000000000000004400000018636d66720000000100000000000000006170706c00000014636c75740000000100000000000000000000001c766572730000000100000000000000000003001c00010000
+ checkHashOnRead false
+ version 4
+ name Write2
+ xpos -354
+ ypos 172
+}
+set N1c469d40 [stack 0]
+push $N1c469d40
+push $N18e35550
+Viewer {
+ inputs 3
+ frame 100
+ input_number 1
+ name Viewer1
+ xpos -354
+ ypos 216
+}

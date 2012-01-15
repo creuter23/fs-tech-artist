@@ -1,0 +1,14 @@
+<hud>
+    <seq>Prop</seq>
+    <artist>Katie Neylon</artist>
+    <asset>Fire Hydrant</asset>
+    <production>TBA</production>
+    <date>09/30/11</date>
+    <department>Modeling</department>
+    <frame>
+            <start>1</start>
+            <end>100</end>
+    </frame>
+    <res>1920x1080</res>
+    <output>output/path</output>
+</hud>
