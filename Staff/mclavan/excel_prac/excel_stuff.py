@@ -46,3 +46,5 @@ def get_student_info(excel_file='RBA1201.xls'):
 # attend.cell_value(26,0) == ''
 
 # Convert into a sqlite database
+
+# What, new information.
