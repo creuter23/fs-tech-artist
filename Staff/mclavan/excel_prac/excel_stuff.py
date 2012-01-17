@@ -2,9 +2,13 @@
 Access to all things excel
 '''
 
-
+# Modules for reading and writing to excel docs (xls)
 import xlrd
 import xlwt
+
+# Module for access data from a excel doc (xlsx)
+import openpyxl
+
 
 print 'testing'
 
