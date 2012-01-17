@@ -1,0 +1,48 @@
+Grading for: Carroll_Robert_MCR_1110_Project2.ma
+
+-----------------------------------
+-----------------------------------
+
+Overall Grade Total: 84
+
+-----------------------------------
+
+Art Grade Total: 87
+Technical Grade Total: 75
+Professionalism Grade Total: 87
+Late Deductions: -0
+
+-----------------------------------
+-----------------------------------
+
+Art Comments:
+
+Shape & Silhouette: All or almost all object shapes are specific and faithful to reference in entire scene. 
+Proportion & Scale: Many size relationships of object parts and scene objects are believable or faithful to reference.
+Edge Quality: Very Good. Attention to the varied softness or sharpness of edges on objects is faithful to reference in 85 -89% of scene.
+Geometry Placement: Excellent placement and arrangement of scene objects. Stray object or two floating or visible object interpenetration.
+
+Art Grade Total: 87
+-----------------------------------
+Technical Comments:
+
+Edgeflow: All or almost all object edgeflow follows form in a logical and aesthetic way.
+Built in pieces: Some appropriate objects created with criteria of different materials, construction methods or visible seams justifying separate pieces. Some block or brick models. meshes should not be combined into a single mesh. Also floor should be multiple pieces. You don't have to model each floor board but the gutters should be separate,the lane should be separate, etc...
+Bad or Hidden Geometry and N-Gons: Scene riddled with bad or hidden geo or N-gons. in more than 30% of objects in scene.246 N-gons
+Unnecessary/Not Enough Geometry: Appropriate use of edges in many objects. Most objects keep their shapes in '3' resolution mode. Missing a couple of holding edges (Framing2), and cylindrical meshes have too many segments around, for 3-mode use 8 segments. 
+
+Technical Grade Total: 75
+-----------------------------------
+Professionalism Comments:
+
+Minimum Requirements Met: All objects with minimum topology requirements in scene represented and relevant reference enclosed.  Self Assessment Sheet assessment enclosed.
+Scene Named Properly: Scene not named properly. Proper naming convention is Lastname_Firstname_MCR_####_Project0#.ma ; make sure you name the project as Project0# ...that zero is important. 
+Objects Named: Stray object or two in scene not named properly. 7 objects not named. 
+Objects Grouped: Geometry not grouped correctly.  All sub-groups and stray objects must be placed in master group node.
+Objects Layered: 1-10% of objects in scene in layers; too many objects on to few layers. 18 objects not in layeres. 
+Freeze Transformations: All objects in scene have frozen transforms.
+History Deleted: All objects in scene have history deleted.
+Pivots Centered: All objects in scene have pivots centered.
+
+Professionalism Grade Total: 87
+-----------------------------------
