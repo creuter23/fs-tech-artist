@@ -52,3 +52,6 @@ def get_student_info(excel_file='RBA1201.xls'):
 # Convert into a sqlite database
 
 # What, new information.
+
+# Research how sqlite3 is differnet from mysql
+# Blah, blah, and blah
