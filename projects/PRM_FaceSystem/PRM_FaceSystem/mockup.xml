@@ -1,0 +1,180 @@
+<mockup version="1.0" skin="sketch" measuredW="894" measuredH="594" mockupW="864" mockupH="531">
+  <controls>
+    <control controlID="50" controlTypeID="com.balsamiq.mockups::StickyNote" x="593" y="63" w="255" h="123" measuredW="109" measuredH="123" zOrder="2" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Face%20System%0A-%20Brokien%20info%20level%27s%20of%20rigging%20systems.%0A-%20Canned%20animation%20for%20each%20level%0A%09</text>
+      </controlProperties>
+    </control>
+    <control controlID="51" controlTypeID="com.balsamiq.mockups::StickyNote" x="593" y="211" w="255" h="123" measuredW="109" measuredH="123" zOrder="3" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Each%20Level%20will%20given%20more%20functionality.%0A-%20Level%201%20%20basics%0A-%20Level%202%20%0A-%20Level%203</text>
+      </controlProperties>
+    </control>
+    <control controlID="52" controlTypeID="__group__" x="42" y="89" w="489" h="131" measuredW="489" measuredH="131" zOrder="1" locked="false" isInGroup="-1">
+      <groupChildrenDescriptors>
+        <control controlID="0" controlTypeID="com.balsamiq.mockups::FieldSet" x="0" y="0" w="489" h="131" measuredW="200" measuredH="170" zOrder="0" locked="false" isInGroup="52">
+          <controlProperties>
+            <text>Mouth%20System%20-%20Level%201</text>
+          </controlProperties>
+        </control>
+        <control controlID="1" controlTypeID="com.balsamiq.mockups::Image" x="8" y="15" w="77" h="80" measuredW="77" measuredH="79" zOrder="1" locked="false" isInGroup="52"/>
+        <control controlID="2" controlTypeID="com.balsamiq.mockups::Image" x="87" y="14" w="77" h="80" measuredW="77" measuredH="79" zOrder="2" locked="false" isInGroup="52"/>
+        <control controlID="3" controlTypeID="com.balsamiq.mockups::Image" x="166" y="14" w="77" h="80" measuredW="77" measuredH="79" zOrder="3" locked="false" isInGroup="52"/>
+        <control controlID="4" controlTypeID="com.balsamiq.mockups::Image" x="245" y="14" w="77" h="80" measuredW="77" measuredH="79" zOrder="4" locked="false" isInGroup="52"/>
+        <control controlID="5" controlTypeID="com.balsamiq.mockups::Image" x="324" y="14" w="77" h="80" measuredW="77" measuredH="79" zOrder="5" locked="false" isInGroup="52"/>
+        <control controlID="6" controlTypeID="com.balsamiq.mockups::Image" x="403" y="14" w="77" h="80" measuredW="77" measuredH="79" zOrder="6" locked="false" isInGroup="52"/>
+        <control controlID="7" controlTypeID="com.balsamiq.mockups::Button" x="8" y="94" w="77" h="28" measuredW="68" measuredH="28" zOrder="7" locked="false" isInGroup="52">
+          <controlProperties>
+            <text>lt_smile</text>
+          </controlProperties>
+        </control>
+        <control controlID="8" controlTypeID="com.balsamiq.mockups::Button" x="86" y="94" w="77" h="28" measuredW="71" measuredH="28" zOrder="8" locked="false" isInGroup="52">
+          <controlProperties>
+            <text>rt_smile</text>
+          </controlProperties>
+        </control>
+        <control controlID="9" controlTypeID="com.balsamiq.mockups::Button" x="165" y="94" w="77" h="28" measuredW="66" measuredH="28" zOrder="9" locked="false" isInGroup="52">
+          <controlProperties>
+            <text>lt_wide</text>
+          </controlProperties>
+        </control>
+        <control controlID="10" controlTypeID="com.balsamiq.mockups::Button" x="244" y="94" w="77" h="28" measuredW="68" measuredH="28" zOrder="10" locked="false" isInGroup="52">
+          <controlProperties>
+            <text>rt_wide</text>
+          </controlProperties>
+        </control>
+        <control controlID="11" controlTypeID="com.balsamiq.mockups::Button" x="325" y="94" w="77" h="28" measuredW="70" measuredH="28" zOrder="11" locked="false" isInGroup="52">
+          <controlProperties>
+            <text>lt_frown</text>
+          </controlProperties>
+        </control>
+        <control controlID="12" controlTypeID="com.balsamiq.mockups::Button" x="404" y="94" w="77" h="28" measuredW="72" measuredH="28" zOrder="12" locked="false" isInGroup="52">
+          <controlProperties>
+            <text>rt_frown</text>
+          </controlProperties>
+        </control>
+      </groupChildrenDescriptors>
+    </control>
+    <control controlID="53" controlTypeID="__group__" x="42" y="220" w="489" h="131" measuredW="489" measuredH="131" zOrder="4" locked="false" isInGroup="-1">
+      <groupChildrenDescriptors>
+        <control controlID="0" controlTypeID="com.balsamiq.mockups::FieldSet" x="0" y="0" w="489" h="131" measuredW="200" measuredH="170" zOrder="0" locked="false" isInGroup="53">
+          <controlProperties>
+            <text>Mouth%20System%20-%20Level%202</text>
+          </controlProperties>
+        </control>
+        <control controlID="1" controlTypeID="com.balsamiq.mockups::Image" x="8" y="15" w="77" h="80" measuredW="77" measuredH="79" zOrder="1" locked="false" isInGroup="53"/>
+        <control controlID="2" controlTypeID="com.balsamiq.mockups::Image" x="87" y="14" w="77" h="80" measuredW="77" measuredH="79" zOrder="2" locked="false" isInGroup="53"/>
+        <control controlID="3" controlTypeID="com.balsamiq.mockups::Image" x="166" y="14" w="77" h="80" measuredW="77" measuredH="79" zOrder="3" locked="false" isInGroup="53"/>
+        <control controlID="4" controlTypeID="com.balsamiq.mockups::Image" x="245" y="14" w="77" h="80" measuredW="77" measuredH="79" zOrder="4" locked="false" isInGroup="53"/>
+        <control controlID="5" controlTypeID="com.balsamiq.mockups::Image" x="324" y="14" w="77" h="80" measuredW="77" measuredH="79" zOrder="5" locked="false" isInGroup="53"/>
+        <control controlID="6" controlTypeID="com.balsamiq.mockups::Image" x="403" y="14" w="77" h="80" measuredW="77" measuredH="79" zOrder="6" locked="false" isInGroup="53"/>
+        <control controlID="7" controlTypeID="com.balsamiq.mockups::Button" x="8" y="94" w="77" h="28" measuredW="54" measuredH="28" zOrder="7" locked="false" isInGroup="53">
+          <controlProperties>
+            <text>lt_oo</text>
+          </controlProperties>
+        </control>
+        <control controlID="8" controlTypeID="com.balsamiq.mockups::Button" x="86" y="94" w="77" h="28" measuredW="57" measuredH="28" zOrder="8" locked="false" isInGroup="53">
+          <controlProperties>
+            <text>rt_oo</text>
+          </controlProperties>
+        </control>
+        <control controlID="9" controlTypeID="com.balsamiq.mockups::Button" x="165" y="94" w="77" h="28" measuredW="91" measuredH="28" zOrder="9" locked="false" isInGroup="53">
+          <controlProperties>
+            <text>low_lip_curl</text>
+          </controlProperties>
+        </control>
+        <control controlID="10" controlTypeID="com.balsamiq.mockups::Button" x="244" y="94" w="77" h="28" measuredW="86" measuredH="28" zOrder="10" locked="false" isInGroup="53">
+          <controlProperties>
+            <text>up_lip_curl</text>
+          </controlProperties>
+        </control>
+        <control controlID="11" controlTypeID="com.balsamiq.mockups::Button" x="325" y="94" w="77" h="28" measuredW="94" measuredH="28" zOrder="11" locked="false" isInGroup="53">
+          <controlProperties>
+            <text>mouth_open</text>
+          </controlProperties>
+        </control>
+        <control controlID="12" controlTypeID="com.balsamiq.mockups::Button" x="404" y="94" w="77" h="28" measuredW="97" measuredH="28" zOrder="12" locked="false" isInGroup="53">
+          <controlProperties>
+            <text>mouth_close</text>
+          </controlProperties>
+        </control>
+      </groupChildrenDescriptors>
+    </control>
+    <control controlID="54" controlTypeID="__group__" x="42" y="351" w="489" h="131" measuredW="489" measuredH="131" zOrder="5" locked="false" isInGroup="-1">
+      <groupChildrenDescriptors>
+        <control controlID="0" controlTypeID="com.balsamiq.mockups::FieldSet" x="0" y="0" w="489" h="131" measuredW="200" measuredH="170" zOrder="0" locked="false" isInGroup="54">
+          <controlProperties>
+            <text>Mouth%20System%20-%20Level%203</text>
+          </controlProperties>
+        </control>
+        <control controlID="1" controlTypeID="com.balsamiq.mockups::Image" x="8" y="15" w="77" h="80" measuredW="77" measuredH="79" zOrder="1" locked="false" isInGroup="54"/>
+        <control controlID="2" controlTypeID="com.balsamiq.mockups::Image" x="87" y="14" w="77" h="80" measuredW="77" measuredH="79" zOrder="2" locked="false" isInGroup="54"/>
+        <control controlID="3" controlTypeID="com.balsamiq.mockups::Image" x="166" y="14" w="77" h="80" measuredW="77" measuredH="79" zOrder="3" locked="false" isInGroup="54"/>
+        <control controlID="4" controlTypeID="com.balsamiq.mockups::Image" x="245" y="14" w="77" h="80" measuredW="77" measuredH="79" zOrder="4" locked="false" isInGroup="54"/>
+        <control controlID="5" controlTypeID="com.balsamiq.mockups::Image" x="324" y="14" w="77" h="80" measuredW="77" measuredH="79" zOrder="5" locked="false" isInGroup="54"/>
+        <control controlID="6" controlTypeID="com.balsamiq.mockups::Image" x="403" y="14" w="77" h="80" measuredW="77" measuredH="79" zOrder="6" locked="false" isInGroup="54"/>
+        <control controlID="7" controlTypeID="com.balsamiq.mockups::Button" x="8" y="94" w="77" h="28" measuredW="33" measuredH="28" zOrder="7" locked="false" isInGroup="54">
+          <controlProperties>
+            <text>ff</text>
+          </controlProperties>
+        </control>
+        <control controlID="8" controlTypeID="com.balsamiq.mockups::Button" x="86" y="94" w="77" h="28" measuredW="46" measuredH="28" zOrder="8" locked="false" isInGroup="54">
+          <controlProperties>
+            <text>mm</text>
+          </controlProperties>
+        </control>
+        <control controlID="9" controlTypeID="com.balsamiq.mockups::Button" x="165" y="94" w="77" h="28" measuredW="39" measuredH="28" zOrder="9" locked="false" isInGroup="54">
+          <controlProperties>
+            <text>oo</text>
+          </controlProperties>
+        </control>
+        <control controlID="10" controlTypeID="com.balsamiq.mockups::Button" x="244" y="94" w="77" h="28" measuredW="24" measuredH="28" zOrder="10" locked="false" isInGroup="54">
+          <controlProperties>
+            <text/>
+          </controlProperties>
+        </control>
+        <control controlID="11" controlTypeID="com.balsamiq.mockups::Button" x="325" y="94" w="77" h="28" measuredW="24" measuredH="28" zOrder="11" locked="false" isInGroup="54">
+          <controlProperties>
+            <text/>
+          </controlProperties>
+        </control>
+        <control controlID="12" controlTypeID="com.balsamiq.mockups::Button" x="404" y="94" w="77" h="28" measuredW="24" measuredH="28" zOrder="12" locked="false" isInGroup="54">
+          <controlProperties>
+            <text/>
+          </controlProperties>
+        </control>
+      </groupChildrenDescriptors>
+    </control>
+    <control controlID="55" controlTypeID="com.balsamiq.mockups::FieldSet" x="30" y="70" w="509" h="447" measuredW="200" measuredH="170" zOrder="0" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Mouth%20Systems</text>
+      </controlProperties>
+    </control>
+    <control controlID="56" controlTypeID="com.balsamiq.mockups::FieldSet" x="31" y="519" w="508" h="25" measuredW="200" measuredH="170" zOrder="6" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Eyebrows</text>
+      </controlProperties>
+    </control>
+    <control controlID="57" controlTypeID="com.balsamiq.mockups::FieldSet" x="30" y="544" w="508" h="25" measuredW="200" measuredH="170" zOrder="7" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Nose</text>
+      </controlProperties>
+    </control>
+    <control controlID="58" controlTypeID="com.balsamiq.mockups::FieldSet" x="42" y="482" w="489" h="25" measuredW="200" measuredH="170" zOrder="8" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Mouth%20Animation</text>
+      </controlProperties>
+    </control>
+    <control controlID="59" controlTypeID="com.balsamiq.mockups::FieldSet" x="30" y="569" w="508" h="25" measuredW="200" measuredH="170" zOrder="9" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Face%20Animation</text>
+      </controlProperties>
+    </control>
+    <control controlID="60" controlTypeID="com.balsamiq.mockups::StickyNote" x="593" y="354" w="301" h="138" measuredW="109" measuredH="123" zOrder="10" locked="false" isInGroup="-1">
+      <controlProperties>
+        <color>10667209</color>
+        <text>This%20will%20need%20to%20be%20tackelled%20in%20increments.%0A-%20Virtual%20Slider%20toolset%0A-%20Naming%20convention%20hookup%20%28auto%20hookup%29%0A-%20Connection%20switching.%0A-%20Real%20time%20blend%20shape%20testing.</text>
+      </controlProperties>
+    </control>
+  </controls>
+</mockup>

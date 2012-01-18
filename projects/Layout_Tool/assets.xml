@@ -1,0 +1,5 @@
+<production id='0000_teaser'>
+<prop name='Lamp Post' location='../assets/prop/LampPost/Final/lampPost.ma' mod='Havey Dent' txt='' rig='Michael Clavan' />
+<character name='Merc' location='../assets/charcter/Merc/Final/merc.ma' mod='Joker' txt='' rig='' />
+<env name='Brownstone' location='../assets/env/BrownStone/Final/brownstone.ma' mod='Batman' txt='' rig='Jennifer Conley' />
+</production>
