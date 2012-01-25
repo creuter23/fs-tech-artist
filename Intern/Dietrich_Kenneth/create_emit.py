@@ -48,3 +48,10 @@ cmds.setAttr('myEmit4.rate', 1000)
 # xform command
 # ls
 #    cmds.ls(sl=True)
+git status
+git add .  
+git commit -m "message goes here."
+git pull https://mclavan:dd3JC2wH9Va6@code.google.com/p/fs-tech-artist/ 
+git push https://mclavan:dd3JC2wH9Va6@code.google.com/p/fs-tech-artist/ 
+
+# Command line option
