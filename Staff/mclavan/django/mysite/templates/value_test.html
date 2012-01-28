@@ -5,8 +5,24 @@
 <title>Untitled Document</title>
 </head>
 <h1>Testing Django Data</h1>
+<h2>Moving data</h2>
 <p>Here we are testing placing data: {{ blah }}, {{ more_blah }}.</p>
-
+<h2>Looping Test</h2>
+<p>
+Students
+<ul>
+{% for student in students %}
+<!-- Insert your code here -->
+	<li>{{ student.first_name }}, {{ student.last_name }}
+    <ul>
+    	<li>Student Number: {{ student.student_number }}</li>
+        <li>Current Class: 	{{ student.class }} </li>
+    </ul>
+    </li>
+    
+{% endfor %}
+</ul>
+</p>
 <body>
 
 </body>
