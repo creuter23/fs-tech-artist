@@ -1,7 +1,10 @@
 from django.conf.urls.defaults import patterns, include, url
+
+# Connecting to different views.
 from mysite.django_test import current_datetime
 from mysite.views import hello
 from mysite.views import hours_ahead
+from mysite.views import fill_data
 
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
@@ -9,7 +12,7 @@ from mysite.views import hours_ahead
 
 urlpatterns = patterns('',
     # Site root
-    (r'^$', current_datetime),
+    (r'^$', fill_data),
     # /time
     (r'^time/$', current_datetime),
     (r'^time/plus/(\d{1,2})/$', hours_ahead),
