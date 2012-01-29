@@ -6,6 +6,9 @@ from mysite.views import hello
 from mysite.views import hours_ahead
 from mysite.views import fill_data
 
+# Form
+from mysite.views import getting_data
+from mysite.views import search
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
 # admin.autodiscover()
@@ -13,6 +16,8 @@ from mysite.views import fill_data
 urlpatterns = patterns('',
     # Site root
     (r'^$', fill_data),
+    (r'^form/$', getting_data),
+    (r'^search/$', search),
     # /time
     (r'^time/$', current_datetime),
     (r'^time/plus/(\d{1,2})/$', hours_ahead),

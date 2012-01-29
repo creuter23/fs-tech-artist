@@ -1,10 +1,20 @@
+from django.template.loader import get_template
 from django.http import HttpResponse
 from django.template import Template, Context
+
+# Form based
+from django.shortcuts import render_to_response
+from django.core.mail import send_mail
 
 import datetime
 
 # django-admin.py startproject
 # python manage.py runserver
+# python manage.py shell
+# Database check
+# from django.db import connection
+# cursor = connection.cursor()
+
 def hello(request):
     return HttpResponse('Hello, World')
     
@@ -24,10 +34,12 @@ def fill_data(request):
     Passing data to a Template.
     '''
     # Setting up the template
+    '''
     fp = open(r'templates/value_test.html')
     t = Template(fp.read())
     fp.close()
-    
+    '''
+    t = get_template(r'value_test.html')
     # Preparing Data
     # Basic Data
     blah = 'Michael Clavan'
@@ -45,12 +57,49 @@ def fill_data(request):
     # The context will pass information back to the template.
     # Context are setup as dictionaries.
     # {'key':value} 
-    data1 = Context({'blah':'%s %s' %(student2['first_name'], student2['last_name']),
+    data1 = Context({'path':request.get_host(),'blah':'%s %s' %(student2['first_name'], student2['last_name']),
                      'more_blah':student2['student_number'], 'students':student_info})
     
     # Passing data into template.
     html = t.render(Context(data1))
     return HttpResponse(html)
+
     
- 
+'''
+Catching data from a template.
+'''
+# Form Test
+def getting_data(request):
+    return render_to_response('form_test.html')
+
+def search(request):
+    if 'q' in request.GET:
+        message = 'You searched for : %r' % request.GET['q']
+    else:
+        message = 'You submitted an empty form.'
+    return HttpResponse(message)
+
+def contact(request):
+    errors = []
+    if request.method == 'POST':
+        if not request.POST.get('subject', ''):
+            errors.append('Enter a subject')
+        if not request.POST.get('message', ''):
+            errors.append('Enter a message')
+        if request.POST.get('email') and '@' not in request.POST['email']:
+            errors.append('Enter a valid e-mail address.')
+        if not errors:
+            send_mail(
+                request.POST['subject'],
+                request.POST['message'],
+                request.POST.get('email', 'noreply@example.com'),
+                ['siteowner@example.com'],                
+            )
+            return HtpResponseRedirect('/contact/thanks/')
+    return render_to_response('contact_form.html', {'errors': errors})
+
+
+'''
+Getting information from a model.
+'''
     
