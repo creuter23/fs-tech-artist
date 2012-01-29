@@ -1,17 +1,27 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-<title>Finals Department - Art Test</title>
-</head>
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <title>Finals Department - Art Test</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+        <link rel="stylesheet" href="style/main.css"/>
+    </head>
+
 
 <body>
-<h1>Setup Account</h1>
-<form action="/user_access/" method="get">
-<p>User Name: <input name="user_name" type="text" size="20" maxlength="50" value='hello'/></p>
-<p>password: <input name="password" type="password" size="20" maxlength="50" /></p>
-<p><input name="submit" type="submit" /></p>
-</form>
+	<div class="key">
+		<h1>Setup Account</h1>
+			<form action="/user_access/" method="post">
+				<fieldset>
+					<legend> User Login Information</legend>
+					<P><B>Start by entering your Name and Email...</B>
+					<p>User Name: <input name="user_name" type="text" size="20" maxlength="50"/></p>
+					<p>Password: <input name="password" type="password" size="20" maxlength="50" /></p>
+					
+				</fieldset>
+				<p><input name="submit" type="submit" /></p>
+			</form>
+	</div>
 <!--
 Discipline: <input name="disc" type="text" size="20" maxlength="50" /><br />
 Current Class: <input name="classID" type="text" size="20" maxlength="50" /><br />
