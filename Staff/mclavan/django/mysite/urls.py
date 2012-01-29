@@ -6,6 +6,8 @@ from mysite.views import hello
 from mysite.views import hours_ahead
 from mysite.views import fill_data
 
+import mysite.views as views
+
 # Form
 from mysite.views import getting_data
 from mysite.views import search
@@ -16,6 +18,7 @@ from mysite.views import search
 urlpatterns = patterns('',
     # Site root
     (r'^$', fill_data),
+    (r'^page_data/$', views.page_info),
     (r'^form/$', getting_data),
     (r'^search/$', search),
     # /time

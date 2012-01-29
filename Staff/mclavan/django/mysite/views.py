@@ -1,11 +1,13 @@
 from django.template.loader import get_template
 from django.http import HttpResponse
+# Accessing data from a Template
 from django.template import Template, Context
 
 # Form based
 from django.shortcuts import render_to_response
 from django.core.mail import send_mail
 
+# standard library
 import datetime
 
 # django-admin.py startproject
@@ -15,8 +17,27 @@ import datetime
 # from django.db import connection
 # cursor = connection.cursor()
 
+class Person():
+    def __init__(self, name, id, cur_class):
+        self.name = name
+        self.id = id
+        self.cur_class = cur_class
+
 def hello(request):
     return HttpResponse('Hello, World')
+
+
+def page_info(request):
+    # Need to access webpage
+    t = get_template(r'awesome_data.html')
+    # host = request.get_host()
+    
+    names = [Person('Michael Clavan', 134332, 'rba1203'), Person('Jane Doe', 999999, 'cri1204')]
+    ctx = Context({'data':'wtf', 'names':names})
+    html = t.render(Context(ctx))
+    return HttpResponse(html)    
+    
+
     
 def hours_ahead(request, offset):
     
