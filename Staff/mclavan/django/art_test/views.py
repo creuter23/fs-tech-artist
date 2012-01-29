@@ -37,25 +37,25 @@ def login(request):
     '''
     # c = {}
     # c.update(csrf(request))
-    if request.method != 'GET':
+    if request.method != 'POST':
         raise Http404('Only POSTs are allowed')
     try:
-        m = request.GET['user_name']
+        m = request.POST['user_name']
         
         
-        m = Student.objects.get(username=request.GET['user_name'])
+        m = Student.objects.get(username=request.POST['user_name'])
         
-        result = m.password == request.GET['password']
-        print m.password, request.GET['password'], result
-        if m.password == request.GET['password']:
+        result = m.password == request.POST['password']
+        print m.password, request.POST['password'], result
+        if m.password == request.POST['password']:
                 request.session['student_id'] = m.student_id
-                return HttpResponseRedirect('/you-are-logged-in/')
+                return HttpResponseRedirect('/apply/')
         
         return HttpResponse("Your response is %s" %m)
         
     except:
         # Database access
-        m = Student.objects.get(username=request.GET['user_name'])
+        m = Student.objects.get(username=request.POST['user_name'])
         
         user = m.username
         pasw = m.password
@@ -63,3 +63,8 @@ def login(request):
     # return render_to_response("Your username and password didn't match.", c)
     
 
+def apply(request):
+    # Opens up the main web page.
+    t = get_template(r'apply.html')
+    html = t.render(Context())
+    return HttpResponse(html)
