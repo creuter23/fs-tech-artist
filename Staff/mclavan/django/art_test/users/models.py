@@ -6,10 +6,10 @@ class Student(models.Model):
     username = models.CharField(max_length=25)
     password = models.CharField(max_length=25)
     email = models.EmailField(max_length=100)
-    disc = models.CharField(max_length=18)
+    disc = models.CharField(null=True, max_length=18)
     classid = models.CharField(max_length=4)
     student_id = models.IntegerField(10)
-    comments = models.CharField(max_length=255)
+    comments = models.CharField(null=True, max_length=255)
 
     def __unicode__(self):
         return '%s: %s %s' %(self.name, self.username, self.email)

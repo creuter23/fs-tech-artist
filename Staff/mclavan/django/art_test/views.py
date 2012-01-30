@@ -68,3 +68,66 @@ def apply(request):
     t = get_template(r'apply.html')
     html = t.render(Context())
     return HttpResponse(html)
+    
+def signup(request):
+    if request.method != 'POST':
+        raise Http404('Only POSTs are allowed')
+    t = get_template(r'signup.html')
+    html = t.render(Context())
+    return HttpResponse(html)    
+
+def user_check(request):
+    errors = []
+    if request.method != 'POST':
+        raise Http404('Only POSTs are allowed')
+    # Check for user name in the database
+    username_form = request.POST['username']
+    studentID_form = request.POST['studentID']    
+    name_frm = request.POST['name']
+    password_frm = request.POST['password']
+    email_frm = request.POST['email']
+    class_frm = request.POST['classID']
+    username_frm = ''
+    studentID_frm = ''
+    try:
+        # Getting data from form.    
+        username_frm = Student.objects.get(username=username_form)
+        studentID_frm = Student.objects.get(username=studentID_form)
+    except Student.DoesNotExist:
+        print "Student doesn't current exists.  Adding student to system."
+        
+    if username_frm or studentID_frm:
+        # User profile already exists.
+        return HttpResponse('Account allready exists.')
+    else:
+        # update database
+        print 'Validate Form.'
+        if not username_form:
+            errors.append('Missing user name.')
+        if not studentID_form:
+            errors.append('Missing student ID.')
+        if not name_frm:
+            errors.append('Missing name.')            
+        if not password_frm:
+            errors.append('Missing password.')
+        if not email_frm:
+            errors.append('Missing email.')
+        if not class_frm:
+            errors.append('Missing class ID.')            
+    # Check for student number in the database
+
+
+        
+        
+    if not errors:
+        # Add user to the database
+        new_student = Student(name=name_frm ,username=username_form ,password=password_frm ,email=email_frm ,
+                classid=class_frm ,student_id=studentID_form, disc='', comments='')
+        new_student.save()
+        return HttpResponseRedirect('/apply/')
+    else:
+        error_line = 'Whoops, you left out some fields.<br>'
+        for error in errors:
+            error_line += '%s<br>' % error 
+        return HttpResponse(error_line)
+    
