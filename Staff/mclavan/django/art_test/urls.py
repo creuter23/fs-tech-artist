@@ -1,5 +1,4 @@
 from django.conf.urls.defaults import patterns, include, url
-
 import art_test.views as views
 
 # Uncomment the next two lines to enable the admin:

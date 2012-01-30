@@ -54,7 +54,7 @@ def login(request):
         return HttpResponse("Your response is %s" %m)
         
     except:
-        # Database access
+        # Database accesss
         m = Student.objects.get(username=request.POST['user_name'])
         
         user = m.username
