@@ -1,5 +1,4 @@
 from django.conf.urls.defaults import patterns, include, url
-
 import art_test.views as views
 
 # Uncomment the next two lines to enable the admin:
@@ -20,5 +19,10 @@ urlpatterns = patterns('',
     # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
 
     # Uncomment the next line to enable the admin:
+<<<<<<< HEAD
     # url(r'^admin/', include(admin.site.urls)),
 )
+=======
+     #url(r'^admin/', include(admin.site.urls)),
+)
+>>>>>>> 3fb28d8e52d65069086407ac5cf7cc9cdb371422

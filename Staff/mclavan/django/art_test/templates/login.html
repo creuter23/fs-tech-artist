@@ -4,20 +4,19 @@
         <meta charset="utf-8"/>
         <title>Finals Department - Art Test</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-        <link rel="stylesheet" href="style/main.css"/>
+        <link rel="stylesheet" href="http://refinedcg.com/dev/hsf/style/main.css"/>
     </head>
 
 
 <body>
-	<div class="key">
+	<div class="key" id="mainform">
 		<h1>Setup Account</h1>
 			<form action="/user_access/" method="post">
-				<fieldset>
-					<legend> User Login Information</legend>
-					<P><B>Start by entering your Name and Email...</B>
-					<p>User Name: <input name="user_name" type="text" size="20" maxlength="50"/></p>
-					<p>Password: <input name="password" type="password" size="20" maxlength="50" /></p>
-					
+				<fieldset id=mainfs>
+					<legend id="hsleg"> User Login Information</legend>
+					<P id="hstext">Sign in or create a new account </P>
+					<P id="hsfields">User Name: <input name="user_name" type="text" size="20" maxlength="50" required="required" /></P>
+					<P id="hsfields">Password: <input name="password" type="password" size="20" maxlength="50" required="required" /></P>
 				</fieldset>
 				<p><input name="submit" type="submit" /> </p>
 			</form>
