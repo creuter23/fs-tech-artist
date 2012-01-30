@@ -1,0 +1,80 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Untitled Document</title>
+</head>
+
+<body>
+<h1>Tile Generation</h1>
+
+<table width="760" height="58" border="1" id='dyn_gen'>
+  <tr>
+    <td height="52">hddf</td>
+    <td>blah</td>
+    <td>wtf</td>
+  </tr>
+  
+</table>
+<p id='gen_tabel'>&nbsp;</p>
+<script type="text/javascript">
+// Generating three rows
+
+/*
+  <tr>
+    <td height="52">Row ##</td>
+    <td>blah</td>
+    <td>wtf</td>
+  </tr>
+*/
+//document.getElementById('blah').innerHTML = 'Testing';
+
+var newLine = document.getElementById('dyn_gen').innerHTML;
+newLine += '<tr><td height="52">hdd2222f</td><td>blah</td><td>wtf</td></tr>';
+
+document.getElementById('dyn_gen').innerHTML = newLine;
+  
+
+function row_gen(row, cols){
+	var line = '';
+	//var line = '<tr><td height="52">hdd2222f</td><td>blah</td><td>wtf</td></tr>';
+	
+	for(var i = 0; i < cols ; i++){
+		line += '<tr>'
+		line += '<td height="52">Row 1</td>';
+		line += '<td>ahhh</td>';
+		line += '<td>ahhh 2</td>';
+		line += '</tr>'
+	}
+
+	
+	return line;
+}
+
+function table_gen(cols, names, idName){
+	var line = '<table width="760" height="58" border="1">'
+	line += row_gen(1, 3);
+	line += '</table>';
+	return line;
+}
+
+//var data = new Array('Mike', 'Bob', 'George');
+
+var amt_rows = 3;
+var amt_cols = 3;
+
+//var row_info = row_gen(amt_row, amt_cols);
+
+newLine = document.getElementById('dyn_gen').innerHTML;
+//var test_info = row_info(3, 3);
+newLine += '<tr><td height="52">hdd2222f</td><td>blah</td><td>wtf</td></tr>';
+newLine += row_gen(3, 3);
+document.getElementById('dyn_gen').innerHTML = newLine;
+
+var newLine2 = document.getElementById('gen_tabel').innerHTML;
+newLine2 += table_gen(3, 'blah', 'testing')
+document.getElementById('gen_tabel').innerHTML = newLine2;
+
+</script>
+</body>
+</html>

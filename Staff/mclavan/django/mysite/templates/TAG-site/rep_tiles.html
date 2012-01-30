@@ -1,0 +1,124 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Replicate Tiles</title>
+<style type="text/css">
+.tile {
+	font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+	background-color: #B5AFA6;
+	height: 90px;
+	width: 400px;
+	vertical-align: top;
+	padding-left: 5px;
+	border: 6;
+	border-color: #000;
+}
+.dload {
+	left: auto;
+	bottom: auto;
+}
+.tile_txt {
+	height: 0px;
+	font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+	font-size: 12px;
+	font-weight: 900;
+	text-align: left;
+}
+</style>
+</head>
+
+
+<body>
+<div id='dynGen'></div>
+<script type="text/javascript">
+///////////////////////////////////////
+// XML Data
+///////////////////////////////////////
+
+
+function gen_tiles(img, assetName, mod, txt, rig){
+	var line = '<table width="400" height="90" border="0" cellpadding="1" class="tile"><tr>';
+	// Image
+	// id will have to be changed.
+	line +=  '<td><img src="' + img + '" width="80" height="80" id="view"/></td>';
+	
+	// Prop information
+	// Prop Name
+	line += "<td width='180'><div id='prop' class='tile_txt'>" + assetName + "</div><br />";
+    line += "<div id='mod' class='tile_txt'>Modeler - " + mod + "</div><br />";
+    line +=	"<div id='text' class='tile_txt'>Texture - " + txt + "</div><br />";
+    line += "<div id='rig' class='tile_txt'>Modeler - " + rig + "</div><br /></td>";
+	// Download image
+	line += '<td><img src="download.png" name="download" id="download" class="dload"/></td>';
+	line +=  '</tr></table>'
+	
+	return line;
+	
+	/*
+<table width="400" height="90" border="0" cellpadding="1" class='tile'>
+  <tr>
+    <td><img src="prop_img.png" width="80" height="80" id='view'/></td>
+    <td>
+    	<div id='prop' class='tile_txt'>Fire Hydrant</div><br />
+    	<div id='mod' class='tile_txt'>Modeler - John Doe</div><br />
+    	<div id='text' class='tile_txt'>Texture - John Doe</div><br />
+    	<div id='rig' class='tile_txt'>Modeler - John Doe</div><br />               
+    </td>
+    <td><img src="download.png" name="download" id="download" class='dload'/></td>
+  </tr>
+</table>	
+	*/		
+}
+
+function xml_props(img){
+	if (window.XMLHttpRequest)
+	  {// code for IE7+, Firefox, Chrome, Opera, Safari
+	  xmlhttp=new XMLHttpRequest();
+	  }
+	else
+	  {// code for IE6, IE5
+	  xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+	  }
+	xmlhttp.open("GET","props.xml",false);
+	xmlhttp.send();
+	xmlDoc=xmlhttp.responseXML;	
+	
+	var prop_length = xmlDoc.getElementsByTagName("prop").length;
+	var temp_line = '';
+	for(var i = 0 ; i < prop_length ; i++) {
+		/*
+		var propTemp = xmlDoc.getElementsByTagName("prop")[i].attributes.getNamedItem("name").nodeValue;
+		var mod = xmlDoc.getElementsByTagName("prop")[i].attributes.getNamedItem("model").nodeValue;
+		var txt = xmlDoc.getElementsByTagName("prop")[i].attributes.getNamedItem("txt").nodeValue;
+		var rig = xmlDoc.getElementsByTagName("prop")[i].attributes.getNamedItem("setup").nodeValue;
+		*/
+		// Base Prop Element (attributes)
+		var xml_ele = xmlDoc.getElementsByTagName("prop")[i].attributes
+		// Getting values back from attributes
+		var artName = xml_ele.getNamedItem("name").nodeValue;
+		var mod = xml_ele.getNamedItem("model").nodeValue;
+		var txt = xml_ele.getNamedItem("txt").nodeValue;
+		var rig = xml_ele.getNamedItem("setup").nodeValue;	
+		//temp_line += prop_tile(artName, mod, txt, rig);
+	
+		temp_line += gen_tiles(img, artName, mod, txt, rig);
+		
+	}	
+	return temp_line;
+}
+
+//var tag = gen_tiles("prop_img.png", 'Mail Box 1', 'a', 'a', 'star');
+//tag += gen_tiles("prop_img.png", 'Mail Box 2');
+
+// XML + TAG grouping
+var tags = xml_props('prop_img.png');
+var newLine = document.getElementById('dynGen').innerHTML;
+newLine += tags;
+document.getElementById('dynGen').innerHTML = newLine;
+//document.getElementById('dynGen').innerHTML = tag;
+//document.getElementById('dynGen').innerHTML = tags;
+</script>
+
+</body>
+</html>

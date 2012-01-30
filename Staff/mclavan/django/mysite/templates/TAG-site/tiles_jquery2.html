@@ -1,0 +1,233 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Replicate Tiles</title>
+<script src="js/jquery-1.6.1.min.js" type="text/javascript"></script>
+		<!--script src="js/jquery.lint.js" type="text/javascript" charset="utf-8"></script-->
+		<link rel="stylesheet" href="css/prettyPhoto.css" type="text/css" media="screen" title="prettyPhoto main stylesheet" charset="utf-8" />
+		<script src="js/jquery.prettyPhoto.js" type="text/javascript" charset="utf-8"></script>
+<style type="text/css">
+.tile {
+	font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+	background-color: #B5AFA6;
+	height: 90px;
+	width: 400px;
+	vertical-align: top;
+	padding-left: 5px;
+	border: 6;
+	border-color: #000;
+}
+.dload {
+	left: auto;
+	bottom: auto;
+}
+.tile_txt {
+	height: 0px;
+	font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+	font-size: 12px;
+	font-weight: 900;
+	text-align: left;
+}
+</style>		
+		<style type="text/css" media="screen">
+			* { margin: 0; padding: 0; }
+			
+			body {
+				background: #282828;
+				font: 62.5%/1.2 Arial, Verdana, Sans-Serif;
+				padding: 0 20px;
+			}
+			
+			h1 { font-family: Georgia; font-style: italic; margin-bottom: 10px; }
+			
+			h2 {
+				font-family: Georgia;
+				font-style: italic;
+				margin: 25px 0 5px 0;
+			}
+			
+			p { font-size: 1.2em; }
+			
+			ul li { display: inline; }
+			
+			.wide {
+				border-bottom: 1px #000 solid;
+				width: 4000px;
+			}
+			
+			.fleft { float: left; margin: 0 20px 0 0; }
+			
+			.cboth { clear: both; }
+			
+			#main {
+				background: #fff;
+				margin: 0 auto;
+				padding: 30px;
+				width: 1000px;
+			}
+		</style>
+
+<script type="text/javascript" src="jquery.js"></script>
+<script src="js/jquery-1.6.1.min.js" type="text/javascript"></script>
+<script type="text/javascript">
+ $(document).ready(function() {
+   // do stuff when DOM is ready
+   $("#download").click(function () {
+	   alert("Downloading"); 
+   });
+  	
+
+   /*
+   $("a").click(function()  {
+		alert("Hello world!");   
+   });
+   
+   $("a").toggle(function() {
+	  $("#test1").hide('slow');
+   }, function() {
+	  $("#test1").show('fast');		   
+   });
+   */
+ });
+</script>
+</head>
+
+
+<body>
+<a class='media' href='still_test_low.mov' rel="prettyPhoto" title="Tron!">Click Me</a>
+<div id='dynGen'></div>
+<script type="text/javascript">
+///////////////////////////////////////
+// XML Data
+///////////////////////////////////////
+
+function GenTiles(img, assetName, mod, txt, rig) {
+	this.img = img;
+	this.name = assetName;
+	this.mod = mod;
+	this.txt = txt;
+	this.rig = rig;
+	
+	this.create = function(idTag){
+			
+			var line = '<table width="400" height="90" border="0" cellpadding="1" class="tile" id="test1"><tr>';
+			// Image
+			// id will have to be changed.
+			line +=  '<td id="tile1"><img src="' + img + '" width="80" height="80" id="view"/></td>';
+			
+			// Prop information
+			// Prop Name
+			line += "<td width='180'><div id='prop' class='tile_txt'>" + this.name + "</div><br />";
+			line += "<div id='mod' class='tile_txt'>Modeler - " + this.mod + "</div><br />";
+			line +=	"<div id='text' class='tile_txt'>Texture - " + this.txt + "</div><br />";
+			line += "<div id='rig' class='tile_txt'>Modeler - " + this.rig + "</div><br /></td>";
+			// Download image
+			line += '<td><div ><img src="download.png" name="download" id="download" class="dload"/></div></td>';
+			line +=  '</tr></table>'	
+			var newLine = document.getElementById(idTag).innerHTML;
+			newLine += line;
+			document.getElementById(idTag).innerHTML = newLine;	
+
+	}
+	/*
+	this.trigger = function() {
+		alert('img: ' + this.img + ' assetName: ' + this.name);
+	}
+	*/
+}
+
+//obj = new GenTiles('a', 'b', 'c', 'd', 'e');
+//obj.create('22');
+
+
+function gen_tiles(img, assetName, mod, txt, rig){
+	var line = '<table width="400" height="90" border="0" cellpadding="1" class="tile"><tr>';
+	// Image
+	// id will have to be changed.
+	line +=  '<td><img src="' + img + '" width="80" height="80" id="view"/></td>';
+	
+	// Prop information
+	// Prop Name
+	line += "<td width='180'><div id='prop' class='tile_txt'>" + assetName + "</div><br />";
+    line += "<div id='mod' class='tile_txt'>Modeler - " + mod + "</div><br />";
+    line +=	"<div id='text' class='tile_txt'>Texture - " + txt + "</div><br />";
+    line += "<div id='rig' class='tile_txt'>Modeler - " + rig + "</div><br /></td>";
+	// Download image
+	line += '<td><img src="download.png" name="download" id="download" class="dload"/></td>';
+	line +=  '</tr></table>'
+	
+	return line;
+	
+	/*
+<table width="400" height="90" border="0" cellpadding="1" class='tile'>
+  <tr>
+    <td><img src="prop_img.png" width="80" height="80" id='view'/></td>
+    <td>
+    	<div id='prop' class='tile_txt'>Fire Hydrant</div><br />
+    	<div id='mod' class='tile_txt'>Modeler - John Doe</div><br />
+    	<div id='text' class='tile_txt'>Texture - John Doe</div><br />
+    	<div id='rig' class='tile_txt'>Modeler - John Doe</div><br />               
+    </td>
+    <td><img src="download.png" name="download" id="download" class='dload'/></td>
+  </tr>
+</table>	
+	*/		
+}
+
+function xml_props(img){
+	if (window.XMLHttpRequest)
+	  {// code for IE7+, Firefox, Chrome, Opera, Safari
+	  xmlhttp=new XMLHttpRequest();
+	  }
+	else
+	  {// code for IE6, IE5
+	  xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+	  }
+	xmlhttp.open("GET","props.xml",false);
+	xmlhttp.send();
+	xmlDoc=xmlhttp.responseXML;	
+	
+	var prop_length = xmlDoc.getElementsByTagName("prop").length;
+	var temp_line = '';
+	for(var i = 0 ; i < prop_length ; i++) {
+		/*
+		var propTemp = xmlDoc.getElementsByTagName("prop")[i].attributes.getNamedItem("name").nodeValue;
+		var mod = xmlDoc.getElementsByTagName("prop")[i].attributes.getNamedItem("model").nodeValue;
+		var txt = xmlDoc.getElementsByTagName("prop")[i].attributes.getNamedItem("txt").nodeValue;
+		var rig = xmlDoc.getElementsByTagName("prop")[i].attributes.getNamedItem("setup").nodeValue;
+		*/
+		// Base Prop Element (attributes)
+		var xml_ele = xmlDoc.getElementsByTagName("prop")[i].attributes
+		// Getting values back from attributes
+		var artName = xml_ele.getNamedItem("name").nodeValue;
+		var mod = xml_ele.getNamedItem("model").nodeValue;
+		var txt = xml_ele.getNamedItem("txt").nodeValue;
+		var rig = xml_ele.getNamedItem("setup").nodeValue;	
+		//temp_line += prop_tile(artName, mod, txt, rig);
+	
+		temp_line += gen_tiles(img, artName, mod, txt, rig);
+		
+	}	
+	return temp_line;
+}
+
+//var tag = gen_tiles("prop_img.png", 'Mail Box 1', 'a', 'a', 'star');
+//tag += gen_tiles("prop_img.png", 'Mail Box 2');
+
+// XML + TAG grouping
+var tags = xml_props('prop_img.png');
+var newLine = document.getElementById('dynGen').innerHTML;
+newLine += tags;
+document.getElementById('dynGen').innerHTML = newLine;
+
+// Class init
+obj = new GenTiles('prop_img.png', 'WTF', 'a', 'b', 'c');
+obj.create('dynGen')
+
+//document.getElementById('dynGen').innerHTML = tag;
+//document.getElementById('dynGen').innerHTML = tags;
+</script>
+
+</body>
+</html>

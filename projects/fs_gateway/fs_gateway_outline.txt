@@ -1,0 +1,13 @@
+Project Gateway
+
+Description:
+	Creating a logon gate way for rba, tag, & finals.
+
+
+Notes:
+
+1/25/12 - django intoduction
+	Django definately seems like the correct path to take for the different sites we wish to create for fullsail.
+	Django book
+		http://www.djangobook.com/en/2.0
+	I'm going to be working of a local version for init testing purposes.  At this time it will be kept in my area until it gets more fleshed out.
