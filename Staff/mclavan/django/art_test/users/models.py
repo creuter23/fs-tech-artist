@@ -24,3 +24,5 @@ class Art_Test(models.Model):
     asset_status = models.CharField(max_length=2, choices=asset_types)
     assesment = models.CharField(max_length=6, choices=asses_types)
     student = models.ForeignKey(Student)
+    art_director = models.CharField(max_length=50)
+    AD_Email = models.EmailField(max_length=100)

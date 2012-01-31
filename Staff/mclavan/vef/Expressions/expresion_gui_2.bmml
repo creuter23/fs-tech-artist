@@ -1,0 +1,183 @@
+<mockup version="1.0" skin="sketch" measuredW="1013" measuredH="411" mockupW="920" mockupH="337">
+  <controls>
+    <control controlID="4" controlTypeID="com.balsamiq.mockups::StickyNote" x="751" y="219" w="262" h="162" measuredW="109" measuredH="123" zOrder="0" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>velocity%20%3D%20sphrand%20%2810%29%3B%0ArgbPP%20%3D%20sphrand%28%3C%3C%201%2C%20.5%2C.8%3E%3E%29%3B%20Use%20this%20expression%20for%20Runtime%20and%20Creation.%0Aacceleration%20%3D%20sphrand%20%2810%29%3B</text>
+      </controlProperties>
+    </control>
+    <control controlID="41" controlTypeID="__group__" x="346" y="74" w="246" h="270" measuredW="246" measuredH="270" zOrder="2" locked="false" isInGroup="-1">
+      <groupChildrenDescriptors>
+        <control controlID="0" controlTypeID="com.balsamiq.mockups::FieldSet" x="0" y="0" w="246" h="270" measuredW="200" measuredH="170" zOrder="0" locked="false" isInGroup="41">
+          <controlProperties>
+            <text>Emit%20%232</text>
+          </controlProperties>
+        </control>
+        <control controlID="1" controlTypeID="com.balsamiq.mockups::Button" x="154" y="15" w="84" h="28" measuredW="67" measuredH="28" zOrder="1" locked="false" isInGroup="41">
+          <controlProperties>
+            <text>Create</text>
+          </controlProperties>
+        </control>
+        <control controlID="2" controlTypeID="com.balsamiq.mockups::List" x="15" y="49" w="216" h="70" measuredW="100" measuredH="126" zOrder="2" locked="false" isInGroup="41">
+          <controlProperties>
+            <selectedIndex>0</selectedIndex>
+            <text>emit_7_1%0Aemit_7_2%0Aemit_7_3%0Aemit_7_4</text>
+            <verticalScrollbar>true</verticalScrollbar>
+          </controlProperties>
+        </control>
+        <control controlID="3" controlTypeID="com.balsamiq.mockups::TextInput" x="14" y="17" w="135" h="-1" measuredW="58" measuredH="26" zOrder="3" locked="false" isInGroup="41">
+          <controlProperties>
+            <text>emit_7</text>
+          </controlProperties>
+        </control>
+        <control controlID="4" controlTypeID="com.balsamiq.mockups::Label" x="15" y="150" w="131" h="21" measuredW="111" measuredH="21" zOrder="4" locked="false" isInGroup="41">
+          <controlProperties>
+            <text>Random%20Velocity</text>
+          </controlProperties>
+        </control>
+        <control controlID="5" controlTypeID="com.balsamiq.mockups::TextInput" x="161" y="148" w="70" h="-1" measuredW="28" measuredH="26" zOrder="5" locked="false" isInGroup="41">
+          <controlProperties>
+            <align>center</align>
+            <text>10</text>
+          </controlProperties>
+        </control>
+        <control controlID="6" controlTypeID="com.balsamiq.mockups::Label" x="15" y="124" w="216" h="21" measuredW="57" measuredH="21" zOrder="6" locked="false" isInGroup="41">
+          <controlProperties>
+            <align>center</align>
+            <text>Settings</text>
+          </controlProperties>
+        </control>
+        <control controlID="7" controlTypeID="com.balsamiq.mockups::Label" x="15" y="182" w="131" h="21" measuredW="44" measuredH="21" zOrder="7" locked="false" isInGroup="41">
+          <controlProperties>
+            <text>rgbPP</text>
+          </controlProperties>
+        </control>
+        <control controlID="8" controlTypeID="com.balsamiq.mockups::TextInput" x="103" y="179" w="43" h="-1" measuredW="20" measuredH="26" zOrder="8" locked="false" isInGroup="41">
+          <controlProperties>
+            <align>center</align>
+            <text>1</text>
+          </controlProperties>
+        </control>
+        <control controlID="9" controlTypeID="com.balsamiq.mockups::Label" x="15" y="213" w="131" h="21" measuredW="82" measuredH="21" zOrder="9" locked="false" isInGroup="41">
+          <controlProperties>
+            <text>acceleration</text>
+          </controlProperties>
+        </control>
+        <control controlID="10" controlTypeID="com.balsamiq.mockups::TextInput" x="161" y="211" w="70" h="-1" measuredW="28" measuredH="26" zOrder="10" locked="false" isInGroup="41">
+          <controlProperties>
+            <align>center</align>
+            <text>10</text>
+          </controlProperties>
+        </control>
+        <control controlID="11" controlTypeID="com.balsamiq.mockups::TextInput" x="146" y="179" w="43" h="-1" measuredW="22" measuredH="26" zOrder="11" locked="false" isInGroup="41">
+          <controlProperties>
+            <align>center</align>
+            <text>5</text>
+          </controlProperties>
+        </control>
+        <control controlID="12" controlTypeID="com.balsamiq.mockups::TextInput" x="192" y="179" w="43" h="-1" measuredW="22" measuredH="26" zOrder="12" locked="false" isInGroup="41">
+          <controlProperties>
+            <align>center</align>
+            <text>8</text>
+          </controlProperties>
+        </control>
+      </groupChildrenDescriptors>
+    </control>
+    <control controlID="43" controlTypeID="__group__" x="93" y="74" w="246" h="270" measuredW="246" measuredH="270" zOrder="1" locked="false" isInGroup="-1">
+      <groupChildrenDescriptors>
+        <control controlID="0" controlTypeID="com.balsamiq.mockups::FieldSet" x="0" y="0" w="246" h="270" measuredW="200" measuredH="170" zOrder="0" locked="false" isInGroup="43">
+          <controlProperties>
+            <text>Emit%20%231</text>
+          </controlProperties>
+        </control>
+        <control controlID="1" controlTypeID="com.balsamiq.mockups::Button" x="154" y="15" w="84" h="28" measuredW="67" measuredH="28" zOrder="1" locked="false" isInGroup="43">
+          <controlProperties>
+            <text>Create</text>
+          </controlProperties>
+        </control>
+        <control controlID="2" controlTypeID="com.balsamiq.mockups::List" x="15" y="49" w="216" h="70" measuredW="100" measuredH="126" zOrder="2" locked="false" isInGroup="43">
+          <controlProperties>
+            <selectedIndex>0</selectedIndex>
+            <text>emit_7_1%0Aemit_7_2%0Aemit_7_3%0Aemit_7_4</text>
+            <verticalScrollbar>true</verticalScrollbar>
+          </controlProperties>
+        </control>
+        <control controlID="3" controlTypeID="com.balsamiq.mockups::TextInput" x="14" y="17" w="135" h="-1" measuredW="58" measuredH="26" zOrder="3" locked="false" isInGroup="43">
+          <controlProperties>
+            <text>emit_7</text>
+          </controlProperties>
+        </control>
+        <control controlID="4" controlTypeID="com.balsamiq.mockups::Label" x="15" y="150" w="131" h="21" measuredW="111" measuredH="21" zOrder="4" locked="false" isInGroup="43">
+          <controlProperties>
+            <text>Random%20Velocity</text>
+          </controlProperties>
+        </control>
+        <control controlID="5" controlTypeID="com.balsamiq.mockups::TextInput" x="161" y="148" w="70" h="-1" measuredW="28" measuredH="26" zOrder="5" locked="false" isInGroup="43">
+          <controlProperties>
+            <align>center</align>
+            <text>10</text>
+          </controlProperties>
+        </control>
+        <control controlID="6" controlTypeID="com.balsamiq.mockups::Label" x="15" y="124" w="216" h="21" measuredW="57" measuredH="21" zOrder="6" locked="false" isInGroup="43">
+          <controlProperties>
+            <align>center</align>
+            <text>Settings</text>
+          </controlProperties>
+        </control>
+        <control controlID="7" controlTypeID="com.balsamiq.mockups::Label" x="15" y="182" w="131" h="21" measuredW="44" measuredH="21" zOrder="7" locked="false" isInGroup="43">
+          <controlProperties>
+            <text>rgbPP</text>
+          </controlProperties>
+        </control>
+        <control controlID="8" controlTypeID="com.balsamiq.mockups::TextInput" x="103" y="179" w="43" h="-1" measuredW="20" measuredH="26" zOrder="8" locked="false" isInGroup="43">
+          <controlProperties>
+            <align>center</align>
+            <text>1</text>
+          </controlProperties>
+        </control>
+        <control controlID="9" controlTypeID="com.balsamiq.mockups::Label" x="15" y="213" w="131" h="21" measuredW="82" measuredH="21" zOrder="9" locked="false" isInGroup="43">
+          <controlProperties>
+            <text>acceleration</text>
+          </controlProperties>
+        </control>
+        <control controlID="10" controlTypeID="com.balsamiq.mockups::TextInput" x="161" y="211" w="70" h="-1" measuredW="28" measuredH="26" zOrder="10" locked="false" isInGroup="43">
+          <controlProperties>
+            <align>center</align>
+            <text>10</text>
+          </controlProperties>
+        </control>
+        <control controlID="11" controlTypeID="com.balsamiq.mockups::TextInput" x="146" y="179" w="43" h="-1" measuredW="22" measuredH="26" zOrder="11" locked="false" isInGroup="43">
+          <controlProperties>
+            <align>center</align>
+            <text>5</text>
+          </controlProperties>
+        </control>
+        <control controlID="12" controlTypeID="com.balsamiq.mockups::TextInput" x="192" y="179" w="43" h="-1" measuredW="22" measuredH="26" zOrder="12" locked="false" isInGroup="43">
+          <controlProperties>
+            <align>center</align>
+            <text>8</text>
+          </controlProperties>
+        </control>
+      </groupChildrenDescriptors>
+    </control>
+    <control controlID="45" controlTypeID="com.balsamiq.mockups::FieldSet" x="346" y="352" w="246" h="29" measuredW="200" measuredH="170" zOrder="3" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Emit%20%237</text>
+      </controlProperties>
+    </control>
+    <control controlID="46" controlTypeID="com.balsamiq.mockups::FieldSet" x="93" y="351" w="246" h="29" measuredW="200" measuredH="170" zOrder="4" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Emit%20%237</text>
+      </controlProperties>
+    </control>
+    <control controlID="47" controlTypeID="com.balsamiq.mockups::FieldSet" x="93" y="381" w="246" h="29" measuredW="200" measuredH="170" zOrder="5" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Emit%20%237</text>
+      </controlProperties>
+    </control>
+    <control controlID="48" controlTypeID="com.balsamiq.mockups::FieldSet" x="346" y="382" w="246" h="29" measuredW="200" measuredH="170" zOrder="6" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Emit%20%237</text>
+      </controlProperties>
+    </control>
+  </controls>
+</mockup>
