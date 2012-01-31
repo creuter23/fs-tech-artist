@@ -57,6 +57,7 @@ emitter
 '''
 #Turn the Particle Emitter Creation Mel into Python
 #Make the objects name into hose so the emitter can properly parent
+#Then just run the script and everything shall be made and put together
 import maya.cmds as cmds
 
 emit = cmds.emitter(n='spray',)
