@@ -1,0 +1,8 @@
+A
+All of your geometry was named.
+F - Few
+One or a few pieces of your geometry were not named.
+F - Many
+Many or all of your geometry was not named.
+Un-named Faces
+You have floating pieces of geometry in your scene which were not named. If you move your rig you will notice the individual faces floating in 3D space. This is from incorrectly extracting your geometry.
