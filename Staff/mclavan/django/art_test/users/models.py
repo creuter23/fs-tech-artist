@@ -1,9 +1,11 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 # Create your models here.
 class Student(models.Model):
+    user = models.ForeignKey(User, unique=True)
     name = models.CharField(max_length=50)
-    username = models.CharField(max_length=25)
+    user_name = models.CharField(max_length=25)
     password = models.CharField(max_length=25)
     email = models.EmailField(max_length=100)
     disc = models.CharField(null=True, max_length=18)
@@ -12,7 +14,7 @@ class Student(models.Model):
     comments = models.CharField(null=True, max_length=255)
 
     def __unicode__(self):
-        return '%s: %s %s' %(self.name, self.username, self.email)
+        return '%s: %s %s' %(self.name, self.user_name, self.email)
  
 # Username: mclavan_hsdb dbPassword = FS!@#$% student table
 class Art_Test(models.Model):
