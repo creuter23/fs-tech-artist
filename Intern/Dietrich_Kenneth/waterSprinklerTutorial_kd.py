@@ -63,3 +63,28 @@ cmds.connectDynamic('mist', f='radialField1')
 cmds.select('mist1')
 cmds.connectDynamic('mist1', f='gravityField1')
 cmds.connectDynamic('mist1', f='radialField1')
+
+#Add color (rgbPP) to the particles.
+cmds.select(part)
+'''
+The Mel Script
+#"is" stands for internalSet
+addAttr -is true -ln "colorRed" -dv 0.0 -at double dropletsShape;
+setAttr -keyable true dropletsShape.colorRed;
+addAttr -is true -ln "colorGreen" -dv 0.0 -at double dropletsShape;
+setAttr -keyable true dropletsShape.colorGreen;
+addAttr -is true -ln "colorBlue" -dv 0.0 -at double dropletsShape;
+setAttr -keyable true dropletsShape.colorBlue;
+'''
+
+cmds.addAttr(part[1], internalSet=True, ln="colorRed", dv=0.0, at="double" )
+cmds.setAttr(part[1].colorRed, keyable=True)
+cmds.addAttr(part[1], internalSet=True, ln="colorGreen", dv=0.0, at="double" )
+cmds.setAttr(part[1].colorGreen, keyable=True)
+cmds.addAttr(part[1], internalSet=True, ln="colorBlue", dv=0.0, at="double" )
+cmds.setAttr(part[1].colorBlue, keyable=True)
+
+part_attrs = {'colorRed':True, 'colorGreen':True, 'colorBlue':True, 'particleRenderType':0,}
+
+for attr, value in part_attrs.items():
+    cmds.setAttr('%s.%s' %(part[1], attr), value)
