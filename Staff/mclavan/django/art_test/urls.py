@@ -6,7 +6,8 @@ import art_test.views as views
 # admin.autodiscover()
 
 urlpatterns = patterns('',
-    (r'^$', views.gateway),                  
+    (r'^$', views.gateway),
+    (r'^bad_gateway/$', views.bad_gateway),
     (r'^user_access/$', views.login),
     (r'^apply/$', views.apply),   
     (r'^signup/$', views.signup),

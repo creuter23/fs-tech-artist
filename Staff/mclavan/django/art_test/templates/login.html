@@ -11,6 +11,9 @@
 <body>
 	<div class="key" id="mainform">
 		<h1>Setup Account</h1>
+			{% if valid_login %}
+			Log-in invalid! Try again.<br />
+			{% endif %}
 			<form action="/user_access/" method="post">
 				<fieldset id=mainfs>
 					<legend id="hsleg"> User Login Information</legend>
