@@ -1,0 +1,18 @@
+A
+The rig functions well, and is put together in an easy to use manner.
+B
+The rig functions fairly well.
+C
+The rig could have been built to be more functional.
+F
+The rig does not function well.
+Too Many IKs
+You have several unnecessary IK handles. The placement and quantity make the rig look messy and will be confusing when an animator tries to use your rig.
+Not Enough IKs
+You have not added all of your IK handles. You should have them on all of the major joints you will be animating with. This is to make it easier in the animation process.
+End Joint IKs
+The end joints do not need IK handles. End joints are only placeholder joints, and should not be animated.
+Better Spacing
+Some of your IK handles could have been placed better, or spaced more evenly to aid in the animation process.
+Double Transforms
+You may notice when you move the rig, pieces of geometry fly off into 3D space. This is most often an issue with transform information on either your joints, geometry, or in some cases, both. Make sure you are checking both joints and geometry before and after the parenting process to avoid double transformations.

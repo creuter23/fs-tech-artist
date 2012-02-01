@@ -1,0 +1,6 @@
+A
+All joints were named.
+F - Few
+One or a few of your joints were not named.
+F - Many
+Many or all of your joints were not named.
