@@ -22,8 +22,9 @@ for attr, value in part_attrs.items():
    
 #The code for Current Render Type button inside the particleShape
 #ln=longName, at=attributeType, dv=defaultValue, min=minValue, max=maxValue
-#When activating the Current Render Type button, make sure the code is part[1], and not [0]:
-#[0] is the emitter.
+#When activating the Current Render Type button, make sure the code is part[1],
+#this is the particleShape node that will need to be selected when editing attrs and not [0]
+#[0] is the particle.
 cmds.addAttr(part[1], internalSet=True, ln="colorAccum", at="bool", dv=False )
 cmds.addAttr(part[1], internalSet=True, ln="useLighting", at="bool", dv=False )
 cmds.addAttr(part[1], internalSet=True, ln="pointSize", at="long", min=1, max=60, dv=2 )
@@ -35,3 +36,30 @@ part_attrs = {'colorAccum':False, 'useLighting':True, 'particleRenderType':0,}
 
 for attr, value in part_attrs.items():
     cmds.setAttr('%s.%s' %(part[1], attr), value)
+
+#Adding fields
+#This code selects the particles so the gravity field can be added
+cmds.select(part)
+drop_grav = cmds.gravity(part, m=15, dy=-1)
+cmds.connectDynamic(part, f='gravityField1')
+
+#Reselect Particles to add in the radial field
+cmds.select(part)
+radial_drop = cmds.radial(part, m=0.010)
+cmds.connectDynamic(part, f=radial_drop[0])
+
+#Create Partilce Mist from the Particle Tool
+mist_part_1 = cmds.particle(n='mist', c=0)
+mist_part_2 = cmds.particle(n='mist1', c=0)
+cmds.select('mist')
+cmds.connectDynamic(mist_part_1[0], em=emit[0])
+cmds.select('mist1')
+cmds.connectDynamic('mist1', em=emit[0])
+
+#Add gravityField1 and radialField1 to mist and mist1 through dynamicRelationship editor
+cmds.select('mist')
+cmds.connectDynamic('mist', f='gravityField1')
+cmds.connectDynamic('mist', f='radialField1')
+cmds.select('mist1')
+cmds.connectDynamic('mist1', f='gravityField1')
+cmds.connectDynamic('mist1', f='radialField1')
