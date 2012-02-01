@@ -60,24 +60,46 @@ emitter
 #Just activate script and emitter will be created with fields
 import maya.cmds as cmds
 
-emit = cmds.emitter(n='spray',)
-part = cmds.particle(n='droplets')
-cmds.select('droplets')
+# Creating emitter and particle object
+emit = cmds.emitter(n='spray',) # Returns lists
+part = cmds.particle(n='droplets') # Return List [particle, particleShape]
+# Connecting particle to emitter
 cmds.connectDynamic(part[0], em=emit[0])
-cmds.select('hose')
-selected = cmds.ls(sl=True)[0]
-cmds.parent( 'spray', selected )
+# Selecting object in scene
+hose_objects = cmds.ls(sl=True)
+# Parenting emitter to hose. First selected object.
+cmds.parent( emit[0], hose_objects[0] )
 
 
 #To turn Depth Sort on the particles
 cmds.setAttr(part[1] + '.depthSort', True)
 attrName = 'depthSort'
+
+'''
+# Parellel Lists (Array)
+#                0                  1
+attrNames = ['depthSort', 'particleRenderType']
+attrValues = [True, 0]
+
+for i in xrange(len(attrNames)):
+    cmds.setAttr('%s.%s' %(part[1], attrNames[0]), attrValues[0])
+'''
+
+
+# Dictionary (keywords, values)
+#                0                  1
+attrs = {'depthSort':True, 'particleRenderType':0}
+# attrNames = ['depthSort', 'particleRenderType']
+for attr, value in attts.items():
+    cmds.setAttr('%s.%s' %(part[1], attr), value)
+
+'''
 cmds.setAttr('%s.depthSort' %(part[1]), True)
 #For some reason the script editor will not work with these below
 #along with all of the script at once, but they will individualy.
 #Turn particle shape into Multipoints... selected list is 0
-cmds.setAttr('dropletsShape.particleRenderType', 0)
-
+cmds.setAttr('%s.particleRenderType' %(part[1], 0)
+'''
 '''
 addAttr -is true -ln "colorAccum" -at bool -dv false dropletsShape;
 addAttr -is true -ln "useLighting" -at bool -dv false dropletsShape;
@@ -88,10 +110,10 @@ addAttr -is true -ln "normalDir" -at long -min 1 -max 3 -dv 2 dropletsShape;
 
 cmds.addAttr(internalSet= True, ln='colorAccum', at='bool', dv=False, dropletsShape)
 cmds.addAttr(internalSet= True, ln='useLighting', at='bool', dv=False, dropletsShape)
-cmds.addAttr(internalSet= True, ln='pointSize', at='bool', dv=False, dropletsShape)
-cmds.addAttr(internalSet= True, ln='multiCount', at='bool', dv=False, dropletsShape)
-cmds.addAttr(internalSet= True, ln='multiRadius', at='bool', dv=False, dropletsShape)
-cmds.addAttr(internalSet= True, ln='normalDir', at='bool', dv=False, dropletsShape)
+cmds.addAttr(internalSet= True, ln='pointSize', at='long', dv=2, dropletsShape)
+cmds.addAttr(internalSet= True, ln='multiCount', at='long', dv=10, dropletsShape)
+cmds.addAttr(internalSet= True, ln='multiRadius', at='float', dv=0.3, dropletsShape)
+cmds.addAttr(internalSet= True, ln='normalDir', at='long', dv=2, dropletsShape)
 
 
 #Turn Color Accum off
@@ -111,19 +133,21 @@ gravity -pos 0 0 0 -m 9.8 -att 0 -dx 0 -dy -1 -dz 0  -mxd -1  -vsh none -vex 0 -
 // gravityField1 //
 #Select particles before adding in fields
 '''
+# Placement (xform command)
+# emit and part
 cmds.select('droplets')
-cmds.gravity('droplets', m=15, dy=-1)
+drop_grav = cmds.gravity('droplets', m=15, dy=-1)
 cmds.connectDynamic('droplets', f='gravityField1')
 #Reselect Particles
 cmds.select('droplets')
-cmds.radial('droplets', m=0.010)
-cmds.connectDynamic('droplets', f='radialField1')
+radial_drop = cmds.radial('droplets', m=0.010)
+cmds.connectDynamic(part[0], f=radial_drop[0])
 
 #Create Partilce Mist from the Particle Tool
-cmds.particle(n='mist', c=0)
-cmds.particle(n='mist1', c=0)
+mist_part_1 = cmds.particle(n='mist', c=0)
+mist_part_2 = cmds.particle(n='mist1', c=0)
 cmds.select('mist')
-cmds.connectDynamic('mist', em=emit[0])
+cmds.connectDynamic(mist_part_1[0], em=emit[0])
 cmds.select('mist1')
 cmds.connectDynamic('mist1', em=emit[0])
 
