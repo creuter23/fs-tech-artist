@@ -26,9 +26,12 @@ urlpatterns = patterns('',
         name='view_disc_category'),
                        
     # Uncomment the admin/doc line below to enable admin documentation:
-    # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
+    url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
     url(r'^admin/', include(admin.site.urls)),
-    #Flat page urls...
+    
+    #The search function...
+    (r'^search/$', 'search.views.search'),
+    #Flat page urls...catchall...
     (r'', include('django.contrib.flatpages.urls')),
 
 )

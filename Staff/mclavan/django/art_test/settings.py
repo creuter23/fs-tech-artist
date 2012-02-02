@@ -122,10 +122,11 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'art_test.users',
     # Uncomment the next line to enable the admin:
-     'django.contrib.admin',
-     'django.contrib.flatpages',
+    'django.contrib.admin',
+    'django.contrib.flatpages',
+    'art_test.search',
     # Uncomment the next line to enable admin documentation:
-    # 'django.contrib.admindocs',
+    'django.contrib.admindocs',
 )
 
 # A sample logging configuration. The only tangible logging
