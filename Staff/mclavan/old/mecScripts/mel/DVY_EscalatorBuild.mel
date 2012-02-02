@@ -1,0 +1,92 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davveys Escalator Generator
+''    Author:  
+''    Last Updated: Jul 21, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4632.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+///////////////////////////////////////////////////////////////////////////////
+/*			
+				
+	Copyright © 2006 DVY_EscalatorBuild. All rights reserved davvey@ntlworld.com
+
+						- DVY_EscalatorBuild -
+///////////////////////////////////////////////////////////////////////////////
+
+	This script is called by the DVY_Escalators GUI to build a fully rigged
+	set of moving Escalators. See ReadMe file for detaile info.
+	
+*/
+///////////////////////////////////////////////////////////////////////////////
+//					DVY_EscalatorBuild Procedure
+///////////////////////////////////////////////////////////////////////////////
+
+global proc DVY_EscalatorBuild()
+{
+//	source DVY_EscalatorMaker;
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Error Checking section
+	
+	if (`radioButtonGrp -q -sl EscalatorTypeRadioButton` == 1)
+		{ error "Please select Escalator RadioButton enter details and try again.. © Davvey..\n";}
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Build Escalator
+		
+	if (`radioButtonGrp -q -sl EscalatorTypeRadioButton` == 2)
+		{	
+		// Distance between Floors
+			if (`floatFieldGrp -q -v1 EscFloatFieldGrp_001` < 1000)
+				{ error "OOps please enter value at least 1000 in Floor Height.. © Davvey..\n";}
+				
+		// Length of Escalator
+			if (`floatFieldGrp -q -v1 EscFloatFieldGrp_002` < 2000)
+				{ error "OOps please enter value at least 2000 in Escalator Length.. © Davvey..\n";}
+				
+		// Escaltor Step Width
+			if (`floatFieldGrp -q -v1 EscFloatFieldGrp_003` < 300)
+				{ error "OOps please enter value at least 300 in Step Width.. © Davvey..\n";}
+				
+		// Escaltor Step Slope Angle
+			if ((`floatFieldGrp -q -v1 EscFloatFieldGrp_004` < 20) || 
+				(`floatFieldGrp -q -v1 EscFloatFieldGrp_004` > 50) )
+				{ error "OOps please enter values to bring angle between 20 and 50 degrees.. © Davvey..\n";}
+				
+				DVY_EscalatorMaker;
+			
+			print "Completed Escalator Stairs Davvey © 2006..\n";
+		}
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Build Walkway
+		
+	if (`radioButtonGrp -q -sl EscalatorTypeRadioButton` == 3)
+		{		
+		// Length of Escalator
+			if (`floatFieldGrp -q -v1 EscFloatFieldGrp_101` < 2000)
+				{ error "OOps please enter value at least 2000 in Escalator Length.. © Davvey..\n";}
+				
+		// Escaltor Step Width
+			if (`floatFieldGrp -q -v1 EscFloatFieldGrp_102` < 300)
+				{ error "OOps please enter value at least 300 in Step Width.. © Davvey..\n";}
+				
+				DVY_WalkWay;
+			
+			print "Completed WalkWay Davvey © 2006..\n";
+		}
+	
+	
+}

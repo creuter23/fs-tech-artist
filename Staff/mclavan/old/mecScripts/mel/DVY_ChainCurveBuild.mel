@@ -1,0 +1,400 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davvey\'s Chain & Sprocket Generator
+''    Author:  
+''    Last Updated: Jan 15, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4463.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+///////////////////////////////////////////////////////////////////////////////
+/*			
+				
+	Copyright © 2006 DVY_ChainCurveBuild. All rights reserved davvey@ntlworld.com
+
+						- DVY_ChainCurveBuild -
+///////////////////////////////////////////////////////////////////////////////
+						
+//	DVY_ChainCurveBuild;
+//	Description and Usage Section
+
+//	Installation	
+		
+	Script is part of Davvey's Chain Generator script pack.
+	
+	It is called to build a Chain Curve Path around Sprockets 1 and 2.
+
+*/
+	
+//////////////////////////////////////////////////////////////////////////
+//					DVY_ChainCurveBuild Procedure
+//////////////////////////////////////////////////////////////////////////
+
+global proc string[] DVY_ChainCurveBuild()
+{
+	// Build Chain based on Sprocket Group selected.
+		
+	global string $Units;
+
+	global float $DVYUnit;
+		
+		
+	string $Sprockets[], $SprocketsGrp[], $Sel[], $Selected[], $buffer[];
+	string $Group[], $Temps[], $Temp[];
+	clear $SprocketsGrp;
+	
+	float $SPVec1[], $SPVec2[], $SPVec3[];
+	float $Pos[], $SpPos[];
+		
+	float $CalcAngle[];
+	float $An[], $PCDS[];
+		
+	int $NT[]; 
+	
+		$Sel = `ls -sl`;
+		$numTokens = `tokenize $Sel[0] "_" $buffer`;
+		print $buffer;
+		
+		select -r ("Grp_" + $buffer[3] + "_" + $buffer[0] + "Sprocket_GrpN_*");
+		$SprocketsGrp = `ls -tr -sl`;
+		
+		print $SprocketsGrp;
+		string $Selected[];
+		$Selected[0] = ($buffer[0] + "_Main_" + $buffer[2] + "_" + $buffer[3]);
+		print $Selected;
+		
+		for ($i=0; $i<2; $i++)
+			{
+				$NT[$i] = `getAttr ($SprocketsGrp[$i] + ".Teeth")`;
+				$PCDS[$i] = `getAttr ($SprocketsGrp[$i] + ".PCD")` * $DVYUnit;
+			}
+			
+		float $Center = `getAttr ($Selected[0] + ".CenterDistance")`;	
+		
+	if ($NT[0] != $NT[1])
+		{
+			if ($NT[0] > $NT[1])
+				{
+					print "Sprocket 1 is bigger than Sprocket 2 \n";
+					$CalcAngle[0] = ($PCDS[0] - $PCDS[1]) * 0.5/($Center * $DVYUnit);
+					$CalcAngle[0] = `asin ($CalcAngle[0])`;
+					$CalcAngle[0] = rad_to_deg ($CalcAngle[0]);
+				}
+				
+			if ($NT[0] < $NT[1])
+				{
+					print "Sprocket 1 is smaller than Sprocket 2 \n";
+					$CalcAngle[0] = ($PCDS[1] - $PCDS[0]) * 0.5/($Center * $DVYUnit);
+					$CalcAngle[0] = `asin ($CalcAngle[0])`;
+					$CalcAngle[0] = rad_to_deg ($CalcAngle[0]);
+				}
+			
+		}	
+		else {$CalcAngle[0] = 0;}	
+			
+			
+		print ("$CalcAngle is " + $CalcAngle[0] + "\n");	
+			
+			
+			
+		print $NT; print "\n";
+		print $PCDS; print "\n";
+		print $Center; print "\n";
+		
+		int $w = $x =$y = $z = 0;
+		
+			if ($NT[0] > $NT[1])
+				{
+					$w = 7; $x = 11; $y = 7; $z = 2;
+		
+				}
+				
+			if ($NT[0] < $NT[1])
+				{
+					$w = 4;	$x =13; $y = 10; $z = 0;
+		
+				}
+				
+			if ($NT[0] == $NT[1])
+				{
+					$w = 7; $x =13; $y =7; $z = 0;
+		
+				}
+		
+		
+		$k = 0;
+		
+		for ($i=0; $i<2; $i++)
+			{
+				$Pos = `xform -q -ws -t $SprocketsGrp[$i]`;
+				
+				for ($j=0; $j<3; $j++)
+					{
+						$SpPos[$j+$k] = $Pos[$j];
+					}
+				$k = $k + 3;
+			}
+		
+	$k = 0;
+	
+		$Group[1] = `group -em -name "Group_1"`;
+		
+			for ($i=0; $i<$w; $i++)
+				{
+					$Temp = `polySphere -r 1 -sx 10 -sy 10 -ax 0 1 0 -ch 0 `;		
+					move -r 0 0 0 $Temp[0];
+					
+					if ($i == 0) {move -r 0 ($PCDS[0] * -0.50) 0  $Temp[0];}
+					if ($i > 0) { move -r 0 ($PCDS[0] * -0.50) 0  $Temp[0];}
+					
+					
+					xform -ws -piv 0 0 0 $Temp[0];
+					parent $Temp[0] $Group[1];
+					rotate (-15 * $i ) 0 0 $Temp[0];
+					$Temps[$k] = `rename $Temp[0] ($SprocketsGrp[0] + "_Sphere_" + ($k+1))`;
+					CenterPivot $Temps[$k++];
+				}
+				
+			if ($NT[0] != $NT[1])
+				{
+					$Temp = `polySphere -r 1 -sx 10 -sy 10 -ax 0 1 0 -ch 0 `;		
+					move -r 0 0 0 $Temp[0];
+					
+					move -r 0 ($PCDS[0] * -0.50) 0  $Temp[0];
+					
+					xform -ws -piv 0 0 0 $Temp[0];
+					parent $Temp[0] $Group[1];
+					if ($NT[0] < $NT[1])
+						{	rotate (-90 + $CalcAngle[0] ) 0 0 $Temp[0];}
+						
+					if ($NT[0] > $NT[1])
+						{	rotate (-90 - $CalcAngle[0] ) 0 0 $Temp[0];}
+						
+					$Temps[$k] = `rename $Temp[0] ($SprocketsGrp[0] + "_Sphere_" + ($k+1))`;
+					CenterPivot $Temps[$k++];
+					
+				}
+				
+				$Pos = `xform -q -ws -t $SprocketsGrp[0]`;
+					move -r $SpPos[0] $SpPos[1] $SpPos[2] $Group[1];
+					parent $Group[1] $SprocketsGrp[0];
+					
+		$Group[2] = `group -em -name "Group_2"`;
+		
+			if ($NT[0] != $NT[1])
+				{
+					$Temp = `polySphere -r 1 -sx 10 -sy 10 -ax 0 1 0 -ch 0 `;		
+					move -r 0 0 0 $Temp[0];
+					
+					move -r 0 ($PCDS[1] * -0.505/$DVYUnit) 0  $Temp[0];
+					
+					xform -ws -piv 0 0 0 $Temp[0];
+					parent $Temp[0] $Group[2];
+					if ($NT[0] < $NT[1])
+						{	rotate (-90 + $CalcAngle[0] ) 0 0 $Temp[0];}
+						
+					if ($NT[0] > $NT[1])
+						{	rotate (-90 - $CalcAngle[0] ) 0 0 $Temp[0];}
+						
+					$Temps[$k] = `rename $Temp[0] ($SprocketsGrp[0] + "_Sphere_" + ($k+1))`;
+					CenterPivot $Temps[$k++];
+					
+				}
+				
+				
+			for ($i=$z; $i<$x; $i++)
+				{
+					$Temp = `polySphere -r 1 -sx 10 -sy 10 -ax 0 1 0 -ch 0 `;		
+					move -r 0 0 0 $Temp[0];
+					move -r 0 ($PCDS[1] * -0.505/$DVYUnit) 0  $Temp[0];
+					xform -ws -piv 0 0 0 $Temp[0];
+					parent $Temp[0] $Group[2];
+					rotate (-15 * $i -90 ) 0 0 $Temp[0];
+					$Temps[$k] = `rename $Temp[0] ($SprocketsGrp[0] + "_Sphere_" + ($k+1))`;
+					CenterPivot $Temps[$k++];
+				}
+				
+				
+			if ($NT[0] != $NT[1])
+				{
+					$Temp = `polySphere -r 1 -sx 10 -sy 10 -ax 0 1 0 -ch 0 `;		
+					move -r 0 0 0 $Temp[0];
+					
+					move -r 0 ($PCDS[1] * -0.505/$DVYUnit) 0  $Temp[0];
+					
+					xform -ws -piv 0 0 0 $Temp[0];
+					parent $Temp[0] $Group[2];
+					if ($NT[0] < $NT[1])
+						{	rotate (90 - $CalcAngle[0] ) 0 0 $Temp[0];}
+						
+					if ($NT[0] > $NT[1])
+						{	rotate (90 + $CalcAngle[0] ) 0 0 $Temp[0];}
+						
+					$Temps[$k] = `rename $Temp[0] ($SprocketsGrp[0] + "_Sphere_" + ($k+1))`;
+					CenterPivot $Temps[$k++];
+					
+				}
+				
+				
+				$Pos = `xform -q -ws -t $SprocketsGrp[1]`;
+					move -r $SpPos[3] $SpPos[4] $SpPos[5] $Group[2];
+					parent $Group[2] $SprocketsGrp[1];
+					scale 1 1 1 $Group[2];
+					
+					
+			if ($NT[0] != $NT[1])
+				{
+					$Temp = `polySphere -r 1 -sx 10 -sy 10 -ax 0 1 0 -ch 0 `;		
+					move -r 0 0 0 $Temp[0];
+					
+					move -r 0 ($PCDS[0] * -0.50) 0  $Temp[0];
+					
+					xform -ws -piv 0 0 0 $Temp[0];
+					parent $Temp[0] $Group[1];
+					if ($NT[0] < $NT[1])
+						{	rotate (90 - $CalcAngle[0] ) 0 0 $Temp[0];}
+						
+					if ($NT[0] > $NT[1])
+						{	rotate (90 + $CalcAngle[0] ) 0 0 $Temp[0];}
+						
+					$Temps[$k] = `rename $Temp[0] ($SprocketsGrp[0] + "_Sphere_" + ($k+1))`;
+					CenterPivot $Temps[$k++];
+					
+				}
+					
+				
+		for ($i=$y; $i<13; $i++)
+			{
+				$Temp = `polySphere -r 1 -sx 10 -sy 10 -ax 0 1 0 -ch 0 `;		
+				move -r 0 0 0 $Temp[0];
+				move -r 0 ($PCDS[0] * -0.50) 0  $Temp[0];
+				xform -ws -piv 0 0 0 $Temp[0];
+				parent $Temp[0] $Group[1];
+				rotate (-15 * $i -165) 0 0 $Temp[0];
+				$Temps[$k] = `rename $Temp[0] ($SprocketsGrp[0] + "_Sphere_" + ($k+1))`;
+				CenterPivot $Temps[$k++];
+			}
+			
+			
+		print $Temps;
+				
+		$k =0;
+		string $DVYCurve; string $DVY_Curve[];
+		$DVYCurve = "curve -d 1 -p ";
+		int $Q = `size $Temps`;
+		print ("$Q is " + $Q + "\n");
+		for ($i=0; $i<$Q; $i++)
+			{
+				$Pos = `xform -q -ws -rp $Temps[$i]`;
+				
+				if ($i<$Q-1)
+				{ $DVYCurve = ($DVYCurve + $Pos[0] + " " + $Pos[1] + " " + $Pos[2] + " -p " );}
+				if ($i==$Q-1)
+				{ $DVYCurve = ($DVYCurve + $Pos[0] + " " + $Pos[1] + " " + $Pos[2] + " -name \"DVYCurve_1\" ;");}
+				
+			}
+		
+//			print $DVYCurve;
+		$Temp[0] = `eval ($DVYCurve)`;
+		print $Temp;
+		$DVY_Curve[0] = `rename $Temp[0] ($Sel[0] + "_ChainCurve_1")`;
+			
+		int $a = $b = $c = $d = 0;
+		
+		if ($NT[0] == $NT[1])	{ $a = 6; $b = 7; $c = 22; $d = 23; $x = 8; $y = 24;}
+		if ($NT[0] > $NT[1])	{ $a = 7; $b = 8; $c = 21; $d = 22; $x = 9; $y = 23;}
+		if ($NT[0] < $NT[1])	{ $a = 4; $b = 5; $c = 22; $d = 23; $x = 6; $y = 24;}
+		
+
+			select -cl;
+			
+			// Add extra CV's to center of each "leg" of Chain Curve.
+		
+				insertKnotCurve -ch 0 -cos on -nk 3 -add 0 -ib 1 -rpo 1 
+					($DVY_Curve[0] + ".ep[" + $a + "]") ($DVY_Curve[0] + ".ep[" + $b + "]");
+		
+				insertKnotCurve -ch 0 -cos on -nk 3 -add 0 -ib 1 -rpo 1
+					($DVY_Curve[0] + ".ep[" + $c + "]") ($DVY_Curve[0] + ".ep[" + $d + "]");	
+				
+		// Add Clusters to Center CV's on each "leg" of Chain Curve.
+				
+				select -r ($DVY_Curve[0] + ".cv[" + $x + "]");
+				$Temp = `newCluster " -relative -envelope 1"` ;
+				$DVY_Curve[2] = `rename $Temp[1] ($Sel[0] + "_Cluster_1")`;
+				
+				select -r ($DVY_Curve[0] + ".cv[" + $y + "]");
+				$Temp = `newCluster " -relative -envelope 1"`;
+				$DVY_Curve[3] = `rename $Temp[1] ($Sel[0] + "_Cluster_2")`;	
+				
+				select -cl;
+				
+		//  Add final CV at start location to end of Curve/
+				$Pos = `xform -q -ws -t $Temps[0]`;				
+					curve -os -a -p $Pos[0] $Pos[1] $Pos[2] $DVY_Curve[0] ;
+					
+		// Rebuild and Cloase Curve with 3 Degress instead of a Linear Curve.
+				$Temp = `rebuildCurve -ch 0 -rpo 1 -rt 0 -end 0 -kr 1 -kcp 1 -kep 1 -kt 1 -s 0 -d 3 -tol 0 $DVY_Curve[0]`;
+					$DVY_Curve[0] = `rename $Temp[0] ($Sel[0] + "_ChainCurve_1")`;
+				
+					closeCurve -ch 0 -ps 2 -rpo 1 -bb 0.5 -bki 1 -p 0.1 $DVY_Curve[0] ;
+						select -r $DVY_Curve[0];
+						CenterPivot;
+						
+		// Add and Immplicit Cube as a "Target" for Motion Path items.
+			
+		$Pos = `xform -q -ws -rp $DVY_Curve[0]`;
+		
+		createNode implicitBox -name ($Sel[0] + "_Curve_TargetShape_1");
+			pickWalk -d up;
+				$Temp = `ls -sl`;
+				$DVY_Curve[1] = `rename $Temp[0] ($Sel[0] + "_Curve_Target_1")`;
+				move -r $Pos[0] $Pos [1] $Pos[2];
+				makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+				setAttr ($DVY_Curve[1] + ".visibility") 0;
+				
+		
+//		$Node[0] = `shadingNode -asUtility noise -name ($Sel[0] + "NoiseN_" + (1))`;
+	
+		$Group[3] = `group -em -name ($Sel[0] + "_ClusterTZ_GrpN_1")`;
+			delete `pointConstraint -offset 0 0 0 -weight 1 $DVY_Curve[2] $Group[3]`;
+			makeIdentity -apply true -t 1 -r 0 -s 0 -n 0;
+			pointConstraint -offset 0 0 0 -weight 1 $Group[3] $DVY_Curve[2];
+			
+		$Group[4] = `group -em -name ($Sel[0] + "_ClusterTZ_GrpN_2")`;
+			delete `pointConstraint -offset 0 0 0 -weight 1 $DVY_Curve[3] $Group[4]`;
+			makeIdentity -apply true -t 1 -r 0 -s 0 -n 0;
+			pointConstraint -offset 0 0 0 -weight 1 $Group[4] $DVY_Curve[3] ;
+
+		parent $Group[3] $Group[4] $Selected[0];
+			
+/*
+			if (`radioButtonGrp -q -sl IdlerSprocketRadioButton` == 1)
+				{	
+					connectAttr -f ($Node[0] + ".outColorR") ($Group[3] + ".tz");
+					connectAttr -f ($Node[0] + ".outColorB") ($Group[4] + ".tz");
+				}
+				
+			if (`radioButtonGrp -q -sl IdlerSprocketRadioButton` == 2)
+				{	
+					connectAttr -f ($Node[0] + ".outColorB") ($Group[4] + ".tz");
+				}
+
+			if (`radioButtonGrp -q -sl IdlerSprocketRadioButton` == 3)
+				{	
+					connectAttr -f ($Node[0] + ".outColorR") ($Group[3] + ".tz");
+				}
+*/		
+		delete $Group[1] $Group[2];
+
+//		select -r $DVY_Curve;
+//		delete -ch;
+		
+		return $DVY_Curve;
+
+}

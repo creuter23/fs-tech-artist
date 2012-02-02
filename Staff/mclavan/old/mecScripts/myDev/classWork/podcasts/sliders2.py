@@ -1,0 +1,132 @@
+'''
+Blend Shapes
+sliders.py
+
+Description:
+	This script covers how to take advantage of function when building gui slider controls.
+	
+How to Run:
+
+'''
+
+import maya.cmds as cmds
+
+print("Slider Functions")
+
+
+'''
+Part 1 
+Slider Function
+'''
+
+'''
+# GUI controls
+cmds.floatSliderGrp( label="lt_smile", field=True, min=0, max=1, 
+	cw=[[1,60], [2,60], [3,100]])
+cmds.button(label="Key")
+cmds.button(label="Reset")
+'''
+
+
+'''
+# Connecting Control
+
+# 3 columns (sliderGrp & 2 buttons)
+cmds.rowColumnLayout(nc=3, cw=[[1,220],[2,50],[3,50]])
+slider = cmds.floatSliderGrp( label="lt_smile", field=True, min=0, max=1, 
+	cw=[[1,60], [2,60], [3,100]])
+cmds.button(label="Key")
+cmds.button(label="Reset")
+cmds.connectControl( slider, "blendShape1.lt_smile" )
+'''
+
+
+'''
+# functions w/ arguments
+# arguments needed
+# labelName, object.attr, guiParent
+# optional needs
+# min, max, reset value, label width
+
+
+def sliderBld(attrLabel, attr, curParent, minVal=0, maxVal=1, reset=0):
+	row = cmds.rowColumnLayout(nc=3, cw=[[1,220],[2,50],[3,50]],
+		parent=curParent)
+	slider = cmds.floatSliderGrp( label=attrLabel, field=True, min=0, max=1, 
+		cw=[[1,60], [2,60], [3,100]], min=minVal, max=maxVal)
+	cmds.button(label="Key")
+	cmds.button(label="Reset")
+	cmds.connectControl( slider, attr )
+	
+	cmds.setParent(curParent)
+	return row
+'''
+
+
+'''
+# Setting up buttons
+# Part 1
+
+scriptName = __name__
+
+def sliderBld(attrLabel, attr, curParent, minVal=0, maxVal=1, reset=0):
+	row = cmds.rowColumnLayout(nc=3, cw=[[1,220],[2,50],[3,50]],
+		parent=curParent)
+	slider = cmds.floatSliderGrp( label=attrLabel, field=True, min=0, max=1, 
+		cw=[[1,60], [2,60], [3,100]], min=minVal, max=maxVal)
+	cmds.button(label="Key", 
+		command=scriptName + ".key()")
+	cmds.button(label="Reset",
+		command=scriptName + ".reset()")
+	cmds.connectControl( slider, attr )
+	
+	cmds.setParent(curParent)
+	return row
+
+def key():
+	print("attribute keyframed")
+	
+def reset():
+	print("attribute reset")
+'''
+
+
+'''
+Part 2
+Adding Strings
+'''
+scriptName = __name__
+
+def sliderBld(attrLabel, attr, curParent, minVal=0, maxVal=1, reset=0):
+	row = cmds.rowColumnLayout(nc=3, cw=[[1,280],[2,50],[3,50]],
+		parent=curParent)
+	slider = cmds.floatSliderGrp( label=attrLabel, field=True, min=minVal, max=maxVal,
+		cw=[[1,60], [2,60], [3,100]])
+	
+	# attribute needs to be sent to the function.
+	cmds.button(label="Key", 
+		command=scriptName + ".key( '" + attr + "')")
+	'''
+	# Python's string concatination (adding strings)
+	cmds.button(label="Key", 
+		command=scriptName + ".key('%s')" %attr)  
+		# The %s means its a stand in for a string.  
+		# %attr is the value being placed inside the string.
+		# %(attr, ??? ) for multiple strings.
+	'''
+	# attribute and reset value need to sent to the function.
+	cmds.button(label="Reset",
+		command=scriptName + ".reset( '" + attr + "', " + str(reset) + ")")
+	'''
+	cmds.button(label="Reset",
+		command=scriptName + ".reset('%s', %s)" %(attr, reset))
+	# Multiple strings can be inputted
+	# %( attr, reset ) places values by order.
+	'''
+	cmds.connectControl( slider, attr )
+	
+	cmds.setParent(curParent)
+	return row
+	
+	
+

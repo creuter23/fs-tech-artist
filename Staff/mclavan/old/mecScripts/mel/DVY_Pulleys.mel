@@ -1,0 +1,949 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davvey\'s Belt  & Pulley Generator
+''    Author:  
+''    Last Updated: Feb 02, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4509.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+///////////////////////////////////////////////////////////////////////////////
+/*			
+				
+	Copyright © 2006 DVY_Pulleys. All rights reserved davvey@ntlworld.com
+
+						- DVY_Pulleys -
+///////////////////////////////////////////////////////////////////////////////
+						
+//	DVY_Pulleys;
+//	Description and Usage Section
+
+//	Installation	
+
+	Just install scripts in any Maya script path and install
+	Icon in May\\Prefs\Icons directory (to use with any Shelf button)
+
+
+//	Description Section
+
+	These scripts build Metric Pulleys and Belts Chains but the UI will show
+	 the english equivalent sizes during setup.
+
+// Usage Section
+	 
+	 When building the Flat-Belt and Vee-Belt Type Pulleys and Belts enter belt 
+	 sizes then Pulley Outside Diameter. The recommended shaft and Flange sizes
+	 will be calculated but can be adjusted if required.
+	 Note Flanges will only be built if this option is chosen.
+	 
+	 Select style of each Pulley and Flange option if required.
+	 
+	 Build Pulleys. Then set Pulley 2 to 5 positions as required.
+	 Build Belt Path and adjust as required.
+	 Then Build and Rig Belts as required.
+	 Note The building of the Belt or Belts can take some time as there are a lot
+	 of calculations and items to build.
+
+*/
+	
+//////////////////////////////////////////////////////////////////////////
+//					DVY_Pulleys Procedure
+//////////////////////////////////////////////////////////////////////////
+
+	
+//============================================================================
+//	GLOBAL VARIABLES
+//============================================================================
+	global int $DVYDebug;
+
+// Integer Flag that allows print statements to be output to
+// message field for tracking purposes.
+		
+//============================================================================
+
+global proc DVY_Pulleys()
+{
+	global string $Type[];
+	
+	global string $Title[], $TitleN[], $IField[], $FField[], $Option[];
+
+	global string $PuSeries[], $PuType[], $BRType[];
+				 
+	$PuSeries = {"Hub", "Flat", "Spoked"};
+	$PuType = {"None", "Front", "Rear", "Both"};
+	
+	int $a = $b = $c = 0;
+	
+	//	Check for any "Window History" and delete if it exists.
+	 	if (`windowPref -exists DVY_PulleysWindow`)
+			{ windowPref -edit -topLeftCorner 120 625 -widthHeight 575 680 DVY_PulleysWindow;}
+	
+	//Check for multiple similar windows.
+		if (`window -q -ex DVY_PulleysWindow`) deleteUI DVY_PulleysWindow;
+	//Build window.
+		window -w 575 -h 680 -mnb 1 -mxb 0 -sizeable 1 -title "Davvey's Belt and Pulley Generator ver 1.0" DVY_PulleysWindow;
+	
+	//Build 'Edit' menu.
+	
+	string $menuBarLayout = `menuBarLayout`;
+		menu -label "File"; 
+ 			menuItem -label "Close" -command "deleteUI DVY_PulleysWindow";		
+		menu -label "About"; 
+	 		menuItem -label "About Belt and Pulley Generator" -command "DVY_AboutPulleysWin;";
+			
+	setParent..;
+
+	// Create Main Layout column
+			
+	string $MainPane = `paneLayout -configuration "horizontal2" -paneSize 1 100 75`;
+	string $MainPanel = `columnLayout -width 570 -adj 1 -cat "both" 2 -cal "center" "Main Panel"`;
+	
+		text -height 3 -label " " ;	//Spacer
+		separator -height 5 -style "double" ;
+		text -bgc .5 .5 1 -height 20 -align "center" -font "boldLabelFont" -label "Davvey's Belt and Pulley Generator.";
+		separator -height 5 -style "double";
+		text -height 3  -label " " ;	//Spacer
+		
+	string $Tabs = `tabLayout -width 568  -imw 1 -imh 1 "Tabs"`;
+	
+	frameLayout -bv true -bs "in" -width 565 -height 420  -mh 2 -mw 2 -collapsable false -collapse false 
+							-labelVisible false -label "Flat Pulleys Options" PulleyFrame;
+	
+	string $TitleC1 = `columnLayout -width 566 -adj 1 -cal "center" "Setup Pulleys"`;
+	
+		separator -height 5 -style "none" ;
+		
+			radioButtonGrp  -height 20 -nrb 4 -sl 1 -label " Pulley and Belt Type :-" 
+							-cl5 "right" "left" "left" "left" "left" 
+							-columnWidth5 155 80 80 80 120 
+							-labelArray4 "Help" "Flat Belt" "Vee Belt" "Toothed Belt" 
+			
+							-onCommand1 "frameLayout -edit -collapse false HelpPulleyFrame;"
+							-offCommand1 "frameLayout -edit -collapse true HelpPulleyFrame;"
+							
+							-onCommand2 "frameLayout -edit -collapse false FlatPulleyFrame;"
+							-offCommand2 "frameLayout -edit -collapse true FlatPulleyFrame;"
+							
+							-onCommand3 "frameLayout -edit -collapse false VeePulleyFrame;"
+							-offCommand3 "frameLayout -edit -collapse true VeePulleyFrame;"
+							
+							-onCommand4 "frameLayout -edit -collapse false ToothPulleyFrame;"
+							-offCommand4 "frameLayout -edit -collapse true ToothPulleyFrame;"
+						PulleyTypeRadioButton;	
+			
+		separator -height 10 -style "double";
+			
+		text -height 2 -label " " ;	//Spacer
+		text -height 15 -font "boldLabelFont" -align "center" -label " Help " ;	//Spacer
+		text -height 2 -label " " ;	//Spacer
+		
+	frameLayout -bv true -bs "in" -width 695 -mh 3 -mw 3 -collapsable true -collapse false 
+							-labelVisible false -label "Help Options" HelpPulleyFrame;
+		
+		columnLayout -width 560 -adj 1 -cal "center";
+		
+		text -height 3 -label " " ;	//Spacer
+		separator -height 5 -style "double" ;
+		text -bgc 1 1 0.85 -height 2 -align "left" -label "";
+		text -bgc 1 1 0.85 -height 20 -align "left" 
+			-label " Fill in Fields as Required then press `Build` Button. Enter data as required for Pulley Dimensions. Select Pulley";
+		text -bgc 1 1 0.85 -height 20 -align "left" -label " and Flange Style for each Pulley. The GUI will calculate english equivalent sizes as each field is filled in. ";
+		text -bgc 1 1 0.85 -height 20 -align "left" -label " Once Pulleys have been built adjust position of Pulley No 2 to 5 to suit desired positions.";
+		text -bgc 1 1 0.85 -height 20 -align "left" -label " Select Pulley Group Top Node Then press the `Build Belt Path` Button. Adjust the 7 Red Spheres around ";
+		text -bgc 1 1 0.85 -height 20 -align "left" -label " each Pulley to set Belt Path correctly. Then select Pulley Group Top Node and press the `Build Belt` Button.";
+		text -bgc 1 1 0.85 -height 20 -align "left" -label " Adjust Curve CV's if required once Belt is built. Then select Pulley Group Top Node and press the ";
+		text -bgc 1 1 0.85 -height 20 -align "left" -label " `Build Belt` Button. Adjust Toothed Belt to Toothed Pulley engagemnt if required.";
+		text -bgc 1 1 0.85 -height 25 -font "boldLabelFont" -align "left" -label " See PDF Help file for detailed help .";
+		text -bgc 1 1 0.85 -height 2 -align "left" -label "";
+		
+		separator -bgc 1 1 0.85 -height 5 -style "double";
+		text -height 5 -label " " ;	//Spacer
+
+	setParent..;
+	setParent..;
+	
+		separator -height 10 -style "double";
+			
+			text -height 2 -label " " ;	//Spacer
+			text -height 15 -font "boldLabelFont" -align "center" -label " Flat Belt and Pulley Options " ;	//Spacer
+			text -height 2 -label " " ;	//Spacer
+		
+	frameLayout -bv true -bs "in" -width 695 -mh 3 -mw 3 -collapsable true -collapse true 
+							-labelVisible false -label "Flat Belt and Pulleys Options" FlatPulleyFrame;
+		
+	columnLayout -width 560 -adj 1 -cal "center";
+			
+	rowColumnLayout -enable 1 -nc 2
+				-cw 1 200 -cal 1 "center" -cat 1 "both" 15
+				-cw 2 200 -cal 2 "center" -cat 2 "both" 15;
+	
+			text -height 15 -align "center" -label "         Belt Width ";
+			text -height 15 -align "center" -label "     Belt Thickness ";
+		
+	setParent..;
+		
+	rowColumnLayout -enable 1 -nc 4
+				-cw 1 100 -cal 1 "center" -cat 1 "both" 15
+				-cw 2 100 -cal 2 "center" -cat 2 "both" 15
+				-cw 3 100 -cal 3 "center" -cat 3 "both" 15
+				-cw 4 100 -cal 4 "center" -cat 4 "both" 15;
+		
+			text -height 15 -align "center" -label "   mm";
+			text -height 15 -align "center" -label "  inches";
+			text -height 15 -align "center" -label "   mm";
+			text -height 15 -align "center" -label "  inches";
+		
+			floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_05`;\ floatField -edit -v ($Val/25.4) BFloatField_06;" BFloatField_05;
+			floatField -editable false -pre 3 BFloatField_06;
+		
+			floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_0` / 25.4; \floatField -edit -v $Val BFloatField_00;" BFloatField_0;
+			floatField -editable false -pre 3 BFloatField_00;
+			
+	setParent..;
+		
+			text -height 5 -label " ";
+		
+	rowColumnLayout -enable 1 -nc 7
+				-cw 1 50 -cal 1 "center" -cat 1 "both" 2
+				-cw 2 90 -cal 2 "center" -cat 2 "both" 2
+				-cw 3 90 -cal 3 "center" -cat 3 "both" 2
+				-cw 4 90 -cal 4 "center" -cat 4 "both" 2
+				-cw 5 90 -cal 5 "center" -cat 5 "both" 2
+				-cw 6 70 -cal 6 "center" -cat 6 "both" 2
+				-cw 7 50 -cal 7 "center" -cat 7 "both" 2
+			"PulleyTitleCol";
+		
+			text -height 15 -label " ";
+			text -height 15 -label " Pulley Diameter ";
+			text -height 15 -label "   Shaft Diameter";
+			text -height 15 -label "     Flange Thick";
+			text -height 15 -label "     Flange O/D";
+			text -height 15 -label " Pulley Style";
+			text -height 15 -label " Flange ";
+		
+		
+	setParent..;
+	
+	rowColumnLayout -enable 1 -nc 11
+				-cw 1 50 -cal 1 "center" -cat 1 "both" 1
+				-cw 2 45 -cal 2 "center" -cat 2 "both" 1
+				-cw 3 45 -cal 3 "center" -cat 3 "both" 1
+				-cw 4 45 -cal 4 "center" -cat 4 "both" 1
+				-cw 5 45 -cal 5 "center" -cat 5 "both" 1
+				-cw 6 45 -cal 6 "center" -cat 6 "both" 1
+				-cw 7 45 -cal 7 "center" -cat 7 "both" 1
+				-cw 8 45 -cal 8 "center" -cat 8 "both" 1
+				-cw 9 45 -cal 9 "center" -cat 9 "both" 1
+				-cw 10 65 -cal 10 "center" -cat 10 "both" 1
+				-cw 11 60 -cal 11 "center" -cat 11 "both" 1
+			"FlatPulleyCol";
+		
+		
+			text -height 20 -align "center" -label "Pulley No.";
+			text -height 20 -align "center" -label "   mm";
+			text -height 20 -align "center" -label "  inches";
+			text -height 20 -align "center" -label "   mm";
+			text -height 20 -align "center" -label "  inches";
+			text -height 20 -align "center" -label "   mm";
+			text -height 20 -align "center" -label "  inches";
+			text -height 20 -align "center" -label "   mm";
+			text -height 20 -align "center" -label "  inches";
+			text -height 20 -align "center" -label " ";
+			text -height 20 -align "center" -label " ";
+		
+			text -height 20 -align "center" -label "Pulley 01";
+	
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_01` / 25.4; \floatField -edit -v $Val BFloatField_02;\floatField -edit -v (`floatField -q -v BFloatField_01` * 0.15) BFloatField_03;\floatField -edit -v (`floatField -q -v BFloatField_01` * 0.15/25.4) BFloatField_04;\floatField -edit -v (`floatField -q -v BFloatField_05` * 0.05) BFloatField_07;\floatField -edit -v (`floatField -q -v BFloatField_05` * 0.05/25.4) BFloatField_08;\floatField -edit -v ((`floatField -q -v BFloatField_0` * 1.5) + `floatField -q -v BFloatField_01`) BFloatField_09;\floatField -edit -v (((`floatField -q -v BFloatField_0` * 1.5) + `floatField -q -v BFloatField_01`)/25.4) BFloatField_10;" BFloatField_01;
+				
+				floatField -editable false -pre 3 BFloatField_02;
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_03` / 25.4; \floatField -edit -v $Val BFloatField_04;" BFloatField_03;
+				floatField -editable false -pre 3 BFloatField_04;
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_07` / 25.4; \floatField -edit -v $Val BFloatField_08;" BFloatField_07;
+				floatField -editable false -pre 3 BFloatField_08;
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_09` / 25.4; \floatField -edit -v $Val BFloatField_10;" BFloatField_09;
+				floatField -editable false -pre 3 BFloatField_10;
+		
+					$a =0;	
+						optionMenu -width 60 DVY_PuFlat01;
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+					
+					$a =0;	
+						optionMenu -width 60 DVY_FlFlat01;
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+					
+			text -height 20 -align "center" -label "Pulley 02";
+	
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_11` / 25.4;\floatField -edit -v $Val BFloatField_12;\floatField -edit -v (`floatField -q -v BFloatField_11` * 0.15) BFloatField_13;\floatField -edit -v (`floatField -q -v BFloatField_11` * 0.15/25.4) BFloatField_14;\floatField -edit -v (`floatField -q -v BFloatField_05` * 0.05) BFloatField_17;\floatField -edit -v (`floatField -q -v BFloatField_05` * 0.05/25.4) BFloatField_18;\floatField -edit -v ((`floatField -q -v BFloatField_0` * 1.5) + `floatField -q -v BFloatField_11`) BFloatField_19;\floatField -edit -v (((`floatField -q -v BFloatField_0` * 1.5) + `floatField -q -v BFloatField_11`)/25.4) BFloatField_20;" BFloatField_11;
+					
+				floatField -editable false -pre 3 BFloatField_12;
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_13` / 25.4; \floatField -edit -v $Val BFloatField_14;" BFloatField_13;
+				floatField -editable false -pre 3 BFloatField_14;
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_17` / 25.4; \floatField -edit -v $Val BFloatField_18;" BFloatField_17;
+				floatField -editable false -pre 3 BFloatField_18;
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_19` / 25.4; \floatField -edit -v $Val BFloatField_20;" BFloatField_19;
+				floatField -editable false -pre 3 BFloatField_20;
+			
+					$a =0;	
+						optionMenu -width 60 DVY_PuFlat02;
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+					
+					$a =0;	
+						optionMenu -width 60 DVY_FlFlat02;
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+		
+			text -height 20 -align "center" -label "Pulley 03";
+	
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_21` / 25.4;\floatField -edit -v $Val BFloatField_22;\floatField -edit -v (`floatField -q -v BFloatField_21` * 0.15) BFloatField_23;\floatField -edit -v (`floatField -q -v BFloatField_21` * 0.15/25.4) BFloatField_24;\floatField -edit -v (`floatField -q -v BFloatField_05` * 0.05) BFloatField_27;\floatField -edit -v (`floatField -q -v BFloatField_05` * 0.05/25.4) BFloatField_28;\floatField -edit -v ((`floatField -q -v BFloatField_0` * 1.5) + `floatField -q -v BFloatField_21`) BFloatField_29;\floatField -edit -v (((`floatField -q -v BFloatField_0` * 1.5) + `floatField -q -v BFloatField_21`)/25.4) BFloatField_30;" BFloatField_21;
+				
+				floatField -editable false -pre 3 BFloatField_22;
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_23` / 25.4; \floatField -edit -v $Val BFloatField_24;" BFloatField_23;
+				floatField -editable false -pre 3 BFloatField_24;
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_27` / 25.4; \floatField -edit -v $Val BFloatField_28;" BFloatField_27;
+				floatField -editable false -pre 3 BFloatField_28;
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_29` / 25.4; \floatField -edit -v $Val BFloatField_30;" BFloatField_29;
+				floatField -editable false -pre 3 BFloatField_30;
+		
+					$a =0;	
+						optionMenu -width 60 DVY_PuFlat03;
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+					
+					$a =0;	
+						optionMenu -width 60 DVY_FlFlat03;
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+		
+			text -height 20 -align "center" -label "Pulley 04";
+	
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_31` / 25.4;\floatField -edit -v $Val BFloatField_32;\floatField -edit -v (`floatField -q -v BFloatField_31` * 0.15) BFloatField_33;\floatField -edit -v (`floatField -q -v BFloatField_31` * 0.15/25.4) BFloatField_34;\floatField -edit -v (`floatField -q -v BFloatField_05` * 0.05) BFloatField_37;\floatField -edit -v (`floatField -q -v BFloatField_05` * 0.05/25.4) BFloatField_38;\floatField -edit -v ((`floatField -q -v BFloatField_0` * 1.5) + `floatField -q -v BFloatField_31`) BFloatField_39;\floatField -edit -v (((`floatField -q -v BFloatField_0` * 1.5) + `floatField -q -v BFloatField_31`)/25.4) BFloatField_40;" BFloatField_31;
+				
+				
+				floatField -editable false -pre 3 BFloatField_32;
+					floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_33` / 25.4; \floatField -edit -v $Val BFloatField_34;" BFloatField_33;
+					floatField -editable false -pre 3 BFloatField_34;
+					floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_37` / 25.4; \floatField -edit -v $Val BFloatField_38;" BFloatField_37;
+					floatField -editable false -pre 3 BFloatField_38;
+					floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_39` / 25.4; \floatField -edit -v $Val BFloatField_40;" BFloatField_39;
+					floatField -editable false -pre 3 BFloatField_40;
+		
+					$a =0;	
+						optionMenu -width 60 DVY_PuFlat04;
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+					
+					$a =0;	
+						optionMenu -width 60 DVY_FlFlat04;
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+
+			text -height 20 -align "center" -label "Pulley 05";
+	
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_41` / 25.4;\floatField -edit -v $Val BFloatField_42;\floatField -edit -v (`floatField -q -v BFloatField_41` * 0.15) BFloatField_43;\floatField -edit -v (`floatField -q -v BFloatField_41` * 0.15/25.4) BFloatField_44;\floatField -edit -v (`floatField -q -v BFloatField_05` * 0.05) BFloatField_47;\floatField -edit -v (`floatField -q -v BFloatField_05` * 0.05/25.4) BFloatField_48;\floatField -edit -v ((`floatField -q -v BFloatField_0` * 1.5) + `floatField -q -v BFloatField_41`) BFloatField_49;\floatField -edit -v (((`floatField -q -v BFloatField_0` * 1.5) + `floatField -q -v BFloatField_41`)/25.4) BFloatField_50;" BFloatField_41;				
+				
+				floatField -editable false -pre 3 BFloatField_42;
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_43` / 25.4; \floatField -edit -v $Val BFloatField_44;" BFloatField_43;
+				floatField -editable false -pre 3 BFloatField_44;
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_47` / 25.4; \floatField -edit -v $Val BFloatField_48;" BFloatField_47;
+				floatField -editable false -pre 3 BFloatField_48;
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_49` / 25.4; \floatField -edit -v $Val BFloatField_50;" BFloatField_49;
+				floatField -editable false -pre 3 BFloatField_50;
+		
+					$a =0;	
+						optionMenu -width 60 DVY_PuFlat05;
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+					
+					$a =0;	
+						optionMenu -width 60 DVY_FlFlat05;
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+					
+	setParent..;		
+				
+			separator -h 5 -style "none";
+					
+				button -enable true -height 25 -bgc 0.7 0.7 1 -label "Build Flat Pulleys"
+						-command " print \"\\n Building Flat Belt Pulleys as Required Davvey © 2006..\\n\"; DVY_FlatPulleyBuild;"
+					FlatPulleyBuilder;	
+					
+			separator -h 5 -style "none";
+				
+	setParent..;		
+	setParent..;		
+		
+			text -height 2 -label " " ;	//Spacer
+			text -height 15 -font "boldLabelFont" -align "center" -label " Vee Belt and Pulley Options " ;	//Spacer
+			text -height 2 -label " " ;	//Spacer
+		
+		
+	frameLayout -bv true -bs "in" -width 410 -mh 3 -mw 3 -collapsable true -collapse true 
+							-labelVisible false -label " Vee Pulley Options" VeePulleyFrame;
+	
+	columnLayout -width 560 -adj 1 -cal "center";
+	
+	rowColumnLayout -enable 1 -nc 3
+				-cw 1 130 -cal 1 "center" -cat 1 "both" 15
+				-cw 2 130 -cal 2 "center" -cat 2 "both" 15
+				-cw 3 220 -cal 3 "center" -cat 3 "both" 15;
+	
+			text -height 15 -align "center" -label "         Belt Width ";
+			text -height 15 -align "center" -label "     Belt Depth ";
+			text -height 15 -align "center" -label "      Style of Belt ";
+		
+	setParent..;
+	
+	rowColumnLayout -enable 1 -nc 6
+				-cw 1 63 -cal 1 "center" -cat 1 "both" 3
+				-cw 2 63 -cal 2 "center" -cat 2 "both" 3
+				-cw 3 63 -cal 3 "center" -cat 3 "both" 3
+				-cw 4 63 -cal 4 "center" -cat 4 "both" 3
+				-cw 5 63 -cal 5 "center" -cat 5 "both" 3
+				-cw 6 215 -cal 6 "center" -cat 6 "both" 2;
+		
+			text -height 15 -align "center" -label "   mm";
+			text -height 15 -align "center" -label "  inches";
+			text -height 15 -align "center" -label "   mm";
+			text -height 15 -align "center" -label "  inches";
+			text -height 15 -align "center" -label " No. of Belts";
+			text -height 15 -align "center" -label " Type of Belt";
+		
+			floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_105`;\ floatField -edit -v ($Val * 1.25) BFloatField_001;\ floatField -edit -v ($Val * 1.25/25.4) BFloatField_000;\ floatField -edit -v ($Val/25.4) BFloatField_106;" BFloatField_105;
+			floatField -editable false -pre 3 BFloatField_106;
+			
+			floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_001` / 25.4;\ floatField -edit -v ($Val /25.4) BFloatField_000;" BFloatField_001;
+			floatField -editable false -pre 3 BFloatField_000;
+			
+			intField -editable true -min 0 -v 0 IFloatField_0;
+			
+			radioButtonGrp  -height 20 -nrb 3 -sl 1 -enable3 false
+							-cl3 "left" "left" "left" 
+							-columnWidth3 62 72 80 
+							-labelArray3 "Seperate" "One-Piece" "Double-Side" 
+						VeeBeltTypeRadioButton;	
+		
+	setParent..;
+	
+		text -height 5 -label " ";
+		
+	rowColumnLayout -enable 1 -nc 5
+				-cw 1 50 -cal 1 "center" -cat 1 "both" 2
+				-cw 2 100 -cal 2 "center" -cat 2 "both" 2
+				-cw 3 100 -cal 3 "center" -cat 3 "both" 2
+				-cw 4 100 -cal 4 "center" -cat 4 "both" 2
+				-cw 5 120 -cal 5 "center" -cat 5 "both" 2
+			"PulleyTitleCol";
+		
+			text -height 15 -label " ";
+			text -height 15 -label "   Pulley Diameter ";
+			text -height 15 -label "     Shaft Diameter";
+			text -height 15 -label "         Pulley Style";
+		
+	setParent..;
+	
+	rowColumnLayout -enable 1 -nc 7
+				-cw 1 50 -cal 1 "center" -cat 1 "both" 1
+				-cw 2 55 -cal 2 "center" -cat 2 "both" 1
+				-cw 3 55 -cal 3 "center" -cat 3 "both" 1
+				-cw 4 55 -cal 4 "center" -cat 4 "both" 1
+				-cw 5 55 -cal 5 "center" -cat 5 "both" 1
+				-cw 6 75 -cal 6 "center" -cat 6 "both" 1
+				-cw 7 75 -cal 7 "center" -cat 7 "both" 1
+			"VeePulleyCol";
+		
+			text -height 20 -align "center" -label "Pulley No.";
+			text -height 20 -align "center" -label "  mm";
+			text -height 20 -align "center" -label " inches";
+			text -height 20 -align "center" -label "  mm";
+			text -height 20 -align "center" -label " inches";
+			text -height 20 -align "center" -label " ";
+			text -height 20 -align "center" -label " ";
+		
+			text -height 20 -align "center" -label "Pulley 01";
+	
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_101` / 25.4; \floatField -edit -v $Val BFloatField_102;\floatField -edit -v (`floatField -q -v BFloatField_101` * 0.15) BFloatField_103;\floatField -edit -v (`floatField -q -v BFloatField_101` * 0.15/25.4) BFloatField_104;" BFloatField_101;
+					
+				floatField -editable false -pre 3 BFloatField_102;
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_103` / 25.4; \floatField -edit -v $Val BFloatField_104;" BFloatField_103;
+				floatField -editable false -pre 3 BFloatField_104;
+		
+					$a =0;	
+						optionMenu -width 75 DVY_PuVee01;
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+					
+			text -height 20 -align "center" -label " ";
+					
+			text -height 20 -align "center" -label "Pulley 02";
+	
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_111` / 25.4; \floatField -edit -v $Val BFloatField_112;\floatField -edit -v (`floatField -q -v BFloatField_111` * 0.15) BFloatField_113;\floatField -edit -v (`floatField -q -v BFloatField_111` * 0.15/25.4) BFloatField_114;" BFloatField_111;
+
+				floatField -editable false -pre 3 BFloatField_112;
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_113` / 25.4; \floatField -edit -v $Val BFloatField_114;" BFloatField_113;
+				floatField -editable false -pre 3 BFloatField_114;
+			
+					$a =0;	
+						optionMenu -width 75 DVY_PuVee02;
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+					
+			text -height 20 -align "center" -label " ";
+		
+			text -height 20 -align "center" -label "Pulley 03";
+	
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_121` / 25.4; \floatField -edit -v $Val BFloatField_122;\floatField -edit -v (`floatField -q -v BFloatField_121` * 0.15) BFloatField_123;\floatField -edit -v (`floatField -q -v BFloatField_121` * 0.15/25.4) BFloatField_124;" BFloatField_121;
+
+				floatField -editable false -pre 3 BFloatField_122;
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_123` / 25.4; \floatField -edit -v $Val BFloatField_124;" BFloatField_123;
+				floatField -editable false -pre 3 BFloatField_124;
+		
+					$a =0;	
+						optionMenu -width 75 DVY_PuVee03;
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+					
+			text -height 20 -align "center" -label " ";
+		
+			text -height 20 -align "center" -label "Pulley 04";
+	
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_131` / 25.4; \floatField -edit -v $Val BFloatField_132;\floatField -edit -v (`floatField -q -v BFloatField_131` * 0.15) BFloatField_133;\floatField -edit -v (`floatField -q -v BFloatField_131` * 0.15/25.4) BFloatField_134;" BFloatField_131;
+
+					floatField -editable false -pre 3 BFloatField_132;
+					floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_133` / 25.4; \floatField -edit -v $Val BFloatField_134;" BFloatField_133;
+					floatField -editable false -pre 3 BFloatField_134;
+		
+					$a =0;	
+						optionMenu -width 75 DVY_PuVee04;
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+					
+			text -height 20 -align "center" -label " ";
+
+			text -height 20 -align "center" -label "Pulley 05";
+	
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_141` / 25.4; \floatField -edit -v $Val BFloatField_142;\floatField -edit -v (`floatField -q -v BFloatField_141` * 0.15) BFloatField_143;\floatField -edit -v (`floatField -q -v BFloatField_141` * 0.15/25.4) BFloatField_144;" BFloatField_141;
+
+				floatField -editable false -pre 3 BFloatField_142;
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_143` / 25.4; \floatField -edit -v $Val BFloatField_144;" BFloatField_143;
+				floatField -editable false -pre 3 BFloatField_144;
+		
+					$a =0;	
+						optionMenu -width 75 DVY_PuVee05;
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+					
+			text -height 20 -align "center" -label " ";
+					
+	setParent..;		
+	
+		
+	columnLayout -width 560 -adj 1 -cal "center";
+		
+		separator -h 5 -style "none";
+			button -enable true -height 25 -bgc 0.7 0.7 1 -label "Build Vee Pulleys"
+					-command " print \"\\n Building Vee Pulleys as Required Davvey © 2006..\\n\"; DVY_VeePulleyBuild;"
+				VeehPulleyBuilder;	
+				
+		separator -h 5 -style "none";
+
+	setParent..;		
+	setParent..;	
+	setParent..;	
+		
+			text -height 2 -label " " ;	//Spacer
+			text -height 15 -font "boldLabelFont" -align "center" -label " Toothed Belt and Pulley Options " ;	//Spacer
+			text -height 2 -label " " ;	//Spacer
+		
+	frameLayout -bv true -bs "in" -width 410 -mh 3 -mw 3 -collapsable true -collapse true 
+				-labelVisible false -label "Tooth Pulleys Options" ToothPulleyFrame;
+		
+	columnLayout -width 560 -adj 1 -cal "center";
+	
+	rowColumnLayout -enable 1 -nc 3
+				-cw 1 130 -cal 1 "center" -cat 1 "both" 15
+				-cw 2 130 -cal 2 "center" -cat 2 "both" 15
+				-cw 3 220 -cal 3 "center" -cat 3 "both" 15;
+	
+			text -height 15 -align "center" -label "         Belt Width ";
+			text -height 15 -align "center" -label "     Belt Pitch ";
+			text -height 15 -align "center" -label "      Style of Belt ";
+		
+	setParent..;
+	
+	rowColumnLayout -enable 1 -nc 5
+				-cw 1 70 -cal 1 "center" -cat 1 "both" 5
+				-cw 2 70 -cal 2 "center" -cat 2 "both" 5
+				-cw 3 70 -cal 3 "center" -cat 3 "both" 5
+				-cw 4 70 -cal 4 "center" -cat 4 "both" 5
+				-cw 5 180 -cal 5 "center" -cat 5 "both" 2;
+		
+			text -height 15 -align "center" -label "   mm";
+			text -height 15 -align "center" -label "  inches";
+			text -height 15 -align "center" -label "   mm";
+			text -height 15 -align "center" -label "  inches";
+			text -height 15 -align "center" -label " ";
+		
+			floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_2205`;\	floatField -edit -v ($Val/25.4) BFloatField_2206;" BFloatField_2205;
+			floatField -editable false -pre 3 BFloatField_2206;
+			
+			floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_1001`;\ floatField -edit -v ($Val /25.4) BFloatField_1000;" BFloatField_1001;
+			floatField -editable false -pre 3 BFloatField_1000;
+			
+			
+			radioButtonGrp  -height 20 -nrb 2 -sl 1 -enable2 false
+							-cl2 "left" "left"
+							-columnWidth2 85 85 
+							-labelArray2 "Single-Sided" "Double-Sided" 
+						ToothBeltTypeRadioButton;	
+		
+	setParent..;
+		
+	rowColumnLayout -enable 1 -nc 7
+				-cw 1 30 -cal 1 "center" -cat 1 "both" 2
+				-cw 2 70 -cal 2 "center" -cat 2 "both" 2
+				-cw 3 78 -cal 3 "center" -cat 3 "both" 2
+				-cw 4 82 -cal 4 "center" -cat 4 "both" 2
+				-cw 5 80 -cal 5 "center" -cat 5 "both" 2
+				-cw 6 80 -cal 6 "center" -cat 6 "both" 2
+				-cw 7 85 -cal 7 "center" -cat 7 "both" 2
+			"PulleyTitleCol";
+		
+			text -height 15 -label " ";
+			text -height 15 -label " No. of Teeth";
+			text -height 15 -label " Pulley PCD ";
+			text -height 15 -label "Shaft Diameter ";
+			text -height 15 -label " Flange Thick";
+			text -height 15 -label "  Flange O/D";
+			text -height 15 -label "      Pulley Style";
+		
+	setParent..;
+	
+	rowColumnLayout -enable 1 -nc 12
+				-cw 1 48 -cal 1 "center" -cat 1 "both" 1
+				-cw 2 35 -cal 2 "center" -cat 2 "both" 1
+				-cw 3 43 -cal 3 "center" -cat 3 "both" 1
+				-cw 4 43 -cal 4 "center" -cat 4 "both" 1
+				-cw 5 43 -cal 5 "center" -cat 5 "both" 1
+				-cw 6 43 -cal 6 "center" -cat 6 "both" 1
+				-cw 7 43 -cal 7 "center" -cat 7 "both" 1
+				-cw 8 43 -cal 8 "center" -cat 8 "both" 1
+				-cw 9 43 -cal 9 "center" -cat 9 "both" 1
+				-cw 10 43 -cal 10 "center" -cat 10 "both" 1
+				-cw 11 55 -cal 11 "center" -cat 11 "both" 1
+				-cw 12 55 -cal 12 "center" -cat 12 "both" 1
+			"ToothPulleyCol";
+		
+		
+			text -height 20 -align "center" -label "Pulley No.";
+			text -height 20 -align "center" -label "  Teeth";
+			text -height 20 -align "center" -label "   mm";
+			text -height 20 -align "center" -label "  inches";
+			text -height 20 -align "center" -label "   mm";
+			text -height 20 -align "center" -label "  inches";
+			text -height 20 -align "center" -label "   mm";
+			text -height 20 -align "center" -label "  inches";
+			text -height 20 -align "center" -label "   mm";
+			text -height 20 -align "center" -label "  inches";
+			text -height 20 -align "center" -label " ";
+			text -height 20 -align "center" -label " ";
+		
+			text -height 20 -align "center" -label "Pulley 01";
+	
+				intField -width 45 -editable true -v 0 -min 0
+					-cc "$Val = (`intField -q -v TIntField_201` * `floatField -q -v BFloatField_1001`/(22.0/7.0));\floatField -edit -v $Val BFloatField_202;\floatField -edit -v ($Val/25.4) BFloatField_203;\floatField -edit -v ($Val * 0.15) BFloatField_204;\floatField -edit -v ($Val * 0.15/25.4) BFloatField_205;\floatField -edit -v ($Val + `floatField -q -v BFloatField_1001`) BFloatField_208;\floatField -edit -v (($Val + `floatField -q -v BFloatField_1001`)/25.4) BFloatField_209;\floatField -edit -v (`floatField -q -v BFloatField_2205` * 0.05) BFloatField_206;\floatField -edit -v ((`floatField -q -v BFloatField_2205`* 0.05)/25.4) BFloatField_207;" TIntField_201;
+					
+				floatField -editable false -pre 1 BFloatField_202;
+				floatField -editable false -pre 2 BFloatField_203;
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_204` / 25.4; \floatField -edit -v $Val BFloatField_205;" BFloatField_204;
+				floatField -editable false -pre 3 BFloatField_205;
+				
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_206` / 25.4; \floatField -edit -v $Val BFloatField_207;" BFloatField_206;
+				floatField -editable false -pre 3 BFloatField_207;
+				
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_208` / 25.4; \floatField -edit -v $Val BFloatField_209;" BFloatField_208;
+				floatField -editable false -pre 3 BFloatField_209;
+		
+					$a =0;	
+						optionMenu -width 60 DVY_PuTooth01;
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+					
+					$a =0;	
+						optionMenu -width 60 DVY_FlTooth01;
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+					
+			text -height 20 -align "center" -label "Pulley 02";
+	
+				intField -width 45 -editable true -v 0 -min 0 
+					-cc "$Val = (`intField -q -v TIntField_211` * `floatField -q -v BFloatField_1001`/(22.0/7.0));\floatField -edit -v $Val BFloatField_212;\ floatField -edit -v ($Val * 0.15) BFloatField_214;\floatField -edit -v ($Val * 0.15/25.4) BFloatField_215;\floatField -edit -v ($Val + `floatField -q -v BFloatField_1001`) BFloatField_218;\floatField -edit -v (($Val + `floatField -q -v BFloatField_1001`)/25.4) BFloatField_219;\floatField -edit -v (`floatField -q -v BFloatField_2205` * 0.05) BFloatField_216;\floatField -edit -v ((`floatField -q -v BFloatField_2205`* 0.05)/25.4) BFloatField_217;\floatField -edit -v ($Val/25.4) BFloatField_213;" TIntField_211;
+					
+				floatField -editable false -pre 1 BFloatField_212;
+				floatField -editable false -pre 2 BFloatField_213;
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_214` / 25.4; \floatField -edit -v $Val BFloatField_215;" BFloatField_214;
+				floatField -editable false -pre 3 BFloatField_215;
+				
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_216` / 25.4; \floatField -edit -v $Val BFloatField_217;" BFloatField_216;
+				floatField -editable false -pre 3 BFloatField_217;
+				
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_218` / 25.4; \floatField -edit -v $Val BFloatField_219;" BFloatField_218;
+				floatField -editable false -pre 3 BFloatField_219;
+			
+					$a =0;	
+						optionMenu -width 60 DVY_PuTooth02;
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+					
+					$a =0;	
+						optionMenu -width 60 DVY_FlTooth02;
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+		
+			text -height 20 -align "center" -label "Pulley 03";
+	
+				intField -width 45 -editable true -v 0 -min 0
+					-cc "$Val = (`intField -q -v TIntField_221` * `floatField -q -v BFloatField_1001`/(22.0/7.0));\	floatField -edit -v $Val BFloatField_222;\ floatField -edit -v ($Val * 0.15) BFloatField_224;\  floatField -edit -v ($Val * 0.15/25.4) BFloatField_225;\floatField -edit -v ($Val + `floatField -q -v BFloatField_1001`) BFloatField_228;\floatField -edit -v (($Val + `floatField -q -v BFloatField_1001`)/25.4) BFloatField_229;\floatField -edit -v (`floatField -q -v BFloatField_2205` * 0.05) BFloatField_226;\floatField -edit -v ((`floatField -q -v BFloatField_2205`* 0.05)/25.4) BFloatField_227;\floatField -edit -v ($Val/25.4) BFloatField_223;" TIntField_221;
+					
+				floatField -editable false -pre 1 BFloatField_222;
+				floatField -editable false -pre 2 BFloatField_223;
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_224` / 25.4; \floatField -edit -v $Val BFloatField_225;" BFloatField_224;
+				floatField -editable false -pre 3 BFloatField_225;
+				
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_226` / 25.4; \floatField -edit -v $Val BFloatField_227;" BFloatField_226;
+				floatField -editable false -pre 3 BFloatField_227;
+				
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_228` / 25.4; \floatField -edit -v $Val BFloatField_229;" BFloatField_228;
+				floatField -editable false -pre 3 BFloatField_229;
+
+					$a =0;	
+						optionMenu -width 60 DVY_PuTooth03;
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+					
+					$a =0;	
+						optionMenu -width 60 DVY_FlTooth03;
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+		
+			text -height 20 -align "center" -label "Pulley 04";
+	
+				intField -width 45 -editable true -v 0 -min 0
+					-cc "$Val = (`intField -q -v TIntField_231` * `floatField -q -v BFloatField_1001`/(22.0/7.0));\	floatField -edit -v $Val BFloatField_232;\ floatField -edit -v ($Val * 0.15) BFloatField_234;\ floatField -edit -v ($Val * 0.15/25.4) BFloatField_235;\floatField -edit -v ($Val + `floatField -q -v BFloatField_1001`) BFloatField_238;\floatField -edit -v (($Val + `floatField -q -v BFloatField_1001`)/25.4) BFloatField_239;\floatField -edit -v (`floatField -q -v BFloatField_2205` * 0.05) BFloatField_236;\floatField -edit -v ((`floatField -q -v BFloatField_2205`* 0.05)/25.4) BFloatField_237;\floatField -edit -v ($Val/25.4) BFloatField_233;" TIntField_231;
+					
+				floatField -editable false -pre 1 BFloatField_232;
+				floatField -editable false -pre 2 BFloatField_233;
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_234` / 25.4; \floatField -edit -v $Val BFloatField_235;" BFloatField_234;
+				floatField -editable false -pre 3 BFloatField_235;
+				
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_236` / 25.4; \floatField -edit -v $Val BFloatField_237;" BFloatField_236;
+				floatField -editable false -pre 3 BFloatField_237;
+				
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_238` / 25.4; \floatField -edit -v $Val BFloatField_239;" BFloatField_238;
+				floatField -editable false -pre 3 BFloatField_239;
+		
+					$a =0;	
+						optionMenu -width 60 DVY_PuTooth04;
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+					
+					$a =0;	
+						optionMenu -width 60 DVY_FlTooth04;
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+
+			text -height 20 -align "center" -label "Pulley 05";
+	
+				intField -width 45 -editable true -v 0 -min 0
+					-cc "$Val = (`intField -q -v TIntField_241` * `floatField -q -v BFloatField_1001`/(22.0/7.0));\	floatField -edit -v $Val BFloatField_242;\ floatField -edit -v ($Val * 0.15) BFloatField_244;\ floatField -edit -v ($Val * 0.15/25.4) BFloatField_245;\floatField -edit -v ($Val + `floatField -q -v BFloatField_1001`) BFloatField_248;\floatField -edit -v (($Val + `floatField -q -v BFloatField_1001`)/25.4) BFloatField_249;\floatField -edit -v (`floatField -q -v BFloatField_2205` * 0.05) BFloatField_246;\floatField -edit -v ((`floatField -q -v BFloatField_2205`* 0.05)/25.4) BFloatField_247;\floatField -edit -v ($Val/25.4) BFloatField_243;" TIntField_241;
+					
+				floatField -editable false -pre 1 BFloatField_242;
+				floatField -editable false -pre 2 BFloatField_243;
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_244` / 25.4; \floatField -edit -v $Val BFloatField_245;" BFloatField_244;
+				floatField -editable false -pre 3 BFloatField_245;
+				
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_246` / 25.4; \floatField -edit -v $Val BFloatField_247;" BFloatField_246;
+				floatField -editable false -pre 3 BFloatField_247;
+				
+				floatField -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_248` / 25.4; \floatField -edit -v $Val BFloatField_249;" BFloatField_248;
+				floatField -editable false -pre 3 BFloatField_249;
+		
+					$a =0;	
+						optionMenu -width 60 DVY_PuTooth05;
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+							menuItem -l $PuSeries[$a++];
+					
+					$a =0;	
+						optionMenu -width 60 DVY_FlTooth05;
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+							menuItem -l $PuType[$a++];
+					
+	setParent..;		
+	
+	
+
+		separator -h 5 -style "none";
+				button -enable true -height 25 -bgc 0.7 0.7 1 -label "Build Tooth Pulleys"
+					-command " print \"\\n Building Tooth Pulleys as Required Davvey © 2006..\\n\"; DVY_ToothPulleyBuild;"
+					ToothPulleyBuilder;	
+				
+		separator -h 5 -style "none";
+	
+	setParent $MainPanel;
+	setParent..;
+	
+		columnLayout -adj 1 -cat "both" 1 -cal "center" ;
+
+		separator -h 5 -style "none";
+			
+			radioButtonGrp  -height 20 -nrb 3 -select 1 -label " Group Setup Options:-" -enable false
+							-cl4 "right" "left" "left" "left"
+							-columnWidth4 120 80 100 120
+							-labelArray3 "New Group" "Exisitng Group"  "Clear Selected Group Field"
+							-onCommand1 "textField -edit -enable false SelectGrp02;\ button -edit -enable false SelectGrpPulley;"
+							-offCommand1  ""
+							
+							-onCommand2 "textField -edit -enable true SelectGrp02;\ button -edit -enable true SelectGrpPulley;"
+							-offCommand2  "textField -edit -enable false -tx \"\" SelectGrp02;\ button -edit -enable false SelectGrpPulley;"
+
+							-onCommand3  "textField -edit  -tx \"\" -enable false SelectGrp02;\ button -edit -enable false SelectGrpPulley;\ radioButtonGrp -edit -sl 1 PulleyGrpRadioButton;"
+						PulleyGrpRadioButton;	
+			
+	rowColumnLayout -nc 2
+			-cw 1 360 -cal 1 "center" -cat 1 "both" 2
+			-cw 2 200 -cal 2 "center" -cat 2 "both" 2;
+			
+			textField -width 150 -enable true -editable false SelectGrp02;
+			button -enable false -height 25 -bgc  0.7 1 0.7 -label "Load Group Top Node to Use"
+					-command "$TempSel = `ls - sl`; \ textField -edit -text $TempSel SelectGrp02;"	
+				SelectGrpPulley;	
+			
+		separator -h 10 -style "none";
+		
+	setParent..;
+	
+	rowColumnLayout -nc 2
+			-cw 1 410 -cal 1 "center" -cat 1 "both" 2
+			-cw 2 150 -cal 2 "center" -cat 2 "both" 2;
+			text -height 15 -align "left" -label " Once Position of Pulleys is set select Group Top Node and press `Build Belt Path` Button.";
+			button -height 25 -bgc 0.7  0.7 1.0 -label "Build Belt Path."
+					-command " print \"\\n Building Belts Path as Required Davvey © 2006..\\n\"; DVY_BeltCurveBuild;"
+				BuildCurveBeltButton;
+			
+			text -height 15 -align "left" -label " Once Path set correctly press select Group Top Node and press`Build Belts` Button.";
+			button -height 25 -bgc 0.7  0.7 1.0 -label "Build Belts."
+					-command " print \"\\n Building Belt as Required Davvey © 2006..\\n\"; DVY_BeltBuild;"
+				BuildBeltButton;
+			
+			
+		separator -h 5 -style "none";
+		separator -h 5 -style "none";
+		
+			text -height 15 -align "left" -label " Once Belt is built adjust any curve CV's if required to ensure correct mesh.\n Select Group Top Node and press `Rig Belts` Button.";
+			button -height 25 -bgc 1 0.7 0.7 -label "Rig Belts."
+					-command " print \"\\n Rigging Belts as Required Davvey © 2006..\\n\"; DVY_BeltSet;"
+				BeltRiggerButton;	
+		
+
+	setParent..;
+
+	
+//Show the DVY_Pulleys UI Window.
+	
+ 	showWindow DVY_PulleysWindow;
+	
+}// End of DVY_Pulleys Global procedure.
+
+
+global proc DVY_AboutPulleysWin()
+ {
+	global float $DVYTol;
+	if ((`window -ex DavveyAboutPulleysWindow`) == true) 
+		{
+			deleteUI DavveyAboutPulleysWindow;
+		}
+		if (`windowPref -ex DavveyAboutPulleysWindow`) windowPref -remove DavveyAboutPulleysWindow;
+		window -t " About:-  Davvey's Pulley Generator." -width 425 -height 300 -sizeable 0 DavveyAboutPulleysWindow;
+		//Build 'Edit' menu.
+	
+	string $menuBarLayout = `menuBarLayout -height 20`;
+		menu -label "File"; 
+ 			menuItem -label "Close" -command "deleteUI DavveyAboutPulleysWindow";		
+
+	setParent;
+	setParent;
+
+		columnLayout -adjustableColumn true -columnAttach "both" 5 -columnWidth 350; 
+	
+		text -height 2 -label " " ;	//Spacer
+		separator -height 10 -style "double" ;
+			text -bgc 0.5 0.5 1 -height 20 -align "center" -fn "boldLabelFont" -l "Davvey's Belt and Pulley Generator..";
+			text -bgc 0.5 0.5 1 -height 20 -align "center" -fn "boldLabelFont" -l "copyright (c)2006 Dave Lake..";
+		separator -height 8 -style "double" ;
+		text -height 2 -label " " ;	//Spacer
+		
+	frameLayout -cl 0 -label "" -labelAlign "center" -borderStyle "etchedOut";
+		columnLayout -adjustableColumn true -columnAttach "both" 2 -columnWidth 250; 
+		
+		text -bgc 1 1 0.8 -height 5 -align "left" -l " ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -fn "boldLabelFont" -l "  Special Thanks:- ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -fn "plainLabelFont" -l "  Thanks to my wife Jan for her support and patience during the time";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "   its taken to learn Maya and how to write these scripts.";
+		text -bgc 1 1 0.8 -height 10 -align "left" -l " ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "  Also dedicated to Jackie and Joanna (my expensive pride and joys!!)";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "  Finally these Collected works are dedicated to the memory of Darryl.";
+		text -bgc 1 1 0.8 -height 5 -align "left" -l " ";
+		setParent ..;	
+		setParent ..;	
+		text -align "center" -l "email :- Davvey@ntlworld.com";
+		text -align "center" -l "website :- www..............";
+	setParent ..; 
+
+	showWindow DavveyAboutPulleysWindow;
+	
+}// End of DVY_AboutPulleysWin Procedure
+
+ 

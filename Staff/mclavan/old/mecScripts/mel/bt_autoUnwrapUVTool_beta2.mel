@@ -1,0 +1,1162 @@
+// Copyright (C) 1997-2009 Autodesk, Inc., and/or its licensors.
+// All rights reserved.
+//
+// The coded instructions, statements, computer programs, and/or related
+// material (collectively the "Data") in these files contain unpublished
+// information proprietary to Autodesk, Inc. ("Autodesk") and/or its licensors,
+// which is protected by U.S. and Canadian federal copyright law and by
+// international treaties.
+//
+// The Data is provided for use exclusively by You. You have the right to use,
+// modify, and incorporate this Data into other products for purposes authorized 
+// by the Autodesk software license agreement, without fee.
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND. AUTODESK
+// DOES NOT MAKE AND HEREBY DISCLAIMS ANY EXPRESS OR IMPLIED WARRANTIES
+// INCLUDING, BUT NOT LIMITED TO, THE WARRANTIES OF NON-INFRINGEMENT,
+// MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, OR ARISING FROM A COURSE 
+// OF DEALING, USAGE, OR TRADE PRACTICE. IN NO EVENT WILL AUTODESK AND/OR ITS
+// LICENSORS BE LIABLE FOR ANY LOST REVENUES, DATA, OR PROFITS, OR SPECIAL,
+// DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES, EVEN IF AUTODESK AND/OR ITS
+// LICENSORS HAS BEEN ADVISED OF THE POSSIBILITY OR PROBABILITY OF SUCH DAMAGES.
+//
+//
+//      bt_autoUnwrapUVTool.mel 
+//
+//      This script may be freely distributed. Use and modify at your own risk.
+//
+//                     
+//
+// Creation Date:      ( 04/16/02 )
+// Last Update:        ( 11/10/09)
+//
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Secondary Procs
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+global proc bt_defineWrapMapFaces(){
+
+    string $selectedMesh[] = `filterExpand -sm 12`;
+    string $selectedFaces[] = `filterExpand -sm 34`;
+    string $faceObjects[] = `listRelatives -parent`;
+    global string $gSelect;
+
+    //Make sure only one object is being used
+    if ((`size $faceObjects` + `size $selectedMesh`) > 1)
+        error "Auto unfold tool only works on one mesh at a time.";
+
+    if ((size($selectedMesh) == 0) && (size($selectedFaces) == 0))
+        {
+		warning "No mesh or faces to map.  Select mesh or faces and try again.";
+        bt_killUnwrapMapHUD;
+        bt_AutoUnwrapMapHUD1;
+        }
+    else {
+        select -r $selectedMesh $selectedFaces;
+    	ConvertSelectionToFaces;
+    	string $facesToMap[] = `ls -selection -flatten`;
+        //create set of faces
+        if (`objExists "wrapMapFaces"` == 0)
+            sets -name "wrapMapFaces";
+        else
+            sets -add "wrapMapFaces";
+
+        setToolTo $gSelect;  //disable transform tools
+
+        
+        //create default UVs
+        bt_createDefaultUVs;
+
+        //Isolate select object or faces in 3d views
+        if (`optionVar -q AutoUnwrapMapIsolate`)
+            {
+        	$panels = `getPanel -type "modelPanel"`;
+  	
+        	for ($panel in $panels)
+                {
+                isolateSelect -state 1 $panel;
+                select -r $facesToMap;
+                isolateSelect -addSelected $panel;
+                }
+            }
+
+        if (`optionVar -q AutoUnwrapMapShader`)
+            {
+            select -r $facesToMap;
+            bt_assignBaseShader;
+            }
+
+        //launch border edge HUD
+        bt_AutoUnwrapMapHUD2;
+        }
+}
+
+
+global proc bt_defineWrapMapEdges(){
+
+    string $selectedEdges[] = `filterExpand -sm 32`;
+    global string $gSelect;
+
+    if (size($selectedEdges) == 0)
+        {
+		warning "No edges selected.  Select edges to be defined as UV shell borders and try again.";
+        if (`objExists "wrapMapBorderEdges"`) select -r wrapMapBorderEdges;
+        }
+    else {
+        select -r $selectedEdges;
+        //create set of edges
+        if (`objExists "wrapMapBorderEdges"` == 0)
+            sets -name "wrapMapBorderEdges";
+        else
+            sets -add "wrapMapBorderEdges";
+        
+        //pre cut edges for display
+        select -r wrapMapBorderEdges;
+        polyMapCut;
+
+        setToolTo $gSelect;  //disable transform tools
+        }
+
+    //launch for anchor HUD is done directly from edge HUD
+
+}
+
+
+global proc bt_removeWrapMapEdges(){
+
+    string $selectedEdges[] = `filterExpand -sm 32`;
+    global string $gSelect;
+
+    if (size($selectedEdges) == 0)
+		warning "No edges selected.  Select edges to remove and try again.";
+    else {
+        select -r $selectedEdges;
+        //create set of edges
+        if (`objExists "wrapMapBorderEdges"` == 0)
+            warning "Nothing to remove from.";    
+        else
+            {
+            polyMapSew; 
+            sets -rm "wrapMapBorderEdges";
+            }
+        
+        //pre cut edges for display
+        select -r wrapMapBorderEdges;
+        polyMapCut;
+
+        setToolTo $gSelect;  //disable transform tools
+        }
+
+    //launch for anchor HUD is done directly from edge HUD
+
+}
+
+
+
+global proc bt_defineWrapMapAnchors(){
+
+    global string $gSelect;
+
+	ConvertSelectionToVertices;
+    string $selectedVerts[] = `filterExpand -sm 31`;
+
+    if (size($selectedVerts) == 0)
+        {
+		warning "No verts or edges selected.  Select verts to be used as unfold anchors and try again.";
+        if (`objExists "wrapMapAnchors"`) select -r wrapMapAnchors;
+        }
+    else {
+        select -r $selectedVerts;
+
+        //create set of verts
+        if (`objExists "wrapMapAnchors"` == 0)
+            sets -name "wrapMapAnchors";
+        else
+            sets -add "wrapMapAnchors";
+        
+        select -r wrapMapAnchors;
+        }
+
+    setToolTo $gSelect;  //disable transform tools
+
+}
+
+
+global proc bt_removeWrapMapAnchors(){
+
+    global string $gSelect;
+
+	ConvertSelectionToVertices;
+    string $selectedVerts[] = `filterExpand -sm 31`;
+
+    if (size($selectedVerts) == 0)
+		warning "No verts or edges selected.  Select verts to be removed as unfold anchors and try again.";
+    else {
+        select -r $selectedVerts;
+
+        //create set of verts
+        if (`objExists "wrapMapAnchors"` == 0)
+            warning "Nothing to remove from.";    
+        else
+            {
+            sets -rm "wrapMapAnchors";
+            }
+
+        select -r wrapMapAnchors;
+        }
+
+    setToolTo $gSelect;  //disable transform tools
+
+}
+
+global proc bt_cleanUpAfterUnwrap(){
+
+    //Isolate select object or faces in 3d views
+    if (`optionVar -q AutoUnwrapMapIsolate`)
+        {
+    	$panels = `getPanel -type "modelPanel"`;
+	
+    	for ($panel in $panels)
+            isolateSelect -state 0 $panel;
+        }
+
+    //Cleanup selection sets
+    //
+    if (`objExists "wrapMapFaces"`)
+        {
+        select -r wrapMapFaces;
+        delete wrapMapFaces;
+        }
+    if (`objExists "wrapMapBorderEdges"`)
+        delete wrapMapBorderEdges;
+    if (`objExists "wrapMapAnchors"`)
+        delete wrapMapAnchors;
+
+    //Reset selected edge color to user defined
+    if (`optionVar -ex autoWrapUserEdgeColor`)
+        {
+        displayColor polyEdge -active `optionVar -q autoWrapUserEdgeColor`;
+        optionVar -rm autoWrapUserEdgeColor;
+        }
+}
+
+
+global proc bt_createDefaultUVs(){
+
+    string $projNode[];
+
+    $projNode = `polyProjection -ch 1 -type Planar -ibd on -icx 0.5 -icy 0.5 -ra 0 -isu 1 -isv 1 -md x`;
+
+    setAttr ($projNode[0]+".imageCenterY") 0;
+    setAttr ($projNode[0]+".imageCenterX") 0;
+    setAttr ($projNode[0]+".imageScaleV") 0;
+    setAttr ($projNode[0]+".imageScaleU") 0;
+
+    // Turn on texture border display
+    //
+    polyOptions -db 0; polyOptions -dmb 1; 
+    polyOptions -sb 4;
+    print ("Thich texture border display turned on\n");
+
+    select -cl;
+}
+
+
+global proc bt_goBack(){
+
+    //Go back one step or start over
+    //
+    if (`objExists "wrapMapAnchors"`)
+        {
+        bt_AutoUnwrapMapHUD3;
+        if (`objExists "wrapMapFaces"`) 
+            {
+            select -r wrapMapFaces;  
+            if (`optionVar -q AutoUnwrapMapShader`) 
+                bt_assignBaseShader;
+            }  
+        select -r wrapMapAnchors;
+        }
+
+    else if (`objExists "wrapMapBorderEdges"`)
+        {
+        bt_AutoUnwrapMapHUD2;
+        if (`objExists "wrapMapFaces"`) 
+            {
+            select -r wrapMapFaces;  
+            if (`optionVar -q AutoUnwrapMapShader`) 
+                bt_assignBaseShader;
+            }  
+        select -r wrapMapBorderEdges;
+        }
+
+    else if (`objExists "wrapMapFaces"`)
+        {
+        select -r wrapMapFaces;
+        bt_killUnwrapMapHUD;
+        bt_AutoUnwrapMapHUD1;
+        }
+
+    else
+        {
+        bt_killUnwrapMapHUD;
+        bt_AutoUnwrapMapHUD1;
+        }  
+
+
+    //bt_AutoUnwrapMapHUD2; if (`objExists \"wrapMapFaces\"`) {select -r wrapMapFaces; if (`optionVar -q AutoUnwrapMapShader`) bt_assignBaseShader; bt_createDefaultUVs; } if (`objExists \"wrapMapBorderEdges\"`) select -r wrapMapBorderEdges; bt_defineWrapMapEdges  
+}
+
+
+
+global proc bt_SetTextureResolution(int $resolution){
+
+	string $nodes[] = `ls -sl`;
+	
+	for ($node in $nodes){
+			catch (`addAttr -ln resolution $node`);
+			setAttr ($node + ".resolution") $resolution;
+		}
+}
+
+
+global proc bt_assignCheckerShader(){
+	
+    string $shader;
+	string $selection[] = `ls -selection`;
+
+    if (`size $selection` == 0)
+        warning "Nothing selected for shader assignment";
+    else
+        {
+        //turn on texture caching for better display
+        string $texWinName[] = `getPanel -sty polyTexturePlacementPanel`;
+        textureWindow -e -viewPortImage 1 $texWinName[0];
+
+
+        if (`objExists "unwrapChekcerShader"`)
+            {
+            $shader = "unwrapChekcerShader";
+            if ((`optionVar -q AutoUnwrapMapLayout` == 3)  && (`objExists "unwrapTestPattern"`))
+                deleteAttr ("unwrapTestPattern.resolution");
+            else
+                {
+    			catch (`addAttr -ln resolution unwrapTestPattern`);
+    			setAttr ("unwrapTestPattern.resolution") 512;
+                }
+                
+            }
+        else
+            {	
+        	string $shader = `shadingNode -asShader lambert -name "unwrapChekcerShader"`;
+        	string $texture = `shadingNode -asTexture checker -name "unwrapTestPattern"`;
+        
+        	//change shader colour	
+        	setAttr ($texture + ".color1") -type double3 0.3 0.3 0.3;
+        	setAttr ($texture + ".color2") -type double3 0.7 0.7 0.7;
+            
+            //set higher resolution and turn off texture caching
+            if (`optionVar -q AutoUnwrapMapLayout` != 3)
+                {
+                catch (`addAttr -ln resolution $texture`);
+    			setAttr ($texture + ".resolution") 512;
+                }
+    	
+        	//adjust 2d texture
+        	string $placement = `shadingNode -asUtility place2dTexture`;
+        	connectAttr -f ($placement + ".outUV") ($texture + ".uvCoord");
+        	connectAttr -f ($placement + ".outUvFilterSize") ($texture + ".uvFilterSize");
+        	setAttr ($placement + ".repeatU") 13.5;
+        	setAttr ($placement + ".repeatV") 13.5;
+        
+        
+        	//connect to shader
+        	connectAttr -force ($texture + ".outColor") ($shader + ".color");
+            }
+
+
+        //select object
+    	select -replace $selection;
+    	hyperShade -assign unwrapChekcerShader;
+        }
+	
+}
+
+
+global proc bt_assignBaseShader(){
+	
+    string $shader;
+	string $selection[] = `ls -selection`;
+
+    if (`size $selection` == 0)
+        warning "Nothing selected for shader assignment";
+    else
+        {
+        //turn on texture caching for better display
+        string $texWinName[] = `getPanel -sty polyTexturePlacementPanel`;
+        textureWindow -e -viewPortImage 1 $texWinName[0];
+
+
+        if (`objExists "unwrapBaseShader"`)
+            $shader = "unwrapBaseShader";
+    
+        else
+            {	
+        	string $shader = `shadingNode -asShader lambert -name "unwrapBaseShader"`;
+            setAttr ($shader+".colorR") 0;
+            setAttr ($shader+".colorG") 0.6;
+            setAttr ($shader+".colorB") 0.4;
+            setAttr ($shader+".diffuse") 1;
+            }
+
+        //select object
+    	select -replace $selection;
+    	hyperShade -assign unwrapBaseShader;
+        }
+	
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Primary Proc
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+global proc bt_AutoUnwrapMap(){
+
+	// Method: Uniform=0 Proportional=1 Unfold=2
+	// Fit: 0=UniformFit 1=StretchFit 2=NoFit
+
+    string $method = `optionVar -q AutoUnwrapMapMethod` ;
+    string $UnfoldMode = `optionVar -q AutoUnwrapMapUnfoldMode` ;
+    string $Layout = `optionVar -q AutoUnwrapMapLayout` ;
+
+
+    string $facesToMap[];
+    string $borderEdges[];
+    string $anchorVerts[];
+    string $anchorUVs[];
+
+    global string $gSelect;
+
+
+    //check for user-defined faces to map
+    //
+    if (`objExists "wrapMapFaces"`)
+        select -r wrapMapFaces;
+    else 
+        error "No mesh or faces selected for auto unwrap.";
+ 
+    //double check to make sure set actually contains faces
+	string $facesToMap[] = `ls -selection -flatten`;
+	if (size($facesToMap) == 0){
+		error "No mesh or face selected for auto unwrap.";
+	}
+
+
+    //check for user-defined faces to map
+    //
+    if (`objExists "wrapMapBorderEdges"`)
+        select -r wrapMapBorderEdges;
+    else 
+        {
+        select -cl;
+		warning "No additional edges defined as texture borders.  If results are undesirable, undo and retry with explicit border edges.";
+	    }
+
+    //double check to make sure set actually contains edges
+	string $borderEdges[] = `ls -selection -flatten`;
+	if (size($borderEdges) == 0){
+		warning "No additional edges defined as texture borders.  If results are undesirable, undo and retry with explicit border edges.";
+	}
+	
+
+
+    
+    // Create UVs
+    //
+    select -r $facesToMap;
+ 
+	if ($method == 0) //unitize or unfold
+		polyForceUV -unitize;
+	
+	else if ($method == 1) //proportional
+		for ($face in $facesToMap)
+		{
+			select -r $face;
+			$projName = `polyProjection -ch 1 -type Planar -ibd on -icx 0.5 -icy 0.5 -ra 0 -isu 1 -isv 1 -md b`;
+			setAttr ($projName[0]+".projectionWidth") 1;
+			setAttr ($projName[0]+".projectionHeight") 1;
+		}
+
+    else if (($method == 2) && ($UnfoldMode == 0))  //unfold with asymmetry
+		polyForceUV -unitize;
+
+    else if (($method == 2) && ($UnfoldMode == 1))  //unfold with symmetry
+        polyProjection -ch 1 -type Planar -ibd on -icx 0.5 -icy 0.5 -ra 0 -isu 1 -isv 1 -md z ;
+
+	else
+		error("Unrecognized value for method.");
+
+
+
+    
+    //Stich non-border edges or cut border edges
+    //
+	if (($method == 0) || ($method == 1)) //unitize or proportional
+        {
+        //Get perimeter edges
+    	select -r $facesToMap;
+    	InvertSelection;
+    	ConvertSelectionToEdges;
+    	$perimeterEdges = `ls -sl -flatten`;
+    
+    		
+    	//Move and sew pieces
+    	select -r $facesToMap;
+    	ConvertSelectionToEdges;
+    
+        select -d $borderEdges;
+        select -d $perimeterEdges;
+
+    	polyMapSewMove -lps 0;
+        }
+
+	else if (($method == 2) && ($UnfoldMode == 0)) //unfold asymmetrical
+        {
+        //Get perimeter edges
+    	select -r $facesToMap;
+    	InvertSelection;
+    	ConvertSelectionToEdges;
+    	$perimeterEdges = `ls -sl -flatten`;
+    
+    		
+    	//Move and sew pieces
+    	select -r $facesToMap;
+    	ConvertSelectionToEdges;
+    
+        select -d $borderEdges;
+        select -d $perimeterEdges;
+
+    	polyMapSewMove -lps 0;
+        }
+
+    else if (($method == 2) && ($UnfoldMode == 1)) //unfold with symmetry
+        {
+        if (`size $borderEdges` > 0) 
+            {
+            select -r $borderEdges;
+            polyMapCut;
+            }
+        }
+		
+
+    //Unfold if necessary
+    //
+	if ($method == 2) //generic unfold
+        {
+        //check for user-defined verts to use as unfold anchors
+        //
+        if (`objExists "wrapMapAnchors"`) 
+            {
+            select -r wrapMapAnchors;
+            setToolTo $gSelect;  //disable transform tools to prevent warning
+            ConvertSelectionToUVs;
+            $anchorUVs = `ls -sl -flatten`;
+            //warning "Using anchors\n";
+            }
+        else 
+            {
+    		warning "Unfolding without anchors.  If resulting shells are undesirable, undo and retry with explicit unfold anchors.";
+            select -cl;
+        $anchorUVs = `ls -sl`;
+        }
+
+
+        //do unfold with or without anchors
+    	select -r $facesToMap;
+        setToolTo $gSelect;  //disable transform tools to prevent warning
+        ConvertSelectionToUVs;
+        if ($UnfoldMode == 0) //basic
+            unfold -i 5000 -ss 0.001 -gb 0.5 -gmb 0.5 -pub 0 -ps  0 -oa  0 -us off;
+        else if ($UnfoldMode == 1)  //symmetry
+            {
+            select -d $anchorUVs;
+            unfold -i 5000 -ss 0.001 -gb 0.5 -gmb 0.5 -pub 0 -ps  0 -oa  0 -us off;
+            }
+
+    	}
+	
+
+	//Layout or fit to texture space accordingly
+	//
+	select -r $facesToMap;
+
+
+
+    if ($method == 0) //unitize
+        {
+    	if ($Layout == 0) //Uniform
+            polyLayoutUV -lm 1 -sc 1 -se 0 -rbf 2 -fr 1 -ps 0.2 -l 2 -ch 1;
+        else if ($Layout == 1) //Stretch
+            polyLayoutUV -lm 1 -sc 2 -se 0 -rbf 2 -fr 1 -ps 0.2 -l 2 -ch 1;
+        else if ($Layout == 2) //Proportional
+            polyMultiLayoutUV -lm 1 -sc 1 -rbf 0 -fr 1 -ps 0.2 -l 2 -psc 2 -su 1 -sv 1 -ou 0 -ov 0;
+        else // none
+            polyLayoutUV -lm 1 -sc 0 -se 0 -rbf 1 -fr 1 -ps 0.2 -l 2 -ch 1;
+        }
+
+	else if ($method == 1) //proportional
+        {
+    	if ($Layout == 0) //Uniform
+            //polyMultiLayoutUV -lm 1 -sc 1 -rbf 2 -fr 1 -ps 0.2 -l 2 -psc 2 -su 1 -sv 1 -ou 0 -ov 0;
+            polyLayoutUV -lm 1 -sc 1 -se 0 -rbf 2 -fr 1 -ps 0.2 -l 2 -ch 1;
+        else if ($Layout == 1) //Stretch
+            //polyMultiLayoutUV -lm 1 -sc 2 -rbf 2 -fr 1 -ps 0.2 -l 2 -psc 2 -su 1 -sv 1 -ou 0 -ov 0;
+            polyLayoutUV -lm 1 -sc 2 -se 0 -rbf 2 -fr 1 -ps 0.2 -l 2 -ch 1;
+        else if ($Layout == 2) //Proportional
+            polyMultiLayoutUV -lm 1 -sc 1 -rbf 0 -fr 1 -ps 0.2 -l 2 -psc 2 -su 1 -sv 1 -ou 0 -ov 0;
+        else // none
+            //print "No layout\n";
+            //polyMultiLayoutUV -lm 1 -sc 0 -rbf 1 -fr 1 -ps 0.2 -l 2 -psc 2 -su 1 -sv 1 -ou 0 -ov 0;            
+            polyLayoutUV -lm 1 -sc 0 -se 0 -rbf 1 -fr 1 -ps 0.2 -l 2 -ch 1;
+        }
+    
+	else if ($method == 2) //unfold
+        {
+    	if (($Layout == 0) && ($UnfoldMode == 0)) //uniform fit and rotate
+            //polyMultiLayoutUV -lm 1 -sc 1 -rbf 2 -fr 1 -ps 0.2 -l 2 -psc 2 -su 1 -sv 1 -ou 0 -ov 0;
+            polyLayoutUV -lm 1 -sc 1 -se 0 -rbf 2 -fr 1 -ps 0.2 -l 2 -ch 1;
+    	else if (($Layout == 0) && ($UnfoldMode == 1)) //Uniform fit no rotate
+            //polyMultiLayoutUV -lm 1 -sc 1 -rbf 0 -fr 1 -ps 0.2 -l 2 -psc 2 -su 1 -sv 1 -ou 0 -ov 0;
+            polyLayoutUV -lm 1 -sc 1 -se 0 -rbf 0 -fr 1 -ps 0.2 -l 2 -ch 1;
+
+        else if (($Layout == 1) && ($UnfoldMode == 0)) //Stretch fit and rotate
+            //polyMultiLayoutUV -lm 1 -sc 2 -rbf 2 -fr 1 -ps 0.2 -l 2 -psc 2 -su 1 -sv 1 -ou 0 -ov 0;
+            polyLayoutUV -lm 1 -sc 2 -se 0 -rbf 2 -fr 1 -ps 0.2 -l 2 -ch 1;
+        else if (($Layout == 1) && ($UnfoldMode == 1)) //Stretch fit no rotate
+            //polyMultiLayoutUV -lm 1 -sc 2 -rbf 0 -fr 1 -ps 0.2 -l 2 -psc 2 -su 1 -sv 1 -ou 0 -ov 0;
+            polyLayoutUV -lm 1 -sc 2 -se 0 -rbf 0 -fr 1 -ps 0.2 -l 2 -ch 1;
+
+        else if (($Layout == 2) && ($UnfoldMode == 0)) //Prop fit and rotate
+            polyMultiLayoutUV -lm 1 -sc 1 -rbf 2 -fr 1 -ps 0.2 -l 2 -psc 2 -su 1 -sv 1 -ou 0 -ov 0;
+            //polyLayoutUV -lm 1 -sc 2 -se 0 -rbf 2 -fr 1 -ps 0.2 -l 2 -ch 1;
+        else if (($Layout == 2) && ($UnfoldMode == 1)) //Prop fit no rotate
+            polyMultiLayoutUV -lm 1 -sc 1 -rbf 0 -fr 1 -ps 0.2 -l 2 -psc 2 -su 1 -sv 1 -ou 0 -ov 0;
+            //polyLayoutUV -lm 1 -sc 2 -se 0 -rbf 0 -fr 1 -ps 0.2 -l 2 -ch 1;
+
+        else // none
+            //print "No layout\n";
+            //polyMultiLayoutUV -lm 1 -sc 0 -rbf 0 -fr 1 -ps 0.2 -l 2 -psc 2 -su 1 -sv 1 -ou 0 -ov 0;
+            polyLayoutUV -lm 1 -sc 0 -se 0 -rbf 0 -fr 1 -ps 0.2 -l 2 -ch 1;
+        }
+
+
+    if (`optionVar -q AutoUnwrapMapShader`)
+        bt_assignCheckerShader;
+
+
+    //update cached texture in Texture Editor just in case
+    textureWindowBakeEditorImage;
+
+
+    //cleanup
+    //bt_cleanUpAfterUnwrap;
+    select -cl;
+		
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// HUD Procs
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+global proc bt_AutoUnwrapMapHUD1()
+	
+{
+    //check to make sure it's not already active
+	if (`headsUpDisplay -exists HUD_AutoUnwrapMapLabel`) error "Tool is already active. Use HUD button to cancel before restarting";
+
+    //hide poly count and object details HUDs as they interferes with UI for unwrap.
+    setObjectDetailsVisibility(0);
+    setPolyCountVisibility(0);
+
+    //set selected edge color to red
+    if (`optionVar -q AutoUnwrapMapEdgeColor`)
+        {
+        warning "Temporarily setting selected edge color to red for better display";
+        optionVar -iv autoWrapUserEdgeColor `displayColor -q  polyEdge -active`;
+        displayColor polyEdge -active 13;  //Red
+        }
+
+    //set to object mode
+    //selectMode -l;
+
+    //kill HUDs if they exist
+    bt_killUnwrapMapHUD;
+		
+	headsUpDisplay -rp 2 2;
+	headsUpDisplay -s 2
+		  -b 2
+		  -vis 1
+		  -l "Select Mesh or Faces to Unwrap"
+		  HUD_AutoUnwrapMapLabel;
+	
+	headsUpDisplay -rp 2 5;
+	hudButton -s 2
+		  -b 5
+		  -vis 1
+            -l "Continue"
+		  -ba       "center"
+		  -bw 70
+		  -bsh "roundRectangle"
+		  -rc "bt_killUnwrapMapHUD; bt_defineWrapMapFaces"
+		  HUD_AutoUnwrapMapButton2;
+
+	headsUpDisplay -rp 7 4;
+	hudButton -s 7
+		  -b 4
+		  -vis 1
+            -l "Cancel"
+		  -ba       "center"
+		  -bw 60
+		  -bsh "roundRectangle"
+		  -rc "bt_killUnwrapMapHUD; bt_cleanUpAfterUnwrap; warning \"Auto Unwrap Cancelled\""
+		  HUD_AutoUnwrapMapButton3;
+
+    headsUpMessage -time 4.0 "Select the mesh or faces that you want to map then click continue.";
+}
+
+
+global proc bt_AutoUnwrapMapHUD2()
+	
+{
+    //clear selection and switch to edge selection mode
+    //
+    select -cl;
+    SelectEdgeMask;
+
+    //kill HUDs if they exist
+    bt_killUnwrapMapHUD;
+		
+	headsUpDisplay -rp 2 1;
+	headsUpDisplay -s 2
+		  -b 1
+		  -vis 1
+		  -l "Select Edges for Texture Borders"
+		  HUD_AutoUnwrapMapLabel;
+
+
+	headsUpDisplay -rp 2 2;
+	hudButton -s 2
+		  -b 2
+		  -vis 1
+            -l "Add   Edges"
+		  -ba       "center"
+		  -bw 100
+		  -bsh "roundRectangle"
+		  -rc "bt_defineWrapMapEdges"
+		  HUD_AutoUnwrapMapButton0;
+
+
+	headsUpDisplay -rp 2 3;
+	hudButton -s 2
+		  -b 3
+		  -vis 1
+            -l "Remove Edges"
+		  -ba       "center"
+		  -bw 100
+		  -bsh "roundRectangle"
+		  -rc "bt_removeWrapMapEdges"
+		  HUD_AutoUnwrapMapButton1;
+
+
+    //if (`optionVar -q AutoUnwrapMapMethod` == 2)
+    //    $buttonLabelTmp = "Continue";
+    //else
+    //    $buttonLabelTmp = "Apply";
+
+	headsUpDisplay -rp 2 5;
+	hudButton -s 2
+		  -b 5
+		  -vis 1
+           -l "Continue"
+		  -ba       "center"
+		  -bw 70
+		  -bsh "roundRectangle"
+		  -rc "bt_killUnwrapMapHUD; bt_defineWrapMapEdges; if ((`optionVar -q AutoUnwrapMapMethod` == 2) && (`optionVar -q AutoUnwrapMapUnfoldMode` == 1)) { bt_AutoUnwrapMapHUD3; if (`objExists \"wrapMapAnchors\"`) bt_defineWrapMapAnchors ;} else {bt_AutoUnwrapMap ; bt_AutoUnwrapMapHUD4; textureWindowBakeEditorImage;}"
+		  HUD_AutoUnwrapMapButton2;
+
+	headsUpDisplay -rp 7 4;
+	hudButton -s 7
+		  -b 4
+		  -vis 1
+            -l "Cancel"
+		  -ba       "center"
+		  -bw 60
+		  -bsh "roundRectangle"
+		  -rc "bt_killUnwrapMapHUD; bt_cleanUpAfterUnwrap; warning \"Auto Unwrap Cancelled\""
+		  HUD_AutoUnwrapMapButton3;
+
+    headsUpMessage -time 4.0 "Select the edges that you want to define as texture borders then click add or continue.";
+}
+
+
+
+global proc bt_AutoUnwrapMapHUD3()
+	
+{
+    //clear selection and switch to vert selection mode
+    select -cl;
+    SelectVertexMask;
+
+
+    //kill HUDs if they exist
+    bt_killUnwrapMapHUD;
+		
+	headsUpDisplay -rp 2 1;
+	headsUpDisplay -s 2
+		  -b 1
+		  -vis 1
+		  -l "Select Verts/Edges as unfold symmetry anchors"
+		  HUD_AutoUnwrapMapLabel;
+
+		
+	headsUpDisplay -rp 2 2;
+	hudButton -s 2
+		  -b 2
+		  -vis 1
+            -l "Add   Anchors"
+		  -ba       "center"
+		  -bw 110
+		  -bsh "roundRectangle"
+		  -rc "bt_defineWrapMapAnchors;"
+		  HUD_AutoUnwrapMapButton0;
+		
+
+	headsUpDisplay -rp 2 3;
+	hudButton -s 2
+		  -b 3
+		  -vis 1
+            -l "Remove Anchors"
+		  -ba       "center"
+		  -bw 110
+		  -bsh "roundRectangle"
+		  -rc "bt_removeWrapMapAnchors;"
+		  HUD_AutoUnwrapMapButton1;
+
+
+	headsUpDisplay -rp 2 5;
+	hudButton -s 2
+		  -b 5
+		  -vis 1
+            -l "Continue"
+		  -ba       "center"
+		  -bw 70
+		  -bsh "roundRectangle"
+		  -rc "bt_killUnwrapMapHUD; bt_defineWrapMapAnchors; bt_AutoUnwrapMap; bt_AutoUnwrapMapHUD4; textureWindowBakeEditorImage;"
+		  HUD_AutoUnwrapMapButton2;
+
+	headsUpDisplay -rp 7 5;
+	hudButton -s 7
+		  -b 5
+		  -vis 1
+            -l "Go Back"
+		  -ba       "center"
+		  -bw 70
+		  -bsh "roundRectangle"
+		  -rc " if (`objExists \"wrapMapAnchors\"`) delete wrapMapAnchors ; bt_goBack"
+		  HUD_AutoUnwrapMapButton3;
+
+
+	headsUpDisplay -rp 7 4;
+	hudButton -s 7
+		  -b 4
+		  -vis 1
+            -l "Cancel"
+		  -ba       "center"
+		  -bw 70
+		  -bsh "roundRectangle"
+		  -rc "bt_killUnwrapMapHUD; bt_cleanUpAfterUnwrap; warning \"Auto Unwrap Cancelled\""
+		  HUD_AutoUnwrapMapButton4;
+
+    headsUpMessage -time 4.0 "Select the edges that you want to define as texture borders then add or click continue.";
+}
+
+
+
+global proc bt_AutoUnwrapMapHUD4()
+	
+{
+    //kill HUDs if they exist
+    bt_killUnwrapMapHUD;
+
+    if (`objExists "wrapMapFaces"`)
+        select -r wrapMapFaces;
+		
+	headsUpDisplay -rp 2 2;
+	headsUpDisplay -s 2
+		  -b 2
+		  -vis 1
+		  -l "Check results in the UV Editor"
+		  HUD_AutoUnwrapMapLabel;
+
+	
+	headsUpDisplay -rp 2 5;
+	hudButton -s 2
+		  -b 5
+		  -vis 1
+            -l "Done"
+		  -ba       "center"
+		  -bw 70
+		  -bsh "roundRectangle"
+		  -rc "bt_killUnwrapMapHUD; bt_cleanUpAfterUnwrap;"
+		  HUD_AutoUnwrapMapButton1;
+
+
+	headsUpDisplay -rp 7 5;
+	hudButton -s 7
+		  -b 5
+		  -vis 1
+            -l "Go Back"
+		  -ba       "center"
+		  -bw 70
+		  -bsh "roundRectangle"
+		  -rc "bt_goBack"
+		  HUD_AutoUnwrapMapButton0;
+
+
+    headsUpMessage -time 4.0 "Check results in UV Editor.  Click \"Go back\" to try again or click \"Done\" to commit.";
+}
+
+
+
+global proc bt_killUnwrapMapHUD(){
+
+	if (`headsUpDisplay -exists HUD_AutoUnwrapMapLabel`) headsUpDisplay -remove HUD_AutoUnwrapMapLabel;
+	if (`headsUpDisplay -exists HUD_AutoUnwrapMapButton0`) headsUpDisplay -remove HUD_AutoUnwrapMapButton0;
+	if (`headsUpDisplay -exists HUD_AutoUnwrapMapButton1`) headsUpDisplay -remove HUD_AutoUnwrapMapButton1;
+	if (`headsUpDisplay -exists HUD_AutoUnwrapMapButton2`) headsUpDisplay -remove HUD_AutoUnwrapMapButton2;
+	if (`headsUpDisplay -exists HUD_AutoUnwrapMapButton3`) headsUpDisplay -remove HUD_AutoUnwrapMapButton3;
+	if (`headsUpDisplay -exists HUD_AutoUnwrapMapButton4`) headsUpDisplay -remove HUD_AutoUnwrapMapButton4;
+}
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Option Var Procs
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+global proc bt_setAutoUnwrapMapOptionVars()
+{
+	if (`optionVar -ex AutoUnwrapMapLayout` == 0)
+		optionVar -intValue AutoUnwrapMapLayout 0;   // 0=No Layout : 1=Layout : 2=Stretch
+	if (`optionVar -ex AutoUnwrapMapMethod` == 0)
+		optionVar -intValue AutoUnwrapMapMethod 0;  // 0=Uniform : 1:Proportional 
+	if (`optionVar -ex AutoUnwrapMapUnfoldMode` == 0)
+		optionVar -intValue AutoUnwrapMapUnfoldMode 0;  // 0=Asymmetrical : 1:Symmetrical 
+	if (`optionVar -ex AutoUnwrapMapShader` == 0)
+		optionVar -intValue AutoUnwrapMapShader 1;
+	if (`optionVar -ex AutoUnwrapMapIsolate` == 0)
+		optionVar -intValue AutoUnwrapMapIsolate 1;	
+    if (`optionVar -ex AutoUnwrapMapEdgeColor` == 0)
+		optionVar -intValue AutoUnwrapMapEdgeColor 1;
+}
+
+
+global proc bt_deleteAutoUnwrapMapOptionVars()
+{
+	optionVar -rm AutoUnwrapMapLayout;
+	optionVar -rm AutoUnwrapMapMethod;
+	optionVar -rm AutoUnwrapMapUnfoldMode;
+	optionVar -rm AutoUnwrapMapShader;
+	optionVar -rm AutoUnwrapMapIsolate;
+	optionVar -rm AutoUnwrapMapEdgeColor;
+
+}
+
+	
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Main UI Procs
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+global proc bt_AutoUnwrapMapUI()
+{
+
+	global string $AutoUnwrapMapMethodID;
+    global string $AutoUnwrapMapMethoddButton1ID;
+    global string $AutoUnwrapMapMethoddButton2ID;
+    global string $AutoUnwrapMapUnfoldModeID;
+    global string $AutoUnwrapMapUnfoldButton1ID;
+    global string $AutoUnwrapMapUnfoldButton2ID;
+	global string $AutoUnwrapMapLayoutID;
+
+
+	bt_setAutoUnwrapMapOptionVars;
+		
+	if( `window -exists AutoUnwrapMapWin` )
+		{
+		deleteUI AutoUnwrapMapWin;
+		//windowPref -remove AutoUnwrapMapWin;
+		}
+
+	window -w 360 -h 230 -menuBar true -title "Auto Unwrap UVs Tool Options" AutoUnwrapMapWin;
+	
+	menu -tearOff 0 -l "Edit";
+	    menuItem -l "Reset Settings" -ann "Reset all setting to default values." -c "bt_deleteAutoUnwrapMapOptionVars ; bt_AutoUnwrapMapUI";
+		
+	columnLayout -adjustableColumn 1;
+		
+	//separator -style "single";
+	separator -style none;
+	separator -style none;
+
+		
+	//////////////////////////
+	// Layout and Method toggles
+	//
+	rowColumnLayout  -numberOfColumns 2 -columnWidth 1 140 -columnWidth 2 220;
+
+
+		//Method
+		//
+		text -label " Face UV Method:   " -ann "Determines the type of unwrap to be performed." -align "right";
+							
+		$AutoUnwrapMapMethodID = `radioCollection`;
+
+		$AutoUnwrapMapMethoddButton1ID = `radioButton -label "Uniform" -ann "Each face will have the same general size in UV space." -align "left"`;
+
+		separator -style "none";
+		$AutoUnwrapMapMethoddButton2ID = `radioButton -label "Proportional projections" -ann "Each face will be proportionally sized in UV space."	-align "left"`;
+		
+        separator -style "none";
+	    $AutoUnwrapMapMethoddButton3ID = `radioButton -label "Project and unfold" -ann "UV shell will be unwrapped using unfold algorithm." -align "left"`;
+		
+        separator -style "none";
+        separator -style "none";
+
+
+
+		//select correct radio button for stored type
+		$buttonList = `radioCollection -q -collectionItemArray $AutoUnwrapMapMethodID`;
+		int $buttonNumber = (`optionVar -q AutoUnwrapMapMethod`);
+		radioCollection -e -sl $buttonList[$buttonNumber] $AutoUnwrapMapMethodID ;
+
+
+
+        if (`optionVar -q AutoUnwrapMapMethod` == 2)
+            $unfoldModeState = 1;
+        else
+            $unfoldModeState = 0;
+
+
+		//Unfold Mode
+		//		
+		text -label " Unfold Mode:   " -ann "Determines how unfold will behave and is only applicible if Unfold option is used."  -align "right";
+										
+		$AutoUnwrapMapUnfoldModeID = `radioCollection`;
+
+		$AutoUnwrapMapUnfoldButton1ID = `radioButton -label "Basic" -en $unfoldModeState -ann "Best guess unfold for asymmetrical object (For Unfold option only)" -align "left" 
+			-onc "optionVar -intValue AutoUnwrapMapUnfoldMode 0"`;
+		
+		separator -style "none";
+		$AutoUnwrapMapUnfoldButton2ID = `radioButton -label "XY Symmetry" -en $unfoldModeState -ann "Unfold assumes that object or faces are symmetrical on XY plane (For Unfold option only)" -align "left" 
+			-onc "optionVar -intValue AutoUnwrapMapUnfoldMode 1"`;
+        
+		separator -style "none";
+		separator -style "none";
+
+
+
+		//select correct radio button for stored type
+		$buttonList = `radioCollection -q -collectionItemArray $AutoUnwrapMapUnfoldModeID`;
+		int $buttonNumber = (`optionVar -q AutoUnwrapMapUnfoldMode`);
+		radioCollection -e -sl $buttonList[$buttonNumber] $AutoUnwrapMapUnfoldModeID;
+
+
+        //set on commands for method buttons to enable/disable unfold mode buttons
+        radioButton -edit -onc "optionVar -intValue AutoUnwrapMapMethod 0; radioButton -edit -en 0 $AutoUnwrapMapUnfoldButton1ID; radioButton -edit -en 0 $AutoUnwrapMapUnfoldButton2ID" $AutoUnwrapMapMethoddButton1ID;
+        radioButton -edit -onc "optionVar -intValue AutoUnwrapMapMethod 1; radioButton -edit -en 0 $AutoUnwrapMapUnfoldButton1ID; radioButton -edit -en 0 $AutoUnwrapMapUnfoldButton2ID" $AutoUnwrapMapMethoddButton2ID;
+        radioButton -edit -onc "optionVar -intValue AutoUnwrapMapMethod 2; radioButton -edit -en 1 $AutoUnwrapMapUnfoldButton1ID; radioButton -edit -en 1 $AutoUnwrapMapUnfoldButton2ID" $AutoUnwrapMapMethoddButton3ID;
+
+		
+
+		//Layout
+		//		
+		text -label " Layout Fit Mode:   " -ann "Determines the placement and size of the unwrapped UV shells." -align "right";
+					
+						
+		$AutoUnwrapMapLayoutID = `radioCollection`;
+
+		radioButton -label "Uniform Fit" -ann "Layout new shells and scale uniformly to fit into 0 to 1 UV space."	-align "left" 
+			-onc "optionVar -intValue AutoUnwrapMapLayout 0";
+		
+		separator -style "none";
+		radioButton -label "Stretch Fit" -ann "Layout new shells and scale non-proportionally to fit into 0 to 1 UV space." -align "left" 
+			-onc "optionVar -intValue AutoUnwrapMapLayout 1";
+
+		separator -style "none";
+		radioButton -label "Proportional Fit" -ann "Layout new shells and proportionally scale and fit with any pre-existing shells from the same object." -align "left" 
+			-onc "optionVar -intValue AutoUnwrapMapLayout 2";
+
+		separator -style "none";
+		radioButton -label "None" -ann "Arrange new shells but do not scale to fit 0 to 1 UV space." -align "left"
+			-onc "optionVar -intValue AutoUnwrapMapLayout 3";
+
+		separator -style "none";
+        separator -style "none";
+		separator -style "none";
+        separator -style "none";
+
+		
+		//select correct radio button for stored type
+		$buttonList = `radioCollection -q -collectionItemArray $AutoUnwrapMapLayoutID`;
+		int $buttonNumber = (`optionVar -q AutoUnwrapMapLayout`);
+		radioCollection -e -sl $buttonList[$buttonNumber] $AutoUnwrapMapLayoutID;
+
+
+
+		text -label " Display Setting:   " -ann "" -align "right";
+        checkBox -label "Use Test Pattern Shader" -v `optionVar -q AutoUnwrapMapShader` -onc "optionVar -intValue AutoUnwrapMapShader 1" -ofc "optionVar -intValue AutoUnwrapMapShader 0";
+		separator -style "none";
+        checkBox -label "Isolate Select Object/Faces" -v `optionVar -q AutoUnwrapMapIsolate` -onc "optionVar -intValue AutoUnwrapMapIsolate 1" -ofc "optionVar -intValue AutoUnwrapMapIsolate 0";
+		separator -style "none";
+        checkBox -label "Set Edge Color to Red" -v `optionVar -q AutoUnwrapMapEdgeColor` -onc "optionVar -intValue AutoUnwrapMapEdgeColor 1" -ofc "optionVar -intValue AutoUnwrapMapEdgeColor 0";
+
+		
+
+
+        //add spacer before buttons
+		text -l "";
+        text -l "";
+
+		setParent ..;
+		
+
+
+		//////////////
+		
+
+	
+	rowColumnLayout  -numberOfColumns 3 -columnWidth 1 120  -columnWidth 2 120 -columnWidth 3 120 ;
+		
+		separator -style none; separator -style none; separator -style none;
+		button -label "Enter Tool And Close" -c ("bt_AutoUnwrapMapHUD1; deleteUI AutoUnwrapMapWin");
+		button -label "Enter Tool" -c ("bt_AutoUnwrapMapHUD1");
+		button -label "Close" -c "deleteUI AutoUnwrapMapWin";
+	
+	
+	showWindow;
+	
+}
+
+
+
+bt_AutoUnwrapMapUI;
+
+
+

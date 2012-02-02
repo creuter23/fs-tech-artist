@@ -1,0 +1,455 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davveys Door Generator
+''    Author:  
+''    Last Updated: Mar 06, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4584.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+/*
+	// $T = Door Type 0 = External 1 = Internal.
+	// $C = Cill Option
+	// $E = Group No.
+	// $e = Door Number
+	// $Sizes = Door and Frame sizes 0 = Door Width, 	1 = Door Height,	2 = Door Thickness
+	//								 3 = Frame Width , 	4 = Frame Height,	5 = Frame Thickness.
+	// $Options = Door Hinge and opening.
+	//			[0] = 0 = Inwards or 1 = Outwards,
+	//			[1] = 0 = Left Hinge or 1 = Right Hinge
+	//			[2] = 0 = No extension, or 1 = Left Extended Frame
+	//				 or 2 = Right Left Extended Frame or 3 = Both Sides Extended Frame
+	//			[3] = 0 = Full Glazed side Panel or 1 = Half Glazed Panels 
+	//				  or 2 = Top Glass and Solid Bottom Panels
+*/
+/*
+	float $Sizes[] = {760, 1980, 45, 1200, 2040, 75};
+	int $Options[] = {0, 1, 3, 2};
+	DVY_DoorFrameMaker(0, 3, 1, 1, $Sizes, $Options);
+	
+*/
+
+global proc string DVY_DoorFrameMaker(int $T, int $C, int $E, int $e, float $Sizes[], int $Options[])
+{
+	
+// ******************************************************************************** //	
+//	Global Variables
+	
+	global string $Units;
+	global float $DVYUnit;
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Local Variables
+	
+	string $Temp[], $Temps[], $Shader[], $Frame[];
+	string $DrName[] = {"ExternalDoor", "InternalDoor"};
+		float $FW, $FH, $FD, $Width, $Height;
+		float $WW[], $WH[], $WD[];
+		
+	int $a, $b, $c, $i, $j, $k;	
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Create Shaders for Window Frame & Glass.
+	
+	if(!`objExists Frame_SH`) { $Shader[0] = `DVY_Shaders(40)`; }
+		 $Shader[0] = "Frame_SH";	
+		 
+	if(!`objExists Glass_SH`) { $Shader[1] = `DVY_Shaders(49)`; }
+		 $Shader[1] = "Glass_SH";		 
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Door Frame dimensions
+		
+	float $FD = $Sizes[5];			// Frame Depth
+	float $FW = 60;					// Frame Section Width
+	float $FH = 60;					// Frame Section Height
+	float $DW = $Sizes[0] ;			// Door Width
+	float $DH = $Sizes[1];			// Door Height
+	float $DD = $Sizes[2];			// Door Thickness
+	float $CD = 0;					// Cill Depth
+	float $Gl = 15;					// Glass Thickness
+	if ($C == 2) {$CD = 100;}
+	if ($C == 3) {$CD = 150;}
+	if ($C == 4) {$CD = 200;}
+	
+	if ($T == 1)					// Internal Door Frame Sections
+		{		
+			$FD = 100;				// Frame Depth
+			$FW = 30;				// Frame Section Width
+			$FH = 30;				// Frame Section Height
+		}
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Frame Name
+		
+	string $DoorName = ($DrName[$T] + "_GrpN_" + $E + "_Frame_1");
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Build External Door Frame
+	$a = 0;
+	if ($T == 0)
+		{
+		// Bottom Sill
+			$Temps = `polyCube -w ($DW + $FW * 1) -h ($FH * 0.5) -d $DD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move -r 0 ($FH * 0.25) ($DD * -0.5);
+			
+			$Tmps = `polyCube -w ($DW + $FW * 1) -h ($FH * 0.5 + 10) -d ($FD - $DD) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move -r 0 ($FH * 0.25 + 5) (($FD - $DD) * 0.5);
+			
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmps[0]`;
+				$Temp[$a++] = $Temps[0];
+		
+		// Top Door Rail
+			$Temps = `polyCube -w ($DW + $FW * 1) -h ($FH * 0.5) -d $DD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move -r 0 ($FH * -0.25) ($DD * -0.5);
+			
+			$Tmps = `polyCube -w ($DW + $FW * 1) -h ($FH) -d ($FD - $DD) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move -r 0 ($FH * -0.5 ) (($FD - $DD) * 0.5);
+			
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmps[0]`;
+				move -r 0 ($DH + $FH) 0;
+				$Temp[$a++] = $Temps[0];
+		
+		// Left Hand Door Rail
+			$Temps = `polyCube -w ($FW * 0.5) -h ($DH + $FH)  -d $DD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move -r ($FW * 0.25) 0 ($DD * -0.5);
+			
+			$Tmps = `polyCube -w ($FW) -h ($DH + $FH) -d ($FD - $DD) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move -r ($FH * 0.5) 0 (($FD - $DD) * 0.5);
+			
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmps[0]`;
+				move -r (($DW + $FW) * -0.5 ) (($DH + $FH) * 0.5) 0;
+				scale 1 1 0.9999;
+				$Temp[$a++] = $Temps[0];
+		
+		// Right Hand Door Rail
+			$Temps = `polyCube -w ($FW * 0.5) -h ($DH + $FH) -d $DD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move -r ($FW * -0.25) 0 ($DD * -0.5);
+			
+			$Tmps = `polyCube -w ($FW) -h ($DH + $FH) -d ($FD - $DD) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move -r ($FH * -0.5) 0 (($FD - $DD) * 0.5);
+			
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmps[0]`;
+				move -r (($DW + $FW) * 0.5 ) (($DH + $FH) * 0.5) 0;
+				scale 1 1 0.9999;
+				$Temp[$a++] = $Temps[0];
+				
+				$Temps = `polyUnite -ch 0 $Temp`;
+					$Frame[0] = `rename $Temps[0] $DoorName`;
+					
+			if (`radioButtonGrp -q -sl HingeDirRadioButtonGrp` == 2)
+				{
+					rotate 0 180 0 $Frame[0];
+				}
+					
+			// End of Door Frame Section	
+				
+			if (($Options[2] == 1) || ($Options[2] == 2))
+				{ $Width = $Sizes[3] - $DW - $FW;	$Height = $Sizes[4];}
+				
+			if (($Options[2] == 3))
+				{ $Width = ($Sizes[3] - $DW - $FW) * 0.5; $Height = $Sizes[4]; }
+				
+		if ($Options[2] > 0)
+			{// Door Frame Panel Extensions.
+				$a = 0; 	
+				$Temps = `polyCube -w ($Width) -h ($FH) -d $FD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+							move -r 0 ($FH * 0.5) (($FD - $DD) * -0.25); //($DD * -0.5);
+							$Temp[$a++] = $Temps[0];
+			
+				$Temps = `polyCube -w ($Width - $FW) -h 15 -d 15 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+							move -r ($FW * 0.5) ($FH * 1.0 + 7.5) (15);
+							$Temp[$a++] = $Temps[0];
+				
+				$Temps = `polyCube -w ($Width - $FW -30) -h 15 -d 15 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+							move -r ($FW * 0.5) ($FH * 1.0 + 7.5) (-15);
+							select -r ($Temps[0] + ".e[2]"); delete;
+							select -r ($Temps[0] + ".vtx[4:5]"); delete;
+							move -r -15 0 0 ($Temps[0] + ".vtx[4]");
+							move -r 15 0 0 ($Temps[0] + ".vtx[5]");
+					
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[1]`;
+						move -r (($DW + $Width + $FW) * -0.5) 0 0; //($DD * -0.5);
+						$Temp[0] = $Temps[0];
+						select $Temp[0];
+						$Temps = `duplicate -rr -renameChildren -un`;
+							$Temp[1] = $Temps[0];
+							scale 1 -1 1 $Temp[1];
+							move -r 0 ($DH + $FH) 0 $Temp[1];
+							
+			$a = 2;
+					
+				// Side Rail 			
+				$Temps = `polyCube -w  ($DH + $FH) -h ($FH) -d $FD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+							move -r 0 ($FH * 0.5) (($FD - $DD) * -0.25); //($DD * -0.5);
+							$Temp[$a++] = $Temps[0];
+			
+				$Temps = `polyCube -w ($DH - $FW) -h 15 -d 15 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+							move -r 0 ($FH * 1.0 + 7.5) (15);
+							$Temp[$a++] = $Temps[0];
+				
+				$Temps = `polyCube -w ($DH - $FW -30) -h 15 -d 15 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+							move -r 0 ($FH * 1.0 + 7.5) (-15);
+							select -r ($Temps[0] + ".e[2]"); delete;
+							select -r ($Temps[0] + ".vtx[4:5]"); delete;
+							move -r -15 0 0 ($Temps[0] + ".vtx[4]");
+							move -r 15 0 0 ($Temps[0] + ".vtx[5]");
+							
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temp[2] $Temps[0]`;
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[3]`;
+						rotate 0 0 -90;
+						move -r (($DW + $FW) * -0.5 - $Width ) (($DH + $FH) * 0.5) 0;
+						$Temp[2] = $Temps[0];	
+					
+				// Glazing Bead		
+				$Temps = `polyCube -w ($DH - $FW) -h 15 -d 15 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+							move -r 0 (7.5) (15);
+				
+				$Tmps = `polyCube -w ($DH - $FW -30) -h 15 -d 15 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+							move -r 0 (7.5) (-15);
+							select -r ($Tmps[0] + ".e[2]"); delete;
+							select -r ($Tmps[0] + ".vtx[4:5]"); delete;
+							move -r -15 0 0 ($Tmps[0] + ".vtx[4]");
+							move -r 15 0 0 ($Tmps[0] + ".vtx[5]");
+								
+						$Temps = `polyBoolOp -op 1 -ch 0 $Tmps[0] $Temps[0]`;
+						rotate 0 0 90;
+						move -r (($DW + $FW) * -0.5) (($DH + $FH) * 0.5) 0;
+						
+					$Temps = `polyUnite -ch 0 $Temp[0] $Temp[1] $Temp[2] $Temps[0]`;
+				
+					if ($Options[3] > 0)
+						{// Middle Rail Section
+							$Tmps = `polyCube -w ($Width) -h ($FH * 2) -d $FD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+								move -r 0 0 (($FD - $DD) * -0.25); //($DD * -0.5);
+								$Temp[0] = $Tmps[0];
+				
+							$Tmps = `polyCube -w ($Width - $FW) -h 15 -d 15 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+										move -r ($FW * 0.5) ($FH * 1.0 + 7.5) (15);
+										$Temp[1] = $Tmps[0];
+										
+										
+							$Tmps = `polyCube -w ($Width - $FW -30) -h 15 -d 15 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+										move -r ($FW * 0.5) ($FH * 1.0 + 7.5) (-15);
+										select -r ($Tmps[0] + ".e[2]"); delete;
+										select -r ($Tmps[0] + ".vtx[4:5]"); delete;
+										move -r -15 0 0 ($Tmps[0] + ".vtx[4]");
+										move -r 15 0 0 ($Tmps[0] + ".vtx[5]");
+										$Temp[2] = $Tmps[0];
+										
+								$Tmps = `polyBoolOp -op 1 -ch 0 $Temp[1] $Temp[2]`;
+								$Temp[1] = $Tmps[0];
+								 select -r $Temp[1];
+									$Tmps = `duplicate -rr -renameChildren -un`;
+									scale 1 -1 1 $Tmps[0];
+									
+									$Tmps = `polyBoolOp -op 1 -ch 0 $Tmps[0] $Temp[1]`;
+									$Tmps = `polyUnite -ch 0 $Temp[0] $Tmps[0]`;
+										move -r (($DW + $Width + $FW) * -0.5) (($DH + $FH) * 0.5) 0 $Tmps[0];
+							
+									$Temps = `polyUnite -ch 0 $Temps[0] $Tmps[0]`;
+						}// End of Middle Rail
+					
+						// Reverse Side Panel if Right Hand Side Panel
+						if ($Options[2] == 2) { scale -1 1 1 $Temps[0];}
+						
+						// Duplicate and reverse for Double Sided Panels
+						if ($Options[2] == 3)
+							{ select -r $Temps[0];
+								$Temp = `duplicate -rr -renameChildren -un`;
+								$Temps[1] = $Temp[0];
+				
+								scale -1 1 1 $Temps[1];
+								$Temps = `polyUnite -ch 0 $Temps[0] $Temps[1]`;
+							}
+							
+				if (`radioButtonGrp -q -sl HingeDirRadioButtonGrp` == 2)
+					{
+						move -r 0 0 15 $Temps[0];
+					}
+							
+					$Temps = `polyUnite -ch 0 $Frame[0] $Temps[0]`;
+					$Frame[0] = `rename $Temps[0] $DoorName`;
+				
+			} // End of Door Frame Panel extensions
+		
+		}// End of External Frame
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Internal Door Frame		
+		
+	if ($T == 1)
+		{$a = 0;
+		
+		// Top Door Rail
+			$Temps = `polyCube -w ($DW + $FW * 1) -h ($FH * 0.5) -d $FD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move -r 0 ($FH * -0.25) 0; //($DD * -0.5);
+			
+			$Tmps = `polyCube -w ($DW ) -h ($FH) -d ($FW) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move -r 0 ($FH * -0.5 ) ($FW * 0.5);
+			
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmps[0]`;
+					move -r 0 ($DH + $FH * 0.5) 0;
+					$Temp[$a++] = $Temps[0];
+					
+		// Left Hand Door Rail
+			$Temps = `polyCube -w ($FW * 0.5) -h $DH -d $FD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move -r ($FW * 0.25) 0 0;
+			
+			$Tmps = `polyCube -w ($FW) -h $DH -d $FW -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move -r ($FH * 0.5) 0 ($FW * 0.5);
+			
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmps[0]`;
+				move -r (($DW + $FW) * -0.5 ) ($DH * 0.5) 0;
+				scale 1 1 0.9999;
+				$Temp[$a++] = $Temps[0];
+	
+		// Right Hand Door Rail 
+			$Temps = `polyCube -w ($FW * 0.5) -h $DH -d $FD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move -r ($FW * -0.25) 0 0;
+			
+			$Tmps = `polyCube -w ($FW) -h $DH  -d $FW -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move -r ($FH * -0.5) 0 ($FW * 0.5);
+			
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmps[0]`;
+				move -r (($DW + $FW) * 0.5 ) ($DH  * 0.5) 0;
+				scale 1 1 0.9999;
+				$Temp[$a++] = $Temps[0];
+
+				$Temps = `polyUnite -ch 0 $Temp`;
+					$Frame[0] = `rename $Temps[0] $DoorName`;
+					
+			if (`radioButtonGrp -q -sl HingeDirRadioButtonGrp` == 2)
+				{
+					rotate 0 180 0 $Frame[0];
+				}
+		
+		}// End of Internal Door Frame
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Build Cill	
+	
+	if (($C >= 2) && ($T == 0))
+		{
+			if ($Options[2] == 0) 
+				{ $Temps = `polyCube -w ($DW + $FW) -h ($FH * 0.5) -d $CD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;}
+				
+			if ($Options[2] > 0) 
+				{ $Temps = `polyCube -w $Sizes[3] -h ($FH * 0.5) -d $CD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;}
+	
+				move -r 0 ($FH * -0.25) 0 ($Temps[0] + ".e[1]");
+				
+			if (($Options[2] == 0) || ($Options[2] == 3))
+				{move -r 0 ($FH * 0.25) (($FD - $DD) + ($CD * 0.5));}
+			if ($Options[2] == 1) {move -r ($Width * -0.5) ($FH * 0.25) (($FD - $DD) + ($CD * 0.5));}
+			if ($Options[2] == 2) {move -r ($Width * 0.5) ($FH * 0.25) (($FD - $DD) + ($CD * 0.5));}
+
+			if (`radioButtonGrp -q -sl HingeDirRadioButtonGrp` == 2)
+				{
+					move -r 0 0 15 $Temps[0];
+				}
+		
+				$Temps = `polyUnite -ch 0 $Frame[0] $Temps[0]`;
+					$Frame[0] = `rename $Temps[0] $DoorName`;
+		}
+			
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Add Shader to Frame
+		
+	select -r $Frame[0];
+		hyperShade -assign "initialShadingGroup";
+		hyperShade -assign $Shader[0];
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Add Glass to Frame if Required
+		
+	if (($Options[2] > 0) && ($T == 0))
+		{
+			$Tmps = `polyCube -w ($Width - $FW) -h ($DH - $FH) -d $Gl -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				hyperShade -assign "initialShadingGroup";
+				hyperShade -assign $Shader[1];
+				
+			if ($Options[2] == 1)
+				{ move -r (($DW + $Width) * -0.5) (($DH + $FH) * 0.5) 0;}
+				
+			if ($Options[2] == 2)
+				{ move -r (($DW + $Width) * 0.5) (($DH + $FH) * 0.5) 0;}
+			
+				parent $Tmps[0] $Frame[0];
+				
+			if ($Options[2] == 3)
+				{
+					move -r (($DW + $Width) * 0.5) (($DH + $FH) * 0.5) 0;
+			
+					$Tmps = `polyCube -w ($Width - $FW) -h ($DH - $FH) -d $Gl -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						hyperShade -assign "initialShadingGroup";
+						hyperShade -assign $Shader[1];
+						move -r (($DW + $Width) * -0.5) (($DH + $FH) * 0.5) 0;
+						
+						parent $Tmps[0] $Frame[0];
+				}
+					
+		}// End of Glass Section
+		
+// Add Solid to Bottom of Panels
+	if (($Options[3] == 2) && ($Options[2] > 0) && ($T == 0))
+		{
+			$Tmps = `polyCube -w ($Width - $FW) -h (($DH - $FH) * 0.5) -d ($Gl * 1.01) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				hyperShade -assign "initialShadingGroup";
+				hyperShade -assign $Shader[0];
+			if ($Options[2] == 1)
+				{ move -r (($DW + $Width) * -0.5) (($DH + $FH) * 0.25) 0;}
+				
+			if ($Options[2] == 2)
+				{ move -r (($DW + $Width) * 0.5) (($DH + $FH) * 0.25) 0;}
+			
+				parent $Tmps[0] $Frame[0];
+				
+			if ($Options[2] == 3)
+				{
+					move -r (($DW + $Width) * 0.5) (($DH + $FH) * 0.25) 0;
+			
+			$Tmps = `polyCube -w ($Width - $FW) -h (($DH - $FH) * 0.5) -d ($Gl * 1.01) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				hyperShade -assign "initialShadingGroup";
+				hyperShade -assign $Shader[0];
+						move -r (($DW + $Width) * -0.5) (($DH + $FH) * 0.25) 0;
+						
+						parent $Tmps[0] $Frame[0];
+				}
+		}
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+
+	select -r $Frame[0];
+		makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+		
+	return $Frame[0];
+	
+}

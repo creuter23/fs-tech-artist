@@ -1,0 +1,36 @@
+
+# The next step would be getting all the keyable attributes from each selected object.
+
+def attrReset( ):
+	
+	selected = cmds.ls(sl=True)
+	
+	selCB = cmds.channelBox( "mainChannelBox", q=True, sma=True)
+	
+	for sel in selected:
+		for attr in selCB:
+			attrName = "%s.%s" %(sel,attr)
+			print(attrName)
+
+			# Check to see if keyable
+			if( cmds.getAttr( attrName, k=True) ):
+				# Get default value
+				# cmds.attributeQuery( "sx", node="nurbsCircle1", listDefault=True )
+					
+				attrDV = cmds.attributeQuery( attr, node=sel, listDefault=True)[0]
+				print( "Object: %s Setting to Default: %s" %(attrName, attrDV))
+				cmds.setAttr( attrName, attrDV )
+	
+def attrReset( obj ):
+	
+	selCB = cmds.channelBox( "mainChannelBox", q=True, sda=True)
+		
+	for attr in selCB:
+		attrName = "%s.%s" %(obj,attr)
+		
+		# Check to see if keyable
+		if( cmds.attributeQuery( attr, node=sel, k=True ):
+			# Get default value
+			# cmds.attributeQuery( "sx", node="nurbsCircle1", listDefault=True )
+			attrDV = cmds.attributeQuery( attr, node=sel, listDefault=True)[0]
+			cmds.setAttr( attrName, attrDV )

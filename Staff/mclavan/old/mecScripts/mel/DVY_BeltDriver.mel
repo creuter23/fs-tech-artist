@@ -1,0 +1,467 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davvey\'s Belt  & Pulley Generator
+''    Author:  
+''    Last Updated: Feb 02, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4509.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+///////////////////////////////////////////////////////////////////////////////
+/*			
+				
+	Copyright © 2006 DVY_BeltDriver. All rights reserved davvey@ntlworld.com
+
+						- DVY_BeltDriver -
+///////////////////////////////////////////////////////////////////////////////
+						
+//	DVY_BeltDriver;
+//	Description and Usage Section
+
+//	Installation	
+		
+	Script is part of Davvey's Belt and Pulley Generator script pack.
+	
+	It is called to rig Belt and Pulleys to set up drive for group.
+	It uses Utility Nodes and KeyFraming to generate a Rotation Driver
+	and sets each Pulleys rotation to correct ratio. Also sets up
+	Belt loop at correct speed to match Pulley_1 RPM.
+	
+	Each Pulleys Tooth engagement can be adjusted to correct any
+	misalignment between Belt and individual Pulleys. Also Pulley_1
+	rotation speed can be set and/or reversed using attribute called
+	RotateSpeedon Top Group Node. Also the Belt speed can be controlled
+	if any rotational mismatch occurs using an attribute called SpeedAdjust
+	on Top Grouyp Node.
+
+
+*/
+	
+//////////////////////////////////////////////////////////////////////////
+//					DVY_BeltDriver Procedure
+//////////////////////////////////////////////////////////////////////////
+
+global proc DVY_BeltDriver(string $PulleyTopNode, int $t, int $e)
+ {	
+	global float $TargetLength;
+	global float $DVYUnit;
+	
+	global string $Units;
+	global string $Belt[], $BeltGrp[], $SprokGrp[], $SPName, $ISO_No[], $TeethProfiles[], $Type[];
+	global string $CHType[], $DVY_Curve[];
+	
+	global string $Type[], $AllGroups[], $AllPulleys[], $PulleyGrps[], $RotateGroups[], $Pulleys[],
+					$PulleyTeeth[],$PulleyShaft[], $SpinA[], $AddA[];
+	clear $AllGroups $PulleyGrps $Pulleys $PulleyTeeth $SpinA;
+	
+	string $BeltType[] = {"Help", "Flat_Belt", "Vee_Belt", "Toothed_Belt"}; 
+	
+	$t = `radioButtonGrp -q -sl PulleyTypeRadioButton`;
+		 
+	string $CHName = $BeltType[$t-1];
+		
+	string $BlendA[], $SpinA[], $RatioA[], $Drivers[], $Sel[], $each, $sel;
+	float $Pos[], $Angle, $Module, $Pitch, $Ratio, $M, $M1, $M2, $Rr; 
+
+	int $m, $f, $Mod, $AutoKey, $InterLock, $i, $r, $N[];
+	string $PulleyName = $Type[$t];
+	
+		select -cl;
+	
+	//find current frame rate
+	float $FPS = `currentTimeUnitToFPS`;
+	print ("$FPS is " + $FPS + "\n");
+	
+	//set Frame count to give 1 rpm for Pulley driver.
+	float $FpS = ($FPS * 60)/8;
+	print ("$FpS is " + $FpS + "\n");
+	
+	string $Pulleys[], $PulleysGrp[], $Sel[], $Selected[], $buffer[];
+	string $Group[];
+	
+		$Sel = `ls -sl`;
+		$Selected[0] = $Sel[0];
+		$numTokens = `tokenize $Sel[0] "_" $buffer`;
+		print $buffer;
+		
+		select -r ($CHName + "_Grp_" + $e + "_" + "Pulley_GrpN_*");
+		$PulleysGrp = `ls -tr -sl`;
+		
+		print $PulleysGrp;
+		print $Selected;
+		
+	// Collect Pitch of Belt from  Pulley Group Node.
+	if(`objExists $PulleyTopNode`)
+		{
+			$Pitch = `getAttr ($PulleyTopNode + ".Pitch")`;
+//			print ("Pitch of the Pulley Group is " + $Pitch + ".. © Davvey..\n");
+			
+			if (`autoKeyframe -query -state`)
+				{
+					$AutoKey = 1;
+					print "Autokeyframe is On, Switching off to set up Driver."; 
+					print " Will reset state after set up completed. © Davvey..\n";
+					autoKeyframe -state off;
+				}
+				
+	// Set Value of Group Node Name					
+		string	$PuName = ( $CHName + "_Grp_" + $e + "_" );
+//		print $PuName;
+	
+		//Loop through and find each of the Pulley Group Nodes belonging to the relevant Pulleys etc.
+	
+			select ($PulleyTopNode + "|" + $PuName + "Pulley_GrpN*");
+				$AllGroups = `ls -tr -sl`;
+//				print "$\nAllGroups contains Pulley Groups to be used to set up animation control..\n\n";
+//				print $AllGroups;
+		
+			select ($PulleyTopNode + "|" + $PuName + "Pulley_GrpN*" + "|" + $PuName + "PulleyRotate_GrpN*");
+				$RotateGroups = `ls -tr -sl`;
+//				print "$\nRotateGroups contains Pulley Groups to be used to set up animation control..\n\n";
+//				print $RotateGroups;
+			
+			select ($PuName + "PulleyBody_*");
+
+//			select ($PulleyTopNode + "|" + $PuName + "Pulley_GrpN*" + "|" + 
+//					$PuName + "PulleyRotate_GrpN*" + "|" + $PuName + 
+//					"PulleyShaft_GrpN*" + "|" + $PuName + "PulleyShaft*" + "|" + $PuName + "PulleyBody_*");
+				$Pulleys = `ls -tr -sl`;
+//				print "\n$Pulleys contains Pulleys to be set up which are.. © Davvey..\n\n";
+//				print $Pulleys;
+			
+			select ($PuName + "PulleyShaft*");
+
+//			select ($PulleyTopNode + "|" + $PuName + "Pulley_GrpN*" + "|" + 
+//					$PuName + "PulleyRotate_GrpN*" + "|" + $PuName + 
+//					"PulleyShaft_GrpN*" + "|" + $PuName + "PulleyShaft*");
+				$PulleyShaft = `ls -tr -sl`;
+				print "\n$PulleyShaft contains Pulley Shaft to be set up which are.. © Davvey..\n\n";
+				print $PulleyShaft;
+				print "\n";
+			
+		$M = 0; $f = 1;
+		
+		// Collect Attribute data for each Pulley in Group.	
+			for ($m=0; $m<(`size $AllGroups` -1); $m++)
+				{
+					$M1 = `getAttr ($AllGroups[$m] + ".PCD")`;
+					$M2 = `getAttr ($AllGroups[$m + 1] + ".PCD")`;
+					$M = ($M + (($M1 + $M2) * 0.5));
+					$f = ($f * -1);
+				}
+		// Create Rotation Driver and set up keyFrame roation to generate 1 RPM as a base speed. 
+			createNode implicitBox;
+				rename `pickWalk -d up` ("PulleyTrain_Driver_" + $e);
+				$Drivers[0] = ("PulleyTrain_Driver_" + $e);
+				setAttr ($Drivers[0] + ".scale") 1.5 1.5 1.5;
+				setAttr ($Drivers[0] + ".visibility") 1;
+				
+				$Pos = `xform -q -ws -t $PulleyTopNode`;
+//				print "$Pos is \n";
+//				print $Pos;
+				move -r $Pos[0] $Pos[1] $Pos[2] $Drivers[0]; 
+				makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+				parent $Drivers[0] $PulleyTopNode;
+		
+			addAttr -k 1 -ln RotateSpeed -at double -dv 1 $PulleyTopNode;
+			addAttr -k 1 -ln SpeedAdjust -at double -dv 1 -min 0 -max 1 $PulleyTopNode;
+			setAttr ($PulleyTopNode + ".SpeedAdjust") 1.0 ;
+			
+	if (!`attributeExists "BeltJiggle" $PulleyTopNode`)
+		{ addAttr -ln BeltJiggle -at short $PulleyTopNode;}
+		     setAttr -l 0 -k 1 -cb 1 ($PulleyTopNode + ".BeltJiggle") 2;
+			
+			
+				makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+			
+			print ("\nPulley Driver " + $Drivers[0] + " has been created and parented into Pulley Group.. © Davvey\n");
+
+			for ($k=0; $k<9; $k++)
+			  {
+				  $r = ($k * -45);
+				  setAttr ($Drivers[0] + ".rotateX") $r;
+				  setKeyframe -attribute "rotateX" -t ($k * $FpS) $Drivers[0];
+				  float $Time = ($k * $FpS);
+				  
+		//		  print ("Current Time is "  + $Time + " and ");
+		//		  print ( "Rotation is " + `getAttr ($Drivers[0] + ".rotateX")` + ".. © Davvey..\n");
+			  }
+				setAttr ($Drivers[0] + "_rotateX.preInfinity") 3;
+				setAttr ($Drivers[0] + "_rotateX.postInfinity") 3;
+				keyTangent -e -itt spline -ott spline ($Drivers[0] + "_rotateX");
+				currentTime -edit 0;
+				setAttr ($Drivers[0] + ".rotateX") 0;
+				setAttr ($Drivers[0] + ".visibility") 0;
+		
+//			print ("Driver " + $Drivers[0] + " has been setup as the driver for the Pulley Train.. © Davvey\n");
+				
+			createNode implicitSphere;
+				rename `pickWalk -d up` ("BeltJiggle_Driver_" + $e);
+				$Drivers[1] = ("BeltJiggle_Driver_" + $e);
+				setAttr ($Drivers[1] + ".scale") 1.5 1.5 1.5;
+				setAttr ($Drivers[1] + ".visibility") 1;
+				
+				$Pos = `xform -q -ws -t $PulleyTopNode`;
+//				print "$Pos is \n";
+//				print $Pos;
+				move -r $Pos[0] $Pos[1] $Pos[2] $Drivers[1]; 
+				makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+				parent $Drivers[1] $PulleyTopNode;
+				
+				
+			print ("\nBelt JiggleDriver " + $Drivers[1] + " has been created and parented into Pulley Group.. © Davvey\n");
+			$r = 0;
+			for ($k=0; $k<5; $k++)
+			  {
+				  $r = ($r * -1);
+				  setAttr ($Drivers[1] + ".translateZ") $r;
+				  setKeyframe -attribute "translateZ" -t $k $Drivers[1];
+				 if ($k == 0) {$r = 1;}
+				 if ($k == 1) {$r = 0;}
+				 if ($k == 2) {$r = -1;}
+				 if ($k == 3) {$r = 0;}
+				  
+		//		  print ("Current Time is "  + $Time + " and ");
+		//		  print ( "Rotation is " + `getAttr ($Drivers[0] + ".rotateX")` + ".. © Davvey..\n");
+			  }
+			  
+				setAttr ($Drivers[1] + "_translateZ.preInfinity") 3;
+				setAttr ($Drivers[1] + "_translateZ.postInfinity") 3;
+				keyTangent -e -itt spline -ott spline ($Drivers[1] + "_translateZ");
+				currentTime -edit 0;
+				setAttr ($Drivers[1] + ".translateZ") 0;
+				setAttr ($Drivers[1] + ".visibility") 0;
+
+			select -cl;
+//			select -hi $AllGroups[0];
+				
+		// Create Multiplier and Blend Node to connect each Pulley_1 to Rotation Driver output.
+			
+		for ($i=0; $i<1; $i++)
+			{
+				$SpinA[$i] = `shadingNode -asUtility multiplyDivide -name ($PuName + "MultiplyDriverN_" + ($i+1))`;
+				setAttr ($SpinA[$i] + ".operation") 1;
+				
+				connectAttr -f ($PulleyTopNode + ".RotateSpeed") ($SpinA[$i] + ".input1X");
+				connectAttr -f ($Drivers[0] + ".rx") ($SpinA[$i] + ".input2X");
+	
+				$BlendA[$i] = `createNode blendTwoAttr -name ($PuName + "BlendDriverN_" + ($i+1))`;
+				setAttr ($BlendA[$i] + ".attributesBlender") 0.5;
+				
+				connectAttr -f ($SpinA[$i] + ".outputX") ($BlendA[$i] + ".input[0]");
+				setAttr -l 0 -k 0 -cb 1 ($PulleyShaft[$i] + ".rx");
+				connectAttr -f ($BlendA[$i] + ".output") ($PulleyShaft[$i] + ".rx");
+			}
+			
+			
+		float $ratio[];
+			
+		// Create Multiplier and Blend Nodes to connect each Pulley to Pulley_1 roation.
+		for ($i=1; $i<(`size $AllGroups`); $i++)
+			{
+				$ratio[$i] = (`getAttr ($PulleysGrp[0] + ".Teeth")` * 1.0)/(`getAttr ($PulleysGrp[$i] + ".Teeth")` * 1.0);
+					print ("$ratio is " + $ratio[$i] +"\n");
+				
+				$SpinA[$i] = `shadingNode -asUtility multiplyDivide -name ($PuName + "MultiplyDriverN_" + ($i))`;
+					setAttr ($SpinA[$i] + ".operation") 1;
+					
+					setAttr ($SpinA[$i] + ".input1X") ($ratio[$i] * 2);
+//					if ($i == 2) {setAttr ($SpinA[$i] + ".input1X") ($ratio[$i] * -2);}
+					connectAttr -f ($PulleyShaft[0] + ".rx") ($SpinA[$i] + ".input2X");
+				
+				$BlendA[$i] = `createNode blendTwoAttr -name ($PuName + "BlendDriverN_" + ($i))`;
+					setAttr ($BlendA[$i] + ".attributesBlender") 0.5;
+					
+					connectAttr -f ($SpinA[$i] + ".outputX") ($BlendA[$i] + ".input[0]");
+					setAttr -l 0 -k 0 -cb 1 ($PulleyShaft[$i] + ".rx");
+					connectAttr -f ($BlendA[$i] + ".output") ($PulleyShaft[$i] + ".rx");
+			}
+				
+		// Calculate Drive Belt ratio between Pulley_1 and Belt motion paths.
+		
+		float $BeltPitches = $TargetLength/$Pitch;
+//		$BeltPitches = `getAttr ($CHName + "_Belt_GrpN_" + $e + ".BeltLinks")`;
+		int $SpTeeth = `getAttr ($PulleysGrp[0] + ".Teeth")`;
+		float $ChPCD = `getAttr ($PulleysGrp[0] + ".PCD")`;
+		float $SpRatio = $SpTeeth * $ChPCD * $DVYUnit;
+//		$ratio[2] = 0.5 * $BeltPitches/ $SpTeeth;
+		
+		$ratio[2] = $TargetLength /(360 * $BeltPitches/$SpTeeth);
+		
+		
+		
+			print ("Pulley_1 Teeth count is " + $SpTeeth + "\n");
+			print ("Pulley_1 PCD is " + $ChPCD + "\n");
+			print ("Pulley_1 Distance is " + $SpRatio + "\n");
+	
+			print ("Belt Length is " + $TargetLength + "\n");
+			print ("Belt Pitches is " + $BeltPitches + "\n");
+			print ("$ratio for Belt is " + $ratio[2] + "\n");
+		
+		// Create Multiplier node for Belt drive
+		$SpinA[3] = `shadingNode -asUtility multiplyDivide -name ($PuName + "MultiplyDriverN_" + (3))`;
+			setAttr ($SpinA[3] + ".operation") 1;
+			setAttr ($SpinA[3] + ".input1X") ($ratio[2] * -1);
+			connectAttr -f ($PulleyShaft[0] + ".rx") ($SpinA[3] + ".input2X");
+
+		// Create Blend Node for Belt Drive connections		
+		$BlendA[3] = `createNode blendTwoAttr -name ($PuName + "BlendDriverN_" + (3))`;
+	  		connectAttr -f ($PulleyTopNode + ".SpeedAdjust") ($BlendA[3] + ".attributesBlender");
+			connectAttr -f ($SpinA[3] + ".outputX") ($BlendA[3] + ".input[1]");
+					
+		string $PathA[], $PathB[];
+					
+			select -r ($CHName + "Belt_MotPathA*");
+			$PathA = `ls -sl`;
+//			print $PathA;
+			$A = `size $PathA`/2;
+			print ("$A is " + $A + "\n");
+			
+			for ($i=1; $i< $A+1; $i++)
+				{
+					connectAttr -f ($BlendA[3] + ".output") ($CHName + "Belt_MotPathA" + $i + "_uValue.input");
+//					connectAttr -f ($BlendA[3] + ".output") ($CHName + "Belt_MotPathB" + $i + "_uValue.input");
+					
+				}
+			
+			reorder -relative -5 $Drivers[0] ;
+			reorder -relative -5 $Drivers[1] ;
+			
+			print "DVY_Curve is \n";
+			print $DVY_Curve;
+
+/*
+		// Create Multiplier Nodes for Belt Jiggle
+		$AddA[1] = `createNode multDoubleLinear -name ($PuName + "JiggleMultiplierN_" + (1))`;
+			connectAttr -f ($Drivers[1] + ".tz") ($AddA[1] + ".input1") ;
+			connectAttr -f ($PulleyTopNode + ".BeltJiggle") ($AddA[1] + ".input2");
+			
+			if (`radioButtonGrp -q -sl IdlerPulleyRadioButton` == 1)
+				{	
+					connectAttr -f ($AddA[1] + ".output") ($CHName + "_Belt_GrpN_" + $e + "_ClusterTZ_GrpN_1.tz") ;
+					connectAttr -f ($AddA[1] + ".output") ($CHName + "_Belt_GrpN_" + $e + "_ClusterTZ_GrpN_2.tz") ;
+				}
+				
+			if (`radioButtonGrp -q -sl IdlerPulleyRadioButton` == 2)
+				{	
+					connectAttr -f ($AddA[1] + ".output") ($CHName + "_Belt_GrpN_" + $e + "_ClusterTZ_GrpN_2.tz") ;
+				}
+				
+			if (`radioButtonGrp -q -sl IdlerPulleyRadioButton` == 3)
+				{	
+					connectAttr -f ($AddA[1] + ".output") ($CHName + "_Belt_GrpN_" + $e + "_ClusterTZ_GrpN_1.tz") ;
+				}
+*/				
+			string $SetAttrA[] = {"tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz"};
+			string $SetAttrB[] = {"tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz", "v"};
+			string $SetAttrC[] = {"sizeX", "sizeY", "sizeZ"};
+			string $SetAttrD[] = {"sx", "sy", "sz"};
+
+			select -r -hi $Pulleys $AllGroups $PulleyTeeth $PulleyShaft;
+			$AllPulleys = `ls -sl`;
+//				print $AllPulleys;
+	
+			for ($i=1; $i<`size $AllPulleys`; $i++)
+				{
+				 $Sel = `ls -type transform -sl`;
+				  for($sel in $Sel)
+					{ for($each in $SetAttrA) { setAttr -k 0 -l 1 ($sel + "." + $each); } }
+				} 
+				
+				select -r $Drivers[0];
+				for ($each in $SetAttrB)
+					{ setAttr -k 0 -l 1 ($Drivers[0] + "." + $each);}
+					  setAttr -cb 1 ($Drivers[0] + ".rx");
+					
+				select -r ("PulleyTrain_Driver_Shape" + $e);
+				for ($each in $SetAttrC)
+					{ setAttr -k 0 -l 1 (("PulleyTrain_Driver_Shape" + $e) + "." + $each);}
+					
+				select -r ($PulleyTopNode);
+				for ($each in $SetAttrD)
+					{ setAttr -k 0 -l 1 ($PulleyTopNode + "." + $each);}
+						
+							}
+		else {print ("OOps Pulley Top Node " + $PulleyTopNode + " does not exist.... © Davvey\n");}
+	
+	if ($AutoKey == 1)
+		{
+			print "Autokeyframe is now reset to ON... © Davvey..\n";
+			autoKeyframe -state on;
+		}
+		
+		print ("\n" + $PulleyTopNode + " Drive Train has Been Setup.");
+		print ("\nSee HelpFile for further operating instructions.. © Davvey\n\n");
+
+ }	
+ 
+ 
+ 
+global proc DVY_PulleyConnect()
+{
+	
+	string $TempSel[], $Rotate, $buffer[], $GNode[], $PuName, $GNodeName;
+	int $R;
+	
+	$TempSel = `ls -tr -sl`;
+	
+	
+	if (`size $TempSel` >2)
+		{
+			error "OOPs!! please select only 2 Shafts and try again.. © Davvey..\n";
+		}
+
+	if (($TempSel[0] == "") || ($TempSel[1] == ""))
+		{
+			error "OOPs!! please select 2 Shafts and try again.. © Davvey..\n";
+		}
+	
+	
+		print $TempSel;	
+		
+		
+		$numTokens = `tokenize $TempSel[1] "_" $buffer`;
+		
+		print $buffer;
+		
+		$Rotate = `getAttr ($TempSel[1] + ".NameOfPulleyGrp")`;
+		if (($Rotate + ".ry") == 180)
+			{$R = 1;}
+				else {$R = 1;}
+				
+				
+	 	if (!`attributeExists "Rotation" $Rotate`) 
+		  	{
+				addAttr -ln Rotation -at "short" -min -1 -max 1 $Rotate;
+				setAttr -l 0 -k 1 -cb 1  ($Rotate + ".Rotation") 1;
+			}
+
+		
+	$GNodeName =  ("Grp_" + $buffer[1] + "_" + $buffer[2] + "_");
+		
+		$GNode[0] = `shadingNode -asUtility multiplyDivide -name ($GNodeName + "MultiplyDriverN_" + (0))`;
+			setAttr ($GNode[0] + ".operation") 1;
+			connectAttr -f ($Rotate + ".Rotation") ($GNode[0] + ".input1X");	
+			connectAttr -f ($TempSel[0] + ".rotateX") ($GNode[0] + ".input2X");
+					
+		
+		$PuName =  ("Grp_" + $buffer[1] + "_" + $buffer[2] + "_BlendDriverN_1");
+			setAttr ($PuName + ".attributesBlender") 1;
+			connectAttr -f ($GNode[0] + ".outputX")  ($PuName + ".input[1]");
+		
+		
+		print ("$PuName is " + $PuName + "\n");
+		
+		
+		
+		
+
+	
+}
+	

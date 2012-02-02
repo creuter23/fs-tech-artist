@@ -1,0 +1,399 @@
+/*
+  This script is to prime a control.
+
+
+// What will this procedure need.
+Ultimately it creats at least one pad (or waste) group parented
+above a selected control.  The pads created will mimic the orientation and
+posibily the position of the joint or object of the users choosing.
+
+Needed
+- How many pads are going to created.
+  - Top pad and pad between the top pad and the controller.
+  - An example of this is to do automation pads between the waste group and 
+    the control curve.
+- Will the entire control curve move or will it's pivot be only moved.
+- What are the names of the pads going to be.
+- Will there be Suffix allready on the control curve.
+  - Maybe give the user the option of naming the whole system.
+  if($name == "")
+  {
+        $name = $ctrlName;
+  }
+
+
+*/
+
+/* ------------------------------------------------------------------------------------------------
+  mecDupExists
+  Disc:
+       This procedure check to see if $obj exists anywhere in the scene.
+       An array is returned the first element is the name and the second 
+       is $obj exists in the scene.
+  Input:
+        $obj(string) - A object's name in maya need to be check if it has a duplicate.
+  Return:
+         (string[]) 2 indices. Index[0] = the name of the object and 
+                    Index[1] = Ether "none" == object is unique or 
+                    "match" == object has a duplicate.
+
+   STAND ALONE PROCEDURE
+ ------------------------------------------------------------------------------------------------
+ ================================================================================================*/
+proc string[] mecDupExists(string $obj)
+{
+    string $tok[];
+    tokenize $obj "|" $tok;
+    
+    string $last = $tok[(size($tok)-1)];
+
+    string $state = "none";
+    if(size(`ls $last`) > 0)
+           $state = "match";
+
+    return {$last, $state};
+
+}
+
+/* ------------------------------------------------------------------------------------------------
+   mecPadScriptWork2
+   Disc:
+        Mainly this procedure will create a group, match its trans and ori, 
+               and then ether place the group in the world or parent to the 
+               main object.
+   Input: $sel(string) - object that is going to be mimiced.
+          $name(string) - name of the new object.
+          $ori(int) - Orient match (1==yes, 0==no)
+          $point(int) - Translate match (1==yes, 0==no)
+          $type(int) - parent == 1 or world == 0
+   Output:
+          (String) Returns the name of the new group unless the name exists and then it returns 0.
+   
+STAND ALONE PROCEDURE
+ ------------------------------------------------------------------------------------------------
+ ================================================================================================*/
+
+proc string mecPadScriptWork2(string $sel, string $name, int $ori, int $point, int $type)
+{
+    // Check to see if the $name exists in the scene file.
+    string $nameEx[] = `mecDupExists($name)`;
+
+    // If the name exists then 0 is returned.
+    if("match" == $nameEx[1])
+               return "0";
+
+    string $grp = `group -em -w -n $name`;
+
+    // If Ori is checked the group will match its orients.
+    if($ori == 1)
+    {
+                 string $OC[] = `orientConstraint  $sel $grp`;
+                 delete $OC;
+                 clear($OC);
+    }
+   
+    // If Point is checked the group will match the selected .
+    if($point == 1)
+    {
+                 string $PC[] = `pointConstraint $sel $grp`;
+                 delete $PC;
+                 clear($PC);
+    }
+
+
+    // Parenting the new group into its proper location.
+
+   if($type == 1 )
+    {
+              string $parent[] = `listRelatives -p -f $sel`;
+
+              if(size($parent) > 0)
+              {
+                    //parent -w $sel[0];
+                    print $parent;
+                    parent $grp $parent[0];
+              }
+              parent $sel $grp;
+
+    }
+
+    return $grp;
+}
+
+
+/* ------------------------------------------------------------------------------------------------
+  mecPrimeCtrl
+  This procedure primes a control so that it is ready to be used in a control
+    system.
+  Input:
+        $ctrlName (string) The name of the control curve.
+        $name (string) The base name of the pads.
+        $source (string) The objects for which its position and orientation will
+                be mimiced.
+        $pad (int) How many pads will there be?
+        $wasteName (string) The Suffix for the waste pad.
+        $autoName (string) The Suffix for the automation pads.
+        $pos (int) Does the shape move ($pos == 1) or Does only its pivot ($pos == 0)
+   Output:
+          (string array) The names of the pads and control curve generated in order.
+          
+ 
+    STAND ALONE PROCEDURE
+ ------------------------------------------------------------------------------------------------
+ ================================================================================================*/
+
+//mecPrimeCtrl("a", "", "joint2", 3, "_wa", "_auto", 1);
+
+proc string[] mecPrimeCtrl(string $ctrlName, string $name, string $sourceName,
+              int $pads, string $wasteName, string $autoName, int $pos)
+{
+
+      // The string will contain all the pads and the control curve in order.
+      string $group[];
+
+      // Does the user what to keep the same name as the control curve?
+      if($name == "")
+      {
+            $name = $ctrlName;
+      }
+    
+      // Generate pads
+      // Loop through how many pads need to be made.
+      int $i;
+      for( $i = 0; $i < $pads; $i++)
+      {
+        //The first pad to be generated will be the waste.
+        if( $i == 0 )
+        {
+            string $nameWa = ($name+$wasteName);
+            $group[$i] = mecPadScriptWork2($sourceName, $nameWa, 1, 1, 0);
+            // Error Checking to make sure duplicate names don't exists!
+            if( $group[$i] == "0")
+            {
+                int $i;
+                for($i = 0; $i < (size($group)-1); $i++)
+                       delete $group[$i];
+                error ("Duplicate node names exists: " + $nameWa);
+            }
+        }
+        else  //Followed by the Auto pads.
+        {
+            string $nameAuto = ($name+$autoName+$i);
+            $group[$i] = mecPadScriptWork2($sourceName, $nameAuto, 1, 1, 0);
+            // Error Checking to make sure duplicate names don't exists!
+            if( $group[$i] == "0")
+            {
+                print $group;
+                int $i;
+                for($i = 0; $i < (size($group)-1); $i++)
+                       delete $group[$i];
+                error ("Duplicate node names exists: " + $nameAuto);
+            };
+        }
+    
+      }
+    
+      // Move the control to its proper position.
+      // Will the shape node move with it or will it just be the pivot?
+    
+      // Parent the pads and the control groups together.
+      if( $pos == 1 )
+      {
+          // The whole curve is moving.
+          string $PC[] = `pointConstraint $sourceName $ctrlName`;
+          delete $PC;
+          clear($PC);
+      }
+      else
+      {
+          // Only the pivot will be moved.
+          float $piv[] = `xform -q -ws -piv $sourceName`;
+          print $piv;
+          xform -ws -piv $piv[0] $piv[1] $piv[2] $ctrlName;
+      }
+    
+    
+      // The first is left in world.  Every pad after that
+      //   will be parented under it.
+      for($i = 1; $i < $pads; $i++)
+      {
+              parent $group[$i] $group[$i-1];
+      }
+    
+      // parent the control curve under pads.
+      parent $ctrlName $group[size($group)-1];
+    
+      // Delete History on the control curve
+      delete -ch $ctrlName;
+      // Freeze Transforms on the control curve.
+      makeIdentity -apply true -t 1 -r 1 -s 1 -n 0 $ctrlName;
+
+      return $group;
+}
+
+proc string mecPrimeGuiB(string $text, string $obj, string $parent)
+{
+        text -l "" -h 5;
+        rowLayout -w 260 -nc 3 -columnWidth3 200 10 50 ;
+        
+        string $mecField = `textFieldGrp -w 200 -l $text -tx ""
+        		-cw2 75 125 $obj`;
+        text -l "" -w 10;
+        button -l "Grab" -w 50 -align "center" 
+        	 -c "mecBackGrab($obj)" ($obj+"but");
+        
+        setParent $parent;
+        return $mecField;
+}
+
+global proc mecBackGrab(string $obj)
+{
+	string $sel[] = `ls -sl`;
+	textFieldGrp -e -tx $sel[0] $obj;
+
+}
+
+proc mecPrimeCtrlGui()
+{
+        if(`window -exists mecPrimeCtrlGui`)
+        		deleteUI mecPrimeCtrlGui;
+        if( `windowPref -exists mecPrimeCtrlGui` )
+        		windowPref -r mecPrimeCtrlGui;
+
+        window -w 300 -h 300 -t "Prime Control Script"
+        		-titleBar 1 -mnb 1 -mxb 1 -mb 1 
+        		-tlb 0 -sizeable 1 mecPrimeCtrlGui;
+        
+
+        columnLayout mecPrimeCtrlCol;
+        string $mecPrimeSOG = mecPrimeGuiB("Source Object", "mecPrimeSOG", "mecPrimeCtrlCol");
+        print $mecPrimeSOG;
+        text -l "" -h 5;
+        button -e -c "mecBackGrab(\"mecPrimeSOG\")" mecPrimeSOGbut;
+        
+        string $mecPrimeSOG = mecPrimeGuiB("Control Curve", "mecPrimeCCG", "mecPrimeCtrlCol");
+        text -l "" -h 5;
+        button -e -c "mecBackGrab(\"mecPrimeCCG\")" mecPrimeCCGbut;
+
+
+        rowLayout -w 300 -nc 2 -columnWidth2 110 75 ;
+        text -w 110 -vis 1 
+        		-label "Alternate Name"
+        		-align "left" -font "boldLabelFont" ;
+        textField -w 100 mecPrimeAltG;
+        setParent..;
+        text -l "" -h 3;
+
+        rowLayout -w 300 -nc 2 -columnWidth2 110 75 ;
+        text -w 110 -vis 1 
+        		-label "Waste Pad Suffix"
+        		-align "left" -font "boldLabelFont" ;
+        textField -w 100 -text "_wa" mecPrimeCWa;
+        setParent..;
+        text -l "" -h 3;
+        
+        rowLayout -w 300 -nc 2 -columnWidth2 110 75 ;
+        text -w 110 -vis 1 
+        		-label "Auto Pad Suffix"
+        		-align "left" -font "boldLabelFont" ;
+        textField -w 100 -text "_auto" mecPrimeCAuto;
+        setParent..;
+        text -l "" -h 3;
+        
+        rowLayout -w 300 -nc 2 -columnWidth2 110 75 ;
+        text -w 110 -vis 1 
+        		-label "Number of Pads"
+        		-align "left" -font "boldLabelFont" ;
+        intField -w 25 -v 1 mecPrimeCNum;
+        setParent..;
+        text -l "" -h 3;
+
+        checkBox -w 100 -l "More Controller"
+        		-v 1 -align "left" mecPrimeChk;
+
+
+        text -l "" -h 5;
+        button -l "Execute" -c "mecPrimeCtrlWork()";
+        showWindow mecPrimeCtrlGui;
+
+}
+
+global proc mecPrimeCtrlWork()
+{
+       string $sel[] = `ls -sl`;
+       
+       string $source = `textFieldGrp -q -text mecPrimeSOG`;
+       string $target = `textFieldGrp -q -text mecPrimeCCG`;
+
+       if(size($sel) > 1 && size($sel) < 3)
+       {
+            $source = $sel[0];
+            $target = $sel[1];
+       }
+
+
+       string $alt = `textField -q -text mecPrimeAltG`;
+       string $wa = `textField -q -text mecPrimeCWa`;
+       string $auto = `textField -q -text mecPrimeCAuto`;
+       int $num = `intField -q -v mecPrimeCNum`;
+       int $piv = `checkBox -q -v mecPrimeChk`;
+
+       mecPrimeCtrl($target, $alt, $source, $num, $wa, $auto, $piv);
+}
+
+mecPrimeCtrlGui();
+
+//mecPrimeCtrl("a", "", "joint2", 2, "_wa", "_auto", 1);
+
+
+/*
+
+proc mecBackGuiB(string $text, string $obj)
+{
+        text -l "" -h 5;
+        rowLayout -w 260 -nc 3 -columnWidth3 200 10 50 ;
+        
+        textFieldGrp -w 200 -l $text -tx "" 
+        		-cw2 75 125 $obj;
+        text -l "" -w 10;
+        button -l "Grab" -w 50 -align "center" 
+        	 -c "mecBackGrab($obj)" ($obj+"but");
+        
+        setParent mecBackGui;
+}
+
+global proc mecBackGrab(string $obj)
+{
+	string $sel[] = `ls -sl`;
+	textFieldGrp -e -tx $sel[0] $obj;
+
+}
+
+
+
+proc mecBackGuiPros()
+{
+	string $joints[];
+		$joints[0] = `textFieldGrp -q -tx mecBackJSG`;
+	if(`textFieldGrp -q -tx mecBackJEG` == "")
+		$joints[size($joints)] = `textFieldGrp -q -tx mecBackJEG`;
+	string $shoulderCtrl = `textFieldGrp -q -tx mecBackSCG`;
+	string $hipsCtrl = `textFieldGrp -q -tx mecBackECG`;
+	
+
+}
+
+
+*/
+
+/* ======= UPDATE ==============
+
+
+   - Create a GUI for this script.
+
+====---- Done ----====
+   - At this point the proc to create the pads is done.
+   - What needs to be done now is test each part of the code to
+     make sure the logic is sound.
+
+*/

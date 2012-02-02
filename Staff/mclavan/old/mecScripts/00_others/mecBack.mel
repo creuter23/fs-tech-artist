@@ -1,0 +1,652 @@
+/*
+Here is the process so far.
+1) Joints are allready created and oriented properly.
+2) Control curves need to be made and setup properly.
+
+3) SplineIK is created which generates a ikHandle and a curve.
+6) The twist is created.
+
+4) The arcLength of the curve is found.
+5) the strechy part of the back system is created.
+
+7) FK system needs to be created.
+8) advanced control are made.
+
+*/
+
+
+// I need to make the splineIK returning the ikHandle and the curve that it generates.
+//   The curve and ikHandle need to be named as well.
+
+proc string mecSpline(string $joints[], string $curveName, string $upV )
+{
+     // The twist will be done here.  Since all the names will be present.
+     // - If the size fo the joint array is less than one do a dag list other wise
+     //   the end joint will be the second index.
+     string $startJoint = $joints[0];
+     string $endJoint = $joints[(size($joints)-1)];
+
+// Whatever that is going into this proc as a joint system should be a complete chain
+//          and done before entering this PROC.
+/*
+     if( size($joints) > 1 )
+     {
+         $startJoint = $joints[0];
+         $endJoint = $joints[$1];
+     }
+     else
+     {
+         string $JTemp[] = `ls -type "joint" -dag $joints[0]`;
+         $startJoint = $JTemp[0];
+         $endJoint = $JTemp[(size($JTemp)-1)];
+     }
+*/
+     string $ikHandle[] = `ikHandle -sol ikSplineSolver -pcv false -ns 2
+            -sj $startJoint -ee $endJoint -n ($curveName + "Handle")`;
+
+     string $newCurve = `rename $ikHandle[2] $curveName`;
+     rename $ikHandle[1] ($curveName + "Eff");
+
+// Result: ikHandle1 effector2 curve1 //
+
+
+     // Setting up the defaults for the advanced twist.
+     setAttr ($ikHandle[0] + ".dTwistControlEnable") 1;
+     setAttr ($ikHandle[0] + ".dWorldUpType")  4;
+     //setAttr $ikHandle[0] + ".dWorldUpType" 4;
+     //setAttr mySplineHandle.dWorldUpType 4;
+     // Which is the upVector
+     if("Y" == toupper($upV) )
+     {
+            setAttr ($ikHandle[0] + ".dWorldUpAxis") 0;
+            setAttr ($ikHandle[0] + ".dWorldUpVectorY") 1;
+            setAttr ($ikHandle[0] + ".dWorldUpVectorEndY") 1;
+// Positive Y = setAttr mySplineHandle.dWorldUpAxis 0;
+// setAttr "mySplineHandle.dWorldUpVectorY" 1;
+// setAttr "mySplineHandle.dWorldUpVectorY" 1;
+// setAttr "mySplineHandle.dWorldUpVectorZ" 0;
+// setAttr "mySplineHandle.dWorldUpVectorEndZ" 0;
+     }
+     else
+     {
+         // Z is the up access;
+// Positive Z = setAttr mySplineHandle.dWorldUpAxis 3;
+
+            setAttr ($ikHandle[0] + ".dWorldUpAxis") 3;
+            setAttr ($ikHandle[0] + ".dWorldUpVectorY") 0;
+            setAttr ($ikHandle[0] + ".dWorldUpVectorEndY") 0;
+            setAttr ($ikHandle[0] + ".dWorldUpVectorZ") 1;
+            setAttr ($ikHandle[0] + ".dWorldUpVectorEndZ") 1;
+// setAttr "mySplineHandle.dWorldUpVectorZ" 1;
+// setAttr "mySplineHandle.dWorldUpVectorEndZ" 1;
+// setAttr "mySplineHandle.dWorldUpVectorY" 0;
+// setAttr "mySplineHandle.dWorldUpVectorEndY" 0;
+     }
+/*
+Positive Z = setAttr mySplineHandle.dWorldUpAxis 3;
+Positive Y = setAttr mySplineHandle.dWorldUpAxis 0;
+
+Twist info
+setAttr "mySplineHandle.dTwistControlEnable" 1;
+setAttr mySplineHandle.dWorldUpType 4;
+setAttr mySplineHandle.dWorldUpAxis 1;
+setAttr mySplineHandle.dWorldUpAxis 0;
+setAttr "mySplineHandle.dWorldUpVectorY" 1;
+setAttr "mySplineHandle.dWorldUpVectorEndY" 1;
+*/
+        return $newCurve;
+}
+
+
+//mecSpline({"joint1"}, "mySpline", {}, "Y");
+
+// When the clusters are created they need to be named and returned.
+
+// this only goes through 5 iterations because that the setting for the back.
+
+
+/*
+  Inputs:
+         $cuv(string) name of the curve that will have clusters applied to them.
+         $name(sting) name of the clusters.
+  Outputs: 
+           string(array) names of the clustes created.
+*/
+proc string[] mecCluster(string $cuv, string $name)
+{
+//string $cuv[] = `ls -sl`;
+
+    if(!objExists($cuv))
+        error("The Curve:  " + $cuv + "  Doesn't exists.");
+    int $numCVs = `getAttr($cuv+".degree")` + `getAttr($cuv+".spans")`;
+    string $clusterNames[];
+    int $mecCount;
+    for( $mecCount = 0; $mecCount < $numCVs; $mecCount++)
+    {
+    	string $clusterTemp[] = `cluster -n ($name+($mecCount+1)) ($cuv + ".cv[" + $mecCount + "]")`;
+
+        $clusterNames[size($clusterNames)] = $clusterTemp[1];
+    }
+
+    return $clusterNames;
+}
+
+
+proc mecMult(string $joints[], string $curve)
+{
+// Bring cluster script here.
+
+//string $joints[] = `ls -sl -type "joint" -dag`;
+
+             // Create the arclen from the curve.
+// Need to change curve1 soon
+             string $arcInfo = `arclen -ch 1 $curve`;
+             float $arcLength = `getAttr ($arcInfo + ".arcLength")`;
+print ($arcInfo + " & " + $arcLength + "\n");
+
+             // Need to Loop through joints
+
+             // Create the multi node for the arclen to hook into
+             string $divNode = `shadingNode -asUtility multiplyDivide -n ($joints[0] + "_jDiv")`;
+//setAttr joint1_jDiv.operation 2;
+// Check
+             setAttr ($divNode + ".operation") 2;
+print $joints;
+             for($joint in $joints)
+             {
+
+                 // Create the mult node
+                 string $shadeNode = `shadingNode -asUtility multiplyDivide -n ($joint + "_jMult")`;
+
+                 // Grad the .tx value from the joint and assign it to the multiNode
+                 setAttr ($shadeNode + ".input1X") `getAttr ($joint + ".tx")`;
+
+                 // connect the mult outputX to the joint.tx
+                 connectAttr ($shadeNode + ".outputX") ($joint + ".tx");
+
+                 // Hook the Div node into the mult nodes for each joint.
+                 connectAttr ($divNode + ".outputX") ($shadeNode + ".input2X");
+
+             }
+
+
+             // Take the arclen value and input it into the input2X for the div node.
+             setAttr ($divNode + ".input2X") $arcLength;
+             
+             // Hook the arclen node into the div node input1X.
+             connectAttr ($arcInfo + ".arcLength") ($divNode + ".input1X");
+
+}
+
+
+
+
+proc mecBackGuiB(string $text, string $obj)
+{
+        text -l "" -h 5;
+        rowLayout -w 260 -nc 3 -columnWidth3 225 10 50 ;
+        
+        textFieldGrp -w 225 -l $text -tx ""
+        		-cw2 75 150 $obj;
+      		// -cw2 75 125 $obj;
+        text -l "" -w 10;
+        button -l "Grab" -w 50 -align "center" 
+        	 -c "mecBackGrab($obj)" ($obj+"but");
+        
+        setParent mecBackGui;
+}
+
+global proc mecBackGrab(string $obj)
+{
+	string $sel[] = `ls -sl`;
+	textFieldGrp -e -tx $sel[0] $obj;
+
+}
+
+
+
+proc mecBackGuiPros()
+{
+	string $joints[];
+		$joints[0] = `textFieldGrp -q -tx mecBackJSG`;
+	if(`textFieldGrp -q -tx mecBackJEG` == "")
+		$joints[size($joints)] = `textFieldGrp -q -tx mecBackJEG`;
+	string $shoulderCtrl = `textFieldGrp -q -tx mecBackSCG`;
+	string $hipsCtrl = `textFieldGrp -q -tx mecBackECG`;
+	
+
+}
+
+proc mecBackGui()
+{
+        if(`window -exists mecBackScriptGui`)
+        		deleteUI mecBackScriptGui;
+        if( `windowPref -exists mecBackScriptGui` )
+        		windowPref -r mecBackScriptGui;
+
+        window -w 320 -h 261 -t "Back Script"
+        		-titleBar 1 -mnb 1 -mxb 1 -mb 1 
+        		-tlb 0 -sizeable 1 mecBackScriptGui;
+        
+        
+        columnLayout mecBackGui;
+        mecBackGuiB("Shoulder Ctrl", "mecBackSCG");
+        text -l "" -h 5;
+        button -e -c "mecBackGrab(\"mecBackSCG\")" mecBackSCGbut;
+        
+        mecBackGuiB("Hips Ctrl", "mecBackHCG");
+        text -l "" -h 5;
+        button -e -c "mecBackGrab(\"mecBackHCG\")" mecBackHCGbut;
+        
+        mecBackGuiB("Joint Start", "mecBackJSG");
+        text -l "" -h 5;
+        button -e -c "mecBackGrab(\"mecBackJSG\")" mecBackJSGbut;
+        
+        mecBackGuiB("Joint End", "mecBackJEG");
+        text -l "" -h 5;
+        button -e -c "mecBackGrab(\"mecBackJEG\")" mecBackJEGbut;
+
+        textFieldGrp -w 225 -l "Back Curve" -tx ""
+        		-cw2 75 150 mecBackCurve;
+        //mecBackGuiB("Back Curve", "mecBackCurve");
+        //text -l "" -h 5;
+        //button -e -c "mecBackGrab(\"mecBackCurve\")" mecBackCurvebut;
+
+        text -l "" -h 5;
+        optionMenuGrp -w 140 -cal 1 "right" -cw2 75 50 -l "Up Axis" mecBackUpAxisOpt;
+                 menuItem -label "Y";
+                 menuItem -label "Z";
+
+
+        text -l "" -h 5;
+        rowLayout -nc 2 -cw2 50 200;
+        text -l "" -w 50;
+        button -w 200 -l "Execute" -c "mecBackMaker()";
+        
+        setParent..;
+        text -l "" -h 5;
+        image -h 15 -w 312 -i (`internalVar -userBitmapsDir`+"3dsetup.bmp") mecBackPadSMe;
+
+    //internalVar -
+     //formLayout -e -af mecRSPadSMe "bottom" 0 mecRSPadSFrm;
+        showWindow mecBackScriptGui;
+
+}
+
+/*
+  Generates control curves of different types.
+  Input:
+        $curveName (string) The name of the control curve.
+        $curveType (string) Which type of control curve is generated.
+  Output:
+         (string) Returns the name of the curve generated.
+
+*/
+
+proc string mecBackCurveC(string $curveName, string $curveType)
+{
+
+     // I need to find which type of curve this script needs to generate.
+     
+     // Control for the Cluster controls.
+     // Control for the FK Controls.
+    string $name;
+    switch ($curveType)
+    {
+    case "Rombus" :
+     // Rombus
+        $name = `curve -d 1 -p 0 1 0 -p 1 0 0 -p 0 0 1 -p -1 0 0 -p 0 0 -1 -p 0 1 0
+           -p 0 0 1 -p 0 -1 0 -p 0 0 -1 -p 1 0 0 -p 0 1 0 -p -1 0 0 -p 0 -1 0 
+           -p 1 0 0 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 
+           -k 11 -k 12 -k 13 -n $curveName`;
+     break;
+     case "Jack":
+     // Jack
+        $name = `curve -d 1 -p 0 0 0 -p 0.75 0 0 -p 1 0.25 0 -p 1.25 0 0 -p 1 -0.25 0
+               -p 0.75 0 0 -p 1 0 0.25 -p 1.25 0 0 -p 1 0 -0.25 -p 1 0.25 0 -p 1 0 0.25
+               -p 1 -0.25 0 -p 1 0 -0.25 -p 0.75 0 0 -p 0 0 0 -p -0.75 0 0 -p -1 0.25 0 
+               -p -1.25 0 0 -p -1 -0.25 0 -p -0.75 0 0 -p -1 0 0.25 -p -1.25 0 0 -p -1 0 -0.25 
+               -p -1 0.25 0 -p -1 0 0.25 -p -1 -0.25 0 -p -1 0 -0.25 -p -0.75 0 0 -p 0 0 0 
+               -p 0 0.75 0 -p 0 1 -0.25 -p 0 1.25 0 -p 0 1 0.25 -p 0 0.75 0 -p -0.25 1 0 
+               -p 0 1.25 0 -p 0.25 1 0 -p 0 1 0.25 -p -0.25 1 0 -p 0 1 -0.25 -p 0.25 1 0 
+               -p 0 0.75 0 -p 0 0 0 -p 0 -0.75 0 -p 0 -1 -0.25 -p 0 -1.25 0 -p 0 -1 0.25 
+               -p 0 -0.75 0 -p -0.25 -1 0 -p 0 -1.25 0 -p 0.25 -1 0 -p 0 -1 -0.25 -p -0.25 -1 0 
+               -p 0 -1 0.25 -p 0.25 -1 0 -p 0 -0.75 0 -p 0 0 0 -p 0 0 -0.75 -p 0 0.25 -1 
+               -p 0 0 -1.25 -p 0 -0.25 -1 -p 0 0 -0.75 -p -0.25 0 -1 -p 0 0 -1.25 -p 0.25 0 -1 
+               -p 0 0.25 -1 -p -0.25 0 -1 -p 0 -0.25 -1 -p 0.25 0 -1 -p 0 0 -0.75 -p 0 0 0 
+               -p 0 0 0.75 -p 0 0.25 1 -p 0 0 1.25 -p 0 -0.25 1 -p 0 0 0.75 -p -0.25 0 1 
+               -p 0 0 1.25 -p 0.25 0 1 -p 0 0.25 1 -p -0.25 0 1 -p 0 -0.25 1 -p 0.25 0 1 
+               -p 0 0 0.75 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 
+               -k 12 -k 13 -k 14 -k 15 -k 16 -k 17 -k 18 -k 19 -k 20 -k 21 -k 22 -k 23 -k 24 
+               -k 25 -k 26 -k 27 -k 28 -k 29 -k 30 -k 31 -k 32 -k 33 -k 34 -k 35 -k 36 -k 37 
+               -k 38 -k 39 -k 40 -k 41 -k 42 -k 43 -k 44 -k 45 -k 46 -k 47 -k 48 -k 49 -k 50 
+               -k 51 -k 52 -k 53 -k 54 -k 55 -k 56 -k 57 -k 58 -k 59 -k 60 -k 61 -k 62 -k 63 
+               -k 64 -k 65 -k 66 -k 67 -k 68 -k 69 -k 70 -k 71 -k 72 -k 73 -k 74 -k 75 -k 76 
+               -k 77 -k 78 -k 79 -k 80 -k 81 -k 82 -k 83 -n $curveName` ;
+           break;
+     case "Circle":
+        $name = `circle -c 0 0 0 -nr 0 1 0 -sw 360 -r 1 -d 3 -ut 0
+                 -tol 0.01 -s 8 -ch 1 -n $curveName`;
+          break;
+    };
+
+    return $name;
+}
+
+/*  mecDupExists
+  Disc:
+       This procedure check to see if $obj exists anywhere in the scene.
+       An array is returned the first element is the name and the second 
+       is $obj exists in the scene.
+  Input:
+        $obj(string) - A object's name in maya need to be check if it has a duplicate.
+  Return:
+         (string[]) 2 indices. Index[0] = the name of the object and 
+                    Index[1] = Ether "none" == object is unique or 
+                    "match" == object has a duplicate.
+
+   STAND ALONE PROCEDURE
+*/
+proc string[] mecDupExists(string $obj)
+{
+    string $tok[];
+    tokenize $obj "|" $tok;
+    
+    string $last = $tok[(size($tok)-1)];
+
+    string $state = "none";
+    if(size(`ls $last`) > 0)
+           $state = "match";
+
+    return {$last, $state};
+
+}
+
+/* mecPadScriptWork2
+   Disc:
+        Mainly this procedure will create a group, match its trans and ori, 
+               and then ether place the group in the world or parent to the 
+               main object.
+   Input: $sel(string) - object that is going to be mimiced.
+          $name(string) - name of the new object.
+          $ori(int) - Orient match (1==yes, 0==no)
+          $point(int) - Translate match (1==yes, 0==no)
+          $type(int) - parent == 1 or world == 0
+   Output:
+          (String) Returns the name of the new group unless the name exists and then it returns 0.
+   
+STAND ALONE PROCEDURE
+ */
+
+proc string mecPadScriptWork2(string $sel, string $name, int $ori, int $point, int $type)
+{
+    // Check to see if the $name exists in the scene file.
+    string $nameEx[] = `mecDupExists($name)`;
+
+    // If the name exists then 0 is returned.
+    if("match" == $nameEx[1])
+               return "0";
+
+    string $grp = `group -em -w -n $name`;
+
+    // If Ori is checked the group will match its orients.
+    if($ori == 1)
+    {
+                 string $OC[] = `orientConstraint  $sel $grp`;
+                 delete $OC;
+                 clear($OC);
+    }
+   
+    // If Point is checked the group will match the selected .
+    if($point == 1)
+    {
+                 string $PC[] = `pointConstraint $sel $grp`;
+                 delete $PC;
+                 clear($PC);
+    }
+
+
+    // Parenting the new group into its proper location.
+
+   if($type == 1 )
+    {
+              string $parent[] = `listRelatives -p -f $sel`;
+
+              if(size($parent) > 0)
+              {
+                    //parent -w $sel[0];
+                    print $parent;
+                    parent $grp $parent[0];
+              }
+              parent $sel $grp;
+
+    }
+
+    return $grp;
+}
+
+/* This procedure creates the FK system for the back.
+   Input: 
+          $joints (string array) Joint system that the FK system will work on.
+          $ctrlName (string) The name of the controls to be generated for the FK system.
+          $CtrlBottom (string) Bottom control in the spline system (the root).  Hips is a good example.
+          $CtrlTop (string) Top control in the spline system.  The shoulder control is a good example.
+   Output:
+          (string array) Returns the name of the controls generated.
+          
+   Disc:
+        Along with the control curve for each FK joint, two additional pads are created.  
+        A waste group and a Auto Group
+*/
+proc string[] mecFKBack(string $joints[], string $ctrlName, string $CtrlBottom, string $CtrlTop)
+{
+
+
+
+     // Joints position need to be aquired.
+
+     float $firstPos[] = `xform -q -ws -t $joints[0]`;
+     float $seondPos[];
+     float $thirdPos[];
+     float $endPos[] = `xform -q -ws -t $joints[size($joints)-1]`;
+
+     print $firstPos;
+
+     string $SpaceTemp1[] = `spaceLocator -p 0 0 0`;
+     string $SpaceTemp2[] = `spaceLocator -p 0 0 0`;
+
+     string $PCTemp[] = `pointConstraint $joints[0] $joints[size($joints)-1] $SpaceTemp1`;
+     setAttr ($PCTemp[0] + "." + $joints[0] + "W0") .5;
+
+     string $PCTemp2[] = `pointConstraint $joints[0] $joints[size($joints)-1] $SpaceTemp2`;
+     setAttr ($PCTemp2[0] + "." + $joints[size($joints)-1] + "W1") .5;
+
+     // Use temp locators to and get there position by using xform.
+     $secondPos = `xform -q -ws -t $SpaceTemp2`;
+     $thridPos = `xform -q -ws -t $SpaceTemp1`;
+     //print $secondPos;
+     print $thridPos;
+
+     // Clean up locators.
+     delete $SpaceTemp1;
+     delete $SpaceTemp2;
+     clear($SpaceTemp1);
+     clear($SpaceTemp2);
+     clear($PCTemp);
+     clear($PCTemp2);
+
+     // Joints need to generated.
+     string $jNames[];
+     $jNames[size($jNames)] = `joint -p $firstPos[0] $firstPos[1] $firstPos[2] -n ($ctrlName+"1_J")`;
+     $jNames[size($jNames)] = `joint -p $secondPos[0] $secondPos[1] $secondPos[2] -n ($ctrlName+"2_J")`;
+     joint -e -zso -oj xyz -sao yup $jNames[0];
+     $jNames[size($jNames)] = `joint -p $thridPos[0] $thridPos[1] $thridPos[2] -n ($ctrlName+"3_J")`;
+     joint -e -zso -oj xyz -sao yup $jNames[1];
+     $jNames[size($jNames)] = `joint -p $endPos[0] $endPos[1] $endPos[2] -n ($ctrlName+"4_J")`;
+     joint -e -zso -oj xyz -sao yup $jNames[2];
+
+     // Joint orients need to be reset for the end joint in the system..
+      setAttr ($jNames[3] + ".jointOrientX") 0;
+      setAttr ($jNames[3] + ".jointOrientY") 0;
+      setAttr ($jNames[3] + ".jointOrientZ") 0;
+
+     // Curves need be generated.
+     // All the control curves to be generated.
+     string $ctrlCurves[];
+     for($jN in $jNames)
+     {
+          // Create the curve for each joint, 
+          //   +1 is used because the name should start at 1 not 0.
+          $ctrlCurves[size($ctrlCurves)] = mecBackCurveC(($ctrlName+(size($ctrlCurves)+1)+"_ctrl"), "Rombus");
+
+          // Generate Pads
+          string $pad_wa = mecPadScriptWork2($jN, ($ctrlName+size($ctrlCurves)+"_wa"), 1, 1, 0);
+          string $pad_auto = mecPadScriptWork2($jN, ($ctrlName+size($ctrlCurves)+"_auto"), 1, 1, 0);
+
+          // Parent pads
+          // Position control curve.
+          string $PC[] = `pointConstraint $jN $ctrlCurves[size($ctrlCurves)-1]`;
+          delete $PC;
+          clear($PC);
+         
+          // parent the control curve and freeze transforms and delete history.
+          parent $ctrlCurves[size($ctrlCurves)-1] $pad_auto;
+          parent $pad_auto $pad_wa;
+          makeIdentity -apply true -t 1 -r 1 -s 1 -n 0 $ctrlCurves[size($ctrlCurves)-1];
+
+          // Orient Constrain the joint to the control curve.
+          orientConstraint $ctrlCurves[size($ctrlCurves)-1] $jN;
+
+          // parent all the control curves systems together.
+         if ( size($ctrlCurves) > 1 )
+          {
+             // if size is > 1 then this system needs to be parented under that last
+             //    system to come through.
+             parent $pad_wa $ctrlCurves[size($ctrlCurves)-2];
+          }
+
+     }
+
+     // Parent the Back system to the FK joint system.
+     parent $CtrlTop $jNames[size($jNames)-1];
+     parent $CtrlBottom $jNames[0];
+
+     return {};
+}
+
+global proc mecBackMaker()
+{
+       // What ingrediance is going to be needed.
+       /*
+         - The Joint system and control curves are all ready in place and properly oriented.
+         - Create the SplineIK
+         - Create the arclen and strechy system
+         - Create the clusters
+         - Parent the clusters to the system
+       */
+
+        string $hipsCtrl = `textFieldGrp -q -tx mecBackHCG`;//"b";
+        string $shouldersCtrl = `textFieldGrp -q -tx mecBackSCG`; //"a";
+        string $ikCurve = `textFieldGrp -q -tx mecBackCurve`; //"mySpline";
+        //string $upAxis = "Y";
+        string $upAxis = `optionMenuGrp -q -v mecBackUpAxisOpt`;
+print $upAxis;
+        string $jStart = `textFieldGrp -q -tx mecBackJSG`;
+        string $jEnd = `textFieldGrp -q -tx mecBackJEG`;
+        string $joints[] = {$jStart}; //`ls -dag $jStart`;
+
+/*
+        if(`textFieldGrp -q -tx mecBackJEG` != "")
+        {
+               string $jointsTemp[];
+               $joints[size($joints)] = `textFieldGrp -q -tx mecBackJEG`;
+        }
+*/
+
+
+
+     // if $jEnd is blank then the whole joint chain is used.
+     // else $joints will contain a joint chain between $jStart and $jEnd;
+     int $count = 0;
+     string $js[] = `ls -type "joint" -dag $jStart`;
+     for($j in $js)
+     {
+         $joints[$count] = $j;
+         if($jEnd == $j)
+                  break;
+         $count++;
+     }
+     print $joints;
+/*
+     if( size($joints) > 1 )
+     {
+         $startJoint = $joints[0];
+         $endJoint = $joints[1];
+     }
+     else
+     {
+         string $JTemp[] = `ls -type "joint" -dag $joints[0]`;
+         $startJoint = $JTemp[0];
+         $endJoint = $JTemp[(size($JTemp)-1)];
+     }
+
+        string $hipsCtrl = "b";
+        string $shouldersCtrl = "a";
+        string $ikCurve = "mySpline";
+        string $upAxis = "Y";
+        string $joints[] = {"joint1"};
+
+*/
+        string $clusterName = ($ikCurve+"_Clust");
+
+        // Spline IK is created.
+        string $splineCurve = mecSpline($joints, $ikCurve, $upAxis);
+
+        // Strech is created with the arc length.
+        mecMult($joints, $splineCurve);
+ 
+        // Cluster is created for control over the back.
+        string $backClusters[] = mecCluster($splineCurve, $clusterName);
+/*
+// Advanced back system would be inserted here:
+- This includes seperate control curves for each cluster that would give the animator a little more
+  control over the IK version of the back.
+- There indy back controls for the IK system should just be parented to the
+*/
+
+// I'd like have the clusters parented to control curves so if the user wish to animate them they can.
+// These control curves would then be parented to the shoulder and hips controls.
+//   The middle control would have a group above the control that would be constained to instead of the 
+//   cluster itself.
+
+        // Parent the Top two clusters to the Shoulder control.
+        parent $backClusters[3] $backClusters[4] $shouldersCtrl;
+
+        // Parent the Bottom two clusters to the Hips Control
+        parent $backClusters[0] $backClusters[1] $hipsCtrl;
+
+        // Parent constraint the middle cluster to both of the control curves.
+        parentConstraint -mo -weight 1 $hipsCtrl $shouldersCtrl $backClusters[2];
+//parentConstraint -mo $shoulderCtrl $backCluster[2];
+//parentConstraint -mo $hipsCtrl $backCluster[2];
+        
+
+        // FK system needs to be created.
+        mecFKBack($joints, $ikCurve, $hipsCtrl, $shouldersCtrl);
+
+        string $dialog = "============================================\n" +
+                         "These are the two twist Controls:\n" +
+                         "Under Solver Attribute > Advanced Twist\n" +
+                         "Spline Curve " + $splineCurve + " has been selected\n" +
+                         "World Up Object : " + $hipsCtrl + "\n" +
+                         "World Up Object2: " + $shouldersCtrl + "\n" +
+                         "============================================\n";
+        confirmDialog -title "Advanced Twist" -message $dialog
+                      -button "Ok" -defaultButton "Ok";
+        
+        print $dialog;
+        select -r ($ikCurve+"Handle");
+
+}
+
+mecBackGui();

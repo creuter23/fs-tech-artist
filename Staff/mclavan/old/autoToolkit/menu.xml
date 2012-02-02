@@ -1,0 +1,58 @@
+<!-- 
+Auto Toolset 
+Created by: Michael Clavan
+
+- The main menu will be loaded by the name of the folder.
+- importing the folder will run everything.
+- reload it to update the menu when changing the xml file.
+
+- Put icons, python scripts, and mel scripts in their correct folder.
+- This xml file only represents what and where the menu items will appear.
+- This xml doc will also let you tell what is a tear off menu and if a script is mel or python.
+
+-->
+<toolset>
+	<!-- tearoff="1" == can be torn off tearoff="0" can't be. -->
+	<menu tearoff="1">Menu 1
+		<!-- type=0 means mel script, type="1" means python-->
+		<script type="0">Script 1 Label (Mel)
+			<exe1>source script1</exe1>
+			<exe2>script1</exe2>
+			<ann>Help info of using the script (Help line)</ann>
+		</script>
+		
+		<script type="1">Script 2 Label (Python)
+			<exe1>import module</exe1>
+			<exe2>module.functionName()</exe2>
+			<ann>Same as above</ann>
+		</script>
+	</menu>	
+	<menu tearoff="1">Menu 2
+		<menu tearoff="0">Sub Menu 2 (As far as a submenu can go.)
+			<script type="0">Script 3
+				<exe1>source cometMenu.mel;</exe1>
+				<exe2></exe2>
+				<ann>Generates a menu for all of Michael Comets Scripts</ann>
+			</script>			
+		</menu>
+
+
+
+	</menu>		
+	
+	<!--
+	<menu tearoff="1">Modeling
+	
+	</menu>
+	<menu tearoff="1">Utility
+		<script type="0">Script Name
+			<exe1></exe1>
+			<exe2></exe2>
+			<ann></ann>
+		</script>
+	</menu>
+	-->
+
+</toolset>
+
+

@@ -1,0 +1,499 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davvey\'s Spring Generator
+''    Author:  
+''    Last Updated: Feb 19, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4556.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+	
+
+/////////////////////////////////////////////////////////////////////////////			
+/*				
+	Copyright © 2006 DVY_Springs. All rights reserved davvey@ntlworld.com
+
+						- DVY_Springs -
+///////////////////////////////////////////////////////////////////////////////
+
+	Usage
+
+	Type DVY_Springs in command line or middle mouse drag it to a shelf.
+	There is an ICOn file supplied to use with the Shelf Button.
+	
+	Installation
+	
+	Install all scripts in any Maya Script folder and install all image files
+	in Maya's Icon folder.
+	
+	Description	
+	
+	This script is call a GUI where releavnt Info can be enetered to generate 
+	a dimensionally accurate Spring.
+	
+	Enter Spring dimensions and GUI will also show English equivalent sizes.
+	Select top and Bottom Spring ends as required then press Build Spring Button.
+	The Script can build the following styles of Springs.
+	
+	Closed_Ground_End, Closed_Flat_End, Open_End,  
+	Hook_Loop_End, Closed_Loop_End, xtended_Loop_End, Cone_End
+	
+	As each option is selected an image of the style will be updated in the GUI.
+	The top and Bottom ends can be the same or different styles.
+	
+	Genrally Compression springs are built using the first three styles and
+	extension using the remaining four styles.
+	
+	There is a Radio Button to select style but this will only change the name
+	of the Spring and the User can set the styles as required.
+	
+	The Top and Bottom sections are point and aim constrained to Top and Bottom
+	Locators which can be used to "operate the Spring".
+	
+	The spring will stretch as the Top and Bottom Locators are move in the Y-axis
+	The Move the spring use the Top Gotp Node to Transalte and Roate the Spring.
+	
+	The Spring is generated from a PolyHelix which is a locked Node to prevent 
+	deletion of its construction History. The Helix has is its Height attribute
+	connected to the output of a distance node which is in turn connected to the
+	world space postions of the Top and Bottom Locators. The Spring Body is
+	constrained to the Bottom End Section of the Spring and this ensures realistic
+	stretching of the spring when either end of the spring is pulled.
+	
+	Unused attributes are locked off if not required.
+	
+	If required the script can build a Spring to match a Round Cap End Piston 
+	previously built using Davvey's Piston Generator. 
+	To use this option load the Pistons Top Group Node into the GUI before pressing 
+	the Build Spring Button.
+	
+	Note:- The Scale of the Spring will be adjusted to set correct Spring size
+	relevant to the correct size for the Users Maya Unit settings 
+	i.e mm, cm, m, in, ft, yd.
+	
+	TO DELETE A SPRING
+	
+	PLEASE USE THE DELETE SPRING BUTTON IN THE GUI. THE REASON FOR THIS IS THAT
+	THERE ARE LOCKED NODES IN THE SPRING GROUP WHICH MEANS THE NODE CANNOT BE 
+	DELETED BY USING THE DELETE OPTION WITHOUT UNLOCKING THE NODES FIRST.
+	
+*/	
+///////////////////////////////////////////////////////////////////////////////
+//					DVY_Springs Procedure
+////////////////////////////////////////////////////////////////////////////////
+
+
+global proc DVY_Springs()
+{
+	 
+	global string $DVYImage[];
+	float $THData[], $Pos[];
+	float $Lead, $Turns, $TurnsEach, $BoltLength;
+	float $XMax, $XMin, $YMax, $YMin;
+	float $P, $h, $TD, $PCD, $RD; 
+	
+	int $a, $b, $c, $e, $i, $j, $k, $N;
+	
+	string $Tabs[];
+	string $SpCompType[], $SpExType[], $SpTorType[];
+	string $ThreadType[], $Profiles[], $ThreadName[], $Temp[], $Temps[];
+	string $Barrel[], $Bolt[], $Nut[], $Hole[];
+	string $Thread, $Name;
+	
+	int $K = 0; int $S = 0; int $D = 0;
+	
+// ******************************************************************************** //	
+//	Constants and "Static Data"
+	
+	$SpExType = {"Closed_Ground_End", "Closed_Flat_End", "Open_End",  
+				"Hook_Loop_End", "Closed_Loop_End", "Extended_Loop_End", "Cone_End"};
+	
+	//	Check for any "Window History" and delete if it exists.
+	 	if (`windowPref -exists DVY_SpringsWindow`)
+			{ windowPref -edit -topLeftCorner 125 700 -widthHeight 490 720 DVY_SpringsWindow;}
+	
+	//Check for multiple similar windows.
+		if (`window -q -ex DVY_SpringsWindow`) deleteUI DVY_SpringsWindow;
+	//Build window.
+		window -w 490 -h 720 -mnb 1 -mxb 0 -sizeable 1 -title "Davvey's Spring Generator ver 1.0" DVY_SpringsWindow;
+	
+	//Build 'Edit' menu.
+	
+	string $menuBarLayout = `menuBarLayout`;
+		menu -label "File"; 
+ 			menuItem -label "Close" -command "deleteUI DVY_SpringsWindow";		
+		menu -label "About"; 
+	 		menuItem -label "About WoodScrew and Self Tapper Generator" -command "DVY_AboutSpringsWin;";		
+
+	// Create Main Layout column
+	string $MainPanel = `columnLayout -width 468 -adj 1 -cal "center" "Main Panel"`;
+
+	// Title and Info Section for the "Main Column Setup" tab. 
+		
+	string $Title = `columnLayout -width 466 -adj 1 -cal "center" "Title"`;
+	
+		text -height 5 -label " " ;	//Spacer
+		separator -height 5 -style "double" ;
+		text -bgc .5 .5 1 -height 20 -align "center" -font "boldLabelFont"
+			-label "Davvey's Spring Generator.";
+		separator -height 5 -style "double";
+		text -height 5 -label " " ;	//Spacer
+	
+	setParent $MainPanel;	
+		
+//////////////////////////////////////////////////////////////////////////////////
+//					Spring Tab.
+//////////////////////////////////////////////////////////////////////////////////	
+// Tab Layout for Springs
+	
+
+	string $Tab = `tabLayout -imw 1 -imh 1 "Options"`;
+	
+	$Tabs[0] = `columnLayout -adj 1 "Spring Options"`;
+				
+	//Create WoodScrew Options Tab
+	
+	string $PSOptions = `frameLayout -height 545 -labelVisible 0 -label "POptions" -la "center" -bs "in" " WS Set Up "`;
+	
+	string $PSOptionsCol =  `columnLayout -enable 1 -adj 1 -cat "left" 5 -cal "left" "POptionsCol"`;	
+
+		separator -h 2  -bgc 1 1 0.85 -style "none";
+		text -height 15 -bgc 1 1 0.85  -align "left" -label " Select various sizes as required or use default values to test output.";
+		text -height 15 -bgc 1 1 0.85  -align "left" -label " The GUI will show English equivalent sizes.";
+		separator -h 2  -bgc 1 1 0.85 -style "none";
+		
+	separator -h 10 -style "double";
+	text -height 2 -label "";
+	
+		radioButtonGrp -nrb 3 -sl 1 -label " Spring Type :-" -enable3 false
+						-cl4 "right" "left" "left" "left"
+						-columnWidth4 120 100 100 100
+						-labelArray3 "Extension" "Compression" "Torsional"
+				SpringType;
+	
+	rowColumnLayout -enable 1 -nc 3
+					-cw 1 140 -cal 1 "center" -cat 1 "both" 10
+					-cw 2 140 -cal 2 "center" -cat 2 "both" 10
+					-cw 3 140 -cal 3 "center" -cat 3 "both" 10
+				"SpringTitles1Col";
+
+		text -height 15 -align "center" -label "Spring Outside Diameter";
+		text -height 15 -align "center" -label "Spring Wire Diameter";
+		text -height 15 -align "center" -label "Spring Main Body Length";
+	
+	setParent..;
+		
+	rowColumnLayout -enable 1 -nc 6
+					-cw 1 70 -cal 1 "center" -cat 1 "both" 5
+					-cw 2 70 -cal 2 "center" -cat 2 "both" 5
+					-cw 3 70 -cal 3 "center" -cat 3 "both" 5
+					-cw 4 70 -cal 4 "center" -cat 4 "both" 5
+					-cw 5 70 -cal 5 "center" -cat 5 "both" 5
+					-cw 6 70 -cal 6 "center" -cat 6 "both" 5
+				"SpringTitles1aCol";
+	
+			text -height 20 -align "center" -label " mm";
+			text -height 20 -align "center" -label " inches";
+			text -height 20 -align "center" -label " mm";
+			text -height 20 -align "center" -label " inches";
+			text -height 20 -align "center" -label " mm";
+			text -height 20 -align "center" -label " inches";
+
+	
+			floatField -editable true -pre 2 -v 25 -cc "$Val = `floatField -q -v SPFloatField_01`;floatField -edit -v ($Val/25.4) SPFloatField_02;$ValIn = (`floatField -q -v SPFloatField_01` - (`floatField -q -v SPFloatField_05`*2)); floatField -edit -v ($ValIn) SPFloatField_07; floatField -edit -v ($ValIn/25.4) SPFloatField_08;" SPFloatField_01;
+			floatField -editable false -pre 3 -v (25/25.4) SPFloatField_02;
+
+			floatField -editable true -pre 2 -v 3 -cc "$Val = `floatField -q -v SPFloatField_05`;floatField -edit -v ($Val/25.4) SPFloatField_06;$ValIn = (`floatField -q -v SPFloatField_01` - (`floatField -q -v SPFloatField_05`*2)); floatField -edit -v ($ValIn) SPFloatField_07; floatField -edit -v ($ValIn/25.4) SPFloatField_08;" SPFloatField_05;
+			floatField -editable false -pre 3 -v (3/25.4) SPFloatField_06;
+			
+			floatField -editable true -pre 2 -v 100  -cc "$Val = `floatField -q -v SPFloatField_03`; floatField -edit -v ($Val/25.4) SPFloatField_04; $ValL = (`floatField -q -v SPFloatField_03` * 1.5);" SPFloatField_03;
+			floatField -editable false -pre 3 -v (100/25.4) SPFloatField_04;
+
+	setParent..;
+
+	separator -h 10 -style "single";
+	
+
+	rowColumnLayout -enable 1 -nc 3
+					-cw 1 140 -cal 1 "center" -cat 1 "both" 10
+					-cw 2 140 -cal 2 "center" -cat 2 "both" 10
+					-cw 3 140 -cal 3 "center" -cat 3 "both" 10
+				"SpringTitles2Col";
+	
+		text -height 15 -align "center" -label "Spring Inside Diameter";
+		text -height 15 -align "center" -label "Number of Coils               ";
+	
+	setParent..;
+	
+	rowColumnLayout -enable 1 -nc 6
+					-cw 1 70 -cal 1 "center" -cat 1 "both" 5
+					-cw 2 70 -cal 2 "center" -cat 2 "both" 5
+					-cw 3 70 -cal 3 "center" -cat 3 "both" 5
+					-cw 4 70 -cal 4 "center" -cat 4 "both" 5
+					-cw 5 70 -cal 5 "center" -cat 5 "both" 5
+					-cw 6 70 -cal 6 "center" -cat 6 "both" 5
+				"SpringTitles3Col";
+	
+			text -height 20 -align "center" -label " mm";
+			text -height 20 -align "center" -label " inches";
+			text -height 20 -align "center" -label " Turns";
+			text -height 20 -align "center" -label " ";
+			text -height 20 -align "center" -label " ";
+			text -height 20 -align "center" -label " ";
+	
+			
+			floatField -editable false -pre 2 -v 19 -cc "$Val = (`floatField -q -v SPFloatField_01` - `floatField -q -v SPFloatField_05`);floatField -edit -v ($Val/25.4) SPFloatField_08;floatField -edit -v ($Val/25.4) SPFloatField_08;" SPFloatField_07;
+			floatField -editable false -pre 3 -v (19/25.4) SPFloatField_08;
+
+			intField -editable true -min 1 -v 20 SPIntField_01;
+
+	setParent..;
+	
+		separator -h 10 -style "single";
+		
+	rowColumnLayout -enable 1 -nc 2
+					-cw 1 150 -cal 1 "center" -cat 1 "both" 1
+					-cw 2 300 -cal 2 "center" -cat 2 "both" 1
+				SpringStyle1Col;
+	
+	$a = 0;
+			optionMenu -width 140 -cc ("DVY_SpringCallback(1)") DVY_SpringExtTopOption;
+					menuItem -l "Spring Top End Style";
+		    			menuItem -l $SpExType[$a++];
+		    			menuItem -l $SpExType[$a++];
+		    			menuItem -l $SpExType[$a++];
+		    			menuItem -l $SpExType[$a++];
+		    			menuItem -l $SpExType[$a++];
+		    			menuItem -l $SpExType[$a++];
+		    			menuItem -l $SpExType[$a++];
+						
+	$DVYImage[1] = `iconTextStaticLabel -w 180 -h 110 -st "iconOnly" -i1 "DVY_SpBlank1.xpm" IMage01` ;		
+		
+	setParent..;
+
+		separator -h 10 -style "single";
+		
+	rowColumnLayout -enable 1 -nc 2
+					-cw 1 150 -cal 1 "center" -cat 1 "both" 1
+					-cw 2 300 -cal 2 "center" -cat 2 "both" 1
+				SpringStyle2Col;
+		
+	$a = 0;
+			optionMenu -width 140 -cc ("DVY_SpringCallback(2)") DVY_SpringExtBotOption;
+					menuItem -l "Spring Bottom End Style";
+		    			menuItem -l $SpExType[$a++];
+		    			menuItem -l $SpExType[$a++];
+		    			menuItem -l $SpExType[$a++];
+		    			menuItem -l $SpExType[$a++];
+		    			menuItem -l $SpExType[$a++];
+		    			menuItem -l $SpExType[$a++];
+		    			menuItem -l $SpExType[$a++];
+						
+	$DVYImage[2] = `iconTextStaticLabel -w 180 -h 110 -st "iconOnly" -i1 "DVY_SpBlank2.xpm" IMage02`;		
+						
+	setParent..;
+	
+		separator -h 10 -style "double";
+
+		text -height 2  -bgc 0.85 1 0.85 -align "left" -label " ";
+		text -height 15 -bgc 0.85 1 0.85 -align "left" -label " To add Spring to Piston generated by Davvey's Piston Generator. Select Piston Top Group Node before pressing `Build Spring` Button.";
+		text -height 15 -bgc 0.85 1 0.85 -align "left" -label " Select Piston Top Group Node and press `Load Piston Group Node` Button.";
+		text -height 2  -bgc 0.85 1 0.85 -align "left" -label " ";
+
+		separator -h 10 -style "single";
+		
+	rowColumnLayout -enable 1 -nc 3
+					-cw 1 175 -cal 1 "center" -cat 1 "both" 5
+					-cw 2 145 -cal 2 "center" -cat 2 "both" 5
+					-cw 3 145 -cal 3 "center" -cat 3 "both" 5;
+			
+		textField -width 150 -enable true -editable false Select01;
+		button -enable true -height 25 -bgc  0.7 1 0.7 -label "Load Piston Group Node"
+			   -command "$TempSel = `ls - sl`;textField -edit -text $TempSel Select01;"
+			SelectPiston;	
+		button -enable true -height 25 -bgc  1 0.7 0.7 -label "Clear Piston Group Node"
+			   -command "$TempSel[0] = \"\";textField -edit -text $TempSel[0] Select01;"
+			ClearSelectPiston;	
+		
+			
+	setParent..;
+			
+		separator -h 10 -style "double";
+
+		text -height 20 -bgc 1 0.85 0.85 -align "left" -label " To delete a Spring. Select Top Group Node and use Delete Spring` Button to remove spring.";
+
+		separator -h 10 -style "single";
+			
+		setParent $Tabs[0];
+	setParent $Tab;
+	
+//////////////////////////////////////////////////////////////////////////////////
+//					Help and Info Tab.
+//////////////////////////////////////////////////////////////////////////////////	
+// Tab Layout for Help and Info Tab
+	
+	$Tabs[1] = `columnLayout -adj 1 "Help and Info "`;
+
+		string $HelpM = `frameLayout -height 545 -labelVisible 0 -label "Help & Info" -bs "in" "Help"`;
+	
+			columnLayout -adj 1 ;
+			
+				text -height 5-label "";
+				separator -h 10 -style "double";
+				text -bgc 0.7 1 0.7  -height 20 -align "center" -label "Help Section ";
+				
+				separator -h 10 -style "double";
+				text -height 5-label "";
+		
+				scrollField -height 490 -bgc 1 1 0.85 -wordWrap true -editable false
+				-text " To use this these scripts. \n\nEnter Spring dimensions and GUI will also show English equivalent sizes. Select Top and Bottom Spring ends as required then press Build Spring Button. \nThe Script can build the following styles of Springs. \n\nClosed_Ground_End, Closed_Flat_End, Open_End,\n Hook_Loop_End, Closed_Loop_End, xtended_Loop_End, Cone_End \n\nAs each option is selected an image of the style will be updated in the GUI. \nThe top and Bottom ends can be the same or different styles. \nGenrally Compression springs are built using the first three styles and extension using the remaining four styles.\nThere is a Radio Button to select style but this will only change the nameof the Spring and the User can set the styles as required.\nThe Top and Bottom sections are point and aim constrained to Top and Bottom Locators which can be used to operate the Spring.\nThe spring will stretch as the Top and Bottom Locators are move in the Y-axis The Move the spring use the Top Gotp Node to Transalte and Roate the Spring.\n\nThe Spring is generated from a PolyHelix which is a locked Node to prevent deletion of its construction History. The Helix has is its Height attribute connected to the output of a distance node which is in turn connected to the world space postions of the Top and Bottom Locators. The Spring Body is constrained to the Bottom End Section of the Spring and this ensures realistic stretching of the spring when either end of the spring is pulled. \n\nUnused attributes are locked off if not required.	\n\nIf required the script can build a Spring to match a Round Cap End Piston previously built using Davvey's Piston Generator. To use this option load the Pistons Top Group Node into the GUI before pressing the Build Spring Button. \n\nTO DELETE A SPRING \n\nPLEASE USE THE DELETE SPRING BUTTON IN THE GUI. THE REASON FOR THIS IS THAT THERE ARE LOCKED NODES IN THE SPRING GROUP WHICH MEANS THE NODE CANNOT BE DELETED BY USING THE DELETE OPTION WITHOUT UNLOCKING THE NODES FIRST. \n";
+				
+				text -height 5 -label "";
+	
+		setParent $Tabs[1];
+
+	setParent $MainPanel;	
+
+// Build it.
+
+	frameLayout -cll 0 -vis 1 -lv 0 -label "Build" -la "center" -bs "out";
+	
+	columnLayout -enable 1 -adj 1 -cat "left" 1 -cal "center" ;
+		
+		separator -h 5 -style "none";
+
+	rowColumnLayout -enable 1 -nc 2
+					-cw 1 230 -cal 1 "center" -cat 1 "both" 5
+					-cw 2 230 -cal 2 "center" -cat 2 "both" 5
+				ButtonCol;
+	
+		button -height 40 -bgc 0.7 0.7 1 -label "Build Spring"
+			-command " print \"\\n Building Springs as Required. Davvey © 2006..\\n\"; DVY_SpringBuild;"
+				SpringButton;	
+		
+		button -height 40 -bgc 1.0 0.7 0.7 -label "Delete Spring"
+			-command " print \"\\n Deleting Spring. Davvey © 2006..\\n\"; DVY_Delete;"
+				DeleteSpringButton;	
+
+	setParent..;
+	
+		separator -h 10 -style "none";
+
+	setParent..;		
+	
+	//Show the DVY_Springs UI Window.
+	
+	showWindow DVY_SpringsWindow;
+
+}
+
+ 
+//-----------------------------------------------------------------
+
+global proc DVY_SpringCallback (int $S)
+{
+	global string $DVYImage[];
+	
+//	int $T = `radioButtonGrp -q -sl SpringType`;
+	
+	string $Images1[] = {" ", "Blank",  "ClosedGrdEnd", "ClosedFlatEnd", "OpenEnd", 
+						"HookLoopEnd", "ClosedLoopEnd", "ExtendedLoopEnd", "ConeLoopEnd"};
+	
+	string $Images2[] = {" ", "RodBlank", "RodBush", "RodPin", 
+						"RodMaleClevis", "RodFemaleClevis"};
+	
+	
+	int $S1 = `optionMenu -q -sl DVY_SpringExtTopOption`;
+		if ($S == 1)
+			{
+				$DVYImage[1] = `iconTextStaticLabel -e -i1 ("DVY_Sp" + $Images1[$S1] + $S + ".xpm") IMage01`;
+			}
+		
+	int $S2 = `optionMenu -q -sl DVY_SpringExtBotOption`;
+		
+		if ($S == 2)
+			{
+				$DVYImage[2] = `iconTextStaticLabel -e -i1 ("DVY_Sp" + $Images1[$S2] + $S + ".xpm") IMage02`;
+			}
+		
+}// End of DVY_SpringCallback Procedure
+
+
+global proc string DVY_Spiral( float $ht, float $radius, float $numRounds )
+//
+//	Description:
+//		This proc creates a spiral centred about the origin, with a specific
+//		height, radius and number of rounds/turns/cycles.
+//
+//		This is done by creating a cylinder of the correct size, then
+//		creating a curve-on-surface on the cylinder (which is in
+//		the form of a spiral), then duplicating the curve-on-surface
+//		to get a 3D spiral.
+//
+{
+	string $cylinder[] = `cylinder -ch off -ax 0 1 0 -p 0 0 0 -r 1.0 -hr 1.0`;
+	scale $radius $ht $radius $cylinder[0];
+	string $cos = `curveOnSurface -d 1 -uv 0.0 0.0 -uv 1.0 ($numRounds*8.0) $cylinder[0]`;
+	string $duplicatedCrv[] = `duplicateCurve -ch off $cos`;
+
+	delete $cos;
+	delete $cylinder[0];
+
+	return $duplicatedCrv[0];
+	
+}// End of DVY_Spiral procedure
+
+global proc DVY_AboutSpringsWin()
+ {
+	global float $DVYTol;
+	if ((`window -ex DavveyAboutSpringsWindow`) == true) 
+		{
+			deleteUI DavveyAboutSpringsWindow;
+		}
+		if (`windowPref -ex DavveyAboutSpringsWindow`) windowPref -remove DavveyAboutSpringsWindow;
+		window -t " About:-  Davvey's Spring Generator." -width 425 -height 300 -sizeable 0 DavveyAboutSpringsWindow;
+		//Build 'Edit' menu.
+	
+	string $menuBarLayout = `menuBarLayout -height 20`;
+		menu -label "File"; 
+ 			menuItem -label "Close" -command "deleteUI DavveyAboutSpringsWindow";		
+
+
+	setParent;
+	setParent;
+
+		columnLayout -adjustableColumn true -columnAttach "both" 5 -columnWidth 350; 
+	
+		text -height 2 -label " " ;	//Spacer
+		separator -height 10 -style "double" ;
+			text -bgc 0.5 0.5 1 -height 20 -align "center" -fn "boldLabelFont" -l "Davvey's Spring Generator..";
+			text -bgc 0.5 0.5 1 -height 20 -align "center" -fn "boldLabelFont" -l "copyright (c) 2006 Dave Lake..";
+		separator -height 8 -style "double" ;
+		text -height 2 -label " " ;	//Spacer
+		
+	frameLayout -cl 0 -label "" -labelAlign "center" -borderStyle "etchedOut";
+		columnLayout -adjustableColumn true -columnAttach "both" 2 -columnWidth 250; 
+		
+		text -bgc 1 1 0.8 -height 5 -align "left" -l " ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -fn "boldLabelFont" -l "  Special Thanks:- ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -fn "plainLabelFont" -l "  Thanks to my wife Jan for her support and patience during the time";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "   its taken to learn Maya and how to write these scripts.";
+		text -bgc 1 1 0.8 -height 10 -align "left" -l " ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "  Also dedicated to Jackie and Joanna (my expensive pride and joys!!)";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "  Finally these Collected works are dedicated to the memory of Darryl.";
+		text -bgc 1 1 0.8 -height 5 -align "left" -l " ";
+		setParent ..;	
+		setParent ..;	
+		text -align "center" -l "email :- Davvey@ntlworld.com";
+		text -align "center" -l "website :- www..............";
+	setParent ..; 
+
+	showWindow DavveyAboutSpringsWindow;
+	
+}// End of DVY_AboutSpringsWin Procedure

@@ -1,0 +1,1111 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davveys Stair Generator
+''    Author:  
+''    Last Updated: Mar 25, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4609.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+///////////////////////////////////////////////////////////////////////////////
+/*			
+				
+	Copyright © 2006 DVY_Stairs. All rights reserved davvey@ntlworld.com
+
+						- DVY_Stairs -
+///////////////////////////////////////////////////////////////////////////////
+Note:- Any Duplicate files contained in any of my script packs can be used.
+Just ensure you copy the latest version of any file.
+These script packs are being built up using some common utility type scripts
+which are shared across more than one pack.						
+						
+	DVY_Stairs;
+	Description and Usage Section
+	
+	Installation	
+
+	Just install scripts in any Maya script path and install
+	Icon and Image files in May\\Prefs\Icons directory
+						
+	Description	
+	
+	Usage
+
+	Type DVY_Stairs in command line or middle mouse drag it to a shelf.
+	There is an Icon file supplied to use with the Shelf Button.
+	
+	Description	
+
+	This script calls a GUI where relevant Info can be entered to generate 
+	a dimensionally accurate Stairs of various designs.
+
+	This script calls a GUI where relevant Info can be entered to generate a 
+	dimensionally accurate set of Stairs. 
+
+	The Scripts will currently build both Straight and Spiral sets of Stairs.
+	There are various options that can be selected and Data fields to enter
+	various sizes. For Straight Stairs these are Tread Width, Tread Depth,
+	Step Height and Step Thickness. If Step Height and Thickness are set the
+	same script will effectively build a set of steps not stairs.
+	
+	The straight Step options are to include Stair Risers (i.e. the vertical
+	section of each step) but not needed for the solid step settings example
+	above. Stairs are built with a 20mm overhang and there are options for edge
+	of step styles. There is an option to include Stair Rails each side. These
+	can either be on outside edge (will add approx. 35mm to overall width) or
+	they can be set inboard of the steps in which case the rails will be notched 
+	to suit the Step thickness. \nThere are options for Left and Right Hand and
+	Mid Rails, with post and wall mounting options. Also if posts are selected
+	Panels can be built for left, right or both sides. 
+
+	For Spiral Stairs the options are Stair Outside Diameter, Tread Width,
+	Step Height and Step Thickness. Also Outside and Inside HandRails with Posts
+	or Wall Mountings. Also Panels are available for the Outside Diameter.
+	There is and Option to include a central column if required. 
+
+	After building the Stairs the script will lock off unused attributes and
+	leave the Main group Translate and Rotate Nodes unlocked and keyable.
+
+	Note:- The Scale of the Stairs will be adjusted to set correct size
+	relevant to the correct size for the Users Maya Unit settings 
+	i.e mm, cm, m, in, ft, yd.
+	
+	Also included with the script download pack are some guidance notes on
+	building stairs this is in the form of a Help Txt File.
+	
+
+*/
+	
+//////////////////////////////////////////////////////////////////////////
+//					DVY_Stairs Procedure
+//////////////////////////////////////////////////////////////////////////
+
+	
+//============================================================================
+//	GLOBAL VARIABLES
+//============================================================================
+	global int $DVYDebug;
+
+// Integer Flag that allows print statements to be output to
+// message field for tracking purposes.
+		
+//============================================================================
+
+global proc DVY_Stairs()
+{
+	global string $Type[];
+	
+	global string $Title[], $TitleN[], $IField[], $FField[], $Option[];
+
+	string $StairMaterial[] = {"PineWood", "MapleWood", "OakWood", "CherryWood", "WalnutWood",
+								"MahoganyWood", "CedarWood", "Stone", "Granite", "Glass", "Steel"};
+	
+	source DVY_StairBuild; 
+	
+	int $a = $b = $c = 0;
+	
+	//	Check for any "Window History" and delete if it exists.
+	 	if (`windowPref -exists DVY_StairsWindow`)
+			{ windowPref -edit -topLeftCorner 100 650 -widthHeight 495 760 DVY_StairsWindow;}
+	
+	//Check for multiple similar windows.
+		if (`window -q -ex DVY_StairsWindow`) deleteUI DVY_StairsWindow;
+	//Build window.
+		window -w 495 -h 760 -mnb 1 -mxb 0 -sizeable 1 -title "Davvey's Stair Generator ver 1.0" DVY_StairsWindow;
+	
+	//Build 'Edit' menu.
+	
+	string $menuBarLayout = `menuBarLayout`;
+		menu -label "File"; 
+ 			menuItem -label "Close" -command "deleteUI DVY_StairsWindow";		
+		menu -label "About"; 
+	 		menuItem -label "About Stair Generator" -command "DVY_AboutStairsWin;";
+			
+	setParent..;
+
+	// Create Main Layout column
+			
+	string $MainPane = `paneLayout -configuration "horizontal2" -paneSize 1 100 91`;
+	string $MainPanel = `columnLayout -width 490 -adj 1 -cat "both" 2 -cal "center" "Main Panel"`;
+	
+	// Title and Info Section for the "Main Column Setup" tab. 
+		
+	columnLayout -width 531 -adj 1 -cal "center" "Title";
+		iconTextStaticLabel -w 360 -h 50 -st "iconOnly" -i1 "DavveyLogo.xpm" IMage ;		
+
+		text -height 3 -label " " ;	//Spacer
+		separator -height 5 -style "double" ;
+		text -bgc .5 .5 1 -height 20 -align "center" -font "boldLabelFont" -label "Davvey's Stair Generator.";
+		separator -height 5 -style "double";
+		text -height 3  -label " " ;	//Spacer
+		
+	string $Tabs = `tabLayout -width 488  -imw 1 -imh 1 "Tabs"`;
+	
+	frameLayout -bv true -bs "in" -width 485 -height 615  -mh 2 -mw 2 -collapsable false -collapse false 
+							-labelVisible false -label "Flat Stairs Options" Stairs;
+	
+	string $TitleC1 = `columnLayout -width 484 -adj 1 -cal "center" "Setup Stairs"`;
+	
+		separator -height 5 -style "none" ;
+		
+			radioButtonGrp  -height 20 -nrb 4 -sl 1 -label " Stair Type :-" 
+							-cl5 "right" "left" "left" "left" "left" 
+							-columnWidth5 80 70 90 90 120 
+							-labelArray4 "Help" "Straight Stairs" "Spiral Stairs" "Complex Stairs" 
+			
+							-onCommand1 "frameLayout -edit -collapse false HelpStairFrame;"
+							-offCommand1 "frameLayout -edit -collapse true HelpStairFrame;"
+							
+							-onCommand2 "frameLayout -edit -collapse false StraightStairFrame;"
+							-offCommand2 "frameLayout -edit -collapse true StraightStairFrame;"
+							
+							-onCommand3 "frameLayout -edit -collapse false SpiralStairFrame;"
+							-offCommand3 "frameLayout -edit -collapse true SpiralStairFrame;"
+							
+							-onCommand4 "frameLayout -edit -collapse false ComplexStairFrame;"
+							-offCommand4 "frameLayout -edit -collapse true ComplexStairFrame;"
+						StairTypeRadioButton;	
+			
+		separator -height 10 -style "double";
+			
+		text -height 2 -label " " ;	//Spacer
+		text -height 15 -font "boldLabelFont" -align "center" -label " Help " ;	//Spacer
+		text -height 2 -label " " ;	//Spacer
+		
+	frameLayout -bv true -bs "in" -width 483 -mh 3 -mw 3 -collapsable true -collapse false 
+							-labelVisible false -label "Help Options" HelpStairFrame;
+		
+		columnLayout -width 480 -adj 1 -cal "center";
+		
+		text -height 3 -label " " ;	//Spacer
+		separator -height 5 -style "double" ;
+		text -bgc 1 1 0.85 -height 2 -align "left" -label "";
+		text -bgc 1 1 0.85 -height 20 -align "left" 
+			-label " Fill in Fields as Required then press `Build` Button. Enter data as required for Stair Dimensions.";
+		text -bgc 1 1 0.85 -height 20 -align "left" -label " See Help Tab for detailed Help and explanation of various options.";
+		text -bgc 1 1 0.85 -height 20 -align "left" -label " The GUI will calculate english equivalent sizes as each field is filled in.";
+		text -bgc 1 1 0.85 -height 15 -align "left" -label " Currently Straight and Spiral sets of stairs or steps can be built.";
+		text -bgc 1 1 0.85 -height 15 -align "left" -label " The GUI has some default data in the fields these can be used to test script.";
+		text -bgc 1 1 0.85 -height 15 -align "left" -label " Select Options and materials for each part and press build button.";
+		text -bgc 1 1 0.85 -height 25 -font "boldLabelFont" -align "left" -label " Also See Help text file for info on Stair design .";
+		text -bgc 1 1 0.85 -height 2 -align "left" -label "";
+		
+		separator -bgc 1 1 0.85 -height 5 -style "double";
+		text -height 5 -label " " ;	//Spacer
+
+	setParent..;
+	setParent..;
+	
+		separator -height 10 -style "double";
+			
+			text -height 2 -label " " ;	//Spacer
+			text -height 15 -font "boldLabelFont" -align "center" -label " Straight Stair Options " ;	//Spacer
+			text -height 2 -label " " ;	//Spacer
+		
+	frameLayout -bv true -bs "in" -width 483 -mh 3 -mw 3 -collapsable true -collapse true 
+							-labelVisible false -label "Straight Stairs Options" StraightStairFrame;
+		
+	columnLayout -width 480 -adj 1 -cal "center";
+	
+		rowColumnLayout -enable 1 -nc 2
+					-cw 1 220 -cal 1 "center" -cat 1 "both" 2
+					-cw 2 220 -cal 2 "center" -cat 2 "both" 2;
+		
+				text -height 15 -align "right" -label "mm         inches         ";
+				text -height 15 -align "right" -label "mm         inches         ";
+				
+			floatFieldGrp -nf 2 -pre 2 -label " Tread Depth" -en2 0
+						-cw3 95 55 55 -ct3 "both" "both" "both"
+						-v1 230 -v2 9.05
+						-cc "floatFieldGrp -e -v2 (#1/25.4) StaFloatFieldGrp_001"
+					 StaFloatFieldGrp_001;
+			
+			floatFieldGrp -nf 2 -pre 2 -label " Tread Width " -en2 0
+						-cw3 95 55 55 -ct3 "both" "both" "both"
+						-v1 1000 -v2 39.37
+						-cc "floatFieldGrp -e -v2 (#1/25.4) StaFloatFieldGrp_002"
+					 StaFloatFieldGrp_002;
+			
+			floatFieldGrp -nf 2 -pre 2 -label " Step Height" -en2 0
+						-cw3 95 55 55 -ct3 "both" "both" "both"
+						-v1 210 -v2 8.25
+						-cc "floatFieldGrp -e -v2 (#1/25.4) StaFloatFieldGrp_003"
+					 StaFloatFieldGrp_003;
+			
+			floatFieldGrp -nf 2 -pre 2 -label " Step Thickness " -en2 0
+						-cw3 95 55 55 -ct3 "both" "both" "both"
+						-v1 25 -v2 1.00
+						-cc "floatFieldGrp -e -v2 (#1/25.4) StaFloatFieldGrp_004"
+					 StaFloatFieldGrp_004;
+			
+	setParent..;
+	
+		separator -h 5 -style "none";
+	
+		rowColumnLayout -enable 1 -nc 4
+					-cw 1 100 -cal 1 "center" -cat 1 "both" 1
+					-cw 2 140 -cal 2 "center" -cat 2 "both" 1
+					-cw 3 105 -cal 3 "center" -cat 3 "both" 1
+					-cw 4 110 -cal 4 "left" -cat 4 "both" 1;
+		
+			intFieldGrp -label "No of Steps" -cw2 65 32 -v1 12 StaIntField_000;
+			
+				radioButtonGrp -height 15 -nrb 2 -sl 1 -label "Step Risers"
+								-cl3 "left" "left" "left" 
+								-columnWidth3 65 37 33  
+								-labelArray2 "Yes" "No" 
+						StairRisersRadioButton;	
+		
+				optionMenu -width 100 -cc "" DVY_StStepStyleOption;
+					menuItem -l "Plain Step Edge             ";
+					menuItem -l "Front Bevel Edge";
+					menuItem -l "Double Bevel Edge";
+					menuItem -l "Front Round Edge";
+					menuItem -l "Both Edges Rounded";
+				
+			$a = 0;	
+				optionMenu -width 130 -cc "" DVY_StStepOption;
+					menuItem -l "Step Material                  ";
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+				
+	setParent..;
+			
+	separator -h 5 -style "none";
+			
+		rowColumnLayout -enable 1 -nc 2
+					-cw 1 315 -cal 1 "center" -cat 1 "both" 1
+					-cw 2 140 -cal 2 "left" -cat 2 "both" 1;
+					
+				radioButtonGrp -height 15 -nrb 3 -sl 1 -label " Side Plates"
+								-cl4 "left" "left" "left" "left" 
+								-columnWidth4 70 70 60 60  
+								-labelArray3 "No Sides" "Outside" "Inside"
+						StairSidesRadioButton;	
+					
+			$a = 0;	
+				optionMenu -width 130 -cc "" DVY_StRailOption;
+					menuItem -l "Side Plate Material                  ";
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					
+		separator -h 5 -style "none";
+		separator -h 5 -style "none";
+		
+				radioButtonGrp -height 15 -nrb 3 -sl 1 -label " Left HandRail"
+								-cl4 "left" "left" "left" "left"
+								-columnWidth4 90 45 62 80  
+								-labelArray3 "None" "Top Rail" "Top and Mid Rail" 
+							-onCommand1 "radioButtonGrp -edit -enable false -sl 1 StPanelRadioButton; radioButtonGrp -edit -enable false -sl 1 StHandRailRadioButton; optionMenu -edit -enable false -sl 1 DVY_StLeftHandRailOption;"
+							-offCommand1 "radioButtonGrp -edit -enable false -sl 1 StPanelRadioButton; radioButtonGrp -edit -enable false -sl 1 StHandRailRadioButton; optionMenu -edit -enable false -sl 1 DVY_StLeftHandRailOption;"
+							
+							-onCommand2 "radioButtonGrp -edit -enable true -sl 1 StPanelRadioButton; radioButtonGrp -edit -enable true -sl 2 StHandRailRadioButton; optionMenu -edit -enable true -sl 1 DVY_StLeftHandRailOption;"
+							-offCommand2 "radioButtonGrp -edit -enable false -sl 1 StPanelRadioButton; optionMenu -edit -enable false -sl 1 DVY_StLeftHandRailOption;"
+							
+							-onCommand3 "radioButtonGrp -edit -enable true -sl 1 StPanelRadioButton; radioButtonGrp -edit -enable true -sl 2 StHandRailRadioButton; optionMenu -edit -enable true -sl 1 DVY_StLeftHandRailOption;"
+							-offCommand3 "radioButtonGrp -edit -enable false -sl 1 StPanelRadioButton; optionMenu -edit -enable false -sl 1 DVY_StLeftHandRailOption;"
+						StLeftHandRailRadioButton;	
+				
+			$a = 0;	
+				optionMenu -enable false -width 130 -cc "" DVY_StLeftHandRailOption;
+					menuItem -l "Left Hand Rail Material                  ";
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+				
+		separator -h 5 -style "none";
+		separator -h 5 -style "none";
+					
+				radioButtonGrp -height 15 -nrb 3 -sl 1 -label " Right HandRail"
+								-cl4 "left" "left" "left" "left"
+								-columnWidth4 90 45 62 80  
+								-labelArray3 "None" "Top Rail" "Top and Mid Rail" 
+							-onCommand1  "radioButtonGrp -edit -enable false -sl 1 StPanelRadioButton; radioButtonGrp -edit -enable false -sl 1 StHandRailRadioButton; optionMenu -edit -enable false -sl 1 DVY_StRightHandRailOption;"
+							-offCommand1 "radioButtonGrp -edit -enable false -sl 1 StPanelRadioButton; radioButtonGrp -edit -enable false -sl 1 StHandRailRadioButton; optionMenu -edit -enable false -sl 1 DVY_StRightHandRailOption;"
+							
+							-onCommand2  "radioButtonGrp -edit -enable true -sl 1 StPanelRadioButton; radioButtonGrp -edit -enable true -sl 2 StHandRailRadioButton; optionMenu -edit -enable true -sl 1 DVY_StRightHandRailOption;"
+							-offCommand2 "radioButtonGrp -edit -enable false -sl 1 StPanelRadioButton;optionMenu -edit -enable false -sl 1 DVY_StRightHandRailOption;"
+							
+							-onCommand3  "radioButtonGrp -edit -enable true -sl 1 StPanelRadioButton; radioButtonGrp -edit -enable true -sl 2 StHandRailRadioButton; optionMenu -edit -enable true -sl 1 DVY_StRightHandRailOption;"
+							-offCommand3 "radioButtonGrp -edit -enable false -sl 1 StPanelRadioButton; optionMenu -edit -enable false -sl 1 DVY_StRightHandRailOption;"
+						StRightHandRailRadioButton;	
+				
+			$a = 0;	
+				optionMenu -enable false -width 130 -cc "" DVY_StRightHandRailOption;
+					menuItem -l "Right Hand Rail Material                  ";
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+				
+		separator -h 5 -style "none";
+		separator -h 5 -style "none";
+		
+				radioButtonGrp -height 15 -nrb 4 -sl 1 -label "HandRail Panels" -enable false
+								-cl5 "left" "left" "left" "left" "left" 
+								-columnWidth5 90 50 50 50 50 
+								-labelArray4 "None" "Left" "Right" "Both"
+							-onCommand1  "optionMenu -edit -enable false -sl 1 DVY_StPanelOption;"
+							-offCommand1 "optionMenu -edit -enable false -sl 1 DVY_StPanelOption;"
+							
+							-onCommand2  "optionMenu -edit -enable true -sl 1 DVY_StPanelOption;"
+							-offCommand2 "optionMenu -edit -enable false -sl 1 DVY_StPanelOption;"
+							
+							-onCommand3  "optionMenu -edit -enable true -sl 1 DVY_StPanelOption;"
+							-offCommand3 "optionMenu -edit -enable false -sl 1 DVY_StPanelOption;"
+							
+							-onCommand4  "optionMenu -edit -enable true -sl 1 DVY_StPanelOption;"
+							-offCommand4 "optionMenu -edit -enable false -sl 1 DVY_StPanelOption;"
+							
+						StPanelRadioButton;	
+				
+			$a = 0;	
+				optionMenu -enable false -width 130 -cc "" DVY_StPanelOption;
+					menuItem -l "Panel Material                  ";
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];	
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+				
+			separator -h 5 -style "none";
+		
+	setParent..;
+	
+		radioButtonGrp -height 15 -nrb 3 -sl 1 -label " HandRail Mounting" -enable false
+					-cl4 "left" "left" "left" "left"
+					-columnWidth4 90 48 62 80  
+					-labelArray3 "None" "Posts" "Wall Brackets" 
+			StHandRailRadioButton;	
+	
+	setParent..;		
+	setParent..;		
+		
+		text -height 2 -label " " ;	//Spacer
+		text -height 15 -font "boldLabelFont" -align "center" -label " Spiral Stair Options " ;	//Spacer
+		text -height 2 -label " " ;	//Spacer
+	
+		
+	frameLayout -bv true -bs "in" -width 410 -mh 3 -mw 3 -collapsable true -collapse true 
+							-labelVisible false -label " Spiral Stair Options" SpiralStairFrame;
+	
+	columnLayout -width 460 -adj 1 -cal "center";
+	
+		rowColumnLayout -enable 1 -nc 2
+					-cw 1 220 -cal 1 "center" -cat 1 "both" 2
+					-cw 2 220 -cal 2 "center" -cat 2 "both" 2;
+		
+				text -height 15 -align "right" -label "mm         inches         ";
+				text -height 15 -align "right" -label "mm         inches         ";
+				
+			floatFieldGrp -nf 2 -pre 2 -label " Outside Diameter" -en2 0
+						-cw3 95 55 55 -ct3 "both" "both" "both"
+						-v1 3000 -v2 118.11
+						-cc "floatFieldGrp -e -v2 (#1/25.4) StaFloatFieldGrp_101"
+					 StaFloatFieldGrp_101;
+			
+			floatFieldGrp -nf 2 -pre 2 -label " Tread Width " -en2 0
+						-cw3 95 55 55 -ct3 "both" "both" "both"
+						-v1 1200 -v2 47.24
+						-cc "floatFieldGrp -e -v2 (#1/25.4) StaFloatFieldGrp_102"
+					 StaFloatFieldGrp_102;
+			
+			floatFieldGrp -nf 2 -pre 2 -label " Step Height" -en2 0
+						-cw3 95 55 55 -ct3 "both" "both" "both"
+						-v1 210 -v2 8.25
+						-cc "floatFieldGrp -e -v2 (#1/25.4) StaFloatFieldGrp_103"
+					 StaFloatFieldGrp_103;
+			
+			floatFieldGrp -nf 2 -pre 2 -label " Step Thickness " -en2 0
+						-cw3 95 55 55 -ct3 "both" "both" "both"
+						-v1 210 -v2 8.25
+						-cc "floatFieldGrp -e -v2 (#1/25.4) StaFloatFieldGrp_104"
+					 StaFloatFieldGrp_104;
+		
+	setParent..;
+	
+	separator -h 5 -style "none";
+
+	rowColumnLayout -enable 1 -nc 3
+				-cw 1 145 -cal 1 "center" -cat 1 "both" 1
+				-cw 2 145 -cal 2 "center" -cat 2 "both" 1
+				-cw 3 140 -cal 3 "left" -cat 3 "both" 1;
+	
+		floatFieldGrp -label "No of Turns" -cw2 75 75 -pre 1 -v1 2 StaFloatField_100;
+		intFieldGrp -label "No of Steps per Turn" -cw2 113 32 -v1 12 StaIntField_100;
+	
+		$a = 0;	
+			optionMenu -width 130 -cc "" DVY_SpStepOption;
+				menuItem -l "Step Material                  ";
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+	
+	setParent..;
+			
+	separator -h 5 -style "none";
+			
+			
+	rowColumnLayout -enable 1 -nc 2
+				-cw 1 290 -cal 1 "center" -cat 1 "both" 1
+				-cw 2 140 -cal 2 "left" -cat 2 "both" 1;
+	
+
+			radioButtonGrp -height 15 -nrb 2 -sl 1 -label " Center Column"
+							-cl3 "left" "left" "left" 
+							-columnWidth3 90 75 90  
+							-labelArray2 "No Column" "Center Column" 
+						-onCommand1  "optionMenu -edit -enable false -sl 1 DVY_SpColumnOption;"
+						-offCommand1 "optionMenu -edit -enable false -sl 1 DVY_SpColumnOption;"
+						
+						-onCommand2  "optionMenu -edit -enable true -sl 1 DVY_SpColumnOption;"
+						-offCommand2 "optionMenu -edit -enable false -sl 1 DVY_SpColumnOption;"
+					SpiralColumnRadioButton;	
+			
+		$a = 0;	
+			optionMenu -enable false -width 130 -cc "" DVY_SpColumnOption;
+				menuItem -l "Center Column Material                  ";
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				
+	separator -h 5 -style "none";
+	separator -h 5 -style "none";
+	
+			radioButtonGrp -height 15 -nrb 3 -sl 1 -label " Outer HandRail"
+							-cl4 "left" "left" "left" "left"
+							-columnWidth4 90 45 62 80  
+							-labelArray3 "None" "Top Rail" "Top and Mid Rail" 
+						-onCommand1 "radioButtonGrp -edit -enable false -sl 1 SpOuterPanelRadioButton; radioButtonGrp -edit -enable false -sl 1 SpHandRailRadioButton; optionMenu -edit -enable false -sl 1 DVY_SpOutHandRailOption;"
+						-offCommand1 "radioButtonGrp -edit -enable false -sl 1 SpOuterPanelRadioButton; radioButtonGrp -edit -enable false -sl 1 SpHandRailRadioButton; optionMenu -edit -enable false -sl 1 DVY_SpOutHandRailOption;"
+						
+						-onCommand2 "radioButtonGrp -edit -enable true -sl 1 SpOuterPanelRadioButton; radioButtonGrp -edit -enable true -sl 2 SpHandRailRadioButton; optionMenu -edit -enable true -sl 1 DVY_SpOutHandRailOption;"
+						-offCommand2 "radioButtonGrp -edit -enable false -sl 1 SpOuterPanelRadioButton; optionMenu -edit -enable false -sl 1 DVY_SpOutHandRailOption;"
+						
+						-onCommand3 "radioButtonGrp -edit -enable true -sl 1 SpOuterPanelRadioButton; radioButtonGrp -edit -enable true -sl 2 SpHandRailRadioButton; optionMenu -edit -enable true -sl 1 DVY_SpOutHandRailOption;"
+						-offCommand3 "radioButtonGrp -edit -enable false -sl 1 SpOuterPanelRadioButton; optionMenu -edit -enable false -sl 1 DVY_SpOutHandRailOption;"
+					SpOuterHandRailRadioButton;	
+			
+		$a = 0;	
+			optionMenu -enable false -width 130 -cc "" DVY_SpOutHandRailOption;
+				menuItem -l "Outer Hand Rail Material                  ";
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+			
+	separator -h 5 -style "none";
+	separator -h 5 -style "none";
+				
+			radioButtonGrp -height 15 -nrb 3 -sl 1 -label " Inner HandRail"
+							-cl4 "left" "left" "left" "left"
+							-columnWidth4 90 45 62 80  
+							-labelArray3 "None" "Top Rail" "Top and Mid Rail" 
+						-onCommand1  "radioButtonGrp -edit -enable false -sl 1 SpHandRailRadioButton; optionMenu -edit -enable false -sl 1 DVY_SpInHandRailOption;"
+						-offCommand1 "radioButtonGrp -edit -enable false -sl 1 SpHandRailRadioButton; optionMenu -edit -enable false -sl 1 DVY_SpInHandRailOption;"
+						
+						-onCommand2  "radioButtonGrp -edit -enable true -sl 2 SpHandRailRadioButton; optionMenu -edit -enable true -sl 1 DVY_SpInHandRailOption;"
+						-offCommand2 "optionMenu -edit -enable false -sl 1 DVY_SpInHandRailOption;"
+						
+						-onCommand3  "radioButtonGrp -edit -enable true -sl 2 SpHandRailRadioButton; optionMenu -edit -enable true -sl 1 DVY_SpInHandRailOption;"
+						-offCommand3 "optionMenu -edit -enable false -sl 1 DVY_SpInHandRailOption;"
+					SpInnerHandRailRadioButton;	
+			
+		$a = 0;	
+			optionMenu -enable false -width 130 -cc "" DVY_SpInHandRailOption;
+				menuItem -l "Inner Hand Rail Material                  ";
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+			
+	separator -h 5 -style "none";
+	separator -h 5 -style "none";
+	
+			radioButtonGrp -height 15 -nrb 2 -sl 1 -label "HandRail Panels" -enable false
+							-cl3 "left" "left" "left" 
+							-columnWidth3 90 45 125 
+							-labelArray2 "None" "Outer Hand Rail Panels" 
+						-onCommand1 "optionMenu -edit -enable false -sl 1 DVY_SpOuterPanelOption;"
+						-offCommand1 "optionMenu -edit -enable false -sl 1 DVY_SpOuterPanelOption;"
+						
+						-onCommand2  "optionMenu -edit -enable true -sl 1 DVY_SpOuterPanelOption;"
+						-offCommand2  "optionMenu -edit -enable false -sl 1 DVY_SpOuterPanelOption;"
+					SpOuterPanelRadioButton;	
+			
+		$a = 0;	
+			optionMenu -enable false -width 130 -cc "" DVY_SpOuterPanelOption;
+				menuItem -l "Outer Panel Material                  ";
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+				menuItem -l $StairMaterial[$a++];
+			
+		separator -h 5 -style "none";
+			
+	setParent..;
+			radioButtonGrp -height 15 -nrb 3 -sl 1 -label " HandRail Mounting" -enable false
+							-cl4 "left" "left" "left" "left"
+							-columnWidth4 90 48 62 80  
+							-labelArray3 "None" "Posts" "Wall Brackets" 
+					SpHandRailRadioButton;	
+	setParent..;	
+	setParent..;	
+		
+			text -height 2 -label " " ;	//Spacer
+			text -height 15 -font "boldLabelFont" -align "center" -label " Complex Stair Options " ;	//Spacer
+			text -height 2 -label " " ;	//Spacer
+		
+	frameLayout -bv true -bs "in" -width 410 -mh 3 -mw 3 -collapsable true -collapse true 
+				-labelVisible false -label "Tooth Stairs Options" ComplexStairFrame;
+		
+	columnLayout -width 460 -adj 1 -cal "center";
+	
+		rowColumnLayout -enable 1 -nc 2
+					-cw 1 220 -cal 1 "center" -cat 1 "both" 2
+					-cw 2 220 -cal 2 "center" -cat 2 "both" 2;
+		
+				text -height 15 -align "right" -label "mm         inches         ";
+				text -height 15 -align "right" -label "mm         inches         ";
+				
+			floatFieldGrp -nf 2 -pre 2 -label " Tread Depth" -en2 0
+						-cw3 95 55 55 -ct3 "both" "both" "both"
+						-v1 230 -v2 9.05
+						-cc "floatFieldGrp -e -v2 (#1/25.4) StaFloatFieldGrp_201"
+					 StaFloatFieldGrp_201;
+			
+			floatFieldGrp -nf 2 -pre 2 -label " Tread Width " -en2 0
+						-cw3 95 55 55 -ct3 "both" "both" "both"
+						-v1 1000 -v2 39.37
+						-cc "floatFieldGrp -e -v2 (#1/25.4) StaFloatFieldGrp_202"
+					 StaFloatFieldGrp_202;
+			
+			floatFieldGrp -nf 2 -pre 2 -label " Step Height" -en2 0
+						-cw3 95 55 55 -ct3 "both" "both" "both"
+						-v1 210 -v2 8.25
+						-cc "floatFieldGrp -e -v2 (#1/25.4) StaFloatFieldGrp_203"
+					 StaFloatFieldGrp_203;
+			
+			floatFieldGrp -nf 2 -pre 2 -label " Step Thickness " -en2 0
+						-cw3 95 55 55 -ct3 "both" "both" "both"
+						-v1 25 -v2 1.00
+						-cc "floatFieldGrp -e -v2 (#1/25.4) StaFloatFieldGrp_204"
+					 StaFloatFieldGrp_204;
+		
+	setParent..;
+	
+		separator -h 5 -style "none";
+	
+		rowColumnLayout -enable 1 -nc 3
+					-cw 1 160 -cal 1 "center" -cat 1 "both" 1
+					-cw 2 140 -cal 2 "center" -cat 2 "both" 1
+					-cw 3 140 -cal 3 "center" -cat 3 "both" 1;
+		
+				radioButtonGrp -height 15 -nrb 2 -sl 1 -label "Step Risers"
+								-cl3 "left" "left" "left" 
+								-columnWidth3 65 40 40  
+								-labelArray2 "Yes" "No" 
+						CStairRisersRadioButton;	
+		
+				optionMenu -width 100 -cc "" DVY_CStepStyleOption;
+					menuItem -l "Plain Step Edge             ";
+					menuItem -l "Front Bevel Edge";
+					menuItem -l "Double Bevel Edge";
+					menuItem -l "Front Round Edge";
+					menuItem -l "Both Edges Rounded";
+				
+			$a = 0;	
+				optionMenu -width 130 -cc "" DVY_CStStepOption;
+					menuItem -l "Step Material                  ";
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+				
+	setParent..;
+	
+		separator -h 5 -style "none";
+		
+		rowColumnLayout -enable 1 -nc 2
+					-cw 1 300 -cal 1 "center" -cat 1 "both" 1
+					-cw 2 140 -cal 2 "left" -cat 2 "both" 1;
+		
+
+				radioButtonGrp -height 15 -nrb 3 -sl 2 -label " Side Plates"
+								-cl4 "left" "left" "left" "left" 
+								-columnWidth4 70 70 60 60  
+								-labelArray3 "No Sides" "Outside" "Inside"
+						CStairSidesRadioButton;	
+					
+			$a = 0;	
+				optionMenu -width 130 -cc "" DVY_CStRailOption;
+					menuItem -l "Side Plate Material                  ";
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					
+		separator -h 5 -style "none";
+		separator -h 5 -style "none";
+		
+				radioButtonGrp -height 15 -nrb 3 -sl 1 -label " Left HandRail"
+								-cl4 "left" "left" "left" "left"
+								-columnWidth4 90 47 65 80  
+								-labelArray3 "None" "Spindles" "Horizontal" 
+							-onCommand1 "radioButtonGrp -edit -enable false -sl 1 CStPanelRadioButton; optionMenu -edit -enable false -sl 1 DVY_CStLeftHandRailOption;"
+							-offCommand1 "radioButtonGrp -edit -enable false -sl 1 CStPanelRadioButton; optionMenu -edit -enable false -sl 1 DVY_CStLeftHandRailOption;"
+							
+							-onCommand2 "radioButtonGrp -edit -enable false -sl 1 CStPanelRadioButton; optionMenu -edit -enable true -sl 1 DVY_CStLeftHandRailOption;"
+							-offCommand2 "radioButtonGrp -edit -enable false -sl 1 CStPanelRadioButton; optionMenu -edit -enable false -sl 1 DVY_CStLeftHandRailOption;"
+							
+							-onCommand3 "optionMenu -edit -sl 7 DVY_CStHandRailStyleOption; radioButtonGrp -edit -enable false -sl 1 CStPanelRadioButton; optionMenu -edit -enable true -sl 1 DVY_CStLeftHandRailOption;"
+							-offCommand3 "optionMenu -edit -sl 1 DVY_CStHandRailStyleOption; radioButtonGrp -edit -enable false -sl 1 CStPanelRadioButton; optionMenu -edit -enable false -sl 1 DVY_CStLeftHandRailOption;"
+						CStLeftHandRailRadioButton;	
+				
+			$a = 0;	
+				optionMenu -enable false -width 130 -cc "" DVY_CStLeftHandRailOption;
+					menuItem -l "Left Hand Rail Material                  ";
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+				
+		separator -h 5 -style "none";
+		separator -h 5 -style "none";
+					
+				radioButtonGrp -height 15 -nrb 3 -sl 1 -label " Right HandRail"
+								-cl4 "left" "left" "left" "left"
+								-columnWidth4 90 47 65 80  
+								-labelArray3 "None" "Spindles" "Horizontal" 
+							-onCommand1  "radioButtonGrp -edit -enable false -sl 1 CStPanelRadioButton; optionMenu -edit -enable false -sl 1 DVY_CStRightHandRailOption;"
+							-offCommand1 "radioButtonGrp -edit -enable false -sl 1 CStPanelRadioButton; optionMenu -edit -enable false -sl 1 DVY_CStRightHandRailOption;"
+							
+							-onCommand2  "radioButtonGrp -edit -enable false -sl 1 CStPanelRadioButton; optionMenu -edit -enable true -sl 1 DVY_CStRightHandRailOption;"
+							-offCommand2 "radioButtonGrp -edit -enable false -sl 1 CStPanelRadioButton; optionMenu -edit -enable false -sl 1 DVY_CStRightHandRailOption;"
+							
+							-onCommand3  "optionMenu -edit -sl 7 DVY_CStHandRailStyleOption; radioButtonGrp -edit -enable false -sl 1 CStPanelRadioButton; optionMenu -edit -enable true -sl 1 DVY_CStRightHandRailOption;"
+							-offCommand3 "optionMenu -edit -sl 1 DVY_CStHandRailStyleOption; radioButtonGrp -edit -enable false -sl 1 CStPanelRadioButton; optionMenu -edit -enable false -sl 1 DVY_CStRightHandRailOption;"
+						CStRightHandRailRadioButton;	
+				
+			$a = 0;	
+				optionMenu -enable false -width 130 -cc "" DVY_CStRightHandRailOption;
+					menuItem -l "Right Hand Rail Material                  ";
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+				
+		separator -h 5 -style "none";
+		separator -h 5 -style "none";
+		
+				radioButtonGrp -height 15 -nrb 4 -sl 1 -label "HandRail Panels" -enable false
+								-cl5 "left" "left" "left" "left" "left" 
+								-columnWidth5 90 50 50 50 50 
+								-labelArray4 "None" "Left" "Right" "Both"
+							-onCommand1  "optionMenu -edit -enable false -sl 1 DVY_CStPanelOption;"
+							-offCommand1 "optionMenu -edit -enable false -sl 1 DVY_CStPanelOption;"
+							
+							-onCommand2  "optionMenu -edit -enable true -sl 1 DVY_CStPanelOption;"
+							-offCommand2 "optionMenu -edit -enable false -sl 1 DVY_CStPanelOption;"
+							
+							-onCommand3  "optionMenu -edit -enable true -sl 1 DVY_CStPanelOption;"
+							-offCommand3 "optionMenu -edit -enable false -sl 1 DVY_CStPanelOption;"
+							
+							-onCommand4  "optionMenu -edit -enable true -sl 1 DVY_CStPanelOption;"
+							-offCommand4 "optionMenu -edit -enable false -sl 1 DVY_CStPanelOption;"
+						CStPanelRadioButton;	
+				
+			$a = 0;	
+				optionMenu -enable false -width 130 -cc "" DVY_CStPanelOption;
+					menuItem -l "Panel Material                  ";
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+					menuItem -l $StairMaterial[$a++];
+				
+			separator -h 5 -style "none";
+		
+	setParent..;
+	
+/*		radioButtonGrp -height 15 -nrb 3 -sl 1 -label " HandRail Mounting" -enable false
+					-cl4 "left" "left" "left" "left"
+					-columnWidth4 90 48 62 80  
+					-labelArray3 "None" "Posts" "Wall Brackets" 
+			CStHandRailRadioButton;	
+*/	
+		separator -h 5 -style "none";
+		
+		rowColumnLayout -nc 2
+					-cw 1 290 -cal 1 "center" -cat 1 "both" 1
+					-cw 2 160 -cal 2 "left" -cat 2 "both" 1;
+		
+		rowColumnLayout -nc 2
+					-cw 1 145 -cal 1 "center" -cat 1 "both" 1
+					-cw 2 145 -cal 2 "left" -cat 2 "both" 1;
+	
+		columnLayout -adj 1 ;
+		
+		text -height 15 -align "center" -label " Left or Right Handed" ;
+		
+		
+		radioButtonGrp -height 15 -nrb 2 -sl 1 -label " " 
+					-cl3 "left" "left" "left"
+					-columnWidth3 5 55 55  
+					-labelArray2 "Left" "Right"  
+			CStLfRtRadioButton;	
+		
+		separator -h 5 -style "none";
+	
+			optionMenu -width 130 -cc "DVY_StairsCallback(1)" DVY_CStStairOption;
+				menuItem -l "StairCase Style                  ";
+				menuItem -l "Straight Stairs";
+				menuItem -l "Straight with Mid Landing";
+				menuItem -l "Quarter Landing";
+				menuItem -l "Double Landing";
+				menuItem -l "Half Landing";
+				menuItem -l "Quarter Winder";
+				menuItem -l "Double Winder";
+				menuItem -l "Triple Winder";
+				menuItem -l "S Shape Winder";
+
+		separator -h 5 -style "none";
+
+			optionMenu -width 130 -cc "DVY_StairsCallback(3)" DVY_CStHandRailStyleOption;
+				menuItem -l "HandRail Style                  ";
+				menuItem -l "Round";
+				menuItem -l "Flat Oval";
+				menuItem -l "Sculpted";
+				menuItem -l "Flat Sculpted";
+				menuItem -l "Deep Sculpted";
+				menuItem -l "Horizontal Bars";
+				
+		separator -h 5 -style "none";
+
+			optionMenu -width 130 -cc "DVY_StairsCallback(2)" DVY_CStSpindleStyleOption;
+				menuItem -l "Spindle Style                  ";
+				menuItem -l "Square Spindle";
+				menuItem -l "Round Spindle";
+				menuItem -l "Tradional";
+				menuItem -l "Colonial";
+				menuItem -l "Georgian";
+				menuItem -l "Oxford";
+				menuItem -l "Provincial";
+				menuItem -l "Twist";
+				menuItem -l "Stop Chamfered";
+				menuItem -l "Stop Volute";
+				menuItem -l "Fluted Oxford";
+				menuItem -l "Fluted Georgian";
+				menuItem -l "Fluted Colonial";
+				menuItem -l "Colonial Twist";
+
+				
+		separator -h 5 -style "none";
+		text -height 15 -align "left" -label " No. of Steps per Flight" ;	//Spacer
+		text -height 15 -align "left" -label " Set 1     Set 2     Set 3  " ;	//Spacer
+
+		intFieldGrp -nf 3 -en1 0 -en2 0 -en3 0 -cw3 40 40 40 StaIntField_201;
+		setParent..;
+			columnLayout -adj 1 ;
+			rowColumnLayout -nc 2
+					-cw 1 40 -cal 1 "center" -cat 1 "both" 1
+					-cw 2 120 -cal 2 "left" -cat 2 "both" 1;
+			
+			$DVYImage[2] = `iconTextStaticLabel -w 40 -h 160 -st "iconOnly" -i1 "DVY_Spindles_0.xpm" StaIMage_02` ;
+
+			$DVYImage[3] = `iconTextStaticLabel -w 100 -h 80 -st "iconOnly" -i1 "DVY_HandRail_1.xpm" StaIMage_03` ;
+
+			setParent..;	
+			setParent..;	
+		setParent..;	
+	
+			$DVYImage[1] = `iconTextStaticLabel -w 200 -h 160 -st "iconOnly" -i1 "DVY_Stairs_1.xpm" StaIMage_01` ;
+
+	setParent $Tabs;	
+	
+//////////////////////////////////////////////////////////////////////////////////
+//					Help and Info Tab.
+//////////////////////////////////////////////////////////////////////////////////	
+// Tab Layout for Help and Info Tab
+	
+	columnLayout -adj 1 "Help and Info ";
+
+		string $HelpM = `frameLayout -height 500 -labelVisible 0 -label "Help & Info" -bs "in" "Help"`;
+	
+			columnLayout -adj 1 ;
+			
+				text -height 5 -label "";
+				separator -h 10 -style "double";
+				text -bgc 0.7 1 0.7  -height 20 -align "center" -label "Help Section ";
+				
+				separator -h 10 -style "double";
+				text -height 5 -label "";
+		
+				scrollField -height 430 -bgc 1 1 0.85 -wordWrap true -editable false
+					-text "This script calls a GUI where relevant Info can be entered to generate a dimensionally accurate set of Stairs. \n\nThe Scripts will currently build both Straight and Spiral sets of Stairs. \nThere are various options that can be selected and Data fields to enter various sizes. \n\nFor Straight Stairs these are Tread Width, Tread Depth, Step Height and Step Thickness. If Step Height and Thickness are set the same script will effectively build a set of steps not stairs. \nThe straight Step options are to include Stair Risers (i.e. the vertical section of each step) not needed for the solid step settings example above. Stairs are built with a 20mm overhang and there are options for edge of step styles. There is an option to include Stair Rails each side. These can either be on outside edge (will add approx. 35mm to overall width) or they can be set inboard of the steps in which case the rails will be notched to suit the Step thickness. \nThere are options for Left and Right Hand and Mid Rails, with post and wall mounting options. Also if posts are selected Panels can be built for left, right or both sides. \n\nFor Spiral Stairs the options are Stair Outside Diameter, Tread Width, Step Height and Step Thickness. Also Outside and Inside HandRails with Posts or Wall Mountings. Also Panels are available for the Outside Diameter. There is and Option to include a central column if required. \n\n Note:- The Scale of the Stairs will be adjusted to set correct size relevant to the correct size for the Users Maya Unit settings i.e mm, cm, m, in, ft, yd.\n\nI am still working on this script and will eventully include options for more complex shape stairs. \n";				
+				text -height 5 -label "";
+	
+		setParent..;
+
+	setParent $MainPane;	
+
+	setParent $MainPanel;
+	
+		
+	setParent..;
+	
+// Build it.
+
+	frameLayout -cll 0 -vis 1 -lv 0 -label "Build" -la "center" -bs "out";
+	
+	columnLayout -enable 1 -adj 1 -cat "left" 1 -cal "center" ;
+		
+		separator -h 5 -style "none";
+
+		button -height 40 -bgc 0.7 0.7 1 -label "Build Stairs"
+			-command " print \"\\n Building Stairs as Required Davvey © 2006..\\n\"; DVY_StairBuild;"
+				Screw_Builder;	
+
+		separator -h 10 -style "none";
+
+	setParent..;		
+
+	
+//Show the DVY_Stairs UI Window.
+	
+ 	showWindow DVY_StairsWindow;
+	
+}// End of DVY_Stairs Global procedure.
+
+ 
+// -------------------------------------------------------------------------------- //
+
+global proc DVY_StairsCallback (int $S)
+{
+	
+// ******************************************************************************** //	
+//	Global Variables
+	
+	global string $DVYImage[];
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+	
+	int $T = 0;
+	
+	int $S1 = `optionMenu -q -sl DVY_CStStairOption`;
+	
+	if (($S == 1) && ($S1 > 0))
+		{
+			$DVYImage[1] = `iconTextStaticLabel -e -i1 ("DVY_Stairs_" + $S1 + ".xpm") StaIMage_01`;
+
+			if ($S1 == 1) { intFieldGrp -edit -en1 0 -v1 0 -v2 0 -en2 0 -v3 0 -en3 0  StaIntField_201;}
+			if ($S1 == 2) { intFieldGrp -edit -en1 1 -v2 0 -en2 0 -v3 0 -en3 0  StaIntField_201;}
+			if ($S1 == 3) { intFieldGrp -edit -en1 1 -en2 1 -v3 0 -en3 0  StaIntField_201;}
+			if ($S1 == 4) { intFieldGrp -edit -en1 1 -en2 1 -v3 0 -en3 0  StaIntField_201;}
+			if ($S1 == 5) { intFieldGrp -edit -en1 1 -en2 1 -en3 1 StaIntField_201;}
+			if ($S1 == 6) { intFieldGrp -edit -en1 1 -en2 1 -en3 0 -v3 0 StaIntField_201;}
+			if ($S1 == 7) { intFieldGrp -edit -en1 1 -en2 1 -en3 0 -v3 0 StaIntField_201;}
+			if ($S1 == 8) { intFieldGrp -edit -en1 1 -en2 1 -en3 0 -v3 0 StaIntField_201;}
+			if ($S1 == 9) { intFieldGrp -edit -en1 1 -en2 1 -en3 0 -v3 0 StaIntField_201;}
+			if ($S1 == 10) { intFieldGrp -edit -en1 1 -en2 1 -en3 0 -v3 0 StaIntField_201;}
+			
+		}
+		
+
+	int $S2 = `optionMenu -q -sl DVY_CStSpindleStyleOption`;
+	
+	if (($S == 2) && ($S2 > 0))
+		{
+			$DVYImage[2] = `iconTextStaticLabel -e -i1 ("DVY_Spindles_" + ($S2-1) + ".xpm") StaIMage_02`;
+		
+		}
+		
+	int $S3 = `optionMenu -q -sl DVY_CStHandRailStyleOption`;
+	
+	if (($S == 3) && ($S3 > 0))
+		{
+			$DVYImage[3] = `iconTextStaticLabel -e -i1 ("DVY_HandRail_" + ($S3) + ".xpm") StaIMage_03`;
+
+			if ($S3 == 7)
+				{
+					optionMenu -edit -en 0 -sl 1 DVY_CStSpindleStyleOption;
+					$DVYImage[2] = `iconTextStaticLabel -e -i1 ("DVY_Spindles_0.xpm") StaIMage_02`;
+				
+				}
+				
+			if ($S3 != 7){ optionMenu -edit -en 1 DVY_CStSpindleStyleOption; }
+			 
+			 
+		}
+		
+}// End of DVY_StairsCallback Procedure
+
+// -------------------------------------------------------------------------------- //
+
+global proc DVY_AboutStairsWin()
+ {
+	global float $DVYTol;
+	if ((`window -ex DavveyAboutStairsWindow`) == true) 
+		{
+			deleteUI DavveyAboutStairsWindow;
+		}
+		if (`windowPref -ex DavveyAboutStairsWindow`) windowPref -remove DavveyAboutStairsWindow;
+		window -t " About:-  Davvey's Stair Generator." -width 425 -height 300 -sizeable 0 DavveyAboutStairsWindow;
+		//Build 'Edit' menu.
+	
+	string $menuBarLayout = `menuBarLayout -height 20`;
+		menu -label "File"; 
+ 			menuItem -label "Close" -command "deleteUI DavveyAboutStairsWindow";		
+
+	setParent;
+	setParent;
+
+		columnLayout -adjustableColumn true -columnAttach "both" 5 -columnWidth 350; 
+	
+		text -height 2 -label " " ;	//Spacer
+		separator -height 10 -style "double" ;
+			text -bgc 0.5 0.5 1 -height 20 -align "center" -fn "boldLabelFont" -l "Davvey's Stair Generator..";
+			text -bgc 0.5 0.5 1 -height 20 -align "center" -fn "boldLabelFont" -l "copyright (c)2006 Dave Lake..";
+		separator -height 8 -style "double" ;
+		text -height 2 -label " " ;	//Spacer
+		
+	frameLayout -cl 0 -label "" -labelAlign "center" -borderStyle "etchedOut";
+		columnLayout -adjustableColumn true -columnAttach "both" 2 -columnWidth 250; 
+		
+		text -bgc 1 1 0.8 -height 5 -align "left" -l " ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -fn "boldLabelFont" -l "  Special Thanks:- ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -fn "plainLabelFont" -l "  Thanks to my wife Jan for her support and patience during the time";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "   its taken to learn Maya and how to write these scripts.";
+		text -bgc 1 1 0.8 -height 10 -align "left" -l " ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "  Also dedicated to Jackie and Joanna (my expensive pride and joys!!)";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "  Finally these Collected works are dedicated to the memory of Darryl.";
+		text -bgc 1 1 0.8 -height 5 -align "left" -l " ";
+		setParent ..;	
+		setParent ..;	
+		text -align "center" -l "email :- Davvey@ntlworld.com";
+		text -align "center" -l "website :- www..............";
+	setParent ..; 
+
+	showWindow DavveyAboutStairsWindow;
+	
+}// End of DVY_AboutStairsWin Procedure
+
+ 

@@ -1,0 +1,3764 @@
+//nphRigTools.mel by Nathan p Horne
+//www.nathanhorne.com
+//Email: Temujin@fullsail.edu
+//
+//Usage: Simply source from any directory and it will create a menu item
+//To enable a persistant menu item, turn it on in the preferences.
+//
+//Caution: if you make it sizeable, it might not properly display all UI elements
+
+global string $gRigToolsVersion;
+//version alpha 0.4 for version 6.0 DRC
+$gRigToolsVersion = "6A0.4";
+global string $gRecentItems[];
+clear($gRecentItems);
+
+
+
+//To run, simply source this it will install a meu item for you
+//To have it run at startup either edit that in the preferences in the rig tools menu or 
+//altarnatively the mel command nphRigTools; will open the main procedure
+//open up nphConfig.cfg in the scripts directory with a text editor
+
+
+
+
+///INTERNAL DOCUMENTATION FOR DEVELOPEMENT-- _MAY_ BE INCORRECT OR INCOMPLETE//
+
+//Global variables:
+//gRecentShelf:contains my recent tools shelf name
+//gRigToolsVer:contains version number as a string
+//gRigToolsBack: contains the last opened window to be used with back buttons, re-loading... etc.
+
+//procedure list:
+//nphRigToolsMain; no req.
+//nphMakeWindow; requires the name of a contents procedure
+
+//contents procs
+//nphRigToolsMain; no req.
+//nphRigToolsAbout; no req.
+//nphRigToolsPrefs; no req.
+//nphRigToolsHelp; no req.
+//nphRigToolsCM; no req.
+//nphRiggingTool; no req.
+//nphNamingTool; no req.
+//nphPVTool; no req.
+//nphSlaveSkelTool; no req.
+//nphAnimTransTool; no req.
+//end contents procs
+
+//nphRigToolsCFG; requires a flag for mode, an attribute, and a new value if the mode is set
+//nphFindIn; see below.
+//nphStartup; no req.
+//nphWriteFile; see below.
+//nphUserSetup; see below.
+//nphLoadRecent; no req.
+//nphPrependArray; see below.
+//nphMakeShape; see below.
+//nphRemakeCFG; no req. simply deletes config file and removes lines from userSetup.mel
+//nphDoRename; <array> <string> see below.
+//nphMakeArm; no req. makes 2 arms  ---soon to be deleted
+//nphSetupArm; no req.              ---soon to be deleted
+//nphRestoreSel; <array>. selects all objcts in an array.
+//nphMoveCon; see bleow.
+//nphLsType; see below.
+//getShapeOfTransformArray; <array>.
+//nphHookUpStretch; <array> <array>. see below.
+//nphSetupDistanceTools; <array>. see below.
+//nphParentArrayTo; <array> <string>. see below.
+
+
+
+
+//heres examples and explanations of what each proc does and what it requires.
+
+
+//heres working examples of my configuration proc
+//nphRigToolsCFG {"-q", "Sizeable"};
+//nphRigToolsCFG {"-s", "Menu_Item", "1"};
+
+//nphFindIn;
+//requires <string> <array> finds an entry in an
+//array of strings that starts with the specified string
+
+//nphWriteFile; <array> <string> <mode> array to write, path/file name, append/overwrite (0/1)
+
+//nphUserSetup; int 0 remove/1 install
+
+//nphPrependArray; <array> <array>
+//takes two arrays and puts one infront of the other then removes all duplicate entries
+//EX: nphPrependArray {"c"} {"a", "b", "c"};
+// Result:{"c", "a", "b"}
+
+//nphMakeShape; int for mode, 1 is create control 0 is just set last settings into cfg file
+
+/*
+//nphDoRename; <array> <string>
+//this is a rename for a single/group
+nphDoRename {"3", "1", "Name", "prefix", "suffix"} "_";
+//this adds an additional suffix
+nphDoRename {"3", "2", "JNT"}  "_";
+//add an additional prefix
+nphDoRename {"3", "3", "Lt"}  "_";
+//remove a suffix
+nphDoRename {"3", "4"}  "_";
+//remove a prefix
+nphDoRename {"3", "5"}  "_";
+//add an additional prefix
+nphDoRename {"1", "3", "Lt"}  "_";
+//find and replace, finds Lt replaces with Rt
+nphDoRename {"3", "6", "Lt", "Rt"} "_";
+//rename EVERYTHING... ATM this doesnt work well as it runs into read-only nodes and throws an error
+//nphDoRename {"2", "1", "Name", "prefix", "suffix"} "_";
+*/
+
+
+//nphMoveCon; <array>
+//takes move type, item to move, item to move it to
+//constraints used to move it into place, works well in most situations
+//nphMoveCon {"consTrans", "objA", "objB" };
+//nphMoveCon {"consRot", "objA", "objB" };
+//uses xform, doesnt work well on frozen xforms and parented controls
+//nphMoveCon {"moveTrans", "objA", "objB" };
+//nphMoveCon {"moveRot", "objA", "objB" };
+
+//nphLsType; <string> <int>
+//EX:
+/*
+//lists the parent(transform) of a nurbsCurve shape
+nphLsType "nurbsCurve" 1;
+//lists the nurbsCurve shape
+nphLsType "nurbsCurve" 0;
+*/
+
+//nphHookUpStretch; <array> <array>
+//takes an array of joints and an array of distanceDimensionShapes and hooks em together.. assumes curve is NOT stretched
+
+//nphSetupDistanceTools; <array>.
+//takes an array of locators and makes a distance tool between each one and the one after it.
+
+//nphParentArrayTo; <array> <string>.
+//this is s imple proc that parents everytinh in an array to a given parent.
+
+
+
+//-----------------------------------------------------------------------------------------//
+//----------------------------------------MAIN PROC----------------------------------------//
+//-----------------------------------------------------------------------------------------//
+global proc nphRigTools()
+{
+//make window procedure
+//exists check for main window
+if(`window -ex nphRigToolsMain`)
+//remove it if it exists
+deleteUI nphRigToolsMain;
+
+
+////////////VERSION CHECK OF CFG FILE/////////
+global string $gRigToolsVersion;
+string $version[] = `nphRigToolsCFG {"-q", "Version"}`;
+if($version[0] != $gRigToolsVersion)
+{
+string $ver = ($version[0] == "") ? "No CFG file found!\n" : ("Wrong version " + $version[0] + " cfg file found!\n");
+print $ver;
+nphRemakeCFG;
+}
+
+
+string $retr[] = `nphRigToolsCFG {"-q", "Sizeable"}`;
+int $s = ($retr[0] == "") ? 0 : $retr[0];
+//create main rig tools window
+window -ret -s $s -tlb 0 -t ("nph Rig Tools " + $gRigToolsVersion) -mb true nphRigToolsMain;
+
+////////menu bar///////
+//file menu
+setParent nphRigToolsMain;
+menu -label "File" -p nphRigToolsMain -tearOff false;
+    //file menu contents
+    menuItem -label "Preferences" -c "nphMakeWindow nphRigToolsPrefs";
+    menuItem -divider true;
+     menuItem -label "Quit" -c "deleteUI nphRigToolsMain";
+
+//help menu
+setParent nphRigToolsMain;
+menu -label "Help" -p nphRigToolsMain -tearOff false;
+    //help menu contents
+    menuItem -label "Help Docs" -c "nphMakeWindow nphRigToolsHelp";
+
+//about menu
+setParent nphRigToolsMain;
+menu -label "About" -p nphRigToolsMain -tearOff false;
+    //about menu contents
+    menuItem -label "About" -c "nphMakeWindow nphRigToolsAbout";
+
+{
+		//warning "Block 1 executing";
+		string $main = `formLayout`;
+		string $tabs = `tabLayout`;
+		formLayout -edit
+			-attachForm $tabs left 0
+			-attachForm $tabs right 0
+			-attachForm $tabs top 0
+			-attachForm $tabs bottom 0
+		$main;
+		
+		nphRigToolsCM;
+		setParent $tabs;
+
+		nphRigToolsName;
+		setParent $tabs;
+
+		string $procTab = `columnLayout`;
+		frameLayout -cll 1 -cl 1 -l "Slave Skeleton Tool";
+		columnLayout -adj true;
+		nphRigToolsSLSK;
+		setParent $procTab;
+		frameLayout -cll 1 -cl 1 -l "Spine setup";
+		columnLayout -adj true;
+		nphPrigSubSpine;
+		setParent $procTab;
+		nphPrigSubArm;
+
+		setParent $tabs;
+		columnLayout;
+		nphPrigSubGeneral;
+
+		tabLayout -edit -tli 1 "Controls" -tli 2 "Naming" -tli 3 "Procedural" -tli 4 "Helper" $tabs;
+		
+                scriptJob -p nphNamingRadio -e idle "if(`window -q -ex nphRigToolsMain` && !`window -q -vis nphRigToolsMain`){nphParseArgs nphCMclosed;deleteUI nphRigToolsMain;}";
+
+	}
+//show the main rig tools window
+showWindow nphRigToolsMain;
+
+//get these from prefs later (window width and height)
+int $w = 500;
+int $h = 300;
+
+//set window size
+if($s == 0)
+window -e -wh $w $h nphRigToolsMain;
+//end make window procedure
+}
+
+
+//-----------------------------------------------------------------------------------------//
+//--------------------------------MAIN WINDOW CREATION PROC--------------------------------//
+//-----------------------------------------------------------------------------------------//
+global proc nphMakeWindow(string $contents)
+{
+//make window procedure
+//exists check for main window
+if(`window -ex nphRigToolsPopup`)
+//remove it if it exists
+deleteUI nphRigToolsPopup;
+
+
+////////////VERSION CHECK OF CFG FILE/////////
+global string $gRigToolsVersion;
+string $version[] = `nphRigToolsCFG {"-q", "Version"}`;
+if($version[0] != $gRigToolsVersion)
+{
+string $ver = ($version[0] == "") ? "No CFG file found!\n" : ("Wrong version " + $version[0] + " cfg file found!\n");
+print $ver;
+nphRemakeCFG;
+}
+
+
+string $retr[] = `nphRigToolsCFG {"-q", "Sizeable"}`;
+int $s = ($retr[0] == "") ? 0 : $retr[0];
+//create main rig tools window
+window -s $s -tlb 0 -t ("nph Rig Tools " + $gRigToolsVersion + " Popup") -mb true nphRigToolsPopup;
+
+//Eval the contents var to allow it to be executed at specific times
+eval($contents);
+
+//show the main rig tools window
+showWindow nphRigToolsPopup;
+
+//get these from prefs later (window width and height)
+int $w = 200;
+int $h = 200;
+
+//set window size
+if($s == 0)
+window -e -wh $w $h nphRigToolsPopup;
+//end make window procedure
+}
+
+//==================================================================================//
+//                            MAIN CONTENTS PROCEDURES                                 //
+//==================================================================================//
+
+//----------------------------------------------------------------------------------//
+//--------------------------------MAIN PAGE CONTENT PROC----------------------------//
+//----------------------------------------------------------------------------------//
+global proc nphRigToolsMain()
+{
+    formLayout -numberOfDivisions 100 nphLayout;
+    
+    text -l "nphRigTools By:Nathan Horne" t1;
+    separator sp1;
+
+
+    columnLayout -adj true mainLayout;
+    button -l "General tools" -c "nphMakeWindow nphRigToolsPrig";
+    button -l "Naming Tool" -c "nphMakeWindow nphRigToolsName";
+    button -l "Control Maker" -c "nphMakeWindow nphRigToolsCM";
+    button -en 0 -l "Pole Vector Tool" -c "nphPVTool";
+    button -en 1 -l "Slave Skeleton Tool" -c "nphMakeWindow nphRigToolsSLSK";
+    button -en 0 -l "Animation Transfer Tool" -c "nphAnimTransTool";
+    separator;
+    button -l "Quit" -c "deleteUI nphRigToolsMain;";
+    
+    formLayout -e
+                -attachForm t1 top 0
+                -attachForm t1 left 15
+                -attachForm t1 right 15
+                -attachForm sp1 left 15
+                -attachForm sp1 right 15
+                -attachControl sp1 top 0 t1
+                -attachControl mainLayout top 0 sp1
+                -attachForm mainLayout left 15
+                -attachForm mainLayout right 15
+                -attachForm mainLayout bottom 15
+    nphLayout;
+
+}
+
+
+
+//-----------------------------------------------------------------------------------//
+//--------------------------------ABOUT CONTENTS PROC--------------------------------//
+//-----------------------------------------------------------------------------------//
+global proc nphRigToolsAbout()
+{
+formLayout -numberOfDivisions 100 aboutLayout;
+columnLayout;
+global string $gRigToolsVersion;
+text ("nphRigTools\n By: Nathan Horne\nRevision " + $gRigToolsVersion + "\n\n\nSpecial thanks to:\nMichael Clavan\nAndrew Chang\nBryce Lumpkin\n");
+button -l "www.nathanhorne.com"
+-c ("showHelp -a \"http:/\/www.nathanhorne.com\";") ;
+
+setParent ..;
+}
+
+//----------------------------------------------------------------------------------------//
+//--------------------------------PREFRENCES CONTENTS PROC--------------------------------//
+//----------------------------------------------------------------------------------------//
+global proc nphRigToolsPrefs()
+{
+string $scriptDir = `internalVar -usd`;
+global string $gRigToolsVersion;
+string $nphScript = ($scriptDir + "/nphRigTools" + $gRigToolsVersion + ".mel");
+if(!`file -q -ex $nphScript`)
+{
+confirmDialog -title "Warning!" -message ("nphRigTools" + $gRigToolsVersion + ".mel could not be found!\nAuto startup will not work until it is moved into:\n" + $scriptDir)
+        -button "Okay";
+}
+
+formLayout -numberOfDivisions 100 aboutLayout;
+columnLayout;
+string $retr[] = `nphRigToolsCFG {"-q", "Menu_Item"}`;
+int $cs = $retr[0];
+checkBox -en (`file -q -ex $nphScript`) -v $cs -label "Persistant menu item" -align "left"
+-onc "nphRigToolsCFG {\"-s\", \"Menu_Item\", \"1\"};nphUserSetup 1;"
+-ofc "nphRigToolsCFG {\"-s\", \"Menu_Item\", \"0\"};nphUserSetup 0;";
+
+string $retr[] = `nphRigToolsCFG {"-q", "Open_On_Startup"}`;
+int $cs = $retr[0];
+checkBox -en (`file -q -ex $nphScript`) -v $cs -label "Open on startup" -align "left"
+-onc "nphRigToolsCFG {\"-s\", \"Open_On_Startup\", \"1\"}"
+-ofc "nphRigToolsCFG {\"-s\", \"Open_On_Startup\", \"0\"}";
+
+string $retr[] = `nphRigToolsCFG {"-q", "Sizeable"}`;
+int $cs = $retr[0];
+checkBox -v $cs -label "Sizeable" -align "left"
+-onc "nphRigToolsCFG {\"-s\", \"Sizeable\", \"1\"}"
+-ofc "nphRigToolsCFG {\"-s\", \"Sizeable\", \"0\"}";
+
+
+setParent ..;
+
+}
+
+//----------------------------------------------------------------------------------//
+//--------------------------------HELP CONTENTS PROC--------------------------------//
+//----------------------------------------------------------------------------------//
+global proc nphRigToolsHelp()
+{
+columnLayout;
+text "help docs are not created yet!";
+}
+
+//----------------------------------------------------------------------------------------//
+//--------------------------PROCEDURAL RIGGING CONTENTS PROC------------------------------//
+//----------------------------------------------------------------------------------------//
+global proc nphRigToolsPrig()
+{
+columnLayout -adj true;
+button -h 40 -l "General tools" -c "nphMakeWindow nphPrigSubGeneral";
+text -l " ";
+button -h 40 -l "Arm tools" -c "nphMakeWindow nphPrigSubArm";
+button -h 40 -l "Spine tools" -c "nphMakeWindow nphPrigSubSpine";
+//button -h 40 -l "Leg tools" -c "";
+text -l " ";
+text -l " ";
+}
+
+
+//-----------------------------------------------------------------------------------------//
+//--------------------------------NAMING TOOL CONTENTS PROC--------------------------------//
+//-----------------------------------------------------------------------------------------//
+global proc nphRigToolsName()
+{
+      //Naming tool contents proc
+      //set as most recent item
+      nphRigToolsCFG {"-s", "Recent_Items", "nam"};
+      
+      string $retr[] = `nphRigToolsCFG {"-q", "NT_Prefix"}`;
+      string $retr1[] = `nphRigToolsCFG {"-q", "NT_Main"}`;
+      string $retr2[] = `nphRigToolsCFG {"-q", "NT_Suffix"}`;
+      string $retr3[] = `nphRigToolsCFG {"-q", "NT_Underscore"}`;
+      //new to 3.8
+      string $retr4[] = `nphRigToolsCFG {"-q", "NT_NameType"}`;
+      string $retr5[] = `nphRigToolsCFG {"-q", "NT_Mode"}`;
+      string $retr6[] = `nphRigToolsCFG {"-q", "NT_Sub"}`;
+      string $retr7[] = `nphRigToolsCFG {"-q", "NT_FandR"}`;
+      string $retr8[] = `nphRigToolsCFG {"-q", "NT_Search"}`;
+      /*
+      //new items to add to cfg in 3.8
+      "NT_NameType = 'nphName1'\n",
+      "NT_Mode = 'nphMode1'\n",
+      "NT_Sub = '0'\n",
+      "NT_FandR = '0'\n",
+      "NT_Search = 'Lt'\n",
+      */
+      
+      int $state = $retr3[0];
+      
+      formLayout -numberOfDivisions 100 namingLayout;
+      columnLayout topLayout;
+      rowColumnLayout -nc 3 -cw 1 130 -cw 2 150 -cw 3 130;
+      textField -text $retr[0] -ec "setFocus nphNameMain" -cc "nphUpdPreview" nphNamePrefix;
+      textField -text $retr1[0] -ec "setFocus nphNameSuffix" -cc "nphUpdPreview" nphNameMain;
+      textField -text $retr2[0] -cc "nphUpdPreview" nphNameSuffix;
+      setParent ..;
+      rowColumnLayout -nc 2 -cw 1 130 -cw 2 320;
+      checkBox -v $state -l "Insert underscores" nphUnderscore;
+      textField -ed 0 nphNamePreview;
+      separator; separator;
+      int $temp = $retr7[0];
+      checkBox -v $temp -l "Find and replace" -onc "textField -e -en 1 nphSearchFor;" -ofc "textField -e -en 0 nphSearchFor; radioButton -e -en 1 nphName1; radioButton -e -en 1 nphName2; radioButton -e -en 1 nphName3;" nphFandR;
+      text " ";
+      text -al "right" -label "Search:";
+      textField -en (`checkBox -q -v nphFandR`) -text $retr8[0] nphSearchFor;
+      separator; separator;
+      setParent ..;
+      rowColumnLayout -nc 3 -cw 1 130 -cw 2 150 -cw 3 130;
+      //options for renaming
+      //general cleanup added for new layout
+      
+      if(`radioCollection -q -ex nphNamingRadio`)
+        {
+        	string $children[] = `radioCollection -q -cia nphNamingRadio`;
+        	for($child in $children)
+        		{deleteUI $child;}
+        	deleteUI nphNamingRadio;
+        }
+
+      if(`radioCollection -q -ex nphModeRadio`)
+        {
+        	string $children[] = `radioCollection -q -cia nphModeRadio`;
+        	for($child in $children)
+        		{deleteUI $child;}
+        	deleteUI nphModeRadio;
+        }
+        
+      radioCollection nphNamingRadio;
+          radioButton -label "Rename" -onc "textField -e -en 1 nphNamePrefix; textField -e -en 1 nphNameMain; textField -e -en 1 nphNameSuffix;" nphName1;
+          radioButton -label "Suffix" -onc "textField -e -en 0 nphNamePrefix; textField -e -en 0 nphNameMain; textField -e -en 1 nphNameSuffix;" nphName2;
+          radioButton -label "Prefix" -onc "textField -e -en 1 nphNamePrefix; textField -e -en 0 nphNameMain; textField -e -en 0 nphNameSuffix;" nphName3;
+      radioCollection -e -select $retr4[0] nphNamingRadio;
+      $temp = $retr6[0];
+      checkBox -l "Subtractive" -v $temp -ofc "radioCollection -e -select \"nphName1\" nphNamingRadio; checkBox -e -en 1 nphUnderscore; checkBox -e -en 1 nphFandR;" -onc "radioCollection -e -select \"nphName2\" nphNamingRadio;" nphSubtractive;
+      text -label " ";
+      text -label " ";
+      separator; separator; separator;
+      radioCollection nphModeRadio;
+            radioButton -label "Hierarchy" nphMode1;
+            radioButton -label "Single/Group" nphMode3;
+            radioButton -label "Scene" nphMode2;
+      
+      //rmoved because it causes confusion and isnt used very often..also makes renaming code less efficient
+      //checkBox -v 1 -l "include root?" -en ((`radioCollection -q -select nphModeRadio`) == "nphMode1") nphIncludeRoot;
+      
+      //have to delay selecting the default until after the item the onc effects is created
+      radioCollection -e -select $retr5[0] nphModeRadio;
+      
+      setParent ..; setParent ..;
+      //button -l "Name it!" -h 60 -c "nphNTUpdateCFG; nphRenamer;" nphNameIt;
+      button -l "Name it!" -h 60 -c "nphNTUpdatePrefs; nphParseArgs nphDoRename;" nphNameIt;
+      
+      //this was causing an error on osX but not dozeXP so im gonna leave it just in case
+      //setParent ..;
+      
+
+      
+      formLayout -e 
+                -attachForm topLayout top 0
+                -attachForm topLayout left 0
+                -attachForm topLayout right 0
+                -attachControl nphNameIt top 0 topLayout
+                -attachForm nphNameIt left 0
+                -attachForm nphNameIt right 0
+      namingLayout;
+      scriptJob -p "nphNamingRadio" -e "idle" "nphUpdPreview;";
+}
+
+
+
+//-------------------------------------------------------------------------------------------//
+//--------------------------------CONTROL MAKER CONTENTS PROC--------------------------------//
+//-------------------------------------------------------------------------------------------//
+global proc nphRigToolsCM()
+{
+      //load up recent settings from cfg file
+      string $CM_Name[] = `nphRigToolsCFG {"-q", "CM_Name"}`;
+      string $CM_Color[] = `nphRigToolsCFG {"-q", "CM_Color"}`;
+      string $CM_Shape[] = `nphRigToolsCFG {"-q", "CM_Shape"}`;
+      //string $CM_Replace[] = `nphRigToolsCFG {"-q", "CM_Replace"}`;
+      
+      //new as of 5.1
+      string $CM_Replace[] = `nphRigToolsCFG {"-q", "CM_Replace"}`;
+      string $CM_MCreate[] = `nphRigToolsCFG {"-q", "CM_MCreate"}`;
+      string $CM_GFreeze[] = `nphRigToolsCFG {"-q", "CM_GFreeze"}`;
+      
+      //new as of 5.2
+      string $CM_Ltrans[] = `nphRigToolsCFG {"-q", "CM_Ltrans"}`;
+      string $CM_Lrot[] = `nphRigToolsCFG {"-q", "CM_Lrot"}`;
+      string $CM_Lscale[] = `nphRigToolsCFG {"-q", "CM_Lscale"}`;
+
+
+      nphRigToolsCFG {"-s", "Recent_Items", "cm"};
+      
+      
+      formLayout -numberOfDivisions 100 nphLayout;
+      rowColumnLayout -nc 3 -cw 1 60 -cw 1 200 -cw 2 70-cw 3 180 topLayout;
+      separator;  separator; separator;
+      optionMenu -label "Shapes" nphShapesMenu;
+                menuItem -label "circle";
+                menuItem -label "cube";
+                menuItem -label "arrow";
+                menuItem -label "4 arrow";
+                menuItem -label "3D arrow";
+                menuItem -label "twist arrow";
+                menuItem -label "pin";
+                menuItem -label "2 pin";
+                menuItem -label "4 pin";
+                menuItem -label "sphere";
+                menuItem -label "Axle";
+                menuItem -label "cylinder";
+                menuItem -label "cone";
+                menuItem -label "2 arrow";
+                menuItem -label "2 square";
+                menuItem -label "3 tri vector";
+                menuItem -label "3d Pyramid";
+                menuItem -label "COG";
+                menuItem -label "Curvy arrow";
+                menuItem -label "180 arrow";
+                menuItem -label "90 arrow";
+                menuItem -label "Smooth arrow";
+                menuItem -label "Double arrow";
+                menuItem -label "4 Arrow";
+                menuItem -label "Jack";
+                menuItem -label "Spiral";
+      int $shapeNum = $CM_Shape[0];
+      optionMenu -e -sl $shapeNum nphShapesMenu;
+      
+      text "Name: ";
+      textField -text $CM_Name[0] nphControlName;
+      separator;  separator; separator;
+      setParent ..;
+      
+      rowColumnLayout -nc 2 -cw 1 400 midLayout;
+      text "set current color:";
+      text "Color:";
+
+
+      gridLayout -nc 16 -cwh 25 20;
+      for($i=1;$i<=31;++$i)
+      {
+            float $index[]=`colorIndex -q $i`;
+            float $indR=$index[0];
+            float $indG=$index[1];
+            float $indB=$index[2];
+            canvas -rgb $indR $indG $indB -ann ("Set as current color") -pc ("canvas -e -rgb " + $indR + " " + $indG + " " + $indB + "-ann " + $i + " nphCurrentColor");
+      }
+
+      //setParent ..;
+      setParent midLayout;
+
+      gridLayout -cwh 50 40;
+      int $colorNum = $CM_Color[0];
+      float $index[]=`colorIndex -q $colorNum`;
+          float $indR=$index[0];
+          float $indG=$index[1];
+          float $indB=$index[2];
+      canvas -rgb $indR $indG $indB -ann $colorNum nphCurrentColor;
+
+      //component transformation and coloring section
+      setParent nphLayout;
+      rowColumnLayout -nc 4 rotLayout;
+      button -l "Apply to selection!" -c "nphParseArgs nphColorSelection";
+      text " "; text " "; text " ";
+      separator; separator; separator; separator;
+      button -l "rotate X" -c "nphParseArgs nphRotateCVX";
+      button -l "rotate Y" -c "nphParseArgs nphRotateCVY";
+      button -l "rotate Z" -c "nphParseArgs nphRotateCVZ";
+      //button -l "Scale selected" -c "nphParseArgs nphScaleCV";
+      button -l "Transform Selected" -c "nphComponentTransform";
+      separator; separator; separator; separator;
+
+      //option boxes section
+      setParent nphLayout;
+      rowColumnLayout -nc 3 -cw 1 150 -cw 2 150 -cw 3 150 optionLayout;
+
+      int $mc = $CM_MCreate[0];
+      int $rp = $CM_Replace[0];
+      int $f = $CM_GFreeze[0];
+
+      checkBox -v $mc -l "Multi-Create" nphMultiCreate;
+      //checkBox -v 0 -en 0 -l "AutoParent" -cc "eval(\"if(`checkBox -q -v nphAutoParent` == 1)checkBox -e -v 0 nphReplace\")" nphAutoParent;
+      //checkBox -v 0 -en 0 -l "P-constraint" -cc "eval(\"if(`checkBox -q -v nphPcon` == 1)checkBox -e -v 0 nphReplace\")"nphPcon;
+      checkBox -v $rp -l "Replace selected control" -cc "eval(\"if(`checkBox -q -v nphReplace` == 1)checkBox -e -v 0 nphGroupFreeze;\")"nphReplace;
+      checkBox -v $f -l "Group Freeze" -cc "eval(\"if(`checkBox -q -v nphGroupFreeze` == 1)checkBox -e -v 0 nphReplace\")" nphGroupFreeze;
+      //checkBox -v 0 -en 0 -l "O-constraint" -cc "eval(\"if(`checkBox -q -v nphOcon` == 1)checkBox -e -v 0 nphReplace\")" nphOcon;
+      separator; separator; separator;
+
+      //lock and hide layout
+      setParent nphLayout;
+      rowColumnLayout -nc 4 -cw 1 80 -cw 2 100 -cw 3 100 -cw 4 100 lockHideLayout;
+      text "Lock and hide";
+
+      int $lt = $CM_Ltrans[0];
+      int $lr = $CM_Lrot[0];
+      int $ls = $CM_Lscale[0];
+
+      checkBox -v $lt -l "Trans" nphLockTrans;
+      checkBox -v $lr -l "Rotate" nphLockRot;
+      checkBox -v $ls -l "Scale" nphLockScale;
+      setParent ..;
+
+      //make control button
+      string $makeButton = `button -h 25 -l "Make Control!" -c "nphParseArgs nphMakeControl;"`;
+
+      //form layout setup
+      formLayout -e
+      -attachForm topLayout left 15
+      -attachForm topLayout right 15
+      -attachForm midLayout left 15
+      -attachForm midLayout right 15
+      -attachControl midLayout top 5 topLayout
+      -attachControl rotLayout top 5 midLayout
+      -attachForm $makeButton left 15
+      -attachForm $makeButton right 15
+      -attachForm rotLayout left 15
+      -attachForm rotLayout right 15
+      -attachForm optionLayout left 15
+      -attachForm optionLayout right 15
+      -attachControl optionLayout top 5 rotLayout
+      -attachControl lockHideLayout top 5 optionLayout
+      -attachForm lockHideLayout left 15
+      -attachForm lockHideLayout right 15
+      -attachControl $makeButton top 5  lockHideLayout
+      nphLayout;
+}
+
+
+//----------------------------------------------------------------------------------------------//
+//--------------------------------POLE VECTOR TOOL CONTENTS PROC--------------------------------//
+//----------------------------------------------------------------------------------------------//
+global proc nphRigToolsPVTool()
+{
+      nphMakeWindow "nphRigToolsInc";
+      //probably wont make this tool as a fullsail grad apparently already made an awesome one that does this and more...
+}
+
+
+//-------------------------------------------------------------------------------------------------//
+//--------------------------------SLAVE SKELETON TOOL CONTENTS PROC--------------------------------//
+//-------------------------------------------------------------------------------------------------//
+global proc nphRigToolsSLSK()
+{
+        //nphMakeWindow "nphRigToolsInc";
+        columnLayout -adj 1;
+        text "Select the control rigs root node, then the bind rigs root node:";
+        button -l "Make attributes on skeletons" -c "nphSlaveAttrs";
+        separator;
+        text "select the control rigs root node:";
+        button -l "Connect skeletons" -c "nphHookUpRigs";
+        separator;
+        text "simply click to disconnect all rigs";
+        button -l "Disconnect Skeletons" -c "nphUnhookRigs";
+        separator;
+        text "Click to remove the custom attributes for connecting from the selected joints";
+        button -l "Remove custom attributes" -c "nphRemoveConnectInfo";
+	   text " ";
+}
+
+
+//----------------------------------------------------------------------------------------------//
+//--------------------------------POLE VECTOR TOOL CONTENTS PROC--------------------------------//
+//----------------------------------------------------------------------------------------------//
+global proc nphRigToolsAnimTrans()
+{
+      nphRigToolsCFG {"-s", "Recent_Items", "att"};
+      nphMakeWindow "nphRigToolsInc";
+      //simple animation transfer/export/import tool
+      //again, probably not during CAP, but after I graduate.
+      //I will proabably make a simple mirror animation/pose button for now instead of this..
+}
+
+
+//--------------------------------TOOL INCOMPLETE CONTENTS PROC--------------------------------//
+global proc nphRigToolsInc()
+{
+      columnLayout;
+      text "not created yet!";
+}
+
+
+//==================================================================================//
+//                                 SUB CONTENTS PROCEDURES                                 //
+//==================================================================================//
+
+//----------------------SUB ARM CONTENTS PROC------------------//
+global proc nphPrigSubArm()
+{
+columnLayout -adj true;
+frameLayout -cll 1 -cl 1 -l "Toon arm setup";
+columnLayout -adj true;
+rowColumnLayout -nc 2;
+text "number of joints: ";
+textField -text "6" "nphJointNum";
+setParent ..;
+columnLayout;
+button -l "Make selected joints toony" -c "nphParseArgs nphPrigToonHose";
+setParent ..;setParent ..;setParent ..;
+frameLayout -cll 1 -cl 1 -l "FK IK arm setup";
+columnLayout -adj true;
+button -l "make FKIK" -c "nphParseArgs \"nphMakeFKIK\"";
+rowColumnLayout -nc 2 -cw 1 50 -cw 2 200;
+text "Name:";
+textField -text "nphTest" fkikName;
+//hook up name field to actual name later
+setParent ..;
+textField -h 50 -text "Once you create an fkik arm use this text to switch from ik to fk" -ed 0 fkikOutput;
+
+setParent ..;
+setParent ..;
+button -l "Make selected joints squash and stretch" -c "nphMakeSquash";
+setParent ..;
+}
+
+//----------------------SUB SPINE CONTENTS PROC------------------//
+global proc nphPrigSubSpine()
+{
+columnLayout -adj true;
+rowColumnLayout -nc 2 -cw 1 200;
+checkBox -l "Make squash and stretch?" nphSquash;
+button -l "Make Spine!" -c "nphParseArgs nphPrigStretchySpine";
+text -l "number of joints per fk joint:"; textField -text "2" nphNumJoints;
+}
+
+//----------------------SUB GENERAL CONTENTS PROC------------------//
+global proc nphPrigSubGeneral()
+{
+columnLayout -adj true;
+button -l "Visibility control maker" -c "nphMakeVis";
+button -l "Make attribute changer node for selected" -c "nphMakevalueChanger";
+button -l "Rotation isolation tool" -c "nphParseArgs nphOriIso;";
+button -l "Group freeze selection" -c "nphParseArgs nphGroupFreeze";
+button -l "Clean up locked atributes" -c "nphHideLockedAttrs";
+frameLayout -cl 0 -cll 1 -l "Resize joint tool";
+columnLayout -adj true;
+separator;
+floatSliderButtonGrp -label "Joint Size" -field true
+         -minValue 0 -maxValue 2 -cw 1 30 -cw 2 50 -cw 3 180 -cw 4 130
+         -fieldMinValue 0 -fieldMaxValue 50
+         -value .5 -bl "Resize between selected" -bc "nphParseArgs nphResizeBetween" nphNewJointSize;
+separator;
+setParent ..;
+setParent ..;
+frameLayout -cl 0 -cll 1 -l "Set default manipultor";
+rowColumnLayout -nc 4;
+button -l "Move" -c "nphSetDefaultManip move";
+button -l "Scale" -c "nphSetDefaultManip scale";
+button -l "Rotate" -c "nphSetDefaultManip rotate";
+button -l "Manipulator" -c "nphSetDefaultManip manip";
+setParent ..;
+setParent ..;
+}
+
+//----------------------SUB LEG CONTENTS PROC------------------//
+global proc nphPrigSubLeg()
+{
+columnLayout -adj true;
+}
+
+//==================================================================================//
+//                              UPDATE CONTENTS PROCEDURES                                 //
+//==================================================================================//
+
+
+//--------------------------------UPDATE TEXTFIELD FOR RENAMER PROC--------------------------------//
+global proc nphUpdPreview()
+{
+//procedure for updating the naming layout for available options etc..
+string $previewName;
+if(`radioCollection -q -ex nphNamingRadio`)
+    {
+     string $mode = `radioCollection -q -select nphNamingRadio`;
+     string $underScore = "";
+     string $us1;
+     string $us2;
+     //snag the values out of the UI
+     string $value1 = (`textField -q -text nphNamePrefix`);
+     string $value2 = (`textField -q -text nphNameMain`);
+     string $value3 = (`textField -q -text nphNameSuffix`);
+
+     string $value1 = `match("[a-zA-Z0-9_]*$") $value1`;
+     string $value2 = `match("[a-zA-Z0-9_]*$") $value2`;
+     string $value3 = `match("[a-zA-Z0-9_]*$") $value3`;
+
+     textField -e -text $value1 nphNamePrefix;
+     textField -e -text $value2 nphNameMain;
+     textField -e -text $value3 nphNameSuffix;
+
+        if(`checkBox -q -v nphUnderscore`)
+                  {$underScore = "_";}
+              else
+                {$underScore = "";}
+                $us1 = $underScore;
+                $us2 = $underScore;
+            if($value1 == "" || $value2 == "")
+                $us1 = "";
+            if($value3 == "")
+                $us2 = "";
+                
+            //this section needs to be formatted properly using context
+        if($mode == "nphName1")
+             {
+                 $previewName = ($value1 + $us1 + $value2 + $us2 + $value3);
+             }
+            if($mode == "nphName2")
+                {$previewName = ("originalName" + $underScore +  (`textField -q -text nphNameSuffix`));}
+            if($mode == "nphName3")
+                {$previewName = ((`textField -q -text nphNamePrefix`) + $underScore + "originalName");}
+
+
+if(`checkBox -q -v nphFandR`)
+       {
+       $previewName = (`textField -q -text nphNameMain`);
+       //radioButton -e -en 0 nphName1;
+       radioButton -e -en 0 nphName2;
+       radioButton -e -en 0 nphName3;
+       }
+
+if(`checkBox -q -v nphSubtractive`)
+                {
+                //special case naming preview for subtractive
+                if($mode == "nphName2")
+                $previewName = ("originalName_Suffix : originalName");
+                if($mode == "nphName3")
+                $previewName = ("prefix_originalName : originalName");
+
+                //turn off the proper controls
+                radioButton -e -en 0 nphName1;
+                textField -e -en 0 nphNamePrefix; textField -e -en 0 nphNameMain; textField -e -en 0 nphNameSuffix;
+                checkBox -e -en 0 nphUnderscore;
+                checkBox -e -en 0 nphFandR;
+                textField -e -en 0 nphSearchFor;
+
+}else{
+                radioButton -e -en 1 nphName1;
+                string $namingRadio = `radioCollection -q -select nphNamingRadio`;
+                if($namingRadio == "nphName1")
+                {textField -e -en 1 nphNamePrefix; textField -e -en 1 nphNameMain; textField -e -en 1 nphNameSuffix;}
+                if($namingRadio == "nphName2")
+                {textField -e -en 0 nphNamePrefix; textField -e -en 0 nphNameMain; textField -e -en 1 nphNameSuffix;}
+                if($namingRadio == "nphName3")
+                {textField -e -en 1 nphNamePrefix; textField -e -en 0 nphNameMain; textField -e -en 0 nphNameSuffix;}
+}
+
+                if(`checkBox -q -v nphFandR` && !`checkBox -q -v nphSubtractive`)
+                {
+                 {textField -e -en 1 nphSearchFor;textField -e -en 0 nphNamePrefix; textField -e -en 1 nphNameMain; textField -e -en 0 nphNameSuffix;}
+                }
+
+textField -e -text $previewName nphNamePreview;
+//now make sure that there are no alpha chars in the padding field
+    }
+}
+
+
+//--------------------------------UPDATE CFG FOR RENAMER PROC--------------------------------//
+global proc nphNTUpdatePrefs()
+{
+//this procedure updates the cfg file with the users last renaming options
+//either when the tool is used or they go back to the main window
+string $value1 = (`textField -q -text nphNamePrefix`);
+string $value2 = (`textField -q -text nphNameMain`);
+string $value3 = (`textField -q -text nphNameSuffix`);
+string $value4 = (`checkBox -q -v nphUnderscore`);
+string $value5 = (`radioCollection -q -select nphNamingRadio`);
+string $value6 = (`radioCollection -q -select nphModeRadio`);
+string $value7 = (`checkBox -q -v nphSubtractive`);
+string $value8 = (`checkBox -q -v nphFandR`);
+string $value9 = (`textField -q -text nphSearchFor`);
+
+nphRigToolsCFG {"-s", "NT_Prefix", $value1};
+nphRigToolsCFG {"-s", "NT_Main", $value2};
+nphRigToolsCFG {"-s", "NT_Suffix", $value3};
+nphRigToolsCFG {"-s", "NT_Underscore", $value4 };
+
+//new to 3.8
+nphRigToolsCFG {"-s", "NT_NameType", $value5};
+nphRigToolsCFG {"-s", "NT_Mode", $value6};
+nphRigToolsCFG {"-s", "NT_Sub", $value7};
+nphRigToolsCFG {"-s", "NT_FandR", $value8};
+nphRigToolsCFG {"-s", "NT_Search", $value9};
+}
+
+
+//--------------------------------LOAD UP RECENT TOOLS LIST PROC--------------------------------//
+global proc nphRecentList(string $recent[])
+{
+
+global string $gRecentShelf;
+setParent $gRecentShelf;
+//add in any recently used commands here!
+//{"prig", "nam", "cm", "pv", "slsk", "att"}
+for($tool in $recent)
+{
+
+if($tool == "prig")
+shelfButton
+-annotation "General tools"
+-image1 "iksplinemanip.xpm"
+-command "evalDeferred(\"nphMakeWindow nphRigToolsPrig\")";
+
+if($tool == "nam")
+shelfButton
+-annotation "Naming tool" 
+-image1 "quickrename.xpm"
+-command "evalDeferred(\"nphMakeWindow nphRigToolsName\")";
+
+if($tool == "cm")
+shelfButton
+-annotation "Control Making tool"
+-image1 "circle.xpm"
+-command "evalDeferred(\"nphMakeWindow nphRigToolsCM\")";
+
+if($tool == "pv")
+shelfButton
+-annotation "Pole Vector tool"
+-image1 "polevectorconstraint.xpm"
+-command "evalDeferred(\"nphMakeWindow nphRigToolsInc\")";
+
+if($tool == "slsk")
+shelfButton
+-annotation "Slave Skeleton tool"
+-image1 "parentconstraint.xpm"
+-command "evalDeferred(\"nphMakeWindow nphRigToolsSLSK\")";
+
+if($tool == "att")
+shelfButton
+-annotation "Animation Transfer tool" 
+-image1 "ghost.xpm"
+-command "evalDeferred(\"nphMakeWindow nphAnimTransTool\")";
+
+if($tool == "lra")
+shelfButton
+-annotation "LRA visibility gadget"
+-image1 "out_buttonmanip.xpm"
+-command "evalDeferred(\"nphLRAWin\")";
+}
+}
+
+//--------------------------------READ RECENT ITEMS FROM CFG PROC--------------------------------//
+global proc nphLoadRecent()
+{
+global string $gRecentItems[];
+$gRecentItems = {"prig", "nam", "cm", "pv", "slsk", "att","lra"};
+$gRecentItems = `nphRigToolsCFG {"-q", "Recent_Items"}`;
+}
+
+
+//==================================================================================//
+//                          CONFIGURATION FILE PROCEDURES                                 //
+//==================================================================================//
+
+//--------------------------------CONFIG FILE HANDLER PROC--------------------------------//
+global proc string[] nphRigToolsCFG(string $input[])
+{
+string $result[];
+//examine input array from script
+
+/*
+input array is new, uses an array to pass in a changable nuber of args
+item 0: mode - -q or -s for query and set to somewhat stay with mayas flaging system
+item 1: attribute string containing what attr is to be changed/queried
+item 2: if mode is -s then it will need a new value to be set to this is that value
+*/
+
+//cfg file handling procedure
+//get the users script directory
+string $scriptDir = `internalVar -usd`;
+string $nphConfig = ($scriptDir + "/nphConfig.cfg");
+
+
+//see if the cfg file exists
+$cfgExists = `file -q -ex ($nphConfig)`;
+if($cfgExists == 0)
+{
+
+}
+//set up my array for my file
+string $cfgArray[];
+clear $cfgArray;
+
+
+//read in the file and store it into the array by line
+if($cfgExists == 1)
+{
+$fileId=`fopen $nphConfig "r"`;
+string $nextLine = `fgetline $fileId`;
+    while ( size( $nextLine ) > 0 )
+    {
+    $cfgArray[size($cfgArray)] = $nextLine;
+    $nextLine = `fgetline $fileId`;
+    }
+fclose $fileId;
+
+//now that the file is in we have to handle it
+//since it's such a simple file we can just go through line by line
+int $item = `nphFindIn $input[1] $cfgArray`;
+//read the attribute that is being affected
+string $line = $cfgArray[$item];
+string $tokens[];
+clear($tokens);
+int $amnt = `tokenize $line "'" $tokens`;
+string $returnArray[];
+//Analzyze the input if it isnt a simple boolean, if it is a boolean simply write it out
+//save the result for now
+$result[0] = $tokens[1];
+if($amnt == 3 || $amnt == 2)
+    {
+    //change it if mode is set and it is different
+    if($input[0] == "-s")
+        {
+        $tokens[1] = $input[2];
+        $cfgArray[$item] = ($tokens[0] + "'" + $tokens[1] + "'\r");
+        nphWriteFile $cfgArray $nphConfig 1;
+        }
+    //if mode is query return it, otherwise return the new state of the attribute
+
+    //clear out the array to save RAM
+    clear $cfgArray;
+    }
+    else
+    {
+//otherwise, do this to the complex line
+    if($input[1] == "Recent_Items")
+    {
+        if($input[0] == "-q")
+        {
+        int $i = 1;
+        for($i = 1; $i < size($tokens); $i++)
+            {
+            $returnArray[($i - 1)] = $tokens[$i];
+            }
+        for( $i = 0; $i < `size($returnArray)`; $i ++ )
+        $result[$i] = $returnArray[$i];
+
+        }
+        else
+        {
+        //$tokens[(size($tokens)-1)] = ($input[2]);
+        int $i = 1;
+        for($i = 1; $i < size($tokens); $i++)
+            {
+            $returnArray[($i - 1)] = $tokens[$i];
+            }
+        string $prepended[] = `nphPrependArray {$input[2]} $returnArray`;
+
+        string $finalLine = "Recent_Items = '";
+
+        for($i = 0; $i < (size($prepended)-1); $i++)
+        {
+        $finalLine = ($finalLine + $prepended[$i] + "'");
+        }
+
+
+        $cfgArray[$item] = ($finalLine + "\n");
+        nphWriteFile $cfgArray $nphConfig 1;
+        clear $cfgArray;
+        clear $tokens;
+        }
+
+    }
+}
+
+}
+//if the cfg file doesnt exist
+else
+{
+global string $gRigToolsVersion;
+print "creating new cfg file\n";
+//Create the default CFG file
+string $cfgArray[] = {
+"/\/config file\n",
+"/\/feel free to edi tthis manually\n",
+"/\/please note the ' charachter is used to tokenize\n",
+"/\/values out, so make sure not to misplace them\n",
+"\n/\/===============\n",
+"/\/=====Prefs=====\n",
+"/\/===============\n",
+"Menu_Item = '0'\n",
+"Open_On_Startup = '0'\n",
+"Sizeable = '0'\n",
+"\n/\/==================\n",
+"/\/===Recent items===\n",
+"/\/==================\n",
+"Recent_Items = 'prig'nam'cm'pv'slsk'lra'\n",
+"\n/\/===================\n",
+"/\/===Control Maker===\n",
+"/\/===================\n",
+"CM_Name = 'control'\n",
+"CM_Color = '5'\n",
+"CM_Shape = '1'\n",
+"CM_Replace = '0'\n",
+"CM_MCreate = '0'\n",
+"CM_GFreeze = '0'\n",
+"CM_Ltrans = '0'\n",
+"CM_Lrot = '0'\n",
+"CM_Lscale = '0'\n",
+"\n/\/=================\n",
+"/\/===Naming tool===\n",
+"/\/=================\n",
+"NT_Prefix = 'Prefix'\n",
+"NT_Main = 'Name'\n",
+"NT_Suffix = 'Suffix'\n",
+"NT_Underscore = '1'\n",
+"NT_NameType = 'nphName1'\n",
+"NT_Mode = 'nphMode3'\n",
+"NT_Sub = '0'\n",
+"NT_FandR = '0'\n",
+"NT_Search = 'Lt'\n",
+"\n/\/====================\n",
+"/\/===Version number===\n",
+"/\/====================\n",
+("Version = '" + $gRigToolsVersion + "'\n"),
+""
+};
+
+//get the script dir path
+string $scriptDir = `internalVar -usd`;
+string $nphConfig = ($scriptDir + "/nphConfig.cfg");
+//write out the file
+nphWriteFile $cfgArray $nphConfig 1;
+//rehash
+eval("rehash;");
+string $result = "0";
+}
+//if($result[0] == "")
+//$result[0] = "0";
+return $result;
+}
+
+//--------------------------------REMAKE CFG FILE PROC--------------------------------//
+global proc nphRemakeCFG()
+{
+string $scriptDir = `internalVar -usd`;
+string $file = ($scriptDir + "nphConfig.cfg");
+string $delete = `toNativePath("DEL \"" + $file + "\"")`;
+nphUserSetup 0;
+system($delete);
+}
+
+//==================================================================================//
+//                        SETUP PROCEDURES                                //
+//==================================================================================//
+
+//--------------------------------SET UP MENU PROC--------------------------------//
+global proc nphStartup()
+{
+global string $gRigToolsVersion;
+//this sets up the menu when the script is loaded
+if (`menu -q -exists nphRigTools2Menu`)
+deleteUI nphRigTools2Menu;
+global string $gMainWindow;
+setParent $gMainWindow ;
+    menu -l "RigTools" -p MayaWindow -to false nphRigTools2Menu ;
+    menuItem -l "Open Tools" -c ("eval(\"nphRigTools\")");
+    menuItem -l "Preferences" -c "nphMakeWindow nphRigToolsPrefs";
+    menuItem -l "About" -c "nphMakeWindow nphRigToolsAbout";
+    menuItem -divider true;
+    menuItem -l "Re-Source(debug)" -c ("eval(\"source \\\"nphRigTools" + $gRigToolsVersion + "\\\"\"); nphRigTools");
+    menuItem -l "Remove" -c "nphRemove 1";
+//print loaded wand current version number
+
+print ("nphRigTools " + $gRigToolsVersion + " loaded\n");
+
+}
+
+//--------------------------------SETUP userSetup.mel PROC--------------------------------//
+global proc nphUserSetup(int $mode)
+{
+
+string $scriptDir = `internalVar -usd`;
+string $nphSetup = ($scriptDir + "/userSetup.mel");
+
+//see if the cfg file exists
+if(!`file -q -ex $nphSetup`)
+{
+nphWriteFile {""} $nphSetup 1;
+eval("rehash;");
+}
+
+string $setupArray[];
+clear $setupArray;
+
+
+$fileId=`fopen $nphSetup "r"`;
+string $nextLine = `fgetline $fileId`;
+while ( size( $nextLine ) > 0 )
+    {
+    $setupArray[size($setupArray)] = $nextLine;
+    $nextLine = `fgetline $fileId`;
+    }
+fclose $fileId;
+
+if($mode == 0)
+    {
+    int $item = `nphFindIn "global int $nphAutoLoad;" $setupArray`;
+    $setupArray[$item] = "";
+
+    int $item = `nphFindIn "$nphAutoLoad = 1;" $setupArray`;
+    $setupArray[$item] = "";
+
+    global string $gRigToolsVersion;
+    $setupArray[$item + 1] = "";
+    nphWriteFile $setupArray $nphSetup 1;
+
+    //clear out the array to save RAM
+    clear $setupArray;
+    }
+else
+    {
+    $setupArray[size($setupArray)] = "global int $nphAutoLoad;\r";
+    $setupArray[size($setupArray)] = "$nphAutoLoad = 1;\r";
+    global string $gRigToolsVersion;
+    $setupArray[size($setupArray)] = "eval(\"source \\\"nphRigTools" + $gRigToolsVersion + "\\\"\");\r";
+
+    nphWriteFile $setupArray $nphSetup 1;
+    clear $setupArray;
+    }
+}
+
+
+
+//==================================================================================//
+//                     HELPER PROCEDURES                                //
+//==================================================================================//
+
+
+//--------------------------------FIND STRING IN AN ARRAY PROC--------------------------------//
+global proc int nphFindIn(string $find, string $array[])
+{
+//procedure for finding a string in an array
+//CAUTION this goes one line at a time , so it's very slow on large arrays
+int $i = 0;
+for($i = 0; $i < size($array); $i++)
+    {
+    //compare to our string
+
+    if(startsWith($array[$i], $find))
+    break;
+    }
+//return line number
+return $i;
+}
+
+
+//--------------------------------WRITE ARRAY TO FILE PROC--------------------------------//
+global proc nphWriteFile(string $array[], string $file, int $mode)
+{
+//see if the cfg file exists
+$fileExists = `file -q -ex ($file)`;
+
+if($mode == "1")
+{
+//clear out the file
+$fileId=`fopen $file "w"`;
+fprint $fileId "";
+fclose $fileId;
+}
+
+for($line in $array)
+    {
+    $fileId=`fopen $file`;
+    fprint $fileId $line;
+    fclose $fileId;
+    }
+}
+
+
+//--------------------------------PREPEND ARRAY PROC--------------------------------//
+global proc string[] nphPrependArray(string $string1[], string $string2[])
+{
+//takes two arrays and puts one infront of the other then removes all duplicate entries
+//EX: nphPrependArray {"c"} {"a", "b", "c"};
+// Result:{"c", "a", "b"}
+string $result[] = {""};
+string $temp[] = stringArrayCatenate($string1, $string2);
+string $result[] = stringArrayRemoveDuplicates($temp);
+
+return $result;
+}
+
+
+
+//--------------------------------MAKE SHAPE PROC--------------------------------//
+global proc string nphMakeShape(int $index)
+{
+       string $shapeArray[] =
+       {
+        //circle
+        "circle -c 0 0 0 -nr 0 1 0 -sw 360 -r 1 -d 3 -ut 0 -tol 0.00393701 -s 8 -ch 0;",
+
+        //cube
+        "curve -n ctrl -d 1 -p 0.5 0.5 -0.5 -p 0.5 0.5 0.5 -p 0.5 -0.5 0.5 -p 0.5 -0.5 -0.5 -p 0.5 0.5 -0.5 -p -0.5 0.5 -0.5 -p -0.5 -0.5 -0.5 -p -0.5 -0.5 0.5 -p -0.5 0.5 0.5 -p 0.5 0.5 0.5 -p 0.5 -0.5 0.5 -p -0.5 -0.5 0.5 -p -0.5 -0.5 -0.5 -p 0.5 -0.5 -0.5 -p 0.5 0.5 -0.5 -p -0.5 0.5 -0.5 -p -0.5 0.5 0.5 -p 0.5 0.5 0.5 -p 0.5 0.5 -0.5 -k 0 -k 0.1 -k 0.2 -k 0.3 -k 0.4 -k 0.5 -k 0.6 -k 0.7 -k 0.8 -k 0.9 -k 1 -k 1.1 -k 1.2 -k 1.3 -k 1.4 -k 1.5 -k 1.6 -k 1.7 -k 1.8;",
+
+        //arrow
+        "curve -d 1 -p -0.66 0 -0.33 -p 0 0 -0.33 -p 0 0 -0.66 -p 0.99 0 0 -p 0 0 0.66 -p 0 0 0.33 -p -0.66 0 0.33 -p -0.66 0 -0.33 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7;",
+
+        //4 arrow
+        "curve -d 1 -p 0 0 -1.1025 -p -0.33 0 -0.6075 -p -0.165 0 -0.6075 -p -0.165 0 -0.165 -p -0.6075 0 -0.165 -p -0.6075 0 -0.33 -p -1.1025 0 0 -p -0.6075 0 0.33 -p -0.6075 0 0.165 -p -0.165 0 0.165 -p -0.165 0 0.6075 -p -0.33 0 0.6075 -p 0 0 1.1025 -p 0.33 0 0.6075 -p 0.165 0 0.6075 -p 0.165 0 0.165 -p 0.6075 0 0.165 -p 0.6075 0 0.33 -p 1.1025 0 0 -p 0.6075 0 -0.33 -p 0.6075 0 -0.165 -p 0.165 0 -0.165 -p 0.165 0 -0.6075 -p 0.33 0 -0.6075 -p 0 0 -1.1025 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 -k 12 -k 13 -k 14 -k 15 -k 16 -k 17 -k 18 -k 19 -k 20 -k 21 -k 22 -k 23 -k 24;",
+
+        //3d arrow
+        "curve -d 1 -p 0 0.35 -1.001567 -p -0.336638 0.677886 -0.751175 -p -0.0959835 0.677886 -0.751175 -p -0.0959835 0.850458 -0.500783 -p -0.0959835 0.954001 -0.0987656 -p -0.500783 0.850458 -0.0987656 -p -0.751175 0.677886 -0.0987656 -p -0.751175 0.677886 -0.336638 -p -1.001567 0.35 0 -p -0.751175 0.677886 0.336638 -p -0.751175 0.677886 0.0987656 -p -0.500783 0.850458 0.0987656 -p -0.0959835 0.954001 0.0987656 -p -0.0959835 0.850458 0.500783 -p -0.0959835 0.677886 0.751175 -p -0.336638 0.677886 0.751175 -p 0 0.35 1.001567 -p 0.336638 0.677886 0.751175 -p 0.0959835 0.677886 0.751175 -p 0.0959835 0.850458 0.500783 -p 0.0959835 0.954001 0.0987656 -p 0.500783 0.850458 0.0987656 -p 0.751175 0.677886 0.0987656 -p 0.751175 0.677886 0.336638 -p 1.001567 0.35 0 -p 0.751175 0.677886 -0.336638 -p 0.751175 0.677886 -0.0987656 -p 0.500783 0.850458 -0.0987656 -p 0.0959835 0.954001 -0.0987656 -p 0.0959835 0.850458 -0.500783 -p 0.0959835 0.677886 -0.751175 -p 0.336638 0.677886 -0.751175 -p 0 0.35 -1.001567 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 -k 12 -k 13 -k 14 -k 15 -k 16 -k 17 -k 18 -k 19 -k 20 -k 21 -k 22 -k 23 -k 24 -k 25 -k 26 -k 27 -k 28 -k 29 -k 30 -k 31 -k 32;",
+
+        //twist Arrow
+        "curve -d 1 -p -1.084005 0 -0.092136 -p -0.791121 0 -0.955956 -p -0.707107 0 -0.707107 -p -0.570265 0 -0.843948 -p -0.205819 0 -1.040044 -p 0.405223 0 -0.978634 -p 0.881027 0 -0.588697 -p 1.059487 0 0 -p 0.881027 0 0.588697 -p 0.405223 0 0.978634 -p -0.205819 0 1.040044 -p -0.570265 0 0.843948 -p -0.707107 0 0.707107 -p -0.791121 0 0.955956 -p -1.084005 0 0.092136 -p -0.315189 0 0.413069 -p -0.540989 0 0.540989 -p -0.436294 0 0.645682 -p -0.157467 0 0.79571 -p 0.310025 0 0.748727 -p 0.67405 0 0.450396 -p 0.810585 0 0 -p 0.67405 0 -0.450396 -p 0.310025 0 -0.748727 -p -0.157467 0 -0.79571 -p -0.436294 0 -0.645682 -p -0.540989 0 -0.540989 -p -0.315189 0 -0.413069 -p -1.084005 0 -0.092136 -p -0.791121 0 -0.955956 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 -k 12 -k 13 -k 14 -k 15 -k 16 -k 17 -k 18 -k 19 -k 20 -k 21 -k 22 -k 23 -k 24 -k 25 -k 26 -k 27 -k 28 -k 29;",
+
+        //pin
+        "curve -d 1 -p 0 0 0 -p 0 1.2 0 -p -0.235114 1.276393 0 -p -0.380423 1.476393 0 -p -0.380423 1.723607 0 -p -0.235114 1.923607 0 -p 0 2 0 -p 0.235114 1.923607 0 -p 0.380423 1.723607 0 -p 0.380423 1.476393 0 -p 0.235114 1.276393 0 -p 0 1.2 0 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11;",
+
+        //2 pin
+        "curve -d 1 -p 0 -1.2 0 -p -0.235114 -1.276393 0 -p -0.380423 -1.476393 0 -p -0.380423 -1.723607 0 -p -0.235114 -1.923607 0 -p 0 -2 0 -p 0.235114 -1.923607 0 -p 0.380423 -1.723607 0 -p 0.380423 -1.476393 0 -p 0.235114 -1.276393 0 -p 0 -1.2 0 -p 0 1.2 0 -p -0.235114 1.276393 0 -p -0.380423 1.476393 0 -p -0.380423 1.723607 0 -p -0.235114 1.923607 0 -p 0 2 0 -p 0.235114 1.923607 0 -p 0.380423 1.723607 0 -p 0.380423 1.476393 0 -p 0.235114 1.276393 0 -p 0 1.2 0 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 -k 12 -k 13 -k 14 -k 15 -k 16 -k 17 -k 18 -k 19 -k 20 -k 21;",
+
+        //4 pin
+        "curve -d 1 -p -1.2 0 0 -p -1.276393 0.235114 0 -p -1.476393 0.380423 0 -p -1.723607 0.380423 0 -p -1.923607 0.235114 0 -p -2 0 0 -p -1.923607 -0.235114 0 -p -1.723607 -0.380423 0 -p -1.476393 -0.380423 0 -p -1.276393 -0.235114 0 -p -1.2 0 0 -p 0 0 0 -p 1.2 0 0 -p 1.276393 0.235114 0 -p 1.476393 0.380423 0 -p 1.723607 0.380423 0 -p 1.923607 0.235114 0 -p 2 0 0 -p 1.923607 -0.235114 0 -p 1.723607 -0.380423 0 -p 1.476393 -0.380423 0 -p 1.276393 -0.235114 0 -p 1.2 0 0 -p 0 0 0 -p 0 -1.2 0 -p -0.235114 -1.276393 0 -p -0.380423 -1.476393 0 -p -0.380423 -1.723607 0 -p -0.235114 -1.923607 0 -p 0 -2 0 -p 0.235114 -1.923607 0 -p 0.380423 -1.723607 0 -p 0.380423 -1.476393 0 -p 0.235114 -1.276393 0 -p 0 -1.2 0 -p 0 0 0 -p 0 1.2 0 -p -0.235114 1.276393 0 -p -0.380423 1.476393 0 -p -0.380423 1.723607 0 -p -0.235114 1.923607 0 -p 0 2 0 -p 0.235114 1.923607 0 -p 0.380423 1.723607 0 -p 0.380423 1.476393 0 -p 0.235114 1.276393 0 -p 0 1.2 0 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 -k 12 -k 13 -k 14 -k 15 -k 16 -k 17 -k 18 -k 19 -k 20 -k 21 -k 22 -k 23 -k 24 -k 25 -k 26 -k 27 -k 28 -k 29 -k 30 -k 31 -k 32 -k 33 -k 34 -k 35 -k 36 -k 37 -k 38 -k 39 -k 40 -k 41 -k 42 -k 43 -k 44 -k 45 -k 46;",
+
+        //sphere
+        "curve -d 1 -p 0 1 0 -p -0.382683 0.92388 0 -p -0.707107 0.707107 0 -p -0.92388 0.382683 0 -p -1 0 0 -p -0.92388 -0.382683 0 -p -0.707107 -0.707107 0 -p -0.382683 -0.92388 0 -p 0 -1 0 -p 0.382683 -0.92388 0 -p 0.707107 -0.707107 0 -p 0.92388 -0.382683 0 -p 1 0 0 -p 0.92388 0.382683 0 -p 0.707107 0.707107 0 -p 0.382683 0.92388 0 -p 0 1 0 -p 0 0.92388 0.382683 -p 0 0.707107 0.707107 -p 0 0.382683 0.92388 -p 0 0 1 -p 0 -0.382683 0.92388 -p 0 -0.707107 0.707107 -p 0 -0.92388 0.382683 -p 0 -1 0 -p 0 -0.92388 -0.382683 -p 0 -0.707107 -0.707107 -p 0 -0.382683 -0.92388 -p 0 0 -1 -p 0 0.382683 -0.92388 -p 0 0.707107 -0.707107 -p 0 0.92388 -0.382683 -p 0 1 0 -p -0.382683 0.92388 0 -p -0.707107 0.707107 0 -p -0.92388 0.382683 0 -p -1 0 0 -p -0.92388 0 0.382683 -p -0.707107 0 0.707107 -p -0.382683 0 0.92388 -p 0 0 1 -p 0.382683 0 0.92388 -p 0.707107 0 0.707107 -p 0.92388 0 0.382683 -p 1 0 0 -p 0.92388 0 -0.382683 -p 0.707107 0 -0.707107 -p 0.382683 0 -0.92388 -p 0 0 -1 -p -0.382683 0 -0.92388 -p -0.707107 0 -0.707107 -p -0.92388 0 -0.382683 -p -1 0 0 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 -k 12 -k 13 -k 14 -k 15 -k 16 -k 17 -k 18 -k 19 -k 20 -k 21 -k 22 -k 23 -k 24 -k 25 -k 26 -k 27 -k 28 -k 29 -k 30 -k 31 -k 32 -k 33 -k 34 -k 35 -k 36 -k 37 -k 38 -k 39 -k 40 -k 41 -k 42 -k 43 -k 44 -k 45 -k 46 -k 47 -k 48 -k 49 -k 50 -k 51 -k 52;",
+
+        //thingy with the two circles and a pin
+        "curve -d 1 -p 0 0.5 0 -p -1 0.5 0 -p -0.707107 0.5 -0.707107 -p 0 0.5 -1 -p 0 0.5 0 -p 0 0.5 -1 -p 0.707107 0.5 -0.707107 -p 1 0.5 0 -p 0 0.5 0 -p 1 0.5 0 -p 0.707107 0.5 0.707107 -p 0 0.5 1 -p 0 0.5 0 -p 0 0.5 1 -p -0.707107 0.5 0.707107 -p -1 0.5 0 -p 0 0.5 0 -p 0 -0.5 0 -p -1 -0.5 0 -p -0.707107 -0.5 -0.707107 -p 0 -0.5 -1 -p 0 -0.5 0 -p 0 -0.5 -1 -p 0.707107 -0.5 -0.707107 -p 1 -0.5 0 -p 0 -0.5 0 -p 1 -0.5 0 -p 0.707107 -0.5 0.707107 -p 0 -0.5 1 -p 0 -0.5 0 -p 0 -0.5 1 -p -0.707107 -0.5 0.707107 -p -1 -0.5 0 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 -k 12 -k 13 -k 14 -k 15 -k 16 -k 17 -k 18 -k 19 -k 20 -k 21 -k 22 -k 23 -k 24 -k 25 -k 26 -k 27 -k 28 -k 29 -k 30 -k 31 -k 32;",
+
+        //cylinder
+        "curve -d 1 -p -1 -0.5 0 -p -0.707107 -0.5 -0.707107 -p -0.707107 0.5 -0.707107 -p -1 0.5 0 -p -1 -0.5 0 -p -0.707107 -0.5 0.707107 -p -0.707107 0.5 0.707107 -p -1 0.5 0 -p -0.707107 0.5 0.707107 -p 0 0.5 1 -p 0 -0.5 1 -p -0.707107 -0.5 0.707107 -p 0 -0.5 1 -p 0.707107 -0.5 0.707107 -p 0.707107 0.5 0.707107 -p 0 0.5 1 -p 0.707107 0.5 0.707107 -p 1 0.5 0 -p 1 -0.5 0 -p 0.707107 -0.5 0.707107 -p 1 -0.5 0 -p 1 0.5 0 -p 0.707107 0.5 -0.707107 -p 0.707107 -0.5 -0.707107 -p 1 -0.5 0 -p 0.707107 -0.5 -0.707107 -p 0 -0.5 -1 -p 0 0.5 -1 -p 0.707107 0.5 -0.707107 -p 0 0.5 -1 -p -0.707107 0.5 -0.707107 -p -0.707107 -0.5 -0.707107 -p 0 -0.5 -1 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 -k 12 -k 13 -k 14 -k 15 -k 16 -k 17 -k 18 -k 19 -k 20 -k 21 -k 22 -k 23 -k 24 -k 25 -k 26 -k 27 -k 28 -k 29 -k 30 -k 31 -k 32;",
+
+        //cone
+        "curve -d 1 -p 0 0 -1 -p 0 2 0 -p 0 0 -1 -p -0.707107 0 -0.707107 -p 0 2 0 -p -0.707107 0 -0.707107 -p -1 0 0 -p 0 2 0 -p -1 0 0 -p -0.707107 0 0.707107 -p 0 2 0 -p -0.707107 0 0.707107 -p 0 0 1 -p 0 2 0 -p 0 0 1 -p 0.707107 0 0.707107 -p 0 2 0 -p 0.707107 0 0.707107 -p 1 0 0 -p 0 2 0 -p 1 0 0 -p 0.707107 0 -0.707107 -p 0 2 0 -p 0.707107 0 -0.707107 -p 0 0 -1 -p 0 2 0 -p 0 0 -1 -p -0.707107 0 -0.707107 -p 0 2 0 -p -0.707107 0 -0.707107 -p -1 0 0 -p 0 2 0 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 -k 12 -k 13 -k 14 -k 15 -k 16 -k 17 -k 18 -k 19 -k 20 -k 21 -k 22 -k 23 -k 24 -k 25 -k 26 -k 27 -k 28 -k 29 -k 30 -k 31;",
+
+        //2d arrow
+        "curve -d 1 -p 0.190093 0 -0.950466 -p 0.57028 0 -0.950466 -p 0 0 -1.520746 -p -0.57028 0 -0.950466 -p -0.190093 0 -0.950466 -p -0.190093 0 0.950466 -p -0.57028 0 0.950466 -p 0 0 1.520746 -p 0.57028 0 0.950466 -p 0.190093 0 0.950466 -p 0.190093 0 -0.950466 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 ;",
+
+        //double square
+        "curve -d 1 -p 0.25404 0 -1.391209 -p -1.391209 0 -0.25404 -p -0.25404 0 1.391209 -p 1.391209 0 0.25404 -p 0.25404 0 -1.391209 -p -1 0 -1 -p -1 0 1 -p -1.391209 0 -0.25404 -p -0.25404 0 1.391209 -p 1 0 1 -p -1 0 1 -p 1 0 1 -p 1 0 -1 -p -1 0 -1 -p 0.25404 0 -1.391209 -p 1.391209 0 0.25404 -p 1 0 -1 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 -k 12 -k 13 -k 14 -k 15 -k 16 ;",
+
+                //weird 3 triangle thing
+                "curve -d 1 -p 0 0 3 -p 4 0 3 -p 0 0 -1 -p -4 0 3 -p 0 0 3 -p 0 0 -2 -p -4 0 3 -p 4 0 3 -p 0 0 -2 -p 0 0 -3 -p -4 0 3 -p 4 0 3 -p 0 0 -3 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 -k 12 ;",
+
+                //pv pyramid
+                "curve -d 1 -p 4 0 3 -p 0 0 -3 -p -4 0 3 -p 4 0 3 -p 0 4 1 -p -4 0 3 -p 0 4 1 -p 0 0 -3 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 ;",
+
+                //COG/sun shapes control..
+                "curve -d 3 -p 0 0 -0.732039 -p 0.076657 0 -0.72503 -p 0.094307 0 -0.34942 -p 0.548567 0 -0.747446 -p 0.293177 0 -0.21417 -p 0.88007 0 -0.285759 -p 0.363905 0 0 -p 0.879745 0 0.285859 -p 0.294475 0 0.213969 -p 0.543699 0 0.748351 -p 0.112482 0 0.3462 -p 0 0 0.925009 -p -0.112481 0 0.3462 -p -0.543699 0 0.748351 -p -0.294475 0 0.213969 -p -0.879745 0 0.285859 -p -0.363905 0 0 -p -0.880069 0 -0.285759 -p -0.293177 0 -0.21417 -p -0.548567 0 -0.747446 -p -0.094306 0 -0.34942 -p -0.076656 0 -0.72503 -p 0 0 -0.732039 -k 0 -k 0 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 -k 12 -k 13 -k 14 -k 15 -k 16 -k 17 -k 18 -k 19 -k 20 -k 20 -k 20 ;",
+
+                //new style curvey pointer
+                "curve -d 3 -p -1.508537 0 0 -p -1.059622 0 -0.316884 -p -0.161791 0 -0.950653 -p -0.570007 0 -0.132891 -p -0.318591 0 -0.0656446 -p 1.987852 0 -0.100397 -p 2.330674 0 -0.309539 -p 2.443434 0 -0.0101135 -p 2.327818 0 0.29831 -p 1.987852 0 0.0880891 -p -0.319835 0 0.0901747 -p -0.55725 0 0.185008 -p -0.15231 0 0.973132 -p -1.056461 0 0.336036 -p -1.508537 0 0 -k 0 -k 0 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 -k 12 -k 12 -k 12 ;",
+
+                //smooth style 180 arrow
+                "curve -d 3 -p -0.941395 0 0 -p -0.936158 0 0.286955 -p -0.714021 0 0.625937 -p -0.440781 0 0.788659 -p -0.440781 0 0.788659 -p -0.537718 0 0.349716 -p -0.537718 0 0.349716 -p -0.124602 0 1.096506 -p -0.124602 0 1.096506 -p -0.975917 0 1.036319 -p -0.975917 0 1.036319 -p -0.560906 0 0.946236 -p -0.560906 0 0.946236 -p -0.859294 0 0.764962 -p -1.135312 0 0.350766 -p -1.146701 0 0 -p -1.135312 0 -0.350766 -p -0.859294 0 -0.764962 -p -0.560906 0 -0.946236 -p -0.560906 0 -0.946236 -p -0.975917 0 -1.036319 -p -0.975917 0 -1.036319 -p -0.124602 0 -1.096506 -p -0.124602 0 -1.096506 -p -0.537718 0 -0.349716 -p -0.537718 0 -0.349716 -p -0.440781 0 -0.788659 -p -0.440781 0 -0.788659 -p -0.714021 0 -0.625937 -p -0.936158 0 -0.286955 -p -0.941395 0 0 -k 0 -k 0 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 -k 12 -k 13 -k 14 -k 15 -k 16 -k 17 -k 18 -k 19 -k 20 -k 21 -k 22 -k 23 -k 24 -k 25 -k 26 -k 27 -k 28 -k 28 -k 28 ;",
+                
+                //smooth style 90 arrow
+                "curve -d 3 -p -1.146701 0 0 -p -1.146701 0 0 -p -1.146701 0 0 -p -1.135312 0 0.350766 -p -0.859294 0 0.764962 -p -0.560906 0 0.946236 -p -0.560906 0 0.946236 -p -0.975917 0 1.036319 -p -0.975917 0 1.036319 -p -0.124602 0 1.096506 -p -0.124602 0 1.096506 -p -0.537718 0 0.349716 -p -0.537718 0 0.349716 -p -0.440781 0 0.788659 -p -0.440781 0 0.788659 -p -0.714021 0 0.625937 -p -0.936158 0 0.286955 -p -0.941395 0 0 -p -0.941395 0 0 -p -0.941395 0 0 -p -1.146701 0 0 -k 0 -k 0 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 -k 12 -k 13 -k 14 -k 15 -k 16 -k 17 -k 18 -k 18 -k 18 ;",
+
+                //smooth arrow
+                "curve -d 3 -p -0.356362 0 0 -p -0.356362 0 1 -p -0.356362 0 2 -p -0.356362 0 3 -p -0.356362 0 3.578867 -p -1.130725 0 3.416974 -p -1.130725 0 3.416974 -p 0 0 4.971572 -p 0 0 4.971572 -p 1.130725 0 3.416974 -p 1.130725 0 3.416974 -p 0.356362 0 3.578867 -p 0.356362 0 3 -p 0.356362 0 2 -p 0.356362 0 1 -p 0.356362 0 0 -p 0.356362 0 0 -p 0.356362 0 0 -p -0.356362 0 0 -k 0 -k 0 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 -k 12 -k 13 -k 14 -k 15 -k 16 -k 16 -k 16 ;",
+
+                //smooth double arrow
+                "curve -d 3 -p -0.356362 0 0 -p -0.356362 0 1 -p -0.356362 0 2 -p -0.356362 0 3 -p -0.356362 0 3.578867 -p -1.130725 0 3.416974 -p -1.130725 0 3.416974 -p 0 0 4.971572 -p 0 0 4.971572 -p 1.130725 0 3.416974 -p 1.130725 0 3.416974 -p 0.356362 0 3.578867 -p 0.356362 0 3 -p 0.356362 0 2 -p 0.356362 0 1 -p 0.356362 0 0 -p 0.356362 0 -1 -p 0.356362 0 -2 -p 0.356362 0 -3 -p 0.356362 0 -3.578867 -p 1.130725 0 -3.416974 -p 1.130725 0 -3.416974 -p 0 0 -4.971572 -p 0 0 -4.971572 -p -1.130725 0 -3.416974 -p -1.130725 0 -3.416974 -p -0.356362 0 -3.578867 -p -0.356362 0 -3 -p -0.356362 0 -2 -p -0.356362 0 -1 -p -0.356362 0 0 -k 0 -k 0 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 -k 12 -k 13 -k 14 -k 15 -k 16 -k 17 -k 18 -k 19 -k 20 -k 21 -k 22 -k 23 -k 24 -k 25 -k 26 -k 27 -k 28 -k 28 -k 28 ; ",
+
+                //new 4 arrow that can have bend deformers used on it
+                "curve -d 3 -p -1.593787 0 0.226573 -p -1.187724 0 0.226573 -p -0.467373 0 0.226573 -p -0.226573 0 0.226573 -p -0.226573 0 0.467373 -p -0.226573 0 1.187724 -p -0.226573 0 1.593787 -p -0.226573 0 2.125377 -p -0.226573 0 2.478568 -p -0.226573 0 2.631936 -p -0.230264 0 2.782969 -p -0.825073 0 2.743541 -p -0.9467 0 2.707936 -p -0.895861 0 2.816012 -p -0.467373 0 3.449035 -p -0.181123 0 3.955938 -p 0 0 4.312793 -p 0.181123 0 3.955938 -p 0.467373 0 3.449035 -p 0.895861 0 2.816012 -p 0.9467 0 2.707936 -p 0.825073 0 2.743541 -p 0.230264 0 2.782969 -p 0.226573 0 2.631936 -p 0.226573 0 2.478568 -p 0.226573 0 2.125377 -p 0.226573 0 1.593787 -p 0.226573 0 1.187724 -p 0.226573 0 0.467373 -p 0.226573 0 0.226573 -p 0.467373 0 0.226573 -p 1.187724 0 0.226573 -p 1.593787 0 0.226573 -p 2.125377 0 0.226573 -p 2.631936 0 0.226573 -p 2.782969 0 0.230264 -p 2.743541 0 0.825073 -p 2.707936 0 0.9467 -p 2.816012 0 0.895861 -p 3.449035 0 0.467373 -p 3.955938 0 0.181123 -p 4.312793 0 0 -p 3.955938 0 -0.181123 -p 3.449035 0 -0.467373 -p 2.816012 0 -0.895861 -p 2.707936 0 -0.9467 -p 2.743541 0 -0.825073 -p 2.782969 0 -0.230264 -p 2.631936 0 -0.226573 -p 2.478568 0 -0.226573 -p 2.125377 0 -0.226573 -p 1.593787 0 -0.226573 -p 1.187724 0 -0.226573 -p 0.467373 0 -0.226573 -p 0.226573 0 -0.226573 -p 0.226573 0 -0.467373 -p 0.226573 0 -1.187724 -p 0.226573 0 -1.593787 -p 0.226573 0 -2.125377 -p 0.226573 0 -2.631936 -p 0.230264 0 -2.782969 -p 0.825073 0 -2.743541 -p 0.9467 0 -2.707936 -p 0.895861 0 -2.816012 -p 0.467373 0 -3.449035 -p 0.181123 0 -3.955938 -p 0 0 -4.312793 -p -0.181123 0 -3.955938 -p -0.467373 0 -3.449035 -p -0.895861 0 -2.816012 -p -0.9467 0 -2.707936 -p -0.825073 0 -2.743541 -p -0.230264 0 -2.782969 -p -0.226573 0 -2.631936 -p -0.226573 0 -2.125377 -p -0.226573 0 -1.593787 -p -0.226573 0 -1.187724 -p -0.226573 0 -0.467373 -p -0.226573 0 -0.226573 -p -0.467373 0 -0.226573 -p -1.187724 0 -0.226573 -p -1.593787 0 -0.226573 -p -2.125377 0 -0.226573 -p -2.478568 0 -0.226573 -p -2.631936 0 -0.226573 -p -2.782969 0 -0.230264 -p -2.743541 0 -0.825073 -p -2.707936 0 -0.9467 -p -2.816012 0 -0.895861 -p -3.449035 0 -0.467373 -p -3.955938 0 -0.181123 -p -4.312793 0 0 -p -3.955938 0 0.181123 -p -3.449035 0 0.467373 -p -2.816012 0 0.895861 -p -2.707936 0 0.9467 -p -2.743541 0 0.825073 -p -2.782969 0 0.230264 -p -2.631936 0 0.226573 -p -2.125377 0 0.226573 -p -1.593787 0 0.226573 -k 0 -k 0 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 -k 12 -k 13 -k 14 -k 15 -k 16 -k 17 -k 18 -k 19 -k 20 -k 21 -k 22 -k 23 -k 24 -k 25 -k 26 -k 27 -k 28 -k 29 -k 30 -k 31 -k 32 -k 33 -k 34 -k 35 -k 36 -k 37 -k 38 -k 39 -k 40 -k 41 -k 42 -k 43 -k 44 -k 45 -k 46 -k 47 -k 48 -k 49 -k 50 -k 51 -k 52 -k 53 -k 54 -k 55 -k 56 -k 57 -k 58 -k 59 -k 60 -k 61 -k 62 -k 63 -k 64 -k 65 -k 66 -k 67 -k 68 -k 69 -k 70 -k 71 -k 72 -k 73 -k 74 -k 75 -k 76 -k 77 -k 78 -k 79 -k 80 -k 81 -k 82 -k 83 -k 84 -k 85 -k 86 -k 87 -k 88 -k 89 -k 90 -k 91 -k 92 -k 93 -k 94 -k 95 -k 96 -k 97 -k 98 -k 98 -k 98 ;",
+
+                //jack
+                "curve -d 3 -p 0 0 0 -p 0 0 0 -p 0 0 0 -p 0 0 0 -p -0.75 0 0 -p -0.75 0 0 -p -1 0.25 0 -p -1 0.25 0 -p -1.25 0 0 -p -1.25 0 0 -p -1 -0.25 0 -p -1 -0.25 0 -p -0.75 0 0 -p -0.75 0 0 -p 0 0 0 -p 0.75 0 0 -p 0.75 0 0 -p 1 0.25 0 -p 1 0.25 0 -p 1.25 0 0 -p 1.25 0 0 -p 1 -0.25 0 -p 1 -0.25 0 -p 0.75 0 0 -p 0.75 0 0 -p 0 0 0 -p -0.75 0 0 -p -0.75 0 0 -p -1 0 -0.25 -p -1 0 -0.25 -p -1.25 0 0 -p -1.25 0 0 -p -1 0 0.25 -p -1 0 0.25 -p -0.75 0 0 -p -0.75 0 0 -p 0 0 0 -p 0.75 0 0 -p 0.75 0 0 -p 1 0 0.25 -p 1 0 0.25 -p 1.25 0 0 -p 1.25 0 0 -p 1 0 -0.25 -p 1 0 -0.25 -p 0.75 0 0 -p 0.75 0 0 -p 0 0 0 -p 0 0 0 -p 0 0 0 -p 0 0 0.75 -p 0 0 0.75 -p 0 0.25 1 -p 0 0.25 1 -p 0 0 1.25 -p 0 0 1.25 -p 0 -0.25 1 -p 0 -0.25 1 -p 0 0 0.75 -p 0 0 0.75 -p 0 0 0 -p 0 0 -0.75 -p 0 0 -0.75 -p 0 -0.25 -1 -p 0 -0.25 -1 -p 0 0 -1.25 -p 0 0 -1.25 -p 0 0.25 -1 -p 0 0.25 -1 -p 0 0 -0.75 -p 0 0 -0.75 -p 0 0 0 -p 0 0 0.75 -p 0 0 0.75 -p -0.25 0 1 -p -0.25 0 1 -p 0 0 1.25 -p 0 0 1.25 -p 0.25 0 1 -p 0.25 0 1 -p 0 0 0.75 -p 0 0 0.75 -p 0 0 0 -p 0 0 -0.75 -p 0 0 -0.75 -p 0.25 0 -1 -p 0.25 0 -1 -p 0 0 -1.25 -p 0 0 -1.25 -p -0.25 0 -1 -p -0.25 0 -1 -p 0 0 -0.75 -p 0 0 -0.75 -p 0 0 0 -p 0 0 0 -p 0 0 0 -p 0 0 0 -p 0 -0.75 0 -p 0 -0.75 0 -p 0 -1 -0.25 -p 0 -1 -0.25 -p 0 -1.25 0 -p 0 -1.25 0 -p 0 -1 0.25 -p 0 -1 0.25 -p 0 -0.75 0 -p 0 -0.75 0 -p 0 0 0 -p 0 0.75 0 -p 0 0.75 0 -p 0 1 0.25 -p 0 1 0.25 -p 0 1.25 0 -p 0 1.25 0 -p 0 1 -0.25 -p 0 1 -0.25 -p 0 0.75 0 -p 0 0.75 0 -p 0 0 0 -p 0 -0.75 0 -p 0 -0.75 0 -p -0.25 -1 0 -p -0.25 -1 0 -p 0 -1.25 0 -p 0 -1.25 0 -p 0.25 -1 0 -p 0.25 -1 0 -p 0 -0.75 0 -p 0 -0.75 0 -p 0 0 0 -p 0 0.75 0 -p 0 0.75 0 -p 0.25 1 0 -p 0.25 1 0 -p 0 1.25 0 -p 0 1.25 0 -p -0.25 1 0 -p -0.25 1 0 -p 0 0.75 0 -p 0 0.75 0 -p 0 0 0 -p 0 -0.75 0 -p 0 -0.75 0 -p 0 -0.75 0 -k 0 -k 0 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 -k 12 -k 13 -k 14 -k 15 -k 16 -k 17 -k 18 -k 19 -k 20 -k 21 -k 22 -k 23 -k 24 -k 25 -k 26 -k 27 -k 28 -k 29 -k 30 -k 31 -k 32 -k 33 -k 34 -k 35 -k 36 -k 37 -k 38 -k 39 -k 40 -k 41 -k 42 -k 43 -k 44 -k 45 -k 46 -k 47 -k 48 -k 49 -k 50 -k 51 -k 52 -k 53 -k 54 -k 55 -k 56 -k 57 -k 58 -k 59 -k 60 -k 61 -k 62 -k 63 -k 64 -k 65 -k 66 -k 67 -k 68 -k 69 -k 70 -k 71 -k 72 -k 73 -k 74 -k 75 -k 76 -k 77 -k 78 -k 79 -k 80 -k 81 -k 82 -k 83 -k 84 -k 85 -k 86 -k 87 -k 88 -k 89 -k 90 -k 91 -k 92 -k 93 -k 94 -k 95 -k 96 -k 97 -k 98 -k 99 -k 100 -k 101 -k 102 -k 103 -k 104 -k 105 -k 106 -k 107 -k 108 -k 109 -k 110 -k 111 -k 112 -k 113 -k 114 -k 115 -k 116 -k 117 -k 118 -k 119 -k 120 -k 121 -k 122 -k 123 -k 124 -k 125 -k 126 -k 127 -k 128 -k 129 -k 130 -k 131 -k 132 -k 133 -k 134 -k 135 -k 136 -k 137 -k 138 -k 139 -k 140 -k 141 -k 141 -k 141 ;",
+
+                //spiral
+                "curve -d 3 -p 0.524823 0 -0.120444 -p 0.722255 0 0.31129 -p 0.154739 0 0.887444 -p -0.600348 0 0.448513 -p -0.514896 0 -0.461914 -p 0.134218 0 -0.800935 -p 0.78709 0 -0.620264 -p 1.097516 0 -0.0670269 -p 0.996739 0 0.725411 -p 0.262203 0 1.287184 -p -0.783114 0 1.007391 -p -1.176279 0 0.0136051 -p -0.739785 0 -0.941716 -p 0.127886 0 -1.332069 -p 0.985885 0 -1.083812 -p 1.518596 0 -0.514143 -p 1.67859 0 0.470094 -p 1.107754 0 1.178421 -k 0 -k 0 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 -k 12 -k 13 -k 14 -k 15 -k 15 -k 15 ;"
+
+       };
+string $origSel[] = `ls -l -sl`;
+select -cl;
+eval($shapeArray[$index]);
+string $temp[] = `ls -l -sl`;
+string $shape = $temp[0];
+if(size($origSel)> 0)
+                {
+                  nphSnap $shape $origSel[0];
+                  nphRestoreSel $origSel;
+                  select -tgl $shape;
+                  string $delete[] = `pointConstraint`;
+                  delete $delete[0];
+                }
+return $shape;
+}
+
+
+
+//--------------------------------MOVE PIVOT TO <<0, 0, 0>> PROC--------------------------------//
+global proc nphWSCenterPivot()
+{
+string $selection[] = `ls -sl`;
+for($item in $selection)
+{
+xform -ws -piv 0 0 0 $item;
+}
+}
+
+
+
+//--------------------------------RENAMING PROC--------------------------------//
+global proc nphDoRename(string $input[], string $underScore)
+{
+//nphDoRename version 2
+//see comments for proper usage
+//input array to handle
+//what it has to handle: rename single/group/scene/hierarchy
+//add prefix or suffix to anything
+//remove prefix or suffix from anthing
+//search for and replace strings in scene/selection/or hierarchy
+//inclsion of underscores or not
+//number padding
+//
+//all of which has to deal with the issue of an objects parent being renamed when it doesnt have a unique name
+
+
+int $mode = $input[0];
+//mode is Hierarchy, scene, and single/group
+//             1               2              3
+
+int $type = $input[1];
+
+//type is rename, append, prepend, subtract prefix, subtract suffix, find and replace
+//           1            2           3             4                       5                      6
+
+string $main = $input[2];
+
+//main is the main input for the new name, either the text to append
+//or prepend or the main name part for rename, or the new name for a
+//search and replace.
+
+string $part1 = $input[3];
+
+//part1 is the additional part of a rename op, this is the prefix for a rename or the search string for a search
+//also used by my prig appending, to allow for optional renumbering on append
+
+string $part2 = $input[4];
+
+//part2 is the suffix for a rename.
+
+//underscore is the underscore character... duh!
+
+//search for and replace is now easy since maya comes with a search for and replace script
+//searchReplaceNames(string $searchString, string $replaceString, string $onString)
+
+
+string $refreshList;
+
+if($mode == 1)
+$refreshList = "ls -sl -fl -ap -dag -l -o -et \"transform\" -et \"joint\";";
+if($mode == 2)
+$refreshList = "ls -tr -l";
+if($mode == 3)
+$refreshList = "ls -sl -l";
+string $sel[] = `eval $refreshList`;
+int $i = 0;
+switch ( $type )
+    {
+    case 1:
+        for($item in $sel)
+            {
+            if(!`objExists $item`)
+            {
+            $sel = `eval($refreshList)`;
+            $item = $sel[$i];
+            }
+            string $underScore1 = "";
+            string $underScore2 = "";
+            if($part1 != "")
+            $underScore1 = $underScore;
+            if($part2 != "")
+            $underScore2 = $underScore;
+            string $newName = ($part1 + $underScore1 + $main + $underScore2 + $part2 + $i);
+            while (`objExists $newName`)
+                  {
+                              $i++;
+                              $newName = ($part1 + $underScore1 + $main + $underScore2 + $part2 + $i);
+                              }
+                        
+                        if(!`objExists $item`)
+            {
+            $sel = `eval($refreshList)`;
+            $item = $sel[$i];
+            }
+            print ("reanaming " + $item + " : " + $newName + "\n");
+            if($item != "")
+                     {
+                     rename $item $newName;
+                     }
+            $i++;
+            }
+        break;
+
+    case 2:
+    for($item in $sel)
+            {
+                 if(!`objExists $item`)
+                                  {
+                                    $sel = `eval($refreshList)`;
+                           $item = $sel[$i];
+                           }
+                        string $pathless;
+                        if($part1 == "reNumber")
+                        {$pathless = match("[a-zA-Z0-9_]*$", ($item + $underScore + $main + $i));}
+                        else
+                        {$pathless = match("[a-zA-Z0-9_]*$", ($item + $underScore + $main ));}
+            rename $item $pathless;
+            $i++;
+            }
+    break;
+
+    case 3:
+    for($item in $sel)
+            {
+            if(!`objExists $item`)
+            {
+            $sel = `eval($refreshList)`;
+            $item = $sel[$i];
+            }
+            nphPrefixNode( ($main + $underScore), $item);
+            $i++;
+            }
+    break;
+
+    case 4:
+    for($item in $sel)
+            {
+            if(!`objExists $item`)
+            {
+            $sel = `eval($refreshList)`;
+            $item = $sel[$i];
+            }
+            string $tokens[];
+            tokenize $item "_" $tokens;
+            $newName = $tokens[0];
+            for($x = 1; $x < (size($tokens) -1); $x++)
+            {
+            $newName = ($newName + "_" + $tokens[$x]);
+            }
+            string $pathless = match("[a-zA-Z0-9_]*$", $newName);
+            rename $item $pathless;
+            $i++;
+            }
+    break;
+
+    case 5:
+    for($item in $sel)
+            {
+            if(!`objExists $item`)
+            {
+            $sel = `eval($refreshList)`;
+            $item = $sel[$i];
+            }
+            string $tokens[];
+            string $itemTokens[];
+            tokenize $item "_" $tokens;
+            //going to have to strip the path, get the number in the actual name.. then count in reverse adding it to the new name.
+            //then skip the last one of the old name before path..
+            string $itemName = match("[a-zA-Z0-9_]*$", $item);
+            tokenize $itemName "_" $itemTokens;
+            int $skipMe = `size($itemTokens)`;
+            string $newName = $tokens[0];
+            int $x = `size($tokens)`;
+            $skipMe = (($x - $skipMe ) );
+            $x = 0;
+            for($element in $tokens)
+            {
+            if($x != $skipMe && $x!=0)
+            {
+            if($x == ($skipMe + 1))
+            {$newName = ($newName + "" + $element);}
+            else
+            {$newName = ($newName + "_" + $element);}
+            }else{
+            $newName = ($newName + "|");}
+            $x++;
+            }
+            string $pathless = match("[a-zA-Z0-9_]*$", $newName);
+
+            if($pathless != "")
+            rename $item $pathless;
+            $i++;
+            }
+    break;
+
+    case 6:
+    string $methode;
+    if($mode == 1)
+    $methode = "hierarchy";
+    if($mode == 2)
+    $methode = "all";
+    if($mode == 3)
+    $methode = "selected";
+    searchReplaceNames($main,$part1,$methode);
+    break;
+    }
+}
+
+
+
+global proc nphSetDefaultManip(string $default)
+{
+    string $sel[] = `ls -sl -type "transform"`;
+    if((size($sel)) > 0)
+    {
+        for($object in $sel)
+        {
+            switch ($default)
+            {
+                case "move":
+                    //move
+                    setDefaultManip 1;
+                    break;
+                case "rotate":
+                    //rotate
+                    setDefaultManip 2;
+                    break;
+                case "scale":
+                    //scale
+                    setDefaultManip 3;
+                    break;
+                case "manip":
+                    //manipulator
+                    setDefaultManip 4;
+                    break;
+            }
+        }
+    }
+    else
+    {
+    error ("Please select an object!\n");
+    }
+}
+
+
+
+
+//--------------------------------RESTORE SELECTION PROC--------------------------------//
+global proc nphRestoreSel(string $sel[])
+{
+//takes an array and selects everything in it
+select -cl;
+for($obj in $sel)
+if(`objExists $obj`)select -tgl $obj;
+}
+
+//--------------------------------MOVE OBJECT PROC--------------------------------//
+global proc nphMoveCon(string $input[])
+{
+//translations
+//print ("Moving " + $input[1] + " to " + $input[2]);
+if($input[0] == "moveTrans")
+    {
+    float $trans[] = `xform -q -ws -t $input[2]`;
+    xform -ws -t $trans[0] $trans[1] $trans[2] $input[1];
+    }
+if($input[0] == "consTrans")
+    {
+    $delete = `pointConstraint $input[2] $input[1]`;
+    delete $delete;
+    select -r $input[2];
+    }
+
+//rotations
+if($input[0] == "moveRot")
+    {
+    float $trans[] = `xform -q -ws -ro $input[2]`;
+    xform -ws -ro $trans[0] $trans[1] $trans[2] $input[1];
+    }
+if($input[0] == "consRot")
+    {
+    $delete = `orientConstraint $input[2] $input[1]`;
+    delete $delete;
+    select -r $input[2];
+    }
+
+}
+
+
+//------------------TRANSFORM COMPONENTS UI----------------------//
+global proc nphComponentTransform()
+{
+  //create a base node to store data to
+  //since maya doesnt really have a decent data structure to work with
+  //im going to create my own data structure on a node
+  //really i could use a matrix or 3 vectors but still, id rather not use global variables anyways.
+
+  //im planing on implementing a new nade and attribute linking setup later
+  //eg: create a custom node, connect it with a custom attribute on the shape node
+  //and use it to store the equivalent of a new set of matrices for the object
+  //that would allow me to reload any object ive modified and change it's attributes again without resetting to zero
+         string $sel[] = `ls -l -sl`;
+       if(!`objExists nphXformNode`)
+                      {
+                        createNode -n nphXformNode unknown;
+                        addAttr -ln t -at double3  nphXformNode;
+                        addAttr -ln tX -at double -p t  nphXformNode;
+                        addAttr -ln tY -at double -p t  nphXformNode;
+                        addAttr -ln tZ -at double -p t  nphXformNode;
+
+                        addAttr -ln r -at double3  nphXformNode;
+                        addAttr -ln rX -at double -p r  nphXformNode;
+                        addAttr -ln rY -at double -p r  nphXformNode;
+                        addAttr -ln rZ -at double -p r  nphXformNode;
+                        
+                        addAttr -ln s -at double3  nphXformNode;
+                        addAttr -ln sX -at double -p s  nphXformNode;
+                        addAttr -ln sY -at double -p s  nphXformNode;
+                        addAttr -ln sZ -at double -p s  nphXformNode;
+                        setAttr nphXformNode.sX 1;
+                        setAttr nphXformNode.sY 1;
+                        setAttr nphXformNode.sZ 1;
+
+                      }
+       nphRestoreSel $sel;
+       if(`window -q -ex nphXformWin`)
+                  deleteUI nphXformWin;
+       window -t "Transform components window" nphXformWin;
+       columnLayout -adj true;
+       text " ";
+
+       floatSliderGrp -l "TransX" -cw 1 70 -f 1 -v 0 -pre 3 -min -5 -max 5 -fmn -100 -fmx 100
+       -cc "eval(\"{float $tx = `getAttr nphXformNode.tX`; float $slX = `floatSliderGrp -q -v tx`; float $newx =  (($slX - $tx)); nphTransComponent {$newx, 0, 0}; setAttr nphXformNode.tX $slX; }\");" tx;
+
+       floatSliderGrp -l "TransY" -cw 1 70 -f 1 -v 0 -pre 3 -min -5 -max 5 -fmn -100 -fmx 100
+       -cc "eval(\"{float $ty = `getAttr nphXformNode.tY`; float $slY = `floatSliderGrp -q -v ty`; float $newy = (($slY - $ty)); nphTransComponent {0.0, $newy, 0.0}; setAttr nphXformNode.tY $slY; }\");" ty;
+
+       floatSliderGrp -l "TransZ" -cw 1 70 -f 1 -v 0 -pre 3 -min -5 -max 5 -fmn -100 -fmx 100
+       -cc "eval(\"{float $tz = `getAttr nphXformNode.tZ`; float $slZ = `floatSliderGrp -q -v tz`; float $newz = (($slZ - $tz)); nphTransComponent {0.0, 0.0, $newz}; setAttr nphXformNode.tZ $slZ; }\");" tz;
+       separator;
+
+       floatSliderGrp -l "rotateX" -cw 1 70 -f 1 -v 0 -pre 3 -min -360 -max 360 -fmn -1800 -fmx 1800
+       -cc "eval(\"{float $rx = `getAttr nphXformNode.rX`; float $slX = `floatSliderGrp -q -v rx`; float $newx = (($slX - $rx)); nphRotComponent {$newx, 0, 0}; setAttr nphXformNode.rX $slX; }\");" rx;
+
+       floatSliderGrp -l "rotateY" -cw 1 70 -f 1 -v 0 -pre 3 -min -360 -max 360 -fmn -1800 -fmx 1800
+       -cc "eval(\"{float $ry = `getAttr nphXformNode.rY`; float $slY = `floatSliderGrp -q -v ry`; float $newy = (($slY - $ry)); nphRotComponent {0.0, $newy, 0}; setAttr nphXformNode.rY $slY; }\");" ry;
+
+       floatSliderGrp -l "rotateZ" -cw 1 70 -f 1 -v 0 -pre 3 -min -360 -max 360 -fmn -1800 -fmx 1800
+       -cc "eval(\"{float $rz = `getAttr nphXformNode.rZ`; float $slZ = `floatSliderGrp -q -v rz`; float $newz = (($slZ - $rz)); nphRotComponent {0.0, 0,  $newz}; setAttr nphXformNode.rZ $slZ; }\");" rz;
+
+       separator;
+
+       floatSliderGrp -l "scaleX" -cw 1 70 -f 1 -v 1 -pre 3 -min .001 -max 2 -fmn .0001 -fmx 100
+       -cc "eval(\"{float $sX = `getAttr nphXformNode.sX`; float $slX = `floatSliderGrp -q -v sx`; float $newx = (($slX / $sX)); nphScaleComponent {$newx, 1, 1}; setAttr nphXformNode.sX $slX; }\");" sx;
+
+       floatSliderGrp -l "scaleY" -cw 1 70 -f 1 -v 1 -pre 3 -min .001 -max 2 -fmn .0001 -fmx 100
+       -cc "eval(\"{float $sY = `getAttr nphXformNode.sY`; float $slY = `floatSliderGrp -q -v sy`; float $newy = (($slY / $sY)); nphScaleComponent {1.0, $newy, 1}; setAttr nphXformNode.sY $slY; }\");" sy;
+
+       floatSliderGrp -l "scaleZ" -cw 1 70 -f 1 -v 1 -pre 3 -min .001 -max 2 -fmn .0001 -fmx 100
+       -cc "eval(\"{float $sZ = `getAttr nphXformNode.sZ`; float $slZ = `floatSliderGrp -q -v sz`; float $newz = (($slZ / $sZ)); nphScaleComponent {1.0, 1,  $newz}; setAttr nphXformNode.sZ $slZ; }\");" sz;
+
+
+       text " ";
+       button -l "Ok" -c "deleteUI nphXformWin";
+       
+       //EVIL? -- make a scriptjob linked to the UI that fires when it's closed
+       scriptJob -p nphXformWin -uid nphXformWin "eval(\"if(`objExists nphXformNode`)delete nphXformNode\")";
+       showWindow nphXformWin;
+       window -e -wh 350 300 nphXformWin;
+}
+
+
+
+
+//--------------------------------LIST OF TYPE PROC--------------------------------//
+global proc string[] nphLsType(string $type, int $mode)
+{
+    string $sel[] = `ls -l -sl`;
+    string $ofType[];
+    string $parents[];
+    for($obj in $sel)
+        {
+        string $shapes[] = `listRelatives -f -s $obj`;
+        nphRestoreSel $shapes;
+        string $temp[] = `ls -l -sl -typ $type`;
+        $ofType = `stringArrayCatenate $ofType $temp`;
+        }
+    if($mode == 1)
+    {
+
+    for($shapeNode in $ofType)
+        {
+        string $parent[] = `listRelatives -f -p $shapeNode`;
+        //string $temp[] = {$parent};
+        $parents = `stringArrayCatenate $parents $parent`;
+        }
+    }
+    if($mode == 0)
+    {
+    $parents = $ofType;
+    }
+nphRestoreSel $sel;
+return $parents;
+}
+
+
+//--------------------------------PREFIX NODE PROC--------------------------------//
+global proc nphPrefixNode(string $prefix, string $node)
+{
+        // rename a transform node by giving it a prefix
+        // recurses to all children
+    // check if it is a transform or derived from transform.
+    // We don't rename shapes since they will likely be renamed
+    // when we renamed their parent transform.
+    //
+    string $isType[]    = `ls -type transform $node`;
+    if (size($isType) > 0 ) {
+
+        // extract the name of this node from its full path
+        //
+        string $nodeName = `substitute ".*|" $node ""`;
+
+        // rename this node
+        //
+        string $newName = `rename $node ( $prefix + $nodeName )`;
+    }
+}
+
+
+//--------------------------------GET SHAPE OF TRANSFORM PROC--------------------------------//
+global proc string[] nphGetShapeOfTransformArray(string $transforms[])
+{
+//takes an array of transforms and returns an array of the first shape under each transform.
+string $shapes[];
+for($obj in $transforms)
+    {
+    string $temp[] = `listRelatives -s $obj`;
+    $shapes[(size($shapes))] = $temp[0];
+    }
+return $shapes;
+}
+
+
+
+//--------------------------------HOOK UP STRETCH PROC--------------------------------//
+global proc string nphHookUpStretch(string $joints[], string $distance[])
+{
+//takes an array of joints and an array of distanceDimensionShapes and hooks em together.. assumes curve is NOT stretched
+string $scaler = `group -em -w -n ($joints[0] + "_Scaler")`;
+createNode multiplyDivide -n ToonStretchMult;
+int $i = 0;
+for($joint in $joints)
+    {
+    if($distance[$i] != "")
+        {
+        //first creat a mult div, change it to div, plug in current length,
+        //connect length to other input and connect ourtput to scale
+        string $toonStretch = `createNode multiplyDivide -n ToonStretcher`;
+        string $toonScaler = `createNode multiplyDivide -n ToonScaleFactor`;
+
+        float $dist = `getAttr ($distance[$i] + ".distance")`;
+        setAttr ($toonScaler + ".input1X") $dist;
+        connectAttr -f ($scaler + ".scaleX") ($toonScaler + ".input2X");
+        connectAttr -f ($toonScaler + ".outputX") ($toonStretch + ".input2X");
+        connectAttr -f ($distance[$i] + ".distance") ($toonStretch + ".input1X");
+        setAttr ($toonStretch + ".operation") 2;
+        setAttr ($toonStretch + ".operation") 2;
+        connectAttr -f ($toonStretch + ".outputX") ($joint + ".scaleX");
+
+        $i++;
+        }
+    }
+return $scaler;
+}
+
+
+
+
+//--------------------------------PARENT ARRAY TO PROC--------------------------------//
+global proc nphParentArrayTo(string $array[], string $parent)
+{
+//this is s imple proc that parents everytinh in an array to a given parent.
+for($obj in $array)
+    {
+    if(`objExists $obj` && `objExists $parent`)
+        {
+        parent $obj $parent;
+        }
+    }
+}
+
+
+
+
+//--------------------------------RESTORE SELECTION OF ARRAY PROC--------------------------------//
+global proc nphRestoreSel(string $sel[])
+{
+//takes an array and selects everything in it
+select -cl;
+for($obj in $sel)
+if(`objExists $obj`)select -tgl $obj;
+}
+
+
+//--------------------------------MAKE JOINT CHAIN PROC--------------------------------//
+global proc string nphMakeChain(string $parent, int $numJoints, float $spacing)
+{
+//helper proc i wrote to use with my toon setup
+//if they sent in a parent use it, otherwise make sure nothin gets screwy
+if($parent != "")
+    {
+    select -r $parent;
+    }
+    else
+    {
+    select -cl;
+    }
+//now we make out joints
+string $root;
+int $i;
+for($i = 0; $i < $numJoints; $i++)
+    {
+    if($root == "")
+        {
+        $root = `joint`;
+        }
+        else
+        {
+        string $temp = `joint`;
+        setAttr ($temp + ".tx") $spacing;
+        }
+    }
+return $root;
+}
+
+//--------------------------------CLUSTER CURVE PROC--------------------------------//
+global proc string[] nphClusterCurve(string $curve)
+{
+    string $clusters[];
+    string $shapes[] = `listRelatives -s $curve`;
+    int $numSpans = `getAttr ($shapes[0] + ".spans")`;
+    int $numCV = ($numSpans+2);
+    select -r ($curve + ".cv[0:" + $numCV + "]") ;
+    string $CVs[] = `ls -sl -fl`;
+    int $i = 0;
+    for($cv in $CVs)
+        {
+        select -r $cv;
+        string $temp[] = (`cluster`);
+        $temp[0] = ($temp[0]+ "Handle");
+        $clusters[size($clusters)] = $temp[0];
+        $i++;
+        }
+return $clusters;
+}
+
+global proc nphInsertObj(string $object, string $parent)
+{
+//get all the children of the parent and store em
+//parent the new object to our parent
+//parent all of them to the new object
+string $children[] = `listRelatives -c $parent`;
+parent $object $parent;
+nphParentArrayTo $children $object;
+}
+
+
+
+global proc nphOriIso(string $objectA, string $objectB)
+{
+//make a group, set it to match objectB exactly
+//make a group in world space that also matches objectB's rotation exactly
+//name both
+//move the first group under object A
+//point constrain object B to group1
+//orient constrain object B to both groups
+//create a reverse betwenn the two constraint weights
+//make a channel on object B
+//connect that channel to the constraint weighting
+//done!
+
+//set up my groups that I need for rotation isolation and name them
+
+if(!`objExists ($objectB + "_OriLOC_GRP")`)
+group -em -p $objectA -n ($objectB + "_OriLOC_GRP");
+
+if(!`objExists "OriIsolationGroups_GRP"`)
+group -em -w -n "OriIsolationGroups_GRP";
+
+if(!`objExists ($objectB + "_OriWS_GRP")`)
+group -em -p "OriIsolationGroups_GRP" -n ($objectB + "_OriWS_GRP");
+
+if(!`objExists ($objectB + "_Freedome_GRP")`)
+group -em -w -n ($objectB + "_Freedome_GRP");
+
+nphMoveCon {"moveTrans", ($objectB + "_OriLOC_GRP"), $objectB};
+nphMoveCon {"moveRot", ($objectB + "_OriLOC_GRP"), $objectB};
+
+nphMoveCon {"moveRot", ($objectB + "_OriWS_GRP"), $objectB};
+
+pointConstraint ($objectB + "_OriLOC_GRP") ($objectB + "_Freedome_GRP");
+orientConstraint ($objectB + "_OriWS_GRP") ($objectB + "_Freedome_GRP");
+string $constraint[] = `orientConstraint ($objectB + "_OriLOC_GRP") ($objectB + "_Freedome_GRP")`;
+
+string $parent[] = `listRelatives -p $objectB`;
+if($parent[0] != "" && $parent[0] != ($objectB + "_Freedome_GRP"))
+parent ($objectB + "_Freedome_GRP") $parent[0];
+
+
+string $parent[] = `listRelatives -p $objectB`;
+if($parent[0] != ($objectB + "_Freedome_GRP"))
+parent $objectB ($objectB + "_Freedome_GRP");
+
+//now that the constraints and hierarchy is set up,
+//lets make the channel and reverse nodes.
+
+if(!`attributeExists "Rot_Isolation" $objectB`)
+addAttr -ln Rot_Isolation -at double  -min 0 -max 1 -dv 0 $objectB;
+setAttr -e -keyable true ($objectB + ".Rot_Isolation");
+
+if(!`objExists ($objectB + "_RotIsoBlend_REV")`)
+createNode -n ($objectB + "_RotIsoBlend_REV") reverse;
+
+setAttr ($constraint[0] + ".interpType") 2;
+
+if(!`isConnected ($constraint[0] + "." + $objectB + "_OriWS_GRPW0") ($objectB + "_RotIsoBlend_REV.inputX")`)
+connectAttr -f ($constraint[0] + "." + $objectB + "_OriWS_GRPW0") ($objectB + "_RotIsoBlend_REV.inputX");
+if(!`isConnected ($objectB + "_RotIsoBlend_REV.outputX") ($constraint[0] + "." + $objectB + "_OriLOC_GRPW1")`)
+connectAttr -f ($objectB + "_RotIsoBlend_REV.outputX") ($constraint[0] + "." + $objectB + "_OriLOC_GRPW1");
+if(!`isConnected ($objectB + ".Rot_Isolation") ($constraint[0] + "." + $objectB + "_OriWS_GRPW0")`)
+connectAttr -f ($objectB + ".Rot_Isolation") ($constraint[0] + "." + $objectB + "_OriWS_GRPW0");
+}
+
+//ex:
+//nphOriIso joint2 joint3;
+
+
+
+//--------------------------------MAKE CURVE GROUPS PROC--------------------------------//
+global proc string[] nphMakeCurveGroups(float $numGroups, string $curve)
+{
+rebuildCurve -ch 0 -rpo 1 -rt 0 -end 1 -kr 0 -kcp 1 -kep 1 -kt 0 -s 4 -d 3 -tol 0.01 $curve;
+string $groups[];
+string $motionPaths[];
+string $temp[] = `listRelatives -s $curve`;
+string $curveShape = $temp[0];
+float $maxU = `getAttr ($curveShape + ".max")`;
+float $offset = ( $maxU / ($numGroups - 1));
+int $i;
+print ("Making " + $numGroups + " on " + $curve + "\n");
+for($i = 0; $i < $numGroups; $i++)
+    {
+    string $temp = `group -em -w -n ($curve + "_distance_GRP")`;
+    $groups[size($groups)] = $temp;
+    }
+
+float $uValue = 0;
+for($group in $groups)
+    {
+    string $node = `createNode -n ($curve + "_PoCInfo") pointOnCurveInfo`;
+    connectAttr -f ($curveShape + ".worldSpace[0]") ($node + ".inputCurve");
+    connectAttr -f ($node + ".position") ($group + ".translate");
+    setAttr ($node + ".turnOnPercentage") 1;
+    setAttr ($node + ".parameter") $uValue;
+    $uValue += $offset;
+    }
+return $groups;
+}
+
+
+//--------------------------------SETUP DISTANCE NODES PROC--------------------------------//
+global proc string[] nphSetupDistanceNodes(string $input[])
+{
+string $return[];
+int $i = 0;
+for($i; $i < (size($input) - 1); $i++)
+    {
+    string $node = `createNode distanceBetween`;
+    $return[size($return)] = $node;
+    connectAttr -f ($input[$i] + ".translate") ($node + ".point1");
+    connectAttr -f ($input[$i] + ".parentInverseMatrix") ($node + ".inMatrix1");
+    connectAttr -f ($input[($i + 1)] + ".translate") ($node + ".point2");
+    connectAttr -f ($input[($i + 1)] + ".parentInverseMatrix") ($node + ".inMatrix2");
+    }
+return $return;
+}
+
+//--------------------------------MAKE TOON ARM PROC--------------------------------//
+global proc nphPrigToonHose(int $numJoints, int $squash)
+{
+
+string $sel[] = `ls -sl -type "joint"`;
+//lets establish our main loop for each joint the user selected
+
+for($joint in $sel)
+    {
+    select -r $joint;
+    string $bottomPad;
+    string $children[] = `listRelatives -type "joint" $joint`;
+    //make sure they didnt select an end joint
+    if(`size($children)` == 1)
+        {
+        print ("doing " + $joint + " to " + $children[0] + "\n");
+        float $tx = `getAttr ($children[0] + ".tx")`;
+        float $offset = ($tx / ($numJoints - 1));
+        string $root = `nphMakeChain $joint $numJoints $offset`;
+        select -r $root;
+        group; group;
+        nphDoRename {"1", "1", ($joint + "_toonPadding_GRP")} "";
+        pickWalk -d "down";
+        string $temp[] = `ls -sl`;
+        $bottomPad = $temp[0];
+        pickWalk -d "down";
+        string $temp[] = `ls -sl`;
+        $root = $temp[0];
+        nphDoRename {"1", "6", ($joint + "_toonPadding_GRP"), ($joint + "_toon_JNT")} "";
+        string $temp[] = `ls -sl`;
+        $root = $temp[0];
+
+        select -r $root;
+        select -hi;
+        string $toonJoints[] = `ls -sl -type "joint"`;
+        select -r $root;
+        string $splineParts[] = `ikHandle -sj $root -ee $toonJoints[(size($toonJoints) - 1)] -sol ikSplineSolver`;
+        string $clusters[] = `nphClusterCurve $splineParts[2]`;
+        string $lastCluster = $clusters[(size($clusters) - 1)];
+        for($cluster in $clusters)
+            {
+            select -r $cluster;
+            nphDoRename {"3", "1", ($joint + "_toonCluster_CLS")} "";
+            if($cluster != $lastCluster)
+                {
+                select -tgl $bottomPad;
+                }
+                else
+                {
+                select -tgl $children[0];
+                }
+            parent;
+
+            }
+        if(!`objExists ToonHose_GRP`)
+            {
+            group -n "ToonHose_GRP" -em -w;
+            }
+        if(!`objExists ToonCurves_GRP`)
+            {
+            group -n "ToonCurves_GRP" -em -w;
+            parent "ToonCurves_GRP" "ToonHose_GRP";
+            }
+        if(!`objExists ToonHoseIkHandles_GRP`)
+            {
+            group -n "ToonHoseIkHandles_GRP" -em -w;
+            parent "ToonHoseIkHandles_GRP" "ToonHose_GRP";
+            }
+
+        select -r $splineParts[2];
+        nphDoRename {"3", "1", ($joint + "_toonSpline_CRV")} "";
+        $temp = `ls -sl`;
+        $splineParts[2] = $temp[0];
+        select -r $splineParts[0];
+        nphDoRename {"3", "1", ($joint + "_toonSplineHandle_SIK")} "";
+        $temp = `ls -sl`;
+        $splineParts[0] = $temp[0];
+        select -r $splineParts[1];
+        nphDoRename {"3", "1", ($joint + "_toonSplineEffector_EFT")} "";
+        $temp = `ls -sl`;
+        $splineParts[1] = $temp[0];
+        print "Parenting!\n";
+        parent $splineParts[2] "ToonCurves_GRP";
+        parent $splineParts[0] "ToonHoseIkHandles_GRP";
+        print "Done!\n";
+        
+        //string $locs[] = `nphMakeCurveLocators $numJoints $splineParts[2]`;
+        //make distance tools between locators passed in from earlier.
+        //string $dist[] = `nphSetupDistanceTools $locs`;
+        
+        string $groups[] = `nphMakeCurveGroups $numJoints $splineParts[2]`;
+
+        string $dist[] = `nphSetupDistanceNodes $groups`;
+
+        nphHookUpStretch $toonJoints $dist;
+
+
+        }
+        else
+        {
+        if(`size($children)` >= 2)
+        print ("ERROR: joint has more than 1 child joint, skipping " + $joint + "\n");
+        if(`size($children)` <= 0)
+        print ("ERROR: do not select an end join, skipping: " + $joint + "\n");
+        }
+    }
+nphRestoreSel $sel;
+}
+
+
+//----------------------------FIND MIDJOINTS PROC---------------------------------//
+global proc string[] nphFindMidJoints(string $root, string $end)
+{
+string $children[];
+
+string $child[] = `listRelatives -c $root`;
+if($child[0] != "" && $child[0] != $end)
+    {
+    while($child[0] != "" && $child[0] != $end)
+        {
+        string $temp[] = `listRelatives -c $child[0]`;
+        if($child[0] != "" && $child[0] != $end)
+            {
+            $children[size($children)] = $child[0];
+            $child[0] = $temp[0];
+            }
+        }
+    }
+return $children;
+}
+
+//------------------------RESIZE JOINTS BETWEEN TWO SELECTED PROC---------------------------//
+global proc nphResizeBetween(string $root, string $end, float $newSize)
+{
+string $finalJoints[] = {$root};
+string $temp[] = `nphFindMidJoints $root $end`;
+$temp[size($temp)] = $end;
+string $joints[] = stringArrayCatenate($finalJoints, $temp);
+for($joint in $joints)
+    {
+    setAttr ($joint + ".radius") $newSize;
+    }
+}
+
+
+//--------------------------------REMOVE MENU PROC--------------------------------//
+global proc nphRemove(int $type)
+{
+
+//if type is 1 delete only the menu
+if($type == 1)
+    {
+    //exists check to make safe
+    if (`menu -q -exists nphRigTools2Menu`)
+    //delete the menu
+    deleteUI nphRigTools2Menu;
+    }
+
+if($type == 2)
+    {
+    print "not set up yet\n";
+    }
+}
+
+//------------------------------GROUP FREEZE OBJECT PROC---------------------------------------//
+global proc nphGroupFreeze(string $node)
+{
+      select -r $node;
+      int $num = 0;
+      string $groupName = ($node + "_Freeze_GRP" + $num);
+      while(`objExists $groupName`)
+             {
+                    $num++;
+                    $groupName = ($node + "_Freeze_GRP" + $num);
+             }
+      group -em -w -n $groupName;
+      //nphMoveCon {"consTrans", $groupName, $node};
+      nphSnap $groupName $node;
+      string $temp[] = `listRelatives -p $node`;
+      if($temp[0] != "")
+             {
+                      parent -w $node;
+                    parent $groupName $temp[0];
+             }
+
+      if(`nodeType $node` != "joint")
+             {
+                   parent $node $groupName;
+                   //nphMoveCon {"moveRot", $groupName, $node};
+                   nphSnap $groupName $node;
+                   setAttr ($node + ".rx") 0;
+                   setAttr ($node + ".ry") 0;
+                   setAttr ($node + ".rz") 0;
+             }
+      if(`nodeType $node` == "joint")
+                   parent $node $groupName;
+}
+
+
+//------------------------------ROTATE CV's OF A CURVE PROC---------------------------------------//
+global proc nphRotComponent(float $rot[])
+{
+        string $temp[];
+        string $sel[] = `ls -l -sl`;
+        for($node in $sel)
+        {
+              if(`nodeType $node` == "transform")
+                  {
+                      //siwtched to listrlatives to avoid problems with multiple shapes
+                      select -r `listRelatives -f -s $node`;
+                      $temp  = `ls -l -sl -type "nurbsCurve" -type "nurbsSurface"`;
+                  }
+              if(`nodeType $node` == "joint")
+                  {
+                      $temp = `listRelatives -f -s`;
+                      nphRestoreSel $temp;
+                      $temp1 = `nphLsType "nurbsCurve" 1`;
+                      $temp2 = `nphLsType "nurbsSurface" 1`;
+                      $temp = stringArrayCatenate ($temp1, $temp2);
+                  }
+              if($temp[0] != "")
+                  {
+                  select -cl;
+                  for($shape in $temp)
+                             {
+                             int $cvs[] = `nphGetNURBSComponents $shape`;
+                             if(size($cvs) == 1)
+                                           select -tgl ($shape + ".cv[0:" + ($cvs[0] - 1) + "]");
+                             if(size($cvs) == 2)
+                                           select -tgl ($shape + ".cv[0:" + ($cvs[0] - 1) + "][0:" + ($cvs[1] - 1) + "]");
+                             }
+                           rotate -r -os $rot[0] $rot[1] $rot[2];
+              }
+              select -cl;
+        }
+        nphRestoreSel $sel;
+}
+
+
+//----------------------SCALE COMPONENTS PROC-----------------------//
+global proc nphScaleComponent(float $scale[])
+{
+        string $temp[];
+        string $sel[] = `ls -l -sl`;
+        for($node in $sel)
+                  {
+                  select -r $node;
+                  if(`objExists $node`)
+                        {
+                            if(`nodeType $node` == "transform")
+                                  {
+                                          select -r `listRelatives -f -s $node`;
+                                          $temp  = `ls -l -sl -type "nurbsCurve" -type "nurbsSurface"`;
+                                  }
+                            if(`nodeType $node` == "joint")
+                                  {
+                                          $temp = `listRelatives -f -s`;
+                                          nphRestoreSel $temp;
+                                          $temp1 = `nphLsType "nurbsCurve" 1`;
+                                          $temp2 = `nphLsType "nurbsSurface" 1`;
+                                          $temp = stringArrayCatenate ($temp1, $temp2);
+                                  }
+                                if($temp[0] != "")
+                                  {
+                                        select -cl;
+                                        for($shape in $temp)
+                                              {
+                                                    int $cvs[] = `nphGetNURBSComponents $shape`;
+                                                    if(size($cvs) == 1)
+                                                    select -tgl ($shape + ".cv[0:" + ($cvs[0] - 1) + "]");
+                                                    if(size($cvs) == 2)
+                                                    select -tgl ($shape + ".cv[0:" + ($cvs[0] - 1) + "][0:" + ($cvs[1] - 1) + "]");
+                                              }
+                                    }
+                                 scale -r $scale[0] $scale[1] $scale[2];
+                                 string $origSel[] = {$node};
+                                 nphRestoreSel $origSel;
+                        }
+                  }
+        nphRestoreSel $sel;
+}
+
+//----------------------TRANSLATE COMPONENTS PROC-----------------------//
+global proc nphTransComponent(float $move[])
+{
+          string $temp[];
+          string $sel[] = `ls -l -sl`;
+          for($node in $sel)
+          {
+                 if(`objExists $node`)
+                         {
+                          if(`nodeType $node` == "transform")
+                                {
+                                        select -r `listRelatives -f -s $node`;
+                                        $temp  = `ls -l -sl -type "nurbsCurve" -type "nurbsSurface"`;
+                                }
+                          if(`nodeType $node` == "joint")
+                                {
+                                        $temp = `listRelatives -f -s`;
+                                        nphRestoreSel $temp;
+                                        $temp1 = `nphLsType "nurbsCurve" 1`;
+                                        $temp2 = `nphLsType "nurbsSurface" 1`;
+                                        $temp = stringArrayCatenate ($temp1, $temp2);
+                                }
+                              if($temp[0] != "")
+                                {
+                                      select -cl;
+                                      for($shape in $temp)
+                                            {
+                                                  int $cvs[] = `nphGetNURBSComponents $shape`;
+                                                  if(size($cvs) == 1)
+                                                                select -tgl ($shape + ".cv[0:" + ($cvs[0] - 1) + "]");
+                                                  if(size($cvs) == 2)
+                                                                select -tgl ($shape + ".cv[0:" + ($cvs[0] - 1) + "][0:" + ($cvs[1] - 1) + "]");
+                                            }
+                                  }
+                               move-r -os -wd $move[0] $move[1] $move[2];
+                      }
+          }
+          nphRestoreSel $sel;
+}
+
+
+
+
+//----------------MAKE SELECTED JOINTS SQUASH AND STRETCH-----------------//
+global proc nphMakeSquash()
+{
+string $origSel[] = `ls -sl`;
+string $joints[] = `ls -sl -type "joint"`;
+
+for($joint in $joints)
+    {
+    string $percent = `createNode -n ($joint + "_percent") multiplyDivide`;
+    string $power = `createNode -n ($joint + "_power") multiplyDivide`;
+    setAttr ($percent + ".operation") 2;
+    setAttr ($percent + ".input1X") 1;
+    setAttr ($power + ".operation") 3;
+    addAttr -ln squashFactor -at double  -min 0 -max 10 -dv 0 $joint;
+    setAttr -e -keyable true ($joint + ".squashFactor");
+    connectAttr -f ($joint + ".scaleX") ($percent + ".input2X");
+    connectAttr -f ($percent + ".outputX") ($power + ".input1X");
+    connectAttr -f ($joint + ".squashFactor") ($power + ".input2X");
+    connectAttr -f ($power + ".outputX") ($joint + ".scaleY");
+    connectAttr -f ($power + ".outputX") ($joint + ".scaleZ");
+    setAttr ($joint + ".squashFactor") .6;
+    }
+}
+
+
+
+//------------------MAKE STRETCHY SPINE ON SIMPLE JOINTS PROC--------------//
+global proc nphPrigStretchySpine(int $squash, int $numJoints)
+{
+//base this off of selection of two joints
+string $sel[] = `ls -sl -type "joint"`;
+if(size($sel) < 2)
+    {
+    print "please select two joints\n";
+    }
+    else
+    {
+    //make spine
+    //get middle joints
+    string $midJoints[] = `nphFindMidJoints $sel[0] $sel[1]`;
+    string $temp[] = `nphPrependArray $midJoints {$sel[1]}`;
+    $temp = `nphPrependArray {$sel[0]} $temp`;
+    string $curve = `nphMakeCurveOnJoints $temp`;
+    string $clusters[] = `nphClusterCurve $curve`;
+    nphParentArrayToArray $clusters $temp;
+    select -cl;
+    string $groups[] = `nphMakeCurveGroups (size($temp) * $numJoints) $curve`;
+    string $joints[] = `nphMakeJointsOnArray $groups`;
+    string $splineParts[] = `ikHandle -sj $joints[0] -ee $joints[(size($joints) - 1)] -ccv 0 -curve $curve -sol ikSplineSolver`;
+    string $distanceNodes[] = `nphSetupDistanceNodes $groups`;
+    string $scaler = `nphHookUpStretch $joints $distanceNodes`;
+    string $sg = `group -em -w -n ($temp[0] + "_ToonScale_GRP")`;
+    parent $temp[0] $sg;
+    parent $joints[0] $sg;
+    if(!`attributeExists "localScale" $sg`)
+        {
+        addAttr -ln localScale -at double  -min 0.01 -max 20 -dv 1 $sg;
+        setAttr -e -keyable true ($sg + ".localScale");
+        connectAttr ($sg + ".localScale") ($scaler + ".scaleX");
+        connectAttr ($sg + ".localScale") ($scaler + ".scaleY");
+        connectAttr ($sg + ".localScale") ($scaler + ".scaleZ");
+        connectAttr ($sg + ".localScale") ($sg + ".scaleX");
+        connectAttr ($sg + ".localScale") ($sg + ".scaleY");
+        connectAttr ($sg + ".localScale") ($sg + ".scaleZ");
+        setAttr -keyable false -channelBox false ($sg + ".sx");
+        setAttr -keyable false -channelBox false ($sg + ".sy");
+        setAttr -keyable false -channelBox false ($sg + ".sz");
+             if($squash == 1)
+                   {
+                     nphRestoreSel $joints;
+                     nphMakeSquash;
+                   }
+        }
+        else
+        {
+        error "localScale attribute already exists!";
+        }
+    }
+}
+
+//-----------------MAKE CURVE ON JOINTS PROC----------------------//
+global proc string nphMakeCurveOnJoints(string $joints[])
+{
+string $curveName = ($joints[0] + "_SplineCurve_CRV");
+//make error checking at some point for multiple curves of the same name.
+for($joint in $joints)
+    {
+    float $trans[] = `xform -q -ws -t $joint`;
+    if(!`objExists ($joints[0] + "_SplineCurve_CRV")`)
+    {curve -p $trans[0] $trans[1] $trans[2] -n ($joints[0] + "_SplineCurve_CRV");}
+    else
+    {curve -p $trans[0] $trans[1] $trans[2] -a ($joints[0] + "_SplineCurve_CRV");}
+
+    }
+return $curveName;
+}
+
+//--------------PARENT ARRAY TO AN ARRAY PROC-------------------//
+global proc nphParentArrayToArray(string $array1[], string $array2[])
+{
+
+int $i = 0;
+if(size($array1) > size($array2))
+    {
+    $i = size($array2) -1;
+    }
+    else
+    {
+    $i = size($array1) -1;
+    }
+for($i; $i >= 0; $i--)
+    {
+    //first unprent it, this keeps it from parenting it to it's parent again
+    string $temp[] = `listRelatives -p $array1[$i]`;
+    if($temp[0] != "")
+    parent -w $array1[$i];
+    parent $array1[$i] $array2[$i];
+    }
+}
+
+//------------------INVERT ARRAY PROC---------------------//
+global proc string[] nphInvertArray(string $array[])
+{
+string $inverse[];
+for($item in $array)
+    {
+    $inverse[size($inverse)] = $item;
+    }
+return $inverse;
+}
+
+
+global proc string[] nphMakeJointsOnArray(string $array[])
+{
+print ("Making joints!");
+string $joints[];
+select -cl;
+for($item in $array)
+    {
+    string $joint = `joint`;
+    float $x[] = `xform -q -ws -t $item`;
+    xform -ws -t $x[0] $x[1] $x[2] $joint;
+    $joints[size($joints)] = $joint;
+    }
+select -r $joints[0];
+makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+joint -e -oj xyz -secondaryAxisOrient yup -ch -zso;
+return $joints;
+}
+
+
+//--------------------------------PARSE ARGS FROM UI PROC PROC--------------------------------//
+global proc nphParseArgs(string $proc)
+{
+  /*
+  
+  nphRigToolsCFG {"-s", "CM_Shape", ($index + 1)};
+
+//get the color
+int $color = `canvas -q -ann nphCurrentColor`;
+nphRigToolsCFG {"-s", "CM_Color", $color};
+
+//get the new name
+string $newName = `textField -q -text nphControlName`;
+nphRigToolsCFG {"-s", "CM_Name", $newName};
+
+int $CM_Replace = ` checkBox -q -v nphReplace`;
+nphRigToolsCFG {"-s", "CM_Replace", $CM_Replace};
+
+*/
+
+//here goes
+//this was an idea i wanted to try out
+//I have so many UI's feeding a bunch of procs with
+//UI values, and I kept having to make two procs for each
+//one to parse args from UI and one to actually run
+//seeing as i wanted to keeep my helper procs seperated from the ui so anyone could use them without using my naming conventions and UI layout
+//that it became crowded. Thus now I have this
+//I pass this the name of a proc and this contains all the procs and what they require
+//it parses the args for the named proc and then runs it
+//not sure if this is any faster but it's quite a bit easier to organize.
+//too bad I started this at 4.2... maybe i could go back and clean everything else up at some point.
+switch($proc)
+    {
+    case "nphOriIso":
+    //parse args from selection for rot iso
+    string $sel[] = `ls -sl`;
+    if($sel[0] != "" && $sel[1] != "")
+    {nphOriIso $sel[0] $sel[1];}
+    else
+    {print "Error: please select two objects!\n";}
+    break;
+    
+    //nphDoRename argument handler
+    case "nphDoRename":
+    //snag the values out of the UI
+    string $value2 = (`textField -q -text nphNamePrefix`);
+    string $value1 = (`textField -q -text nphNameMain`);
+    string $value3 = (`textField -q -text nphNameSuffix`);
+
+    string $value4 = (`checkBox -q -v nphUnderscore`);
+    string $underScore;
+    if(`checkBox -q -v nphUnderscore`)
+    {$underScore = "_";}
+    else
+    {$underScore = "";}
+
+    string $nameType = `radioCollection -q -select nphNamingRadio`;
+    string $nameType = `match "[0-9]+" $nameType`;
+    string $mode = `radioCollection -q -select nphModeRadio`;
+    string $mode = `match "[0-9]+" $mode`;
+
+    if(`checkBox -q -v nphSubtractive`)
+        {
+          if($nameType == "2"){$nameType = "4";}
+          if($nameType == "3"){$nameType = "5";}
+        }
+
+    if($nameType == "3")
+        $value1 = $value2;
+    if($nameType == "2")
+        $value1 = $value3;
+    if(`checkBox -q -v nphFandR`)
+        {
+        $nameType = "6"; $value2 = $value1; $value1 = `textField -q -text nphSearchFor`;}
+    nphDoRename {$mode, $nameType, $value1, $value2, $value3} $underScore;
+    break;
+    
+    case "nphPrigToonHose":
+    string $numJoints = `textField -q -text nphJointNum`;
+    nphPrigToonHose $numJoints 0;
+    break;
+    
+    case "nphResizeBetween":
+    float $newSize = .5;
+    $newSize = `floatSliderButtonGrp -q -v nphNewJointSize`;
+    string $joints[] = `ls -sl -type "joint"`;
+    if(`size($joints)` > 1)
+        {
+        nphResizeBetween $joints[0] $joints[1] $newSize;
+        }
+    break;
+    case "nphMakeFKIK":
+    string $name = `textField -q -text fkikName`;
+    string $command = `nphMakeFKIK $name 1`;
+    textField -e -text $command fkikOutput;
+    break;
+    case "nphGroupFreeze":
+    string $sel[] = `ls -sl`;
+    for($object in $sel)
+        {
+        nphGroupFreeze $object;
+        }
+    nphRestoreSel $sel;
+    break;
+                case "nphRotateCVX":
+                nphRotComponent {90.0, 0.0, 0.0};
+                break;
+
+                case "nphRotateCVY":
+                nphRotComponent {0.0, 90.0, 0.0};
+                break;
+
+                case "nphRotateCVZ":
+                nphRotComponent {0.0, 0.0, 90.0};
+                break;
+    break;
+    case "nphPrigStretchySpine":
+    int $jNum = `textField -q -text nphNumJoints`;
+    int $squash = `checkBox -q -v nphSquash`;
+    nphPrigStretchySpine $squash $jNum;
+    break;
+    case "nphSetDefaultManip":
+    nphSetDefaultManip "move";
+    break;
+
+    case "nphColorSelection":
+    int $colorIndex = `canvas -q -ann nphCurrentColor`;
+    nphColorSelection $colorIndex;
+    break;
+        case "nphCMclosed":
+        string $newName = `textField -q -text nphControlName`;
+        int $CM_Replace = `checkBox -q -v nphReplace`;
+        int $freeze = `checkBox -q -v nphGroupFreeze`;
+        int $massCreate = `checkBox -q -v nphMultiCreate`;
+        int $color = `canvas -q -ann nphCurrentColor`;
+        int $index = (`optionMenu -q -sl nphShapesMenu`);
+        int $lt = `checkBox -q -v nphLockTrans`;
+        int $lr = `checkBox -q -v nphLockRot`;
+        int $ls = `checkBox -q -v nphLockScale`;
+
+        nphRigToolsCFG {"-s", "CM_Name", $newName};
+        nphRigToolsCFG {"-s", "CM_Color", $color};
+        nphRigToolsCFG {"-s", "CM_Shape", $index};
+
+        //new as of 5.1
+        nphRigToolsCFG {"-s", "CM_Replace", $CM_Replace};
+        nphRigToolsCFG {"-s", "CM_MCreate", $massCreate};
+        nphRigToolsCFG {"-s", "CM_GFreeze", $freeze};
+
+        //new as of 5.2
+        nphRigToolsCFG {"-s", "CM_Ltrans", $lt};
+        nphRigToolsCFG {"-s", "CM_Lrot", $lr};
+        nphRigToolsCFG {"-s", "CM_Lscale", $ls};
+
+        break;
+        
+        case "nphMakeControl":
+        //gather input
+        string $origSel[] = `ls -l -sl`;
+        string $sel[] = `ls -l -sl`;
+        string $newName = `textField -q -text nphControlName`;
+        int $CM_Replace = `checkBox -q -v nphReplace`;
+        int $freeze = `checkBox -q -v nphGroupFreeze`;
+        int $massCreate = `checkBox -q -v nphMultiCreate`;
+        int $color = `canvas -q -ann nphCurrentColor`;
+        int $index = (`optionMenu -q -sl nphShapesMenu` - 1);
+        int $lt = `checkBox -q -v nphLockTrans`;
+        int $lr = `checkBox -q -v nphLockRot`;
+        int $ls = `checkBox -q -v nphLockScale`;
+        string $shapes[];
+        
+
+        //lset new attrs
+        nphRigToolsCFG {"-s", "CM_Name", $newName};
+        nphRigToolsCFG {"-s", "CM_Color", $color};
+        nphRigToolsCFG {"-s", "CM_Shape", ($index + 1)};
+
+        //new as of 5.1
+        nphRigToolsCFG {"-s", "CM_Replace", $CM_Replace};
+        nphRigToolsCFG {"-s", "CM_MCreate", $massCreate};
+        nphRigToolsCFG {"-s", "CM_GFreeze", $freeze};
+
+        //new as of 5.2
+        nphRigToolsCFG {"-s", "CM_Ltrans", $lt};
+        nphRigToolsCFG {"-s", "CM_Lrot", $lr};
+        nphRigToolsCFG {"-s", "CM_Lscale", $ls};
+
+        
+        if($massCreate == 0 || size($sel) == 0)
+                        {
+                               $shapes[size($shapes)] = `nphMakeShape $index`;
+                               if($CM_Replace == 1 && size($origSel) == 1)
+                               {
+                                 select -r $sel[0];
+                                 string $delete[] = `nphLsType "nurbsCurve" 0`;
+                                 for($obj in $delete)
+                                            {
+                                              delete $obj;
+                                            }
+
+                                 //move it negative the value of the transform it is going to be parented under
+                                 float $xf[] = `xform -q -ws -t $sel[0]`;
+                                 xform  -r -t (0-($xf[0])) (0-($xf[1])) (0-($xf[2]))  $shapes[0];
+                                 //then freeze it
+                                 select -r $shapes[0];
+                                 makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+
+                                 select -r $shapes[0];
+                                 string $curves[] = `nphLsType "nurbsCurve" 0`;
+                                 nphRestoreSel $curves;
+                                 select -add $sel[0];
+                                 parent -r -s;
+                                 delete $shapes[0];
+                                 $shapes[0] = $sel[0];
+                               }
+                               else if(size($sel) > 1 && $CM_Replace == 1)
+                               {
+                                 error "Cannot replace multiple controls without multi create!";
+                               }
+                               else if(size($sel) == 0 && $CM_Replace == 1)
+                               {
+                                 warning "Nothing selected to replace\n";
+                               }
+                        }
+                        else
+                        {
+                        for($obj in $sel)
+                                 {
+                                  select -r $obj;
+                                  $shapes[size($shapes)] = `nphMakeShape $index`;
+
+
+                                  if($CM_Replace == 1)
+                                                 {
+                                                   select -r $obj;
+                                                   string $delete[] = `nphLsType "nurbsCurve" 0`;
+                                                   for($node in $delete)
+                                                            {
+                                                              delete $node;
+                                                            }
+                                                            
+                                                   //move it negative the value of the transform it is going to be parented under
+                                                   float $xf[] = `xform -q -ws -t $obj`;
+                                                   xform  -r -t (0-($xf[0])) (0-($xf[1])) (0-($xf[2]))  $shapes[size($shapes)-1];
+                                                   //then freeze it
+                                                   select -r $shapes[size($shapes)-1];
+                                                   makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+
+                                                   select -r $shapes[size($shapes)-1];
+                                                   string $curves[] = `nphLsType "nurbsCurve" 0`;
+                                                   nphRestoreSel $curves;
+                                                   select -add $obj;
+                                                   parent -r -s;
+                                                   delete $shapes[size($shapes)-1];
+                                                   $shapes[size($shapes)-1] = $obj;
+                                                 }
+                                 }
+                        }
+                //now colorize the controls
+                for($shape in $shapes)
+                {
+                  select -r $shape;
+                  nphColorSelection $color;
+                }
+
+                nphRestoreSel $shapes;
+                //now rename them
+                if($CM_Replace != 1 || (size($sel) == 0 && $CM_Replace == 1))
+                               {
+                                 int $i = 0;
+                                 for($shape in $shapes)
+                                            {
+                                              string $nameNumbered;
+                                              string $tokens[];
+                                              int $numTokens = `tokenize $newName "_" $tokens`;
+                                              if(size($tokens) > 1)
+                                                               {
+                                                                string $prefix = $tokens[0];
+                                                                string $suffix = $tokens[size($tokens)-1];
+                                                                int $num = 1;
+                                                                for($num; $num < (size($tokens) - 1); $num ++)
+                                                                          {
+                                                                           $prefix = ($prefix + "_" + $tokens[$num]);
+                                                                          }
+                                                                $nameNumbered = ($prefix + $i + "_" + $suffix);
+                                                                }
+                                                                else
+                                                                {
+                                                                 $nameNumbered = $newName;
+                                                                }
+                                              if(`objExists $shape`)
+                                                            {
+                                                             string $temp = `rename $shape $nameNumbered`;
+                                                             $shapes[$i] = $temp;
+                                                            }
+                                              $i++;
+                                              }
+
+                                 //now group freeze them
+                                 string $shapesTemp[];
+                                 $shapesTemp = `ls -l -sl`;
+                                 if($freeze)
+                                            {
+                                              nphRestoreSel $shapes;
+                                              nphParseArgs "nphGroupFreeze";
+                                              $shapesTemp = `ls -l -sl`;
+                                            }
+
+                                 for($node in $shapesTemp)
+                                 {
+                                  setAttr -k (abs(1- $lt)) -l $lt ($node + ".tx");
+                                  setAttr -k (abs(1- $lt)) -l $lt ($node + ".ty");
+                                  setAttr -k (abs(1- $lt)) -l $lt ($node + ".tz");
+
+                                  setAttr -k (abs(1- $lr)) -l $lr ($node + ".rx");
+                                  setAttr -k (abs(1- $lr)) -l $lr ($node + ".ry");
+                                  setAttr -k (abs(1- $lr)) -l $lr ($node + ".rz");
+
+                                  setAttr -k (abs(1- $ls)) -l $ls ($node + ".sx");
+                                  setAttr -k (abs(1- $ls)) -l $ls ($node + ".sy");
+                                  setAttr -k (abs(1- $ls)) -l $ls ($node + ".sz");
+                                 }
+                    }
+        nphRestoreSel $sel;
+        break;
+    print $proc;
+    }
+//end
+}
+
+
+//--------------------------PROMPT FOR USER INPUT FOR VIS TOGGLE PROC----------------------------//
+global proc nphMakeVis()
+{
+//need an attribute and a selection
+//create the node network and name it based on the attribute name
+//add some basic error checking as well just for kicks
+string $origSel[] = `ls -l -sl`;
+if(size($origSel) != 0)
+    {
+    string $text;
+    string $result = `promptDialog -t "Name the attribute" -ma "left"
+        -m "Name:" -text "Display"
+        -button "OK"
+        -button "Cancel"
+         -defaultButton "OK" -cancelButton "Cancel"
+         -dismissString "Cancel"`;
+
+        if ($result == "OK")
+            {
+            $text = `promptDialog -query -text`;
+            if($text == "")
+            $text = "Display";
+            string $tempUI = `window -w 100 -h 80 -s 0 -tb 1 -t "Select objects to control"`;
+            columnLayout -adj true;
+            button -l "Confirm!" -c ("deleteUI " + $tempUI + "; nphConnectVis " + $text + " " + $origSel[0] + ";"); button -l "Cancel" -c ("deleteUI " + $tempUI);
+            showWindow $tempUI;
+            window -e -wh 300 80 $tempUI;
+            }
+            else
+            {print "Canceled!\n";}
+    }
+    else
+    {
+    error "Please select and object to add visibility attribute to.\n";
+    }
+}
+
+
+
+//--------------------------HOOK UP VISIBILTY TOGGLES-----------------------//
+global proc nphConnectVis(string $text, string $node)
+{
+string $sel[] = `ls -l -fl -sl`;
+        if(size($sel) != 0 && !`attributeExists $text $node`)
+            {
+            if(!`attributeExists $text $node`)
+            addAttr -ln $text -at "enum" -en "Off:Template:Reference:On" -k 1 $node;
+            string $cond = `createNode -n ($node + "_visCondition") condition`;
+            setAttr ($cond + ".colorIfTrueB") 1;
+            if(!`attributeExists "Invert" $node`)
+            addAttr -ln "Invert" -at long  -min 3 -max 3 -dv 3 $node;
+            string $add = `createNode -n ($node + "_Invert") plusMinusAverage`;
+            connectAttr -f ($node + ".Invert") ($add + ".input1D[1]");
+            connectAttr -f ($node + "." + $text) ($add + ".input1D[0]");
+            setAttr ($add + ".operation") 2;
+            }
+
+for($obj in $sel)
+    {
+    string $con[] = `listConnections -p 1 ($obj +".drawOverride.overrideDisplayType")`;
+    if($con[0] != "")
+    disconnectAttr ($con[0]) ($obj + ".drawOverride.overrideDisplayType");
+    connectAttr -f ($node + "." + $text) ($obj +  ".drawOverride.overrideDisplayType");
+
+    string $con[] = `listConnections -p 1 ($obj +".overrideEnabled")`;
+    if($con[0] != "")
+    disconnectAttr ($con[0]) ($obj + ".overrideEnabled");
+    setAttr ($obj + ".overrideEnabled") 1;
+
+    string $con[] = `listConnections -p 1 ($obj +".v")`;
+    if($con[0] != "")
+    disconnectAttr ($con[0]) ($obj + ".v");
+    connectAttr -f ($node + "." + $text) ($obj + ".v");
+
+    string $shapes[] = `listRelatives -f -s $obj`;
+    for($shape in $shapes)
+        {
+        string $con[] = `listConnections -p 1 ($shape +".drawOverride.overrideDisplayType")`;
+        if($con[0] != "")
+        disconnectAttr ($con[0]) ($shape + ".drawOverride.overrideDisplayType");
+        connectAttr -f ($node + "." + $text) ($shape +  ".drawOverride.overrideDisplayType");
+
+        string $con[] = `listConnections -p 1 ($shape + ".overrideEnabled")`;
+        if($con[0] != "")
+        disconnectAttr ($con[0]) ($shape + ".overrideEnabled");
+        setAttr ($shape + ".overrideEnabled") 1;
+
+        string $con[] = `listConnections -p 1 ($shape +".v")`;
+        if($con[0] != "")
+        disconnectAttr ($con[0]) ($shape + ".v");   
+        connectAttr -f ($node + "." + $text) ($shape + ".v");
+        }
+    }
+setAttr ($node + "." + $text) 3;
+print "Done\n";
+}
+
+
+
+//-----------------------MAKE SELECTED 3 JOINTS ARM FK-IK SITCHABLE---------------------//
+global proc string nphMakeFKIK(string $name, int $makePVSpace)
+{
+joint -e -oj xyz -secondaryAxisOrient zup -ch -zso;
+string $return;
+//here i go again...
+//make an fk/ik switch arm with a place for the
+//elbow to end up at all times in ik and fk and
+//leave it open for the addition of toonyness? as
+//well as have traditional blending work!.. bah.
+//okay here we goes..
+
+string $origSel[] = `ls -sl`;
+string $origJoint[] = `ls -sl -type "joint"`;
+
+int $selSize = size($origJoint);
+
+if($selSize == 1)
+    {
+    string $root = $origJoint[0];
+    select -r $root;
+    string $ik[] = `duplicate`;
+    select -r $root;
+    string $fk[] = `duplicate`;
+
+    select -r $root;
+    nphDoRename {"1" , "1", ($name + "_Switch_JNT")} "";
+    string $temp[] = `ls -sl`;
+    string $blendRoot = $temp[0];
+
+    select -r $ik[0];
+    nphDoRename {"1" , "1", ($name + "_IK_JNT")} "";
+    string $temp[] = `ls -sl`;
+    string $ikRoot = $temp[0];
+
+    select -r $fk[0];
+    nphDoRename {"1" , "1", ($name + "_FK_JNT")} "";
+    string $temp[] = `ls -sl`;
+    string $fkRoot = $temp[0];
+
+    select -r $blendRoot;
+    group;
+    nphDoRename {"3", "1", ($name + "_Pad")} "";
+    string $pad[] = `ls -sl`;
+
+    string $temp[] = `ls -sl`;
+    nphParentArrayTo {$ikRoot, $fkRoot} $temp[0];
+    
+    select -r $blendRoot;
+    select -hi;
+    string $blendJoints[] = `ls -sl -typ "joint"`;
+    
+    select -r $ikRoot;
+    select -hi;
+    string $ikJoints[] = `ls -sl -typ "joint"`;
+
+    select -r $fkRoot;
+    select -hi;
+    string $fkJoints[] = `ls -sl -typ "joint"`;
+
+    string $mult = `nphMakeBlends $blendJoints $ikJoints $fkJoints`;
+    
+    addAttr -ln "FK_IK" -at double  -min 0 -max 10 -dv 0 $blendRoot;
+    setAttr -e -keyable true ($blendRoot + ".FK_IK");
+    connectAttr -f ($blendRoot + ".FK_IK") ($mult + ".input1X");
+    setAttr ($mult + ".input2X") 10;
+    setAttr ($mult + ".operation") 2;
+    print $fkJoints;
+    if($makePVSpace == 1)
+        {
+        //make a locator for my fk/ik switcher to snap too
+        string $grp1 = `group -em -w -n ($name + "_fkVector1_GRP")`;
+        string $grp2 = `group -em -w -n ($name + "_fkVector2_GRP")`;
+        nphParentArrayTo {$grp1, $grp2} $pad[0];
+        select -r $fkJoints[0];
+
+        select -r $fkJoints[(size($fkJoints)/2)];
+        select -tgl $grp2;
+        pointConstraint -offset 0 0 0 -weight 1;
+
+        select -r $fkJoints[0];
+        select -tgl $grp1;
+        pointConstraint -offset 0 0 0 -weight 1;
+        
+        select -r $fkJoints[(size($fkJoints)-1)];
+        select -tgl $grp1;
+        string $aim[] = `aimConstraint -wuo $fkJoints[0] -offset 0 0 0 -weight 1`;
+        setAttr ($aim[0] + ".worldUpType") 2;
+
+        select -r $grp1;
+        select -tgl $grp2;
+        orientConstraint -offset 0 0 0  -weight 1;
+
+        //lock out the rotates and set limits on the arm
+        setAttr -l true ($fkJoints[1] + ".rx");
+        setAttr -l true ($fkJoints[1] + ".ry");
+
+        string $loc[] = `spaceLocator -n ($name + "_fkRP_LOC")`;
+        parent $loc[0] $grp2;
+        xform -t 0 -5 0 $loc[0];
+        select -r $loc[0];
+        //makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+        string $pv[] = `duplicate`;
+        parent $pv[0] $pad[0];
+        nphDoRename {"3", "1", ($name + "_ikPV_LOC")} "";
+        $pv = `ls -sl`;
+        string $ikHandle[] = `ikHandle -sj $ikJoints[0] -ee $ikJoints[(size($ikJoints)-1)] -n ($name + "_ikHandle_IK")`;
+        select -r $pv[0];
+        select -tgl $ikHandle[0];
+        poleVectorConstraint -weight 1;
+        
+        addAttr -ln ($blendRoot) -dt "string" $pad[0];
+        addAttr -ln $loc[0] -dt "string" $pad[0];
+
+        addAttr -ln $pv[0] -dt "string" $pad[0];
+        addAttr -ln $ikHandle[0] -dt "string" $pad[0];
+        
+        addAttr -ln $fkJoints[(size($fkJoints)-1)] -dt "string" $pad[0];
+
+        addAttr -ln $ikJoints[0] -dt "string" $pad[0];
+        addAttr -ln $ikJoints[1] -dt "string" $pad[0];
+
+        addAttr -ln $fkJoints[0] -dt "string" $pad[0];
+        addAttr -ln $fkJoints[1] -dt "string" $pad[0];
+
+        //now we figure out what the return value looks like
+        $return = ("nphFKIK " + $pad[0]);
+        //listAttr -ud nphTest_Pad0;
+        }
+    }
+    else
+    {
+    error "please select 1 joint!\n";
+    }
+return $return;
+}
+
+
+//--------------------------CREATE BLEND COLOR NODES---------------------------------//
+global proc string nphMakeBlends(string $blendJoints[], string $ikJoints[], string $fkJoints[])
+{
+int $i;
+string $mult = `createNode  -n ($blendJoints[$i] + "_blendMult") multiplyDivide`;
+for($i; $i < (size($blendJoints)); $i++)
+    {
+    string $blendTemp = `createNode -n ($blendJoints[$i] + "_Blend") blendColors`;
+    connectAttr -f ($mult + ".outputX") ($blendTemp + ".blender");
+    connectAttr -f ($ikJoints[$i] + ".rotate") ($blendTemp + ".color1");
+    connectAttr -f ($fkJoints[$i] + ".rotate") ($blendTemp + ".color2");
+    connectAttr -f ($blendTemp + ".output") ($blendJoints[$i] + ".rotate") ;
+    }
+return $mult;
+}
+
+
+//------------------IK FK SNAPPING PROC--------------------------//
+global proc nphFKIK(string $pad)
+{
+cycleCheck -e off;
+string $origSel[] = `ls -sl`;
+string $attrArray[] = `listAttr -ud $pad`;
+string $modeAttr = ($attrArray[0] + ".FK_IK");
+float $newMode = ((`getAttr $modeAttr`)/10);
+$newMode = 1 - $newMode;
+if($newMode >.4)
+$newMode = 1;
+if($newMode <=.4)
+$newMode = 0;
+
+setAttr $modeAttr ($newMode *10);
+
+if($newMode == 1)
+    {
+    //this is going from fk to ik
+    //need to move the ik handle to the end of the fk
+    //and move the pole vector to my fk rp locator.
+    string $newAttr = `getAttr ($pad + "." + $attrArray[2])`;
+    if($newAttr != "")
+    $attrArray[2] = $newAttr;
+
+    $newAttr = `getAttr ($pad + "." + $attrArray[3])`;
+    if($newAttr != "")
+    $attrArray[3] = $newAttr;
+
+    nphMoveCon {"consTrans", $attrArray[2], $attrArray[1]};
+    nphMoveCon {"consTrans", $attrArray[3], $attrArray[4]};
+    }
+if($newMode == 0)
+    {
+    //this is going from ik to fk
+    //need todump the rotations of all the ik joints into the roation of all
+    //my fk joints/controls
+    float $j1[] = `xform -q -ws -ro $attrArray[5]`;
+    float $j2[] = `xform -q -ws -ro $attrArray[6]`;
+    
+    string $newAttr = `getAttr ($pad + "." + $attrArray[7])`;
+    if($newAttr != "")
+    $attrArray[7] = $newAttr;
+
+    $newAttr = `getAttr ($pad + "." + $attrArray[8])`;
+    if($newAttr != "")
+    $attrArray[8] = $newAttr;
+
+    xform -ws -ro $j1[0] $j1[1] $j1[2] $attrArray[7];
+    xform -ws -ro $j2[0] $j2[1] $j2[2] $attrArray[8];
+    }
+nphRestoreSel $origSel;
+cycleCheck -e on;
+}
+
+
+
+
+//------------------COLORIZE A SELECTION-----------------------------//
+global proc nphColorSelection(int $indexColor)
+{
+//UPDATE:  now works with layers better, refrencing and templating still work perfectly.
+//only the color is overriden.
+//this will be used to colorize the shape nodes under the selected transforms
+//that way the coloring doesnt propegate down the hierarchy.
+//simple error checking for incoming connections to the drawing override attribute
+
+string $origSel[] = `ls -l -sl -type "transform"`;
+string $origJointSel[] = `ls -l -sl -type "joint"`;
+string $shapes[];
+//grab all the shapes under the selected transforms.
+for($transform in $origSel)
+    {
+    string $tempShapes[] =  `listRelatives -f -s $transform`;
+    $shapes = `stringArrayCatenate $shapes $tempShapes` ;
+    }
+for($shape in $shapes)
+    {
+          if($shape != "")
+                    {
+                        string $inC[] = `listConnections -p 1 ($shape + ".drawOverride")`;
+            string $sourcePlug[] = `listConnections -s 1 -p 1 ($shape + ".drawOverride")`;
+            string $source[] = `listConnections -s 1 -p 0 ($shape + ".drawOverride")`;
+                         //if it's connected unhook it
+                          if($inC[0] != "")
+                       {
+                print $sourcePlug;
+                          disconnectAttr $inC[0] ($shape + ".drawOverride");
+                connectAttr -f ($source[0] + ".visibility") ($shape + ".drawOverride.overrideVisibility");
+                connectAttr -f ($source[0] + ".displayType") ($shape + ".drawOverride.overrideDisplayType");
+                    }
+
+                       setAttr ($shape + ".drawOverride.overrideEnabled") 1;
+                        setAttr ($shape + ".drawOverride.overrideColor") $indexColor;
+
+                    }
+    }
+    for($joint in $origJointSel)
+    {
+          if($joint != "")
+                    {
+                        string $inC[] = `listConnections -p 1 ($joint + ".drawOverride")`;
+            string $sourcePlug[] = `listConnections -s 1 -p 1 ($joint + ".drawOverride")`;
+            string $source[] = `listConnections -s 1 -p 0 ($joint + ".drawOverride")`;
+                         //if it's connected unhook it
+                          if($inC[0] != "")
+                       {
+                print $sourcePlug;
+                          disconnectAttr $inC[0] ($joint + ".drawOverride");
+                connectAttr -f ($source[0] + ".visibility") ($joint + ".drawOverride.overrideVisibility");
+                connectAttr -f ($source[0] + ".displayType") ($joint + ".drawOverride.overrideDisplayType");
+                    }
+                       setAttr ($joint + ".drawOverride.overrideEnabled") 1;
+                        setAttr ($joint + ".drawOverride.overrideColor") $indexColor;
+                    }
+    }
+}
+
+
+//---------------------GET NURBS COMPONENTS PROC-----------------------//
+global proc int[] nphGetNURBSComponents(string $node)
+{
+//pass it in a transform and it finds the type and loops through getting it's components
+//then returns the number as an integer array
+//NEW FEATURE: nurbs curves as well as nurbs surfaces.. also works on periodic curves and surfaces now
+int $return[];
+string $origSel[] = `ls -sl`;
+select -r $node;
+string $curves[];
+string $surfaces[];
+if(`nodeType $node` == "transform")
+             {
+             $surfaces = `nphLsType "nurbsSurface" 0`;
+             $curves = `nphLsType "nurbsCurve" 0`;
+             }
+             else if (`nodeType $node` == "nurbsCurve")
+             {
+             $curves[0] = $node;
+             }
+             else if (`nodeType $node` == "nurbsSurface")
+             {
+             $surfaces[0] = $node;
+             }
+
+for($shape in $surfaces)
+    {
+    if($shape != "")
+        {
+        int $uSpans = `getAttr ($shape + ".spansU")`;
+        int $vSpans = `getAttr ($shape + ".spansV")`;
+
+        int $degreeU = `getAttr ($shape + ".degreeU")`;
+        int $degreeV = `getAttr ($shape + ".degreeV")`;
+    
+        int $formU = `getAttr ($shape + ".formU")`;
+        int $formV = `getAttr ($shape + ".formV")`;
+        if($formU == 2)
+            $formU += 1;
+        if($formV == 2)
+            $formV += 1;
+        //formula for number of cv's on a nurbs surface
+        int $cvU = ($uSpans + $degreeU - $formU);
+        int $cvV = ($vSpans + $degreeV - $formV);
+        $return = {$cvU, $cvV};
+        }
+    }
+for($shape in $curves)
+    {
+    if($shape != "")
+        {
+        int $uSpans = `getAttr ($shape + ".spans")`;
+
+        int $degreeU = `getAttr ($shape + ".degree")`;
+    
+        int $formU = `getAttr ($shape + ".form")`;
+        if($formU == 2)
+            $formU += 1;
+        //formula for number of cv's on a nurbs surface
+        int $cvU = ($uSpans + $degreeU - $formU);
+
+        $return = {$cvU};
+        }
+    }
+ nphRestoreSel $origSel;
+return $return;
+}
+
+
+//-----------------------LOCAL ROTATION AXIS VISIBILITY WINDOW---------------------//
+global proc nphLRAWin()
+{
+nphRigToolsCFG {"-s", "Recent_Items", "lra"};
+window -t "LRA win" nphLRAwin;
+columnLayout -adj 1;
+button -l "LRA on" -c "nphLRAon";
+button -l "LRA off" -c "nphLRAoff";
+showWindow nphLRAwin;
+}
+
+//-----------------------LOCAL ROTATION AXIS VISIBILITY ON PROC---------------------//
+global proc nphLRAon()
+{
+select -r `ls -type joint`;
+toggle -state on -localAxis;
+select -cl;
+}
+
+//-----------------------LOCAL ROTATION AXIS VISIBILITY OFF PROC---------------------//
+global proc nphLRAoff()
+{
+select -r `ls -type joint`;
+toggle -state off -localAxis;
+select -cl;
+}
+
+
+//-------------------------SLAVE SKELETON ATTRIBUTE CREATION------------------------//
+global proc nphSlaveAttrs()
+{
+/*
+Basic idea is that I would like an easy way to connect and disconnect my
+control and bind rig skeletons, that will allow for a truly seperated hierarchy.
+
+The idea is to go down an entire hierarchy and get all the joints into arrayA
+then go down another hierarchy getting it's joints and storing them into arrayB
+
+for each joint in the bind add it's own name to a custom attribute named "destination"
+for each joint in the control hierarchy add it's bind joints equivalent name into an attr called "target"
+
+ex:
+
+bJoint1 - attr "destination" = "bJoint1
+cJoint1 - attr "target" = "bJoint1"
+
+now I just have to go through each control joint, and find the matching bind joint and connect them up.
+now if either chain is renamed they still function like normal.
+
+then I need to make a simple UI that allows them to be connected/disconnected.
+*/
+string $origSel[] = `ls -sl`;
+if(size($origSel) > 2 || size($origSel) < 2)
+    {
+    error "Please select exaclty two roots";
+    }
+    else
+    {
+    //do connections
+    //first get the arrays
+    select -r $origSel[0];
+    select -hi;
+    string $controlJ[] = `ls -sl -type "joint"`;
+    select -r $origSel[1];
+    select -hi;
+    string $bindJ[] = `ls -sl -type "joint"`;
+
+    if(size($controlJ) != size($bindJ))
+        {
+        error "Hierarchys don't match, aborting!";
+        }
+        else
+        {
+        int $i;
+        for($i = 0; $i < size($bindJ); $i++)
+            {
+            if(!`attributeExists "destination" $bindJ[$i]`)
+                {
+                addAttr -ln "destination" -dt "string"  $bindJ[$i];
+                setAttr -l 1 -type "string" ($bindJ[$i] + ".destination") $bindJ[$i];
+                }
+            if(!`attributeExists "target" $controlJ[$i]`)
+                {
+                addAttr -ln "target" -dt "string"  $controlJ[$i];
+                setAttr -l 1 -type "string" ($controlJ[$i] + ".target") $bindJ[$i];
+                }
+            }
+        }
+    }
+}
+//end
+
+//-------------------HOOK UP RIGS PROC----------//
+global proc nphHookUpRigs()
+{
+  //usage select root of control joint hierarchy and run
+  //it looks at the hierarchy and then sorts through all joints in the scene looking for the joint it is supposed to connect to
+  //it uses attributes that arent user editable as taht allows for names being changed.
+  //also makes it much harder to accidentally remove attributes.
+string $origSel[] = `ls -sl`;
+//first get the arrays
+string $allJoints[] = `ls -type "joint"`;
+string $bindJ[];
+int $counter;
+
+if(`size($origSel)` != 1)
+    {
+        error "Please select the root of the control rig";
+    }
+    else
+    {
+        select -r $origSel[0];
+        select -hi;
+        string $controlJ[] = `ls -sl -type "joint"`;
+        for($joint in $allJoints)
+        {
+        if(`attributeExists "destination" $joint`)
+        {
+            $bindJ[size($bindJ)] = $joint;
+        }
+    }
+
+    int $i;
+    for($i = 0; $i < size($controlJ); $i++)
+        {
+        if(!`attributeExists "target" $controlJ[$i]`)
+            {
+            warning ("Joint " + $controlJ[$i] + "has no joint to connect to, skipping!");
+            $counter ++;
+            }
+            else
+            {
+            string $target = `getAttr ($controlJ[$i] + ".target")`;
+            for($joint in $bindJ)
+                {
+                if(`getAttr ($joint + ".destination")` == $target)
+                    {
+                    select -r $controlJ[$i];
+                    select -tgl $joint;
+                    parentConstraint -n ($joint + "_CRAttatch_Parent");
+                    //orientConstraint -n ($joint + "_CRAttatch_Orient");
+                    scaleConstraint -n ($joint + "_CRAttatch_Scale");
+                    }
+                }
+            }
+        }
+    }
+    if($counter != 0)
+    {
+        warning ($counter + " Joints were skipped, see script editor for details");
+        }
+nphRestoreSel $origSel;
+}
+
+//--------------DISCONNECT CONNECTED RIGS------------//
+global proc nphUnhookRigs()
+{
+  //Simply deletes all the constraints matching my naming convention for attachment constraints.
+  //should use connecteions to find these rather than relying on names... but meh. i dont feel like it.
+string $constraints[] = `ls "*CRAttatch*"`;
+for($constraint in $constraints)
+    {
+    delete $constraint;
+    }
+if(size($constraints) == 0)
+warning "No rigs connected!";
+}
+
+//------------------REMOVE SKELETON SLAVING STTRIBUTES FROM SELECTED------------------------//
+global proc nphRemoveConnectInfo()
+{
+string $origSel[] = `ls -sl`;
+string $joints[] = `ls -sl -type "joint"`;
+int $counter;
+for($joint in $joints)
+    {
+    if(`attributeExists "target" $joint`)
+        {
+        $counter++;
+        setAttr -l false ($joint + ".target");
+        deleteAttr ($joint + ".target");
+        }
+    if(`attributeExists "destination" $joint`)
+        {
+        setAttr -l false ($joint + ".destination");
+        deleteAttr ($joint + ".destination");
+        $counter++;
+        }
+    }
+if($counter > 0)
+warning ("removed attributes from " + $counter + " joints!");
+else
+warning ("found no connection info on selected joints!");
+}
+
+//--------------MAKES A BLEND COLOR ORINTATION BLENDING SYSTEM FROM SELECTION----------------//
+global proc nphMakeSelectionBlendable()
+{
+string $origSel[] = `ls -sl -type "joint"`;
+if(size($origSel) != 3)
+    {
+    error "Please select switch, fk, and ik roots!";
+    }
+    else
+    {
+    select -r $origSel[0];
+    select -hi;
+    string $switch[] = `ls -sl -type "joint"`;
+
+    select -r $origSel[1];
+    select -hi;
+    string $fk[] = `ls -sl -type "joint"`;
+
+    select -r $origSel[2];
+    select -hi;
+    string $ik[] = `ls -sl -type "joint"`;
+
+    string $multDiv = `createNode -n ($switch[0] + "_mDiv") multiplyDivide`;
+    
+    int $i;
+    for($i = 0; $i < size ($switch); $i++)
+        {
+        string $colorBlend = `createNode -n ($switch[$i] + "_colorBlend") blendColors`;
+        connectAttr -f ($multDiv + ".outputX") ($colorBlend + ".blender");
+        connectAttr -f ($colorBlend + ".output") ($switch[$i] + ".rotate");
+        connectAttr -f ($fk[$i] + ".rotate") ($colorBlend + ".color1");
+        connectAttr -f ($ik[$i] + ".rotate") ($colorBlend + ".color2");
+        }
+    }
+}
+
+//----------------VALUE CHANGER CREATION SCRIPT-----------------//
+global proc nphMakevalueChanger()
+{
+//simple script creates a setrange to be used for the comon task of taking a 0 to 10 to a zero to one and a 1-0 reverse of that without using two nodes to do it.
+string $sel[] = `ls -sl`;
+for($obj in $sel)
+    {
+    string $node = `createNode -n ($obj + "_valueChanger") setRange`;
+    setAttr ($node + ".oldMaxX") 10;
+    setAttr ($node + ".oldMaxY") 10;
+    setAttr ($node + ".minX") 1;
+    setAttr ($node + ".maxY") 1;
+    connectAttr -f ($node + ".valueX") ($node + ".valueY");
+    hyperShadePanelGraphCommand("hyperShadePanel1", "addSelected");
+    }
+nphRestoreSel $sel;
+}
+
+//----------------UNHOOK SHADING GROUP FROM A NURBS OBJECT------------//
+global proc nphUnhookSG(string $node)
+{
+    string $connected[] = `listConnections -scn 1 -p 1 ($node + ".instObjGroups")`;
+    disconnectAttr ($node + ".instObjGroups") $connected[0];
+}
+
+
+//--------------------INSERT AUTONODE PROC----------------------//
+global proc string[] nphInsertAutoNode()
+{
+  //basic priming of a control, esentially a group freeze
+  //uses _auto_GRP instead of _Freeze_GRP to diferentiate.
+    string $return[];
+    string $origSel[] =  `ls -fl -sl`;
+    for($obj in $origSel)
+        {
+             select -r $obj;
+             int $i = 0;
+             while(`objExists  ($obj + "Auto_GRP" + $i)`)
+                     {
+                         $i++;
+                     }
+            string $temp = `group -em -w -n ($obj + "Auto_GRP" + $i)`;
+            nphMoveCon {"consTrans", $temp, $obj};
+            nphMoveCon {"consRot", $temp, $obj};
+            string $parent[] = `listRelatives -f -p $obj`;
+            parent $temp $parent[0];
+            parent $obj $temp;
+            $return[size($return)] = $temp;
+        }
+    print ("Created " + (size($origSel)) + " groups");
+    nphRestoreSel $origSel;
+    return $return;
+}
+
+//---------------NEW AND IMPROVED SNAP!--------------------//
+global proc nphSnap(string $objB, string $objA)
+{
+       if(`objExists $objA` && $objA != "" && `objExists $objB` && $objB != "")
+      {
+                //new snapping proc, acounts for frozen transforms and moved parents, also with frozen transforms...
+            float $trA[] = `xform -q -t $objA`;
+            float $rpA[] = `xform -q -ws -rp $objA`;
+            float $rpB[] = `xform -q -rp $objB`;
+            float $trB[] = `xform -q -t $objB`;
+            float $rA[] = `xform -q -ws -ro $objA`;
+            xform -ro $rA[0] $rA[1] $rA[2] $objB;
+            xform -a -ws -t ($rpA[0] - $rpB[0]) ($rpA[1] - $rpB[1]) ($rpA[2] - $rpB[2]) $objB;
+        }
+            else
+    {
+            error ("Object does not exist, cannot be snapped!");
+    }
+}
+
+
+//---------HIDE LOCKED ATTRIBUTES PROC-------------//
+global proc nphHideLockedAttrs()
+{
+    int $i;
+    //usage: run nphHideLockedAttrs
+    //It will sort through ever DAG object in the scene
+    //and hide any non-user defines locked attributes.
+    string $all[] = `ls -o -dag -ap  -l`;
+    
+    for($obj in $all)
+    {
+        string $LockedAttrs[] = `listAttr -l $obj`;
+        string $udAttrs[] = `listAttr -ud $obj`;
+        for($attr in $LockedAttrs)
+        {
+            if(`stringArrayCount $attr $udAttrs` == 0)
+            {
+                setAttr -k 0 ($obj + "." + $attr);
+                $i++;
+            }
+        }
+    }
+    warning ("Hiden " + $i + " attributes");
+}
+
+//--------------------JCOUNT PROC FOR JOINT COUNTER HUD----------------------//
+global proc int[] nphJCount (int $limit)
+{
+    string $joints[] = `ls -type "joint"`;
+    return {(size($joints)), ($limit - (size($joints))), $limit};
+}
+
+//-----------------------TOGGLE JCOUNT  HUD-----------------------------//
+global proc nphToggleJHUD(int $jLimit)
+{
+    if(!`headsUpDisplay -q -ex HUDjCount`)
+    {
+        headsUpDisplay
+            -section 0
+            -block 7
+            -blockSize "small"
+            -label "Joints: "
+            -labelFontSize "small"
+            -command ("nphJCount " + $jLimit)
+            -event "SelectionChanged"
+            -nodeChanges "attributeChange"
+            HUDjCount;
+    }
+    else
+    {
+        headsUpDisplay -rem HUDjCount;
+    }
+}
+
+
+////////////////////////////////////////////////
+///////////////Startup checks///////////////////
+
+
+//Startup checks
+global proc nphCheckStartup()
+{
+global int $nphAutoLoad;
+if($nphAutoLoad == 1)
+    {
+    global int $nphAutoLoad;
+    $nphAutoLoad = 0;
+    string $retr[] = `nphRigToolsCFG {"-q", "Menu_Item"}`;
+        if($retr[0] == 1)
+            nphStartup;
+        string $retr[] = `nphRigToolsCFG {"-q", "Open_On_Startup"}`;
+        if($retr[0] == 1)
+            nphRigTools;
+    }
+else
+    {
+    nphStartup;
+    string $retr[] = `nphRigToolsCFG {"-q", "Open_On_Startup"}`;
+    if($retr[0] == 1)
+        nphRigTools;
+    }
+}
+
+nphCheckStartup;
+//END

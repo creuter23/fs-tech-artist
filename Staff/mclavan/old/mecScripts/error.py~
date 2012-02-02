@@ -1,0 +1,40 @@
+'''
+Michael Clavan
+errors.py
+
+Description:
+	Code for generating different types of errors.
+
+
+'''
+
+'''
+# raise a runtimeError
+'''
+def errorFunction():
+	weFailed = True
+	if( weFailed ):
+		raise RuntimeError('error "memory error"')
+
+errorFunction()
+
+'''
+# OpenMaya's warning and errors
+'''
+import maya.OpenMaya
+
+#warning
+maya.OpenMaya.MGlobal.displayWarning("warning message")
+
+#error
+maya.OpenMaya.MGlobal.displayError("error message")
+
+
+'''
+# python's sys.stderr.write command
+'''
+import sys
+sys.stderr.write("Failed to get mesh vertex.\n")
+sys.stderr.write("Failed to get attribute for node: %s.\n" % "myTestNode" )
+sys.stderr.write("Error %d: fail to get attribute for node: %s\n" %(32,"myTestNode") )
+

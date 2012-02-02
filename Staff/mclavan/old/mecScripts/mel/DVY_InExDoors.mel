@@ -1,0 +1,564 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davveys Door Generator
+''    Author:  
+''    Last Updated: Mar 06, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4584.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+
+
+/////////////////////////////////////////////////////////////////////////////			
+/*				
+	Copyright © 2006 DVY_InExDoors. All rights reserved davvey@ntlworld.com
+
+						- DVY_InExDoors -
+						
+/////////////////////////////////////////////////////////////////////////////
+						
+	Usage
+
+	Type DVY_InExDoors in command line or middle mouse drag it to a shelf.
+	There is an Icon file supplied to use with the Shelf Button.
+	
+	Installation
+	
+	Install all scripts in any Maya Script folder and install all image files
+	in Maya's Icon folder.
+	
+	Description	
+
+	This script calls a GUI where relevant Info can be entered to generate 
+	a dimensionally accurate Door.
+
+	The Doors are built with nominal frame sizes as follows.
+
+	External Frame Width = 60 mm
+	External Frame Height = 60 mm
+	External Frame Depth = 75 mm
+	Internal Frame Width = 30 mm
+	Internal Frame Height = 30 mm
+	Internal Frame Depth = 100 mm.
+	External Frame Cill Depths of 0, 100, 150, 200 mm are
+	available (default is 150 mm).
+
+	After Selecting Door size using Option Menu or Custom sizes select
+	number of Doors 1 or 2. Then select type of Interior or Exterior Door
+	design from the various option menus. As the design is selected the GUI
+	will update the display to show a diagram of the style. I have tried to
+	label each style as descriptively as possible 
+
+	The script will currently build `Plain` 2, 3, 4, 5, and 6 Panel Style
+	Doors with Inward or Outward opening Hinges, which are left or right 
+	side Hinge locations. Double Doors can also be built. Also there is a
+	choice fo Glass Panel combinations. The exterior Door frame can have
+	Panels either or both sides of any width. The Script will add simple
+	White Shader for the Door and Frames and and a Glass Shader for the
+	Glass Panes.
+
+	The GUI has data field for Overall Door Width and Height and a Radio
+	Button Group to set Cill Depth for external doors.
+
+	After building the Door the script will lock off unused attributes and
+	leave the Door Group Hinge postiomn unlocked and keyable.
+
+	Note:- The Scale of the Door will be adjusted to set correct size
+	relevant to the correct size for the Users Maya Unit settings 
+	i.e mm, cm, m, in, ft, yd.
+	
+*/	
+///////////////////////////////////////////////////////////////////////////////
+//					DVY_InExDoors Procedure
+////////////////////////////////////////////////////////////////////////////////
+
+
+global proc DVY_InExDoors()
+{
+	 
+	global string $Tabs[];
+	global string $DVYImage[];
+	float $THData[], $Pos[];
+	float $Lead, $Turns, $TurnsEach, $BoltLength;
+	float $XMax, $XMin, $YMax, $YMin;
+	float $P, $h, $TD, $PCD, $RD; 
+	
+	int $a, $b, $c, $e, $i, $j, $k, $N;
+	
+	string $ThreadType[], $Profiles[], $ThreadName[], $Temp[], $Temps[];
+	string $Barrel[], $Bolt[], $Nut[], $Hole[];
+	string $Thread, $Name;
+	
+	int $K = 0; int $S = 0; int $D = 0;
+	
+// ******************************************************************************** //	
+//	Constants and "Static Data"
+	
+	//	Check for any "Door History" and delete if it exists.
+	 	if (`windowPref -exists DVY_DoorsWindow`)
+			{ windowPref -edit -topLeftCorner 125 650 -widthHeight 480 720 DVY_DoorsWindow;}
+	
+	//Check for multiple similar windows.
+		if (`window -q -ex DVY_DoorsWindow`) deleteUI DVY_DoorsWindow;
+	//Build window.
+		window -w 480 -h 720 -mnb 1 -mxb 0 -sizeable 1 -title "Davvey's Door Generator ver 1.1.0" DVY_DoorsWindow;
+	
+	//Build 'Edit' menu.
+	
+	string $menuBarLayout = `menuBarLayout`;
+		menu -label "File"; 
+ 			menuItem -label "Close" -command "deleteUI DVY_DoorsWindow";		
+		menu -label "About"; 
+	 		menuItem -label "About Door Generator" -command "DVY_AboutDoorsWin;";		
+
+	// Create Main Layout column
+	string $MainPane = `paneLayout -configuration "horizontal2" -paneSize 1 100 90`;
+	string $MainPanel = `columnLayout -width 475-adj 1 -cal "center" "Main Panel"`;
+
+	// Title and Info Section for the "Main Column Setup" tab. 
+		
+	string $Title = `columnLayout -width 470 -adj 1 -cal "center" "Title"`;
+		iconTextStaticLabel -w 360 -h 50 -st "iconOnly" -i1 "DavveyLogo.xpm" IMage00 ;		
+
+		text -height 5 -label " " ;	//Spacer
+		separator -height 5 -style "double" ;
+		text -bgc .5 .5 1 -height 20 -align "center" -font "boldLabelFont"
+			-label "Davvey's Door Generator.";
+		separator -height 5 -style "double";
+		text -height 5 -label " " ;	//Spacer
+	
+	setParent $MainPanel;	
+		
+//////////////////////////////////////////////////////////////////////////////////
+//					Door Tab.
+//////////////////////////////////////////////////////////////////////////////////	
+// Tab Layout for Doors
+	
+	string $Tab = `tabLayout -imw 1 -imh 1 "Options"`;
+	
+	string $DoorFr = `frameLayout -height 480 -labelVisible 0 -label "Doors" -bs "in" "Doors"`;
+	
+	$Tabs[0] = `columnLayout -adj 1 "Doors"`;
+				
+//	columnLayout -adj 1 -cat "both" 5 -cal "left" "POptionsCol";	
+
+	separator -h 10 -style "double";
+		separator -h 2  -bgc 1 1 0.85 -style "none";
+		text -height 15 -bgc 1 1 0.85  -align "left" -label " Select various sizes as required or use default values to test output. Cill is set to default";
+		text -height 15 -bgc 1 1 0.85  -align "left" -label " size of 150 mm (6\"). The UI will show English equiv.";
+		separator -h 2  -bgc 1 1 0.85 -style "none";
+		
+	separator -h 10 -style "double";
+	
+	rowColumnLayout -enable 1 -nc 3
+					-cw 1 130 -cal 1 "center" -cat 1 "both" 1
+					-cw 2 140 -cal 2 "center" -cat 2 "both" 1
+					-cw 3 175 -cal 3 "center" -cat 2 "both" 1
+				"DoorSizesCol";
+	
+		text -height 20 -align "center" -label " Number of Doors";
+		text -height 20 -align "center" -label "Opening Direction";
+		text -height 20 -align "center" -label " Door Sizes";
+	
+		radioButtonGrp -nrb 2 -sl 1 -label " " 
+				-cl3 "right" "left" "left" 
+				-columnWidth3 25 35 35 
+				-labelArray2 "1 " "2 " 
+				-onCommand1 "optionMenu -edit -sl 1 DVY_DoorSizeOption; radioButtonGrp -e -en 1 -sl 1 HingeRadioButtonGrp;"
+				-onCommand2 "optionMenu -edit -sl 1 DVY_DoorSizeOption; radioButtonGrp -e -en 0 -sl 1 HingeRadioButtonGrp;"
+			DoorRadioButtonGrp;	
+		
+		radioButtonGrp -nrb 2 -sl 1 -label " " 
+					-cl3 "right" "left" "left" 
+					-columnWidth3 5 60 65 
+					-labelArray2 "Inwards" "Outwards" 
+				HingeDirRadioButtonGrp;
+		
+		optionMenu -width 170 -cc ("DVY_DoorCallback(0)") DVY_DoorSizeOption;
+				menuItem -l "Door Sizes                          ";
+				menuItem -l "457 x 1981 (18 x 78 ins) Door";
+				menuItem -l "533 x 1981 (21 x 78 ins) Door";
+				menuItem -l "610 x 1981 (24 x 78 ins) Door";
+				menuItem -l "686 x 1981 (27 x 78 ins) Door";
+				menuItem -l "762 x 1981 (30 x 78 ins) Door";
+				menuItem -l "838 x 1981 (33 x 78 ins) Door";
+				menuItem -l "457 x 2032 (18 x 80 ins) Door";
+				menuItem -l "533 x 2032 (21 x 80 ins) Door";
+				menuItem -l "610 x 2032 (24 x 80 ins) Door";
+				menuItem -l "686 x 2032 (27 x 80 ins) Door";
+				menuItem -l "762 x 2032 (30 x 80 ins) Door";
+				menuItem -l "838 x 2032 (33 x 80 ins) Door";
+				menuItem -l "Custom Size Door";
+			
+	separator -h 5 -style "none";
+		
+	setParent..;
+		rowColumnLayout -enable 1 -nc 5
+						-cw 1 140 -cal 1 "center" -cat 1 "both" 1
+						-cw 2 70 -cal 2 "center" -cat 2 "both" 5
+						-cw 3 70 -cal 3 "center" -cat 3 "both" 5
+						-cw 4 70 -cal 4 "center" -cat 4 "both" 5
+						-cw 5 70 -cal 5 "center" -cat 4 "both" 5
+				"CustomDoorSizesCol";
+		
+		text -height 15 -align "center" -label " Hinge Location   ";
+		text -height 15 -align "center" -label " Width mm";
+		text -height 15 -align "center" -label " inches";
+		text -height 15 -align "center" -label "Height mm";
+		text -height 15 -align "center" -label " inches";
+		
+		radioButtonGrp -nrb 2 -sl 1 -label " " 
+					-cl3 "right" "left" "left" 
+					-columnWidth3 10 50 50 
+					-labelArray2 "Left" "Right" 
+				HingeRadioButtonGrp;
+		
+		floatField -en 0 -editable true -pre 0 
+			-cc "$Val = `floatField -q -v DFloatField_01`; floatField -edit -v ($Val/25.4) DFloatField_02; floatField -edit -v ($Val + 60) DFloatField_05; floatField -edit -v (($Val + 60)/25.4) DFloatField_06;" DFloatField_01;
+		floatField -editable false -pre 1 DFloatField_02;
+	
+		floatField -en 0 -editable true -pre 0
+			-cc "$Val = `floatField -q -v DFloatField_03`; floatField -edit -v ($Val/25.4) DFloatField_04; floatField -edit -v ($Val + 60) DFloatField_07; floatField -edit -v (($Val + 60) /25.4) DFloatField_08;" DFloatField_03;
+		floatField -editable false -pre 1 DFloatField_04;
+		
+	setParent $Tabs[0];
+		separator -h 10 -style "double";
+		
+	rowColumnLayout -enable 1 -nc 2
+					-cw 1 210 -cal 1 "center" -cat 1 "both" 5
+					-cw 2 250 -cal 2 "center" -cat 2 "both" 5
+				DoorStyle1Col;
+	
+	text -height 20 -font "boldLabelFont" -align "center" -label " Door Styles   ";
+	text -height 20 -font "boldLabelFont" -align "center" -label "External Frame Design   ";
+	
+	
+			optionMenu -width 170 -cc ("DVY_DoorCallback(1)") DVY_InternalDoorOption;
+				menuItem -l "Internal Door Style                           ";
+				menuItem -l "Internal Plain Faced Door";
+				menuItem -l "Internal 1 Panel Door";
+				menuItem -l "Internal 2 Panel Door";
+				menuItem -l "Internal 3 Panel Door";
+				menuItem -l "Internal 4 Panel Door";
+				menuItem -l "Internal 5 Panel Door";				
+				menuItem -l "Internal 6 Panel Door";
+				menuItem -l "Internal 1 Panel Glass Door";
+				menuItem -l "Internal 2 Panel Glass Door";
+				menuItem -l "Internal 3 Panel Glass Door";
+				menuItem -l "Internal 4 Panel Glass Door";
+				menuItem -l "Internal 6 Panel Glass Door";
+				menuItem -l "Internal 1 Panel 10 Bar Glass Door";
+				menuItem -l "Internal 2 Panel 3 Bar Glass Door";
+				menuItem -l "Internal 3 Panel 6 Bar Glass Door";
+				menuItem -l "Internal 3 Panel Part Glass Door";
+				menuItem -l "Internal 3 Panel 9 Bar Glass Door";
+				menuItem -l "Internal 4 Panel Half Glass Door";
+				menuItem -l "Internal 6 Panel Half Glass Door";
+				
+			optionMenu -width 170 -cc ("DVY_DoorCallback(3)") DVY_DoorFrameOption;
+				menuItem -l "External Door Frame Style              ";
+				menuItem -l "External Door Frame Standard";				
+				menuItem -l "External Door Frame LH Full Glazed Panel";
+				menuItem -l "External Door Frame LH Split Glazed Panel";
+				menuItem -l "External Door Frame LH Half Glazed Panel";
+				menuItem -l "External Door Frame RH Full Glazed Panel";
+				menuItem -l "External Door Frame RH Split Glazed Panel";
+				menuItem -l "External Door Frame RH Half Glazed Panel";
+				menuItem -l "External Door Frame Both Full Glazed Panel";
+				menuItem -l "External Door Frame Both Split Glazed Panel";
+				menuItem -l "External Door Frame Both Half Glazed Panel";
+				
+		separator -h 10 -style "none";
+			text -height 20 -align "center" -label " Cill Depth mm (inches)";
+				
+			optionMenu -width 170 -cc ("DVY_DoorCallback(2)") DVY_ExternalDoorOption;
+				menuItem -l "External Door Style                          ";
+				menuItem -l "External Plain Faced Door";
+				menuItem -l "External 1 Panel Door";
+				menuItem -l "External 2 Panel Door";
+				menuItem -l "External 3 Panel Door";
+				menuItem -l "External 4 Panel Door";
+				menuItem -l "External 5 Panel Door";
+				menuItem -l "External 6 Panel Door";
+				menuItem -l "External 1 Panel Glass Door";
+				menuItem -l "External 2 Panel Glass Door";
+				menuItem -l "External 3 Panel Glass Door";
+				menuItem -l "External 4 Panel Glass Door";
+				menuItem -l "External 6 Panel Glass Door";
+				menuItem -l "External 1 Panel 10 Bar Glass Door";
+				menuItem -l "External 2 Panel 3 Bar Glass Door";
+				menuItem -l "External 3 Panel 6 Bar Glass Door";
+				menuItem -l "External 3 Panel Part Glass Door";
+				menuItem -l "External 3 Panel 9 Bar Glass Door";
+				menuItem -l "External 4 Panel Half Glass Door";
+				menuItem -l "External 6 Panel Half Glass Door";
+			
+			radioButtonGrp -nrb 4 -sl 3 -label " " 
+							-cl5 "right" "left" "left" "left" "left" 
+							-columnWidth5 5 30 65 65 65
+							-labelArray4 " 0 " "100 (4\")" "150 (6\")" "200 (8\")" 
+						DoorCillRadioButtonGrp;		
+
+			separator -h 5 -style "none";
+			separator -h 5 -style "none";
+		
+			$DVYImage[1] = `iconTextStaticLabel -w 170 -h 170 -st "iconOnly" -i1 "DVY_Door_Blank.xpm" IMage01` ;		
+			$DVYImage[2] = `iconTextStaticLabel -w 170 -h 170 -st "iconOnly" -i1 "DVY_Door_FrameBlank.xpm" IMage02` ;		
+		
+	setParent $Tabs[0];
+
+	separator -h 5 -style "none";
+	
+		rowColumnLayout -enable 1 -nc 3
+						-cw 1 140 -cal 1 "center" -cat 1 "both" 10
+						-cw 2 140 -cal 2 "center" -cat 2 "both" 10
+						-cw 3 160 -cal 3 "center" -cat 3 "both" 1
+					"DoorSizes1Col";
+	
+			text -height 12 -align "center" -label "Nominal Frame Width";
+			text -height 12 -align "center" -label "Nominal Frame Height";
+			text -height 12 -align "center" -label "  Total Frame Width (inc Panels)";
+	
+	setParent..;
+		
+		rowColumnLayout -enable 1 -nc 5
+						-cw 1 70 -cal 1 "center" -cat 1 "both" 5
+						-cw 2 70 -cal 2 "center" -cat 2 "both" 5
+						-cw 3 70 -cal 3 "center" -cat 3 "both" 5
+						-cw 4 70 -cal 4 "center" -cat 4 "both" 5
+						-cw 5 140 -cal 5 "center" -cat 5 "both" 1
+					"DoorSizes2Col";
+		
+				text -height 20 -align "center" -label " mm";
+				text -height 20 -align "center" -label " inches";
+				text -height 20 -align "center" -label " mm";
+				text -height 20 -align "center" -label " inches";
+				text -height 20 -align "center" -label "                 mm           inches";
+	
+				floatField -editable false -pre 0 -cc "$Val = `floatField -q -v DFloatField_05`; floatField -edit -v ($Val/25.4) DFloatField_06;" DFloatField_05;
+				floatField -editable false -pre 1 DFloatField_06;
+	
+				floatField -editable false -pre 0 -cc "$Val = `floatField -q -v DFloatField_07`; floatField -edit -v ($Val/25.4) DFloatField_08;" DFloatField_07;
+				floatField -editable false -pre 1 DFloatField_08;
+				
+				floatFieldGrp -nf 2 -label " Width" -en1 0 -en2 0
+							-cw3 45 50 50 -ct3 "both" "both" "both"
+							-cc "$Val = `floatFieldGrp -q -v1 DFloatFieldGrp_01`; floatFieldGrp -e -v2 ($Val/25.4) DFloatFieldGrp_01;" DFloatFieldGrp_01;
+
+		setParent $Tabs[0];
+	setParent $Tab;
+	
+//////////////////////////////////////////////////////////////////////////////////
+//					Help and Info Tab.
+//////////////////////////////////////////////////////////////////////////////////	
+// Tab Layout for Help and Info Tab
+	
+	$Tabs[1] = `columnLayout -adj 1 "Help and Info "`;
+
+		string $HelpM = `frameLayout -height 460 -labelVisible 0 -label "Help & Info" -bs "in" "Help"`;
+	
+			columnLayout -adj 1 ;
+			
+				text -height 5 -label "";
+				separator -h 10 -style "double";
+				text -bgc 0.7 1 0.7  -height 20 -align "center" -label "Help Section ";
+				
+				separator -h 10 -style "double";
+				text -height 5 -label "";
+		
+				scrollField -height 405 -bgc 1 1 0.85 -wordWrap true -editable false
+					-text "This script calls a GUI where relevant Info can be entered to generate a dimensionally accurate Door. \n\nThe Doors are built with nominal frame sizes as follows. \n\n  External Frame Width = 60 mm\n  External Frame Height = 60 mm\n  External Frame Depth = 75 mm\n  Internal Frame Width = 30 mm\n  Internal Frame Height = 30 mm\n  Internal Frame Depth = 100 mm.\n  External Frame Cill Depths of 0, 100, 150, 200 mm are\n  available (default is 150 mm). \n\nAfter Selecting Door size using Option Menu or Custom sizes select number of Doors 1 or 2. Then select type of Interior or Exterior Door design from the various option menus. As the design is selected the GUI will update the display to show a diagram of the style. I have tried to label each style as descriptively as possible. \n\nThe script will currently build `Plain` 2, 3, 4, 5, and 6 Panel Style Doors with Inward or Outward opening Hinges, which are left or right side Hinge locations. Double Doors can also be built. Also there is a choice fo Glass Panel combinations. The exterior Door frame can have Panels either or both sides of any width. The Script will add simple White Shader for the Door and Frames and and a Glass Shader for the Glass Panes. \n\nThe GUI has data field for Overall Door Width and Height and a Radio Button Group to set Cill Depth for external doors. \n\nAfter building the Door the script will lock off unused attributes and leave the Door Group Hinge postiomn unlocked and keyable. \n\n Note:- The Scale of the Door will be adjusted to set correct size relevant to the correct size for the Users Maya Unit settings \ni.e mm, cm, m, in, ft, yd.\n\n";
+				
+				text -height 5 -label "";
+	
+		setParent $Tabs[1];
+
+	setParent $MainPane;	
+
+// Build it Button.
+
+	frameLayout -cll 0 -vis 1 -lv 0 -label "Build" -la "center" -bs "out";
+	
+	columnLayout -enable 1 -adj 1 -cat "left" 1 -cal "center" ;
+		
+		separator -h 5 -style "none";
+
+		button -height 40 -bgc 0.7 0.7 1 -label "Build Door"
+			-command " print \"\\n Building Doors as Required Davvey © 2006..\\n\"; DVY_DoorBuild;"
+				Screw_Builder;	
+
+		separator -h 10 -style "none";
+
+	setParent..;		
+	
+//Show the DVY_Doors UI Window.
+	
+	showWindow DVY_DoorsWindow;
+
+}
+
+//-----------------------------------------------------------------
+
+global proc DVY_DoorCallback (int $S)
+{
+	global string $DVYImage[];
+	float $OpWidth[] = {0, 457, 533, 610, 686, 762, 838, 457, 533, 610, 686, 762, 838};
+	float $OpHeight[] = {1981, 2032};
+	int $T; int $W = 1;
+	int $S0 = `optionMenu -q -sl DVY_DoorSizeOption`;
+	
+	if (`radioButtonGrp -q -sl DoorRadioButtonGrp` == 2)
+		{ $W = 2;}
+	
+	if (($S == 0) && ($S0 > 1) && ($S < 8))
+		{ 
+			$T = `optionMenu -q -sl DVY_DoorSizeOption` - 1;
+			floatField -edit -v ($OpWidth[$T] * $W + 30) DFloatField_05;
+			floatField -edit -v (($OpWidth[$T] * $W + 30)/25.4)  DFloatField_06;
+			floatField -edit -v ($OpHeight[0] + 30) DFloatField_07;
+			floatField -edit -v (($OpHeight[0] + 30)/25.4)  DFloatField_08;
+		}
+	
+	if (($S == 0) && ($S0 > 7) && ($S < 14))
+		{
+			$T = `optionMenu -q -sl DVY_DoorSizeOption` - 1 - 6;
+			floatField -edit -v ($OpWidth[$T] * $W + 30) DFloatField_05;
+			floatField -edit -v (($OpWidth[$T] * $W + 30)/25.4)  DFloatField_06;
+			floatField -edit -v ($OpHeight[1] + 30) DFloatField_07;
+			floatField -edit -v (($OpHeight[1] + 30)/25.4)  DFloatField_08;
+		}
+
+	if (($S == 0) && ($S0 == 14))
+		{
+			floatField -edit -v 0 DFloatField_05;
+			floatField -edit -v 0 DFloatField_06;
+			floatField -edit -v 0 DFloatField_07;
+			floatField -edit -v 0 DFloatField_08;
+			floatField -edit -enable true DFloatField_01;
+			floatField -edit -enable true DFloatField_03;
+		}
+		
+	if (($S == 0) && ($S0 < 14))
+		{
+			floatField -edit -enable false -v 0 DFloatField_01;
+			floatField -edit -enable false -v 0 DFloatField_03;
+			floatField -edit -v 0 DFloatField_02;
+			floatField -edit -v 0 DFloatField_04;
+		}
+	
+	int $S1 = `optionMenu -q -sl DVY_InternalDoorOption`;
+	
+	
+	if (($S == 1) && ($S1 > 1))
+		{
+			optionMenu -edit -sl 1 DVY_ExternalDoorOption;
+			optionMenu -edit -sl 1 DVY_DoorFrameOption;
+			floatFieldGrp -edit -enable1 false -v1 0 -v2 0 DFloatFieldGrp_01;
+			
+			$DVYImage[1] = `iconTextStaticLabel -e -i1 ("DVY_Door_Internal_" + ($S1 - 1) + ".xpm") IMage01`;
+
+			$T = `optionMenu -q -sl DVY_DoorSizeOption` - 1;
+				floatField -edit -v ($OpWidth[$T] * $W + 30) DFloatField_05;
+				floatField -edit -v (($OpWidth[$T] * $W + 30)/25.4)  DFloatField_06;
+				floatField -edit -v ($OpHeight[0] + 30) DFloatField_07;
+				floatField -edit -v (($OpHeight[0] + 30)/25.4)  DFloatField_08;
+		}
+		
+	int $S2 = `optionMenu -q -sl DVY_ExternalDoorOption`;
+		
+	if (($S == 2) && ($S2 > 1))
+		{
+			optionMenu -edit -sl 1 DVY_InternalDoorOption;
+			
+			$DVYImage[1] = `iconTextStaticLabel -e -i1 ("DVY_Door_External_" + ($S2 - 1) + ".xpm") IMage01`;
+			
+			$T = `optionMenu -q -sl DVY_DoorSizeOption` - 1;
+				floatField -edit -v ($OpWidth[$T] * $W + 60) DFloatField_05;
+				floatField -edit -v (($OpWidth[$T] * $W + 60)/25.4)  DFloatField_06;
+				floatField -edit -v ($OpHeight[0] + 60) DFloatField_07;
+				floatField -edit -v (($OpHeight[0] + 60)/25.4)  DFloatField_08;
+		}
+		
+	int $S3 = `optionMenu -q -sl DVY_DoorFrameOption`;
+		
+	if (($S == 3) && ($S3 > 1))
+		{
+				optionMenu -edit -sl 1 DVY_InternalDoorOption;
+				if ($S3 > 2) {floatFieldGrp -edit -enable1 true DFloatFieldGrp_01;}
+	
+				$DVYImage[2] = `iconTextStaticLabel -e -i1 ("DVY_Door_Frame_" + ($S3 - 1) + ".xpm") IMage02`;
+			}
+
+	if (($S == 3) && ($S3 < 3))
+		{
+			if ($S3 < 3) {floatFieldGrp -edit -enable1 false -v1 0 -v2 0 DFloatFieldGrp_01;}
+		}
+		
+		
+	if ((`optionMenu -q -sl DVY_InternalDoorOption` == 1) && (`optionMenu -q -sl DVY_ExternalDoorOption` == 1) )
+		{
+			$DVYImage[1] = `iconTextStaticLabel -e -i1 ("DVY_Door_Blank.xpm") IMage01`;
+		}
+		
+	if ((`optionMenu -q -sl DVY_DoorFrameOption` == 1) )
+		{
+			$DVYImage[2] = `iconTextStaticLabel -e -i1 ("DVY_Door_FrameBlank.xpm") IMage02`;
+		}
+		
+
+}// End of DVY_DoorCallback Procedure
+
+global proc DVY_AboutDoorsWin()
+ {
+	global float $DVYTol;
+	if ((`window -ex DavveyAboutDoorsWindow`) == true) 
+		{
+			deleteUI DavveyAboutDoorsWindow;
+		}
+		if (`windowPref -ex DavveyAboutDoorsWindow`) windowPref -remove DavveyAboutDoorsWindow;
+		window -t " About:-  Davvey's Door Generator." -width 425 -height 300 -sizeable 0 DavveyAboutDoorsWindow;
+		//Build 'Edit' menu.
+	
+	string $menuBarLayout = `menuBarLayout -height 20`;
+		menu -label "File"; 
+ 			menuItem -label "Close" -command "deleteUI DavveyAboutDoorsWindow";		
+
+
+	setParent;
+	setParent;
+
+		columnLayout -adjustableColumn true -columnAttach "both" 5 -columnWidth 350; 
+	
+		text -height 2 -label " " ;	//Spacer
+		separator -height 10 -style "double" ;
+			text -bgc 0.5 0.5 1 -height 20 -align "center" -fn "boldLabelFont" -l "Davvey's Door Generator..";
+			text -bgc 0.5 0.5 1 -height 20 -align "center" -fn "boldLabelFont" -l "copyright (c) 2006 Dave Lake..";
+		separator -height 8 -style "double" ;
+		text -height 2 -label " " ;	//Spacer
+		
+	frameLayout -cl 0 -label "" -labelAlign "center" -borderStyle "etchedOut";
+		columnLayout -adjustableColumn true -columnAttach "both" 2 -columnWidth 250; 
+		
+		text -bgc 1 1 0.8 -height 5 -align "left" -l " ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -fn "boldLabelFont" -l "  Special Thanks:- ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -fn "plainLabelFont" -l "  Thanks to my wife Jan for her support and patience during the time";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "   its taken to learn Maya and how to write these scripts.";
+		text -bgc 1 1 0.8 -height 10 -align "left" -l " ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "  Also dedicated to Jackie and Joanna (my expensive pride and joys!!)";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "  Finally these Collected works are dedicated to the memory of Darryl.";
+		text -bgc 1 1 0.8 -height 5 -align "left" -l " ";
+		setParent ..;	
+		setParent ..;	
+		text -align "center" -l "email :- Davvey@ntlworld.com";
+		text -align "center" -l "website :- www..............";
+	setParent ..; 
+
+	showWindow DavveyAboutDoorsWindow;
+	
+}// End of DVY_AboutDoorsWin Procedure

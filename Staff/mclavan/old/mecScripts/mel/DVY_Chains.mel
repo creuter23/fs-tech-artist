@@ -1,0 +1,818 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davvey\'s Chain & Sprocket Generator
+''    Author:  
+''    Last Updated: Jan 15, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4463.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+///////////////////////////////////////////////////////////////////////////////
+/*			
+				
+	Copyright © 2006 DVY_Chains. All rights reserved davvey@ntlworld.com
+
+						- DVY_Chains -
+///////////////////////////////////////////////////////////////////////////////
+						
+//	DVY_Chains;
+//	Description and Usage Section
+
+//	Installation	
+
+	Just install scripts in any Maya script path and install
+	Icon in May\\Prefs\Icons directory (to use with any Shelf button)
+
+
+//	Description Section
+
+	These Scripts will build Dimensional accurate Metric Chains using the
+	relevant ISO Standards and the GUI will show the English Equivalent
+	during the setting up of the vrious options. The Metric Chains
+	manufactured to the above standards are covered by ISO 606 and DIN 8187.
+	
+	These standards cover 3 versions:
+	** SIMPLEX
+	** DUPLEX
+	** TRIPLEX
+	
+	The range of pitch sizes can vary between 4mm, (0.158 ins) to 114.3mm, (4.5 ins).
+	
+	American standard chains are covered by ISO 606, ANSI B29.1 and DIN 8188
+	and eight versions are covered.
+	
+	** SIMPLEX, DUPLEX and TRIPLEX as for the European standard chains.
+	** QUADRUPLEX, 4 strands.
+	** QUINTUPLEX, 5 strands.
+	** SEXTUPLEX, 6 strands.
+	** OCTUPLEX, 8 strands.
+	** DECUPLEX, 10 strands.
+	
+	The pitch sizes covered by this standard are 1/4 to 3 inch pitch.
+	
+	For Metric Chains above TRIPLEX these are normally classed as Custom but
+	these Scripts will build the relevant number of Strands using "Standrd" metric
+	Sizes and Specs
+	
+
+// Usage Section
+
+	These scripts build Metric Chains but the UI will show the english 
+	equivalent sizes during setup.
+	Choose the number of teeth, type and material for the Chains. It may not
+	be possible to achieve target speed ratios precisely because Chains must,
+	of course, have an integer number of teeth and also because Chains in
+	catalogues must be chosen from a preferred list of numbers of teeth. 
+	
+	The preferred standard Sprocket teeth numbers are:
+	
+	12 13 14 15 16 18 20 22 24 25 28 30
+	32 34 38 40 45 50 54 60 64 70 72 75
+	80 84 90 96 100 120 140 150 180 200 220 250
+	
+	Many catalogues display a more comprehensive range than this but many
+	sizes will not be readily available 'off-the-shelf'. The range of
+	available sizes will depend upon the Sprocket module (m). Generally the
+	lower the module, the greater the range of Sprocket teeth sizes available.
+	
+	**THIS SCRIPT PACK WILL BUILD RANGE BETWEEN 9 AND 150 TOOTHED SPROCKETS**
+	
+	The Metric Chains manufactured to the standards covered by 
+	ISO 606 and DIN 8187 are :-
+	
+	"03B", "04B", "05B", "06B", "08B", "10B", "12B", "16B",
+	"20B", "24B", "28B", "32B", "40B", "48B", "56B", "64B", "72B"
+	
+	Large speed ratios are achieved in several stages, choosing the number
+	of teeth for each Sprocket so that the overall reduction is as close to
+	target as is possible.
+	
+	Example
+	
+	Select ISO Standard Pitch from drop down menu  the range is 03B to 72B  
+	This is 5mm to 114.3 mm (0.197 to 4.5 inches).
+	Choose the type (SIMLEX, DUPLEX, TRIPLEX etc.) Then set Sprocket type of 
+	Staight-Sided, Hubbed or Spoked. Set Teeth per Sprocket and then Center 
+	Distance and for best reults use disatnce of betwwen 30 and 50 pitches.
+	
+	The script will adjust Target Center Distance to give exactly an even number
+	of Chain Pitches based on Pitch and target distance. After building the Sprockets,
+	Sprocket_2 postion can be adjusted in the Y axis only if required. Then Build Chain
+	if slected the Idler Spocket option will be built and can be postioned. This sprocket 
+	has one of the Chains' CV's point Constrained to the sprocket to move chain path to suit
+	sprocket position.
+	
+	Once Sprockets and Chain  are built select Sprocket Group Top Node and press "Rig Chains"
+	Button. After Rigging Sprocket Groups can not be added to.
+
+	Note:- The Scale of the Chains will be adjusted to set correct Sprocket Size relevant
+	to the correct size for the Users Maya Unit settings i.e mm, cm, m, in, ft, yd.
+
+*/
+	
+//////////////////////////////////////////////////////////////////////////
+//					DVY_Chains Procedure
+//////////////////////////////////////////////////////////////////////////
+
+	
+//============================================================================
+//	GLOBAL VARIABLES
+//============================================================================
+	global int $DVYDebug;
+
+// Integer Flag that allows print statements to be output to
+// message field for tracking purposes.
+		
+//============================================================================
+
+global proc DVY_Chains()
+{
+	global string $ISO_No[], $TeethProfiles[], $Type[];
+	
+	global string $CHType[], $Title[], $TitleN[], $IField[], $FField[], $Option[];
+	global int $Teeth[];
+	global float $Pitch[], $PCDF[];
+	
+	global matrix $ChainDataM[17][10];
+/*
+	$Teeth = {12, 13, 14, 15, 16, 18, 20, 22, 24, 25, 28, 30, 32, 34, 36, 38,
+				  40, 42, 44, 45, 46, 48, 50, 55, 56, 60, 64, 65, 70, 72, 74, 75,
+				  80, 84, 85, 88, 90, 92, 95, 96, 100, 108, 110, 120, 127, 128, 130,
+				  140, 144, 150, 152, 160, 168, 180, 200, 220, 250}; 
+*/
+
+	string $ISO_No[], $CHType[];
+	string $Temp[],$Item[], $Sprocket[], $Bush[], $Pin[], $InPlate[], $OutPlate[],$SprocketTeeth[];
+	clear $Sprocket;
+	float $C, $Cd, $Ct, $D, $H, $P, $Ct, $D, $J, $L, $Lp, $T, $t, $W;
+	float $Angle, $PCD, $OD, $RD, $R, $R1, $R2, $f;
+//	float $Units = 1.0;
+
+	int $Idx = 6;						//	Matrix index for relevant Chain Pitch.
+
+	$ISO_No = {"03B", "04B", "05B", "06B", "08B", "10B", "12B", "16B",
+				"20B", "24B", "28B", "32B", "40B", "48B", "56B", "64B", "72B"};
+	
+	$CHType = {"SIMPLEX", "DUPLEX", "TRIPLEX", "QUADRUPLEX", "QUINTUPLEX", "SEXTUPLEX", "OCTUPLEX", "DECUPLEX"};
+
+
+/*		$Pitch = {0.1, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60,
+					0.70, 0.8, 0.90, 1.00, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 8, 9,
+					10, 11, 12, 14, 16, 18, 20, 22, 25, 28, 32, 36, 40, 45, 50};
+*/
+
+	// Int $N[] is number of Teeth
+	$PCDF = {0.000,  0.000,  0.000,  0.000,  0.000,  0.000,  0.000,  0.000,  0.000,  2.924,
+			 3.236,  3.549,  3.864,  4.179,  4.494,  4.810,  5.126,  5.442,  5.759,  6.076,
+			 6.392,  6.709,  7.027,  7.344,  7.661,  7.979,  8.296,  8.614,  8.931,  9.249,
+			 9.567,  9.885,  10.202, 10.520, 10.838, 11.156, 11.474, 11.792, 12.110, 12.428,
+			 12.746, 13.063, 13.382, 13.700, 14.018, 14.336, 14.654, 14.972, 15.290, 15.608,
+			 15.926, 16.244, 16.562, 16.880, 17.198, 17.517, 17.835, 18.153, 18.471, 18.789,
+			 19.107, 19.426, 19.744, 20.062, 20.380, 20.698, 21.016, 21.335, 21.653, 21.971,
+			 22.289, 22.607, 22.926, 23.244, 23.562, 23.880, 24.198, 24.517, 24.835, 25.153,
+			 25.471, 25.790, 26.108, 26.426, 26.744, 27.063, 27.381, 27.699, 28.017, 28.335,
+			 28.654, 28.972, 29.290, 29.608, 29.927, 30.245, 30.563, 30.881, 31.200, 31.518,
+			 31.836, 32.154, 32.473, 32.791, 33.109, 33.428, 33.746, 34.064, 34.382, 34.701,
+			 35.019, 35.337, 35.655, 35.974, 36.292, 36.610, 36.928, 37.247, 37.565, 37.883,
+			 38.202, 38.520, 38.838, 39.156, 39.475, 39.793, 40.111, 40.429, 40.748, 41.066,
+			 41.384, 41.703, 42.021, 42.339, 42.657, 42.976, 43.294, 43.612, 43.931, 44.249,
+			 44.567, 44.885, 45.204, 45.522, 45.840, 46.159, 46.477, 46.795, 47.113, 47.432, 47.750};
+		
+	//	Sprocket Pitch Circle Data Constants Matrix for all chain pitches.
+		
+	//	Data Matrix for all chain pitches etc. 
+	
+	//		A	  B	   	   C	  D		  E		 F		G		H	  J		K
+	// 	  Pitch  Roller	  Roller  Plate InPlate OPlate Pin	  Pin	Connect Traverse
+	//			 Width	 Diameter Height Thick	Thick  Diam  Length PinExt  Pitch
+	
+	$ChainDataM = 
+		<<5.0000, 2.500, 3.200, 4.100, 0.5700, 0.570, 1.490, 7.400, 2.50, 5.000;
+		  6.0000, 2.800, 4.000, 5.000, 0.5700, 0.570, 1.850, 7.400, 2.90, 5.500;
+		  8.0000, 3.000, 5.000, 7.100, 0.7300, 0.730, 2.310, 8.600, 3.10, 5.640;
+		  9.5250, 5.720, 6.350, 8.200, 1.2500, 1.000, 3.280, 13.50, 3.30, 10.24;
+		  12.700, 7.750, 8.510, 11.80, 1.5000, 1.500, 4.450, 17.00, 3.80, 13.92;
+		  15.875, 9.650, 10.16, 14.70, 1.5000, 1.500, 5.080, 19.60, 4.10, 16.59;
+		  19.050, 11.68, 12.07, 16.10, 1.7600, 1.760, 5.720, 22.70, 4.60, 19.46;
+		  25.400, 17.02, 15.88, 21.00, 4.0000, 3.000, 8.280, 36.10, 5.40, 31.88;
+		  31.750, 19.56, 19.05, 26.40, 4.4000, 3.500, 10.19, 43.20, 6.10, 36.45;
+		  38.100, 25.40, 25.40, 33.40, 5.9000, 5.000, 14.63, 53.40, 6.60, 48.36;
+		  44.450, 30.99, 27.94, 37.00, 7.6200, 6.350, 15.90, 65.10, 7.40, 59.60;
+		  50.800, 30.99, 29.21, 42.20, 7.1100, 6.350, 17.81, 67.40, 7.90, 58.55;
+		  63.500, 38.10, 39.37, 52.90, 8.6400, 9.100, 22.89, 82.60, 10.0, 72.29;
+		  76.200, 45.72, 48.26, 63.80, 12.190, 10.16, 29.24, 99.10, 10.0, 91.21;
+		  88.900, 53.34, 53.98, 77.80, 13.725, 12.45, 24.32, 114.0, 11.0, 106.6;
+		  101.60, 60.96, 63.50, 90.10, 15.240, 13.72, 39.40, 130.0, 13.0, 119.89;
+		  114.30, 68.58, 72.39, 103.6, 17.270, 16.00, 44.50, 147.0, 14.0, 135.00>>;
+		  
+		
+	int $a = $b = $c = 0;
+	
+	// Integer setting used for GUI formLayout section
+	
+	int $CHt = 5; 	$CHt1 = $CHt + 18;
+	int $CLt = 5;	$CLt1 = ($CLt + 90);	$CLt2 = $CLt1 + 90; 	$CLt3 = $CLt2 + 65; 	$CLt4 = $CLt3 + 65;
+	int $i = 0;		$j = $k = $l = 1; $m = 2;
+	
+	//	Check for any "Window History" and delete if it exists.
+	 	if (`windowPref -exists DVY_ChainsWindow`)
+			{ windowPref -edit -topLeftCorner 125 700 -widthHeight 480 760 DVY_ChainsWindow;}
+	
+	//Check for multiple similar windows.
+		if (`window -q -ex DVY_ChainsWindow`) deleteUI DVY_ChainsWindow;
+	//Build window.
+		window -w 480 -h 760 -mnb 1 -mxb 0 -sizeable 1  -title "Davvey's Chain Generator ver 1.0" DVY_ChainsWindow;
+	
+	//Build 'Edit' menu.
+	
+	string $menuBarLayout = `menuBarLayout`;
+		menu -label "File"; 
+ 			menuItem -label "Close" -command "deleteUI DVY_ChainsWindow";		
+		menu -label "About"; 
+	 		menuItem -label "About Chain Generator" -command "DVY_AboutChainsWin;";
+			
+	setParent..;
+
+	// Create Main Layout column
+			
+	string $MainPanel = `columnLayout -width 475 -adj 1 -cat "both" 5 -cal "center" "Main Panel"`;
+	
+		text -height 3 -label " " ;	//Spacer
+		separator -height 5 -style "double" ;
+		text -bgc .5 .5 1 -height 20 -align "center" -font "boldLabelFont" -label "Davvey's Chain Generator.";
+		separator -height 5 -style "double";
+		text -height 3  -label " " ;	//Spacer
+		
+	string $Tabs = `tabLayout -width 435 -imw 1 -imh 1 "Tabs"`;
+	
+	string $TitleC1 = `columnLayout -width 425 -adj 1 -cal "center" "Setup Chains"`;
+	
+		text -height 3 -label " " ;	//Spacer
+		separator -height 5 -style "double" ;
+		text -bgc 1 1 0.85 -height 2 -align "left" -label "";
+		text -bgc 1 1 0.85 -height 15 -align "left" 
+			-label " Fill in Fields as Required then press `Build` Button.";
+		text -bgc 1 1 0.85 -height 15 -align "left" -label " Select Module First then select Chain Tooth Design. Then set Teeth for each Chain.";
+		text -bgc 1 1 0.85 -height 15 -align "left" -label " The GUI will calculate ratio between each Chain pair and the overal Chain Ratio";
+		
+		text -bgc 1 1 0.85 -height 15 -align "left" -label " If required the Second or later Chain Sets can be connected to any existing Chain.";
+		text -bgc 1 1 0.85 -height 2 -align "left" -label "";
+		
+		separator -bgc 1 1 0.85 -height 5 -style "double";
+		text -height 2 -label " " ;	//Spacer
+		
+		string $ChainInfoC = `rowColumnLayout -enable 1 -nc 4
+						-cw 1 110 -cal 1 "center" -cat 1 "both" 5
+						-cw 2 80 -cal 2 "center" -cat 2 "both" 5
+						-cw 3 80 -cal 3 "right" -cat 3 "both" 5
+						-cw 4 110 -cal 4 "left" -cat 4 "both" 5
+					"ChainInfoCol"`;
+	
+		text -height 20 -label " Chain ISO Pitch";
+		text -height 20 -label " Size mm.";
+		text -height 20 -label "Size ins.";
+		
+		text -height 20 -label "Type";
+		
+		$a = 0;		
+		optionMenu -width 95 -cc ("DVY_ChainCallback(0)") DVY_ISO_No;
+				menuItem -l "ISO_No:-";
+				menuItem -l $ISO_No[$a++];	menuItem -l $ISO_No[$a++];		menuItem -l $ISO_No[$a++];
+				menuItem -l $ISO_No[$a++];	menuItem -l $ISO_No[$a++];		menuItem -l $ISO_No[$a++];
+				menuItem -l $ISO_No[$a++];	menuItem -l $ISO_No[$a++];		menuItem -l $ISO_No[$a++];
+				menuItem -l $ISO_No[$a++];	menuItem -l $ISO_No[$a++];		menuItem -l $ISO_No[$a++];
+				menuItem -l $ISO_No[$a++];	menuItem -l $ISO_No[$a++];		menuItem -l $ISO_No[$a++];
+				menuItem -l $ISO_No[$a++];	menuItem -l $ISO_No[$a++];
+					
+				floatField -editable false -pre 3 PitchFloatField;
+				
+				floatField -editable false -pre 3 EngPitchFloatField;
+				
+//				text -height 20 -width 10 -label "mm.";
+	
+		$a = 0;
+
+			optionMenu -width 100 -cc ("DVY_ChainCallback(0)") DVY_CHType;
+				menuItem -l $CHType[$a++];
+				menuItem -l $CHType[$a++];
+				menuItem -l $CHType[$a++];
+				menuItem -l $CHType[$a++];
+				menuItem -l $CHType[$a++];
+				menuItem -l $CHType[$a++];
+				menuItem -l $CHType[$a++];
+				menuItem -l $CHType[$a++];
+				
+	setParent..;
+				
+	columnLayout -width 425 -adj 1 -cal "center" "SprocketsType";	
+	
+		separator -height 15 -style "double" ;
+	
+			radioButtonGrp  -height 15 -nrb 3 -select 1 -label " Sprocket Type :-" 
+							-cl4 "right" "left" "left" "left" 
+							-columnWidth4 120 85 68 60 
+							-labelArray3 "StraightSide" "Hubbed" "Spoked" 
+							
+							-onCommand1 "radioButtonGrp -edit -enable false SprocketBoreRadioButton;"
+							-onCommand2 "radioButtonGrp -edit -enable false SprocketBoreRadioButton;"
+							-onCommand3 "radioButtonGrp -edit -enable false SprocketBoreRadioButton;"
+						SprocketTypeRadioButton;	
+		
+		separator -h 5 -style "none";
+	
+			radioButtonGrp -enable false -height 15 -nrb 3 -select 1 -label " Sprocket Bore Type :-" 
+				-ann "The First Chain will be set to the correct Hand and next Chain will be reveresed to set up meshing"
+						-cl4 "right" "left" "left" "left"
+						-columnWidth4 120 85 68 60  
+						-labelArray3 "TaperLock" "PlainBore" "Keyed" 
+					SprocketBoreRadioButton;	
+			
+		text -height 5 -label " " ;	//Spacer
+				
+	frameLayout -bv true -bs "in" -width 410 -mh 3 -mw 3 -labelVisible false -collapsable false ;
+	
+	// Title and Info Section for the "Main Column Setup" tab. 
+
+ 	string $form = `formLayout -numberOfDivisions 200  "SprocketForm"`;
+	
+		$Title[1] = `text -height 20 - label "Sprocket No :- "`;
+		$Title[2] = `text -height 20 - label "No. of Teeth :- "`;
+		$Title[3] = `text -height 20 - label "   PCD mm"`;
+		$Title[4] = `text -height 20 - label "   PCD ins."`;
+		
+		$Title[5] = `text -height 20 - label "    Ratio"`;
+		$Title[6] = `text -height 20 - label " Ideal Sprocket Center Distance should be between 30 - 50 pitches."`;
+		$Title[7] = `text -height 20 - label "      mm"`;
+		$Title[8] = `text -height 20 - label "  Pitches."`;
+		$Title[9] = `text -height 20 - label " Approx. Center Distance."`;
+		$Title[10] = `text -height 20 - label " Exact Center Distance will be set during construction to give an even number of Pitches."`;
+		
+		$TitleN[1] =  `text -height 20 - label "Sprocket No.1"`;
+		$TitleN[2] =  `text -height 20 - label "Sprocket No.2"`;
+		
+		$a = 0;
+		
+		$IField[1] = `intField - width 75 -min 0 -max 150 -value 0 -cc ("DVY_ChainCallback(10)") SprocketIntField_1`;
+		$IField[2] = `intField - width 75 -min 0 -max 150 -value 0 -cc ("DVY_ChainCallback(11)") SprocketIntField_2`;
+		
+		$FField[1] = `floatField -ed false -pre 2 -height 20 -width 50`;
+		$FField[2] = `floatField -ed false -pre 2 -height 20 -width 50`;
+	
+		
+		$FField[11] = `floatField -ed false -pre 2 -height 20 -width 50`;
+		$FField[12] = `floatField -ed false -pre 2 -height 20 -width 50`;
+		
+		$FField[21] = `floatField -enable false -pre 2 -height 20 -width 50`;
+		$FField[22] = `floatField -enable false -pre 0 -height 20 -width 50 -cc ("DVY_ChainCallback(12)") SprocketFloatField_22`;
+		$FField[23] = `floatField -enable false -editable false -pre 2 -height 20 -width 50 SprocketFloatField_23`;
+		
+	
+	formLayout -edit -enable false
+		
+			-attachForm $Title[1]	"top"	($CHt + ($CHt1 * $i))		-attachForm $Title[1]	"left"	$CLt
+						
+			-attachForm $Title[2]	"top"	($CHt + ($CHt1 * $i))		-attachForm $Title[2]	"left"	$CLt1
+			-attachForm $Title[3]	"top"	($CHt + ($CHt1 * $i))		-attachForm $Title[3]	"left"	$CLt2
+			-attachForm $Title[4]	"top"	($CHt + ($CHt1 * $i))		-attachForm $Title[4]	"left"	$CLt3
+			-attachForm $Title[5]	"top"	($CHt + ($CHt1 * $i++))		-attachForm $Title[5]	"left"	$CLt4
+	
+			-attachForm $TitleN[1]	"top"	($CHt + ($CHt1 * $i++))		-attachForm $TitleN[1]	"left"	$CLt
+			-attachForm $TitleN[2]	"top"	($CHt + ($CHt1 * $i++))		-attachForm $TitleN[2]	"left"	$CLt
+			
+			-attachForm $IField[1]	"top"	($CHt + ($CHt1 * $j++))		-attachForm $IField[1]	"left"	$CLt1
+			-attachForm $IField[2]	"top"	($CHt + ($CHt1 * $j++))		-attachForm $IField[2]	"left"	$CLt1
+			
+		
+			-attachForm $FField[1]	"top"	($CHt + ($CHt1 * $k++))		-attachForm $FField[1]	"left"	$CLt2
+			-attachForm $FField[2]	"top"	($CHt + ($CHt1 * $k++))		-attachForm $FField[2]	"left"	$CLt2
+
+			
+			-attachForm $FField[11]	"top"	($CHt + ($CHt1 * $l++))		-attachForm $FField[11]	"left"	$CLt3
+			-attachForm $FField[12]	"top"	($CHt + ($CHt1 * $l++))		-attachForm $FField[12]	"left"	$CLt3
+			
+			-attachForm $FField[21]	"top"	($CHt + ($CHt1 * $m++))		-attachForm $FField[21]	"left"	$CLt4
+
+			-attachForm $Title[6]	"top"	($CHt + ($CHt1 * $m++))		-attachForm $Title[6]	"left"	$CLt
+			-attachForm $Title[7]	"top"	($CHt + ($CHt1 * $m))		-attachForm $Title[7]	"left"	$CLt2
+			-attachForm $Title[8]	"top"	($CHt + ($CHt1 * $m++))		-attachForm $Title[8]	"left"	$CLt3
+			-attachForm $Title[9]	"top"	($CHt + ($CHt1 * $m))		-attachForm $Title[9]	"left"	$CLt
+
+			
+			-attachForm $FField[22]	"top"	($CHt + ($CHt1 * $m))		-attachForm $FField[22]	"left"	$CLt2
+			-attachForm $FField[23]	"top"	($CHt + ($CHt1 * $m++))		-attachForm $FField[23]	"left"	$CLt3
+			
+			-attachForm $Title[10]	"top"	($CHt + ($CHt1 * $m++))		-attachForm $Title[10]	"left"	$CLt
+			
+		
+		$form;
+ 	
+	setParent..;
+	setParent..;
+
+//		text -label "" -height 5;
+	
+		
+	setParent $Tabs;
+	
+//	frameLayout -bv true -bs "in" -width 410 -mh 5 -mw 10 -labelVisible false -collapsable false "Help and Info" ;
+	
+	setParent $MainPanel;	
+
+// Build it.
+
+	frameLayout -cll 0 -vis 1 -lv 0 -label "Build" -la "center" -bs "out" "Help and Info" ;;
+	
+		columnLayout -adj 1 -cat "both" 1 -cal "center" ;
+			separator -h 2 -style "none";
+			
+			radioButtonGrp  -height 17 -nrb 3 -select 1 -label " Idler Sprocket Options:-" 
+							-cl4 "right" "left" "left" "left"
+							-columnWidth4 125 90 100 100
+							-labelArray3 "No Idler" "Left-Hand Side"  "Right-Hand Side"
+							-onCommand1 "radioButtonGrp -edit -enable false SprocketPosRadioButton;\ intField -edit -enable false -editable true -value 0 SprocketIntField_3; "
+							-offCommand1 "radioButtonGrp -edit -enable false SprocketPosRadioButton;\ intField -edit -enable false -editable true -value 0 SprocketIntField_3; "
+							
+							-onCommand2 "radioButtonGrp -edit -enable true SprocketPosRadioButton;\ intField -edit -enable true -editable true SprocketIntField_3; "
+							-offCommand2 "radioButtonGrp -edit -enable false SprocketPosRadioButton;"
+
+							-onCommand3 "radioButtonGrp -edit -enable true SprocketPosRadioButton;\ intField -edit -enable true -editable true SprocketIntField_3; "
+							-offCommand3 "radioButtonGrp -edit -enable false SprocketPosRadioButton;"
+						IdlerSprocketRadioButton;	
+			
+			radioButtonGrp -height 15 -nrb 2 -select 1 -label " Idler Sprocket Position:-" 
+							-enable false
+							-cl3 "right" "left" "left"
+							-columnWidth3 125 90 100
+							-labelArray2  "Outside Chain"  "Inside Chain" 
+							-onCommand1 ""
+							-offCommand1 ""
+							
+							-onCommand2 ""
+							-offCommand2 ""
+						SprocketPosRadioButton;	
+				
+	
+//			separator -h 5 -style "none";
+			
+			rowColumnLayout -nc 4
+						-cw 1 150 -cal 1 "center" -cat 1 "both" 5
+						-cw 2 100 -cal 2 "center" -cat 2 "both" 5
+						-cw 3 100 -cal 3 "center" -cat 3 "both" 5
+						-cw 4 100 -cal 4 "center" -cat 4 "both" 5;
+			
+			text -height 20 - label " ";
+			text -height 20 - label "No. of Teeth :- ";
+			text -height 20 - label "   PCD mm";
+			text -height 20 - label "   PCD ins";
+				
+			
+			text -height 20 - label "Idler Sprocket No.3";
+			$IField[3] = `intField - width 70 -min 0 -max 150 -value 0 -enable false -cc ("DVY_ChainCallback(13)") SprocketIntField_3`;
+			$FField[32] = `floatField -editable false -pre 2 -height 20 -width 50 SprocketFloatField_32`;
+			$FField[33] = `floatField -editable false -pre 2 -height 20 -width 50 SprocketFloatField_33`;
+			
+	setParent..;	
+			
+		separator -h 5 -style "none";
+			
+		columnLayout -adj 1 -cat "both" 5 -cal "center" ;
+			
+				button -enable true -height 25 -bgc 0.7 0.7 1 -label "Build Sprockets"
+					-command " print \"\\n Building Chains as Required Davvey © 2006..\\n\"; DVY_SprocketBuild;"
+					SprocketBuilder;	
+				
+		separator -h 5 -style "none";
+			text -height 15 -align "left" -label " Adjust Y-axis Postion of Second Sprocket if Required. Select Sprocket Group Top Node";
+			text -height 15 -align "left" -label " and Build Chain. Idler will be added after Chain is built. Adjust position of Idler Sprocket if req.";
+			
+		separator -h 5 -style "none";
+				
+				
+				button -enable true -height 25 -bgc 0.7 0.7 1 -label "Build Chain"
+					-command " print \"\\n Building Chains as Required Davvey © 2006..\\n\"; DVY_ChainBuild;"
+					ChainBuilder;	
+				
+		separator -h 5 -style "none";
+			text -height 15 -align "left" -label " Once Position of idler is set press `Rig Sprocket and Chain` to set up rotations etc.";
+			separator -h 5 -style "none";
+		
+				
+				button -height 25 -bgc 1 0.7 0.7 -label "Rig Sprocket and Chain"
+					-command " print \"\\n Rigging Chains as Required Davvey © 2006..\\n\"; DVY_ChainSet;"
+					ChainRigger;	
+			
+		separator -h 5 -style "none";
+
+			radioButtonGrp  -enable false -height 15 -nrb 3 -select 1 -label " Connect Options:-" 
+							-cl4 "right" "left" "left" "left"
+							-columnWidth4 100 50 90 70 
+							-labelArray3 "None" "1st Chain Set" "Other Set" 
+							
+							-onCommand3 "textField -edit -enable true Select01;\ button -edit -enable true SelectChain;"
+							-offCommand3  "textField -edit -enable false -tx \"\" Select01;\ button -edit -enable false SelectChain;"
+						ChainConnectRadioButton;	
+			
+	setParent..;
+	
+			text -align "left" -enable false
+				-label "  Select Group Node of Chain to Connect to and Press Button to load it then Connect Sets." ;
+		//	separator -h 2 -style "none";
+			
+		rowColumnLayout -nc 2
+					-cw 1 250 -cal 1 "center" -cat 1 "both" 5
+					-cw 2 190 -cal 2 "center" -cat 2 "both" 5;
+			
+				textField -width 150 -enable false -editable false Select01;
+				button -enable false -height 25 -bgc  0.7 1 0.7 -label "Connect Chains"
+					-command "$TempSel = `ls - sl`; \ DVY_ChainConnect;"	
+					SelectChain;	
+	
+		separator -h 5 -style "none";
+		
+	setParent..;		
+	
+//Show the DVY_Chains UI Window.
+	
+	
+ 	showWindow DVY_ChainsWindow;
+	
+}// End of DVY_Chains Global procedure.
+
+global proc DVY_ChainCallback(int $T)
+{
+	
+// ******************************************************************************** //	
+//	Global Variables
+	 
+	global string $ISO_No[], $TeethProfiles[], $Type[];
+	global string $CHType[], $Title[], $TitleN[], $IField[], $FField[], $Option[];
+	
+	global int $Teeth[];
+	global float $Pitch[], $PCDF[];
+	
+	global matrix $ChainDataM[17][10];
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Local Variables
+	 
+	string $Temp[],$Item[], $Sprocket[], $Bush[], $Pin[], $InPlate[], $OutPlate[],$SprocketTeeth[];
+	clear $Sprocket;
+	float $C, $Cd, $Ct, $D, $H, $P, $Ct, $D, $J, $L, $Lp, $InT, $OuT, $W;
+	float $Angle, $PCD, $OD, $RD, $R, $R1, $R2, $f;
+	float $Units = 1.0;
+	int $CHTeeth[];
+
+	int $e, $E, $N, $i, $j;	
+	float $Pi, $m, $A, $GW, $PCD, $BD, $RD, $OD;
+	float $Ad, $Dd, $Pd, $WH, $Angle, $Helix ;
+	float $Pos[], $Profiles[];
+	float $Move, $HubMx, $BoreMx, $Bore, $HubT;
+	
+	int $CHp = 0;
+	float $Ratios[];
+//	string $ModS = `optionMenu -q -v DVY_Mod`;
+	string $CHPitch = `optionMenu -q -v DVY_ISO_No`;
+	
+	if ($CHPitch == "ISO_No:-") {$CHp = 20;}
+	if ($CHPitch == "03B") {$CHp = 0;}
+	if ($CHPitch == "04B") {$CHp = 1;}
+	if ($CHPitch == "05B") {$CHp = 2;}
+	if ($CHPitch == "06B") {$CHp = 3;}
+	if ($CHPitch == "08B") {$CHp = 4;}
+	if ($CHPitch == "10B") {$CHp = 5;}
+	if ($CHPitch == "12B") {$CHp = 6;}
+	if ($CHPitch == "16B") {$CHp = 7;}
+	if ($CHPitch == "20B") {$CHp = 8;}
+	if ($CHPitch == "24B") {$CHp = 9;}
+	if ($CHPitch == "28B") {$CHp = 10;}
+	if ($CHPitch == "32B") {$CHp = 11;}
+	if ($CHPitch == "40B") {$CHp = 12;}
+	if ($CHPitch == "48B") {$CHp = 13;}
+	if ($CHPitch == "56B") {$CHp = 14;}
+	if ($CHPitch == "64B") {$CHp = 15;}
+	if ($CHPitch == "72B") {$CHp = 16;}
+	
+	$CHTeeth[0] = 0;
+	
+	if ($CHp < 20)
+		{
+			for ($i=1; $i<4; $i++)
+				{
+					$CHTeeth[$i] = `intField -q -v ("SprocketIntField_" + $i)`;
+				}
+				
+				print $CHTeeth;
+		$P = ($ChainDataM[$CHp][0]);			//	Pitch of Chain.
+		$W = ($ChainDataM[$CHp][1]);			//	Width Between Roller side plates.
+		$H = ($ChainDataM[$CHp][3]);			//	Link Plate Height.
+		$InT = ($ChainDataM[$CHp][4]);			//	Inner Link Plate Thickness.
+		$OuT = ($ChainDataM[$CHp][5]);			//	Outer Link Plate Thickness;
+		$D = ($ChainDataM[$CHp][6]);			//	Diameter of Pin.
+		$Lp = ($ChainDataM[$CHp][7]);			//	Length of Pin.
+		$J = ($ChainDataM[$CHp][8]);			//	Extra Length of Pin for connector.
+		$Ct = ($ChainDataM[$CHp][9]);			//	Link Traverse Pitch.
+		$f = $P * 0.7;							//	Depth of Clearance below Tooth Root Diameter
+		
+	
+		print ("\n" + "Data used for Sprocket with a " + $P + " Chain Pitch \n");
+		print ("\n" + "Chain Pitch $P is " + $P + "..\n");
+		print ("Width between Roller Plates $W is " + $W + "..\n");
+		print ("Link Plate Height $H is " + $H + "..\n");
+		print ("Inner Plate Thickness $T is " + $InT + "..\n");
+		print ("Outer Plate Thickness $t is " + $OuT + "..\n");
+		print ("Roller Pin Diameter $D is " + $D + "..\n");
+		print ("Roller Length $Lp is " + $Lp + "..\n");
+//		print ("Roller Pin Extra Length for Connector $J is " + $J + "..\n");
+		print ("Link Traverse Pich $Ct is " + $Ct + "..\n");
+
+		print ("$CHp is " + $CHp + "\n");
+	
+		}
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+	int $ChainM[];
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+	
+	if ($CHp < 20)	
+		{
+			floatField -edit -value $P PitchFloatField;
+			floatField -edit -value ($P/25.4) EngPitchFloatField;
+			
+			for ($i=1; $i<3; $i++)
+				{
+					formLayout -edit -enable true SprocketForm;		
+					floatField -edit -enable true -editable false $FField[$i];
+					floatField -edit -enable true -editable false $FField[$i+10];
+						
+				}
+					floatField -edit -enable true -editable false $FField[21];
+					floatField -edit -enable true -editable false $FField[22];
+					floatField -edit -enable true -editable false $FField[23];
+			
+			if ($T == 13)
+				{
+					floatField -edit -enable true -editable true $FField[22];
+					floatField -edit -enable true -editable false $FField[32];
+					floatField -edit -enable true -editable false $FField[33];
+					
+				}
+				
+	
+		}
+		
+	if ($CHp == 20)	
+		{
+			for ($i=1; $i<3; $i++)
+				{
+					formLayout -edit -enable false SprocketForm;		
+					floatField -edit -enable false -editable false $FField[$i];
+					floatField -edit -enable false -editable false $FField[$i+10];
+						
+				}
+				
+			floatField -edit -enable false -editable false $FField[21];
+			floatField -edit -enable false -editable false $FField[22];
+			floatField -edit -enable false -editable false $FField[23];
+	
+		}
+			
+	if ($T == 10)
+		{  
+			if ($CHTeeth[1] != 0)
+				{
+					$PCD = $P * $PCDF[($CHTeeth[1])];
+					print ("$PCD is " + $PCD + "\n");
+					floatField -edit -enable true -editable false -v $PCD $FField[1];
+					floatField -edit -enable true -editable false -v ($PCD/25.4) $FField[11];
+				}
+			if ($CHTeeth[1] == 0)
+				{
+					floatField -edit -enable true -editable false -v 0 $FField[1];
+					floatField -edit -enable true -editable false -v 0 $FField[11];
+					
+				}
+		}
+		
+	if ($T == 11)
+		{  
+			if ($CHTeeth[2] != 0)
+				{
+					$PCD = $P * $PCDF[($CHTeeth[2])];
+					print ("$PCD is " + $PCD + "\n");
+					floatField -edit -enable true -editable false -v $PCD $FField[2];
+					floatField -edit -enable true -editable false -v ($PCD/25.4) $FField[12];
+					$ratio = $CHTeeth[1] *1.0/ $CHTeeth[2];
+					floatField -edit -enable true -editable false -v $ratio $FField[21];
+					floatField -edit -enable true -editable true $FField[22];
+				}
+			if ($CHTeeth[2] == 0)
+				{
+					floatField -edit -enable true -editable false -v 0 $FField[2];
+					floatField -edit -enable true -editable false -v 0 $FField[12];
+					floatField -edit -enable true -editable false -v 0 $FField[21];
+					floatField -edit -enable false -editable false $FField[22];
+				}
+		}
+		
+	if ($T == 12)
+		{  
+			if (`floatField -q -v SprocketFloatField_22` > 0)
+				{
+					float $CD = `floatField -q -v SprocketFloatField_22`/$P;
+					floatField -edit -enable true -editable true $FField[22];
+					
+					floatField -edit -v $CD SprocketFloatField_23;
+				}
+		
+			if (`floatField -q -v SprocketFloatField_22` == 0)
+				{
+					floatField -edit -v 0 SprocketFloatField_23;
+					floatField -edit -enable true -editable true $FField[22];
+				}
+		}
+		
+	if ($T == 13)
+		{  
+			if ($CHTeeth[3] != 0)
+				{
+					$PCD = $P * $PCDF[($CHTeeth[3])];
+					print ("$PCD is " + $PCD + "\n");
+					floatField -edit -enable true -editable false -v $PCD $FField[32];
+					floatField -edit -enable true -editable false -v ($PCD/25.4) $FField[33];
+					
+					intField -edit -enable true -editable true $IField[3];
+				}
+			if ($CHTeeth[3] == 0)
+				{
+					floatField -edit -enable true -editable false -v 0 $FField[32];
+					floatField -edit -enable true -editable false -v 0 $FField[33];
+					intField -edit -enable true -editable true $IField[3];
+				}
+		}
+		
+}// End of DVY_ChainCallback global procedure.
+
+
+
+
+global proc DVY_AboutChainsWin()
+ {
+	global float $DVYTol;
+	if ((`window -ex DavveyAboutChainsWindow`) == true) 
+		{
+			deleteUI DavveyAboutChainsWindow;
+		}
+		if (`windowPref -ex DavveyAboutChainsWindow`) windowPref -remove DavveyAboutChainsWindow;
+		window -t " About:-  Davvey's Chain Generator." -width 425 -height 300 -sizeable 0 DavveyAboutChainsWindow;
+		//Build 'Edit' menu.
+	
+	string $menuBarLayout = `menuBarLayout -height 20`;
+		menu -label "File"; 
+ 			menuItem -label "Close" -command "deleteUI DavveyAboutChainsWindow";		
+
+	setParent;
+	setParent;
+
+		columnLayout -adjustableColumn true -columnAttach "both" 5 -columnWidth 350; 
+	
+		text -height 2 -label " " ;	//Spacer
+		separator -height 10 -style "double" ;
+			text -bgc 0.5 0.5 1 -height 20 -align "center" -fn "boldLabelFont" -l "Davvey's Chain Generator..";
+			text -bgc 0.5 0.5 1 -height 20 -align "center" -fn "boldLabelFont" -l "copyright (c) 2006 Dave Lake..";
+		separator -height 8 -style "double" ;
+		text -height 2 -label " " ;	//Spacer
+		
+	frameLayout -cl 0 -label "" -labelAlign "center" -borderStyle "etchedOut";
+		columnLayout -adjustableColumn true -columnAttach "both" 2 -columnWidth 250; 
+		
+		text -bgc 1 1 0.8 -height 5 -align "left" -l " ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -fn "boldLabelFont" -l "  Special Thanks:- ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -fn "plainLabelFont" -l "  Thanks to my wife Jan for her support and patience during the time";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "   its taken to learn Maya and how to write these scripts.";
+		text -bgc 1 1 0.8 -height 10 -align "left" -l " ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "  Also dedicated to Jackie and Joanna (my expensive pride and joys!!)";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "  Finally these Collected works are dedicated to the memory of Darryl.";
+		text -bgc 1 1 0.8 -height 5 -align "left" -l " ";
+		setParent ..;	
+		setParent ..;	
+		text -align "center" -l "email :- Davvey@ntlworld.com";
+		text -align "center" -l "website :- www..............";
+	setParent ..; 
+
+	showWindow DavveyAboutChainsWindow;
+	
+}// End of DVY_AboutChainsWin Procedure
+
+ 

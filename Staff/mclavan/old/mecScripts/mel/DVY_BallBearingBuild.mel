@@ -1,0 +1,576 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name:  Davvey\'s Bearing Generator
+''    Author: Davvey 
+''    Last Updated: Jan 15, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/1027.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+//////////////////////////////////////////////////////////////////////////////////////
+//	Title Section
+
+//						-  DVY_BallBearingBuild -
+
+
+//////////////////////////////////////////////////////////////////////////////////////
+//	Description and Usage Section
+/*
+
+	Called by DVY_Bearings to build and rig various styles of Ball Bearings and 
+	then add basic Shaders to each part.
+		
+	After construction of the various aprts the Inner and Outer rotations are 
+	connected to the Ball and Cage rotations. Inside and Outside can be rotated 
+	in Y Axis independantly.
+	
+	Self aligning Bearings can also be rotated in X and Y and Ball and Cages will
+	also rotate  as required.
+	
+	All Bearings are produced to Metric Bearing Standards and the Size / Scale is
+	correctly set to suit Maya's user preferences settings.
+
+
+*/		
+//////////////////////////////////////////////////////////////////////////////////////
+
+
+global proc DVY_BallBearingBuild()
+{
+
+	print "Start of DVY_BushBearingBuild procedure. © Davvey..\n";
+	
+	if (`optionMenu -q -sl DVY_Ball_ID` == 1)
+		{
+			error "Please select Bearing Inside Diameter © Davvey..\n";
+		}
+
+	
+// ******************************************************************************** //	
+//	Global Variables
+	
+	global string $Units;
+
+	global float $DVYUnit;
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Local Variables
+	string $Temp[], $Temps[], $DVYBushCurve, $Groups[], $DVYBush[], $Material;
+	string $BrName, $BrGroup[], $Shader[];
+	string $BType;
+	int $a, $b, $c, $E, $i, $j, $k, $Rot, $S, $T, $t;
+	float $Ch, $ID, $OD, $R1, $R2, $Sc, $Width;
+	float $Pos[];
+	
+	
+	string $BSeries = `optionMenu -q -v DVY_BallSeries`;
+	string $BType = `optionMenu -q -v DVY_BallType`;
+	
+	int $Q = `intField -q -v BIntField_1`;
+	float $q = 360.0/($Q);
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+	
+	$E = 1;
+	
+	$ID = `optionMenu -q -v DVY_Ball_ID`;
+	$OD = `floatField -q -v BFloatField_12`;
+	$Width = `floatField -q -v BFloatField_14`;
+	if (`optionMenu -q -sl DVY_BallType` == 6 )
+		{$Width = $Width * 1.5;}
+	
+	float $BrPCD = ($OD+$ID) *0.5;
+	float $Th;
+		
+	$R1 = 1;
+	$R2 = 1;
+	$Ch = $Width * 0.01;
+	$BD =  `floatField -q -v BFloatField_16`;
+	$BrName = ($BSeries + "_" + $BType);
+	
+	print ("$BrName is " + $BrName + "\n");
+	print ("Ball Bearing Diameter is " + $BD + ". © Davvey..\n");
+	print ("No. of Ball Bearings is " + $Q + ". © Davvey..\n");
+	
+	print ("Bearing ID is " + $ID + ". © Davvey..\n");
+	print ("Bearing OD is " + $OD + " . © Davvey..\n");
+	print ("Bearing PCD is " + $BrPCD + " . © Davvey..\n");
+
+	print ("Bearing Width is " + $Width + ". © Davvey..\n");
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Set Scaling unit for Global units used.
+		
+	DVY_ScaleSet;
+//	print ("Current units are " + $Units + " and Scale Factor $DVYUnit is " + $DVYUnit + "\n");
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Create Shaders for Bearing Parts.
+
+	$SHbName = "Bearing_SH";
+	$SHcName = "Cage_SH";
+
+	if(!`objExists $SHbName`)
+		{
+			$Shader[0] = DVY_Shaders(32) ;
+	 	}	
+	$Shader[0] = $SHbName;
+				
+	if(!`objExists $SHcName`)
+		{
+			$Shader[1] = DVY_Shaders(31); 
+	 	}	
+	$Shader[1] = $SHcName;
+
+	print "$Shaders are \n";
+		print $Shader;
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+	
+	// Generate and Use new Group Node
+		 while(`objExists ($BrName + "_BallBearing_Main_GrpN_" + $E)`)
+			  {
+				 $E++;	print ("$E is " + $E + "\n");
+			  }
+				$BrGroup[0] = `group -em -name ($BrName + "_BallBearing_Main_GrpN_" + $E)`;
+//				print ("Group is called " + $BrGroup[0] + "\n");
+				
+	// Ball Race for Inner Bearing	
+			if (`optionMenu -q -sl DVY_BallType` == 5 )
+				{//Build section for External Self-Align InnerRace.
+					$Temp = `polyPipe -r ($BrPCD * 0.55 - ($BD *0.5)) -h ($Width *2) -t ($ID * 0.15) -sa 36 -sh 1 -sc 1 -ch 0 -name "InsideBore_1"`;
+					
+						polyBevel -offset 0.2 -offsetAsFraction 1 -autoFit 1 -segments 3 -worldSpace 0 
+							-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 30
+							-miteringAngle 180 -angleTolerance 180 -ch 0  ($Temp[0] + ".e[0:143]") ;
+					
+						$Temps = `polyTorus -r ($BrPCD * 0.5) -sr ($BD * 0.5) -tw 0 -sx 36 -sy 18 -ax 0 1 0 -ch 0 -name "BallChannel_1"`;
+				
+						$Temp = `polyBoolOp -name "InnerRace_1"  -op 2 -ch 0 $Temp[0] $Temps[0]`;
+	
+						$BrGroup[5] = `rename $Temp[0] ($BrName + "InnerRace_" + $E)`;
+
+						$Sc = 2.25 * $Width/$BD;
+							$Temp = `polyTorus -r ($BrPCD * 0.52) -sr ($BD * 0.51) -tw 0 -sx 36 -sy 18 -ax 0 1 0 -ch 0 -name "BallChannel_1"`;
+								scale 1 $Sc 1 $Temp[0];
+					
+							
+							$Temps = `polyCylinder -r ($OD * 1) -h ($Width * 1) -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+								move -r 0 $Width 0 $Temps[0];
+							$Temp = `polyBoolOp -name "InnerRace_2"  -op 2 -ch 0 $Temp[0] $Temps[0]`;
+
+							$Temps =  `polyCylinder -r ($OD * 1) -h ($Width * 1) -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+								move -r 0 ($Width * -1) 0 $Temps[0];
+							$Temp = `polyBoolOp -name "InnerRace_3"  -op 2 -ch 0 $Temp[0] $Temps[0]`;
+
+							$Temps = `polyCylinder -r ($OD * 0.425) -h ($Width * 4.5) -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+							$Temp = `polyBoolOp -name "InnerRace_4"  -op 2 -ch 0 $Temp[0] $Temps[0]`;
+							
+							$Temps = `polyTorus -r ($BrPCD * 0.5) -sr ($BD * 0.5) -tw 0 -sx 36 -sy 18 -ax 0 1 0 -ch 0 -name "BallChannel_1"`;
+				
+							$Temp = `polyBoolOp -name "InnerRace_5"  -op 2 -ch 0 $Temp[0] $Temps[0]`;
+							
+						$BrGroup[4] = `rename $Temp[0] ($BrName + "_InnerSphericalRace_" + $E)`;
+		
+						select -r $BrGroup[4];
+							hyperShade -assign "initialShadingGroup";
+							hyperShade -assign $Shader[0];
+
+							
+						
+//						select -r $Temp[4];					
+				}// End of Build section for External Self-Align InnerRace.
+				else {// Build section for Standard, Deep Grrove and Self-Align InnerRace.
+						if ((`optionMenu -q -sl DVY_BallType` == 2 ) || (`optionMenu -q -sl DVY_BallType` == 3 ))
+							{
+									$Th = (($BrPCD * 0.5) - ($BD * 0.2))  - ($ID * 0.5);
+									print ("$Th is " + $Th + "\n");
+								$Temp = `polyPipe -r (($BrPCD * 0.5) - ($BD * 0.2)) -h ($Width *2) -t ($Th) -sa 36 -sh 1 -sc 1 -ch 0 -name "InsideBore_1"`;
+							}
+							else {
+									$Th = (($BrPCD * 0.5) - ($BD * 0.4))  - ($ID * 0.5);
+									print ("$Th is " + $Th + "\n");
+									$Temp = `polyPipe -r (($BrPCD * 0.5) - ($BD * 0.4)) -h ($Width *2) -t ($Th) -sa 36 -sh 1 -sc 1 -ch 0 -name "InsideBore_1"`;
+								 }
+				//		select -r $Temp[4];
+							polyBevel -offset 0.2 -offsetAsFraction 1 -autoFit 1 -segments 3 -worldSpace 0 
+								-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 30
+								-miteringAngle 180 -angleTolerance 180 -ch 0  ($Temp[0] + ".e[0:143]") ;
+				
+						if (`optionMenu -q -sl DVY_BallType` == 4 ) 
+							{
+								$Sc = 1.75 * $Width/$BD;
+								print ("$S is " + $S + "\n");
+								$Temps = `polyTorus -r ($BrPCD * 0.5) -sr ($BD * 0.5) -tw 0 -sx 36 -sy 18 -ax 0 1 0 -ch 0 -name "BallChannel_1"`;
+								scale 1 $Sc 1 $Temps[0];
+							}
+							else {$Temps = `polyTorus -r ($BrPCD * 0.5) -sr ($BD * 0.5) -tw 0 -sx 36 -sy 18 -ax 0 1 0 -ch 0 -name "BallChannel_2"`;}
+						if (`optionMenu -q -sl DVY_BallType` == 6 ) 
+							{
+								move -r 0 ($Width * 0.25) 0 $Temps[0];
+								$Temp = `polyBoolOp -name "Race_2"  -op 2 -ch 0 $Temp[0] $Temps[0]`;
+								
+								$Temps = `polyTorus -r ($BrPCD * 0.5) -sr ($BD * 0.5) -tw 0 -sx 36 -sy 18 -ax 0 1 0 -ch 0 -name "BallChannel_2"`;
+									move -r 0 ($Width * -0.25) 0 $Temps[0];
+				
+	//							$Temp = `polyBoolOp -name "OuterRace_2"  -op 2 -ch 0 $Temp[0] $Temps[0]`;
+								
+							}
+				
+						$Temp = `polyBoolOp -name "InnerRace_1"  -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					
+						
+					// Cutout section to generate edge of Ball Groove for Angular Contact Inner Race.
+				
+						if (`optionMenu -q -sl DVY_BallType` == 3 )
+							{
+								$Temps = `polyPipe -r ($ID * 0.655) -h ($Width *2) -t ($ID * 0.055) -sa 36 -sh 1 -sc 1 -ch 0 `;
+									move -r 0 ($Width * -0.5) 0 $Temps[0];
+									
+									$Temp = `polyBoolOp -name "InnerRace_1"  -op 2 -ch 0 $Temp[0] $Temps[0]`;
+							}
+		
+						$BrGroup[5] = `rename $Temp[0] ($BrName + "InnerRace_" + $E)`;
+
+					}// End of Build section for Standard, Deep Groove and Self-Align InnerRace.
+					
+				
+		select -r $BrGroup[5];
+			polyAverageNormal -prenormalize 1 -allowZeroNormal 0 -postnormalize 0 -distance 0.1 -replaceNormalXYZ 1 0 0 ;
+			polySetToFaceNormal ;
+			polySoftEdge -a 180 -ch 0 $BrGroup[5];
+		
+		select -r $BrGroup[5];
+			hyperShade -assign "initialShadingGroup";
+			hyperShade -assign $Shader[0];
+			
+					
+	// Ball Bearing	
+		$Temp = `polySphere -r ($BD * 0.5) -sx 18 -sy 18 -ax 0 1 0 -ch 0 -name ($BrName + "_" + $E + "_BallBearing_1")`;
+		move -r ($BrPCD * 0.5) 0 0 $Temp[0];
+		
+		select -r $Temp[0];
+			hyperShade -assign "initialShadingGroup";
+			hyperShade -assign $Shader[0];
+			
+		select -cl;
+		
+	// Group Nodes for Bearing Sections.
+		
+		$BrGroup[1] = `group -em -name ($BrName+  "_" + $E + "_Bearing_1" )`;
+		$BrGroup[2] = `group -em -name ($BrName+  "_" + $E + "_Bearing_GrpN_1" )`;
+		parent $BrGroup[2] $BrGroup[1];
+		parent $BrGroup[1] $BrGroup[0];
+		
+	
+		$Group[0] = `group -em -name ($BrName +  "_" + $E + "_Ball_Bearing_Grp_1")`;
+		$Group[1] = `group -em -name ($BrName +  "_" + $E + "_Ball_Bearings_GrpN_1")`;
+			
+			parent $Temp[0] $Group[0];
+			parent $Group[0] $Group[1];
+			parent $Group[1] $BrGroup[2];	
+			
+		select -r $Group[1];
+		
+		
+	// Duplicate number of Ball Bearings Required	
+
+		duplicate -rr -renameChildren;
+		rotate -r 0 $q 0;
+			for ($i=1; $i<($Q-1); ++$i) 
+				{duplicate -rr -renameChildren -st;}
+				
+	// Ball Race for Outer Bearing	
+			if (`optionMenu -q -sl DVY_BallType` == 5 )
+				{//Build section for External Self-Align OuterRace.
+					$Th = ($OD * 0.5) - ($BrPCD *0.5) - ($BD *0.2);
+					$Temp = `polyPipe -r ($OD * 0.5) -h ($Width *2) -t ($OD * 0.075) -sa 36 -sh 1 -sc 1 -ch 0 -name "OutsideBore_1"`;
+						
+						polyBevel -offset 0.2 -offsetAsFraction 1 -autoFit 1 -segments 3 -worldSpace 0 
+								-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 30
+								-miteringAngle 180 -angleTolerance 180 -ch 0  ($Temp[0] + ".e[0:143]") ;
+					
+							$Sc = 2.25 * $Width/$BD;
+								$Temps = `polyTorus -r ($BrPCD * 0.52) -sr ($BD * 0.51) -tw 0 -sx 36 -sy 18 -ax 0 1 0 -ch 1 -name "BallChannel_2"`;
+								scale 1 $Sc 1 $Temps[0];
+						$Temp = `polyBoolOp -name "OuterRace_1"  -op 2 -ch 0 $Temp[0] $Temps[0]`;
+			//			select -r $Temp[4];					
+				}// End of Build section for External Self-Align OuterRace.
+				else {// Build section for Standard, Deep Groove and Self-Align OuterRace.
+						if ((`optionMenu -q -sl DVY_BallType` == 2 ) || (`optionMenu -q -sl DVY_BallType` == 3 ))
+							{ 	
+								$Th = ($OD * 0.5) - ($BrPCD *0.5) - ($BD *0.25);
+								$Temp = `polyPipe -r ($OD * 0.5) -h ($Width *2) -t ($Th) -sa 36 -sh 1 -sc 1 -ch 0 -name "OutsideBore_1"`;
+							}
+							else {
+								$Th = ($OD * 0.5) - ($BrPCD *0.5) - ($BD *0.4);
+									$Temp = `polyPipe -r ($OD * 0.5) -h ($Width *2) -t ($Th) -sa 36 -sh 1 -sc 1 -ch 0 -name "OutsideBore_1"`;
+								 }
+				
+							polyBevel -offset 0.2 -offsetAsFraction 1 -autoFit 1 -segments 3 -worldSpace 0 
+								-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 30
+								-miteringAngle 180 -angleTolerance 180 -ch 0  ($Temp[0] + ".e[0:143]") ;
+						
+						if (`optionMenu -q -sl DVY_BallType` == 4 ) 
+							{
+								$Sc = 1.75 * $Width/$BD;
+								$Temps = `polyTorus -r ($BrPCD * 0.5) -sr ($BD * 0.5) -tw 0 -sx 36 -sy 18 -ax 0 1 0 -ch 1 -name "BallChannel_2"`;
+								scale 1 $Sc 1 $Temps[0];
+							}
+							else {
+									$Temps = `polyTorus -r ($BrPCD * 0.5) -sr ($BD * 0.5) -tw 0 -sx 36 -sy 18 -ax 0 1 0 -ch 0 -name "BallChannel_2"`;
+								 }
+						if (`optionMenu -q -sl DVY_BallType` == 6 ) 
+							{
+								move -r 0 ($Width * 0.25) 0 $Temps[0];
+								$Temp = `polyBoolOp -name "OuterRace_2"  -op 2 -ch 0 $Temp[0] $Temps[0]`;
+								
+								$Temps = `polyTorus -r ($BrPCD * 0.5) -sr ($BD * 0.5) -tw 0 -sx 36 -sy 18 -ax 0 1 0 -ch 0 -name "BallChannel_2"`;
+									move -r 0 ($Width * -0.25) 0 $Temps[0];
+				
+	//							$Temp = `polyBoolOp -name "OuterRace_2"  -op 2 -ch 0 $Temp[0] $Temps[0]`;
+								
+							}
+								
+						$Temp = `polyBoolOp -name "OuterRace_1"  -op 2 -ch 0 $Temp[0] $Temps[0]`;
+						
+						
+					
+						// Cutout section to generate edge of Ball Groove for Angular Contact Outer Race.
+							if (`optionMenu -q -sl DVY_BallType` == 3 )
+								{
+									$Temps = `polyCylinder -r ($OD * 0.445) -h ($Width * 0.5) -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+										move -r 0 ($Width * 0.5) 0 $Temps[0];
+									
+										$Temp = `polyBoolOp -name "OuterRace_1"  -op 2 -ch 0 $Temp[0] $Temps[0]`;
+								}
+								
+					}// End of Build section for Standard, Deep Grrove and Self-Align OuterRace.
+					
+		
+		$BrGroup[6] = `rename $Temp[0] ($BrName + "OuterRace_" + $E)`;
+		
+		select -r $BrGroup[6];
+			hyperShade -assign "initialShadingGroup";
+			hyperShade -assign $Shader[0];
+			
+			
+	// Ball Race Cage Ring Section	
+		$Temps = `polyPipe -r ($BrPCD * 0.5 + ($BD * 0.175)) -h ($BD * 0.6) -t ($BD * 0.25) -sa 36 -sh 1 -sc 1 -ch 0 -name "Cage_1"`;
+		
+	// Ball Race Cage Ball Collar Cutouts Section	
+			for ($i=0; $i<$Q; $i++)
+				{
+					$Temp = `polyCylinder -r ($BD * 0.55) -h ($OD * 0.5) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						rotate  0 0 90 $Temp[0];
+						move -r ($BrPCD * 0.5) 0 0 $Temp[0];
+						xform -ws -rp 0 0 0 $Temp[0];
+						rotate -r -ws 0 ($q*$i) 0 $Temp[0];
+						
+					$Temps = `polyBoolOp -name "Cage_1" -op 2 -ch 0 $Temps[0] $Temp[0] `;
+				}
+			
+//			print $Temps[0];
+				
+	// Ball Race Cage Ball Collars Section	
+		
+		for ($i=0; $i<$Q; $i++)
+			{
+				$Temp = `polyPipe -r ($BD * 0.55) -h ($BD * 0.55) -t ($Width * 0.05) -sa 36 -sh 1 -sc 1 -ch 0`;
+				rotate  0 0 90 $Temp[0];
+				move -r ($BrPCD * 0.5) 0 0 $Temp[0];
+				xform -ws -rp 0 0 0 $Temp[0];
+				rotate -r -ws 0 ($q*$i) 0 $Temp[0];
+				$Temps[$i+1] = $Temp[0];	
+			}
+		
+		
+//			print $Temps;
+		$Temp[0] = $Temps[1];
+
+	// Ball Race Cage Ball Collars Boolean parts together 	
+	
+		for ($i=2; $i<$Q+1; $i++)
+			{
+				$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[$i]`;
+			}
+		
+				$Temp = `polyBoolOp -name ($BrName+ "Cage" ) -op 1 -ch 0 $Temps[0] $Temp[0]`;
+				$BrGroup[7] = `rename $Temp[0] ($BrName +  "_" + $E + "_Cage_" + $E)`;
+				
+				parent $BrGroup[5] $BrGroup[6] $BrGroup[0];
+				
+				
+			select -cl;	
+		if (`optionMenu -q -sl DVY_BallType` == 5 ) 
+			{
+			$BrGroup[9] = `group -em -name ($BrName + "_" + $E + "_InnerSphericalRace_GrpN_" + $E)`;
+				parent $BrGroup[4] $BrGroup[9];
+				parent $BrGroup[9] $BrGroup[0];
+			}
+				
+		select -r $BrGroup[7];
+			hyperShade -assign "initialShadingGroup";
+			hyperShade -assign $Shader[1];
+				
+	if (`optionMenu -q -sl DVY_BallType` == 6 )
+		{
+			move -r 0 ($Width * 0.25) 0 $BrGroup[2];
+			move -r 0 ($Width * 0.25) 0 $BrGroup[7];
+			
+			select -r $BrGroup[2];
+			$Temp =`duplicate -rr -renameChildren`;
+			move 0 ($Width * -0.25) 0 $Temp[0];
+			$BrGroup[3] = $Temp[0] ;
+			
+			select -r $BrGroup[7];
+			$Temp =`duplicate -rr -renameChildren`;
+			move 0 ($Width * -0.25) 0 $Temp[0];
+			$BrGroup[8] = $Temp[0] ;
+			
+		}
+		
+	string $AttrA[] = { ".tx", ".ty", ".tz", ".rx", ".rz", ".sx", ".sy", ".sz"};
+	string $AttrB[] = { ".tx", ".ty", ".tz", ".rx", ".ry", ".rz"};
+	string $AttrN[] = {".sx", ".sy", ".sz"};
+	
+	// Connect Ball Bearing to Inner Race Rotation.
+		select -r  ($BrName + "_" + $E + "_BallBearing_*");
+			$Balls = `ls -tr -sl`;
+//			print $Balls;
+			
+			for ($each in $Balls)
+				{
+					connectAttr -f ($BrGroup[5] + ".ry")($each + ".ry");
+					for ($Attr in $AttrA)
+						{
+							setAttr -l 1 -k 0 ($each + $Attr);
+						}
+				}
+				
+	// CenterPivot of  Ball Bearing Group Nodes and Connect to Outer Race Rotation.
+		select -r  ($BrName + "_" + $E + "_Ball_Bearing_Grp_*");
+			$Balls = `ls -tr -sl`;
+//			print $Balls;
+		
+		for ($each in $Balls)
+			{
+				select -r $each;
+				CenterPivot;
+				connectAttr -f ($BrGroup[6] + ".ry")($each + ".ry");
+				for ($Attr in $AttrA)
+					{
+						setAttr -l 1 -k 0 ($each + $Attr);
+					}
+			}
+
+			
+	parent $BrGroup[7] $BrGroup[2];
+	
+	if (`optionMenu -q -sl DVY_BallType` == 6 )
+		{
+			parent $BrGroup[8] $BrGroup[3];
+		}
+	
+	
+		
+	$Group[4] = `group -name ($BrName + "_" + $E + "_Cage_GrpN_" + $E)`;
+	
+	// Connect Ball Bearing Main Groups to Inner and Outer Race Rotations.
+		connectAttr -f ($BrGroup[5] + ".ry") ($BrGroup[1] + ".ry");
+		connectAttr -f ($BrGroup[6] + ".ry") ($BrGroup[2] + ".ry");
+		
+	if (`optionMenu -q -sl DVY_BallType` == 6 )
+		{
+			connectAttr -f ($BrGroup[6] + ".ry") ($BrGroup[3] + ".ry");
+		}
+		
+		
+	// Lock Off all unused Attributes.	
+		for ($each in $BrGroup)
+			{
+				for ($Attr in $AttrA)
+					{
+						setAttr -l 1 -k 0 ($each + $Attr);
+					}
+			}
+	
+		setAttr -l 1 -k 0 ($BrGroup[7] + ".ry");
+		setAttr -l 1 -k 0 ($Group[4] + ".ry");
+			
+		for ($each in $AttrB)
+			{
+				setAttr -l 0 -k 1 ($BrGroup[0] + $each);
+			}
+			
+			
+			select -r  ($BrName + "_" + $E + "_Ball_Bearings_GrpN_*");
+			$Balls = `ls -tr -sl`;
+//			print $Balls;
+			
+			for ($each in $Balls)
+				{
+				 for ($Attr in $AttrA)
+					{
+						setAttr -l 1 -k 0 ($each + $Attr);
+					}
+				}
+//				print $BrGroup;
+				
+		if ((`optionMenu -q -sl DVY_BallType` == 4 ) || (`optionMenu -q -sl DVY_BallType` == 5 ) )
+			{ 
+			  if (`optionMenu -q -sl DVY_BallType` == 1 ) 
+				 {
+					setAttr -l 0 -k 1 ($BrGroup[5] + ".rx");
+					transformLimits -rx -10 10 -erx 1 1 ($BrGroup[5] + ".rx");
+	
+					setAttr -l 0 -k 1 ($BrGroup[5] + ".rz");
+					transformLimits -rz -10 10 -erz 1 1 ($BrGroup[5] + ".rz");
+				 }
+				
+				setAttr -l 0 -k 1 ($BrGroup[6] + ".rx");
+				transformLimits -rx -10 10 -erx 1 1 ($BrGroup[6] + ".rx");
+
+				setAttr -l 0 -k 1 ($BrGroup[6] + ".rz");
+				transformLimits -rz -10 10 -erz 1 1 ($BrGroup[6] + ".rz");
+			
+			}
+		
+		if (`optionMenu -q -sl DVY_BallType` == 5 ) 
+			{ 
+				setAttr -l 0 -k 0 ($BrGroup[4] + ".ry");
+				connectAttr -f ($BrGroup[6] + ".ry") ($BrGroup[4] + ".ry");
+			}
+		
+	// Set Global Scale to size Bearing to correct dimensions. 	
+		for ($each in $AttrN)
+			{ setAttr -l 0 -k 0 ($BrGroup[0] + $each);}
+				
+				scale $DVYUnit $DVYUnit $DVYUnit $BrGroup[0];
+	
+		for ($each in $AttrN)
+			{ setAttr -l 1 -k 0 ($BrGroup[0] + $each);}
+			setAttr ($BrGroup[0] + ".displayHandle") 1;
+
+			select -r $BrGroup[0];
+			delete -ch;
+			
+	print ("Ball Bearing " + $BrName + "_" + $E + " has been built and rigged for correct rotations. © Davvey..\n");
+	
+}	// End of DVY_BallBearingBuild procedur

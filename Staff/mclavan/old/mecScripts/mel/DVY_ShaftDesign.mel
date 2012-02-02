@@ -1,0 +1,369 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davveys Lego Generator
+''    Author:  
+''    Last Updated: Jun 30, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4782.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+/*
+
+SPROCKET DIAMETER FORMULAS
+	
+	Suggested Maximum Hub Diameter $HDMx = Cosine ((180/N) x PCD) – (H + .050).
+	
+				 - Standard Keyways and Set Screw -
+					 
+	Calculations related to Shaft Diameter
+	
+		Shaft Diameter			KeyWay			SetScrew Diameter
+		$Shaft 			($KeyWidth * $KeyHeight)	$SetScrew
+			mm					mm						 mm
+0		0 to 1.00			0.30 x 0.15					0.5	
+1a		1 to 2.99			0.80 x 0.40					1.5
+1b		3 to 4.99			1.40 x 0.70					2.5
+1		5 to 9.99			2.40 x 1.20					3.0
+2		10 to 14.99			3.20 x 1.60					3.0
+3		15 to 19.99			4.60 x 2.30					5.0
+4		20 to 24.99			6.00 x 3.00					6.0
+5		25 to 29.99			6.00 x 3.00					8.0
+6		30 to 34.99			7.00 x 3.50					8.0
+7		35 to 39.99			8.00 x 4.00					8.0
+8		40 to 44.99			9.00 x 4.50					10.0
+9		45 to 49.99			10.0 x 5.00					10.0
+10		50 to 54.99			12.0 x 6.00					10.0
+11		55 to 59.99			15.0 x 7.50					12.0
+12		60 to 69.99			19.0 x 9.50					12.0
+13		70 to 79.99			22.0 x 11.0					13.0
+14		80 to 89.99			25.0 x 12.5					15.0
+15		90 to 99.99			31.0 x 15.5					17.0
+16		100 to 124.99		37.0 x 18.5					19.0
+17		125 to 149.99		43.0 x 21.5					21.0
+18		150 to 174.99		50.0 x 25.0					23.0
+19		175 to 199.99		60.0 x 30.0 				25.0
+20		200 to 249.99		60.0 x 30.0					25.0
+21		250 to 299.99		65.0 x 32.0					30.0
+22		300 to 349.99		68.0 x 35.0					32.0
+23		350 to 399.99		70.0 x 35.0					35.0
+24		400 to 499.99		75.0 x 38.0					40.0
+
+	$ShaftRange = {0.0, 1.0, 3.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0,
+				   35.0, 40.0, 45.0, 50.0, 55.0, 60.0,
+				   70.0, 80.0, 90.0, 100.0, 125.0,
+				   150.0, 175.0, 200.0, 250.0, 300.0, 350.0, 400.0, 500.0};
+		 
+	$KeyW = {0.10, 0.30, 0.8, 1.4, 2.4, 3.2, 4.6, 6.0, 7.0, 8.0, 9.0, 10.0,
+			 12.0, 15.0, 19.0, 22.0, 25.0, 31.0, 37.0,
+			 43.0, 50.0, 60.0, 60.0, 65.0, 68.0, 70.0, 75.0,};
+		
+	$Screw = {0.25, 1.0, 1.5, 2.5, 3.0, 3.0, 5.0, 5.0, 6.0, 8.0, 8.0, 10.0, 10.0, 10.0,
+			  12.0, 12.0, 12.0, 13.0, 15.0, 17.0, 19.0, 21.0,
+			  23.0, 25.0, 25.0, 30.0, 32.0, 35.0, 40.0};
+		
+*/
+
+
+
+//					- Test Data - 
+
+
+
+/*
+	float $Shaft, $Width, $ScrewL;
+	int $Bool, $N;
+	string $Hub;
+	
+	$Shaft = 25.0;	$Width = 100; $N = 40; $ScrewL = 20; $Bool = 1;
+	
+	DVY_ShaftDesign( $Shaft, $Width, $N, $ScrewL, $Hub, $Bool);
+		
+*/
+	
+	
+global proc string[] DVY_ShaftDesign(float $Shaft, float $Width, int $N, float $ScrewL, string $Hub, int $Bool, int $Num)
+ {
+	 
+	 
+	string $Temp[], $Name[], $Shaders[];
+	float $ShaftRange[], $KeyW[], $Screw[];
+	float $Key, $KeyWidth, $KeyHeight, $SetScrew;
+	int $IndexNo;
+	int $e = 0; 					//	Integer used to increment object count.
+	
+	$ShaftRange = {0.0, 1.0, 3.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0,
+				   35.0, 40.0, 45.0, 50.0, 55.0, 60.0,
+				   70.0, 80.0, 90.0, 100.0, 125.0,
+				   150.0, 175.0, 200.0, 250.0, 300.0, 350.0, 400.0, 500.0};
+		 
+	$KeyW = {0.10, 0.30, 0.8, 1.4, 2.4, 3.2, 4.6, 6.0, 7.0, 8.0, 9.0, 10.0,
+			 12.0, 15.0, 19.0, 22.0, 25.0, 31.0, 37.0,
+			 43.0, 50.0, 60.0, 60.0, 65.0, 68.0, 70.0, 75.0};
+		
+	$Screw = {0.25, 1.0, 1.5, 2.5, 3.0, 3.0, 5.0, 5.0, 6.0, 8.0, 8.0, 8.0, 10.0, 10.0,
+			  10.0, 12.0, 12.0, 13.0, 15.0, 17.0, 19.0, 21.0,
+			  23.0, 25.0, 25.0, 30.0, 32.0, 35.0, 40.0};
+
+/*
+	$ShaftRange = {0.0, 1.0, 3.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0,
+				   35.0, 40.0, 45.0, 50.0, 55.0, 60.0,
+				   70.0, 80.0, 90.0, 100.0, 125.0,
+				   150.0, 175.0, 200.0, 250.0, 300.0, 500.0};
+		 
+	$KeyW = {0.10, 0.30, 0.8, 1.4, 2.4, 3.2, 4.6, 6.0, 7.0, 8.0, 9.0, 10.0,
+			 12.0, 15.0, 19.0, 22.0, 25.0, 31.0, 37.0,
+			 43.0, 50.0, 60.0, 60.0};
+		
+	$Screw = {0.25, 1.0, 1.5, 2.5, 3.0, 3.0, 5.0, 5.0, 6.0, 8.0, 8.0, 10.0, 10.0, 10.0,
+			  12.0, 12.0, 12.0, 13.0, 15.0, 17.0, 19.0, 21.0,
+			  23.0, 25.0, 25.0};
+*/
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	
+	
+	
+	//	Create Shaders for Shaft, Key and SeScrew.
+			
+		if(!`objExists Shaft_SH`) { $shader[0] = `DVY_Shaders(9)`; }
+			 $Shader[0] = "Shaft_SH";
+		if(!`objExists Key_SH`) { $shader[1] = `DVY_Shaders(10)`; }
+			 $Shader[1] = "Key_SH";
+		if(!`objExists SetScrew_SH `) { $shader[1] = `DVY_Shaders(11)`; }
+			 $Shader[2] = "SetScrew_SH";
+		
+//	print "\nShaders used are..\n";
+//	print $Shader;
+
+	int $i = 0; int $e = 1;
+	
+	for ($i; $i<`size $ShaftRange`; $i++)
+		{
+		 if ($Shaft > $ShaftRange[$i]) 	
+			{
+				$IndexNo = $i;
+				$KeyWidth = $KeyW[$i];
+				$KeyHeight = ($KeyWidth);
+				$Key = $KeyWidth;
+				$SetScrew = $Screw[$i];}
+		}
+
+//		print ("$SetScrew is " + $SetScrew + "\n");
+		
+	 $Name[0] = "GearShaft_1";
+	 
+	 if (`objExists $Name[0]`)
+		{ 
+			while (`objExists $Name[0]`)
+			{
+				$Name[0] = ("GearShaft_" + (++$e));
+			}
+	 	}
+	 
+	$Temp = `polyCylinder -r ($Shaft * 0.5) -h ($Width * 1.0) -sx $N -sy 1 -sz 0 
+								-ax 0 1 0 -ch 0 -name Shaft`;	
+	$Name[0] = `rename $Temp[0] ("GearShaft" + $Num)`;
+	rotate -r  0 0 -90 $Name[0];
+	makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+	
+		select -r $Name[0];
+		hyperShade -assign "initialShadingGroup";
+		hyperShade -assign $Shader[1];
+
+	int $Face = ($N + 1);
+	
+	select -r ($Name[0] + ".f[" + $Face + "]" ) ;
+	move -r ($Width * 0.05) 0 0;
+	
+		if ($Width < 100)
+			{
+				if ($Shaft > 50) {move -r ($Width * 0.05) 0 0;}
+				if ($Shaft > 75) {move -r ($Width * 0.075) 0 0;}
+				if ($Shaft > 100) {move -r ($Width * 0.1) 0 0;}
+			}
+	
+	float $M = $Width * 0.025;
+		if ($Width > 150) {$M = ($Width * 0.01);}
+	
+	polyExtrudeFacet -ch 0 -kft 1 -pvx 0  -pvy 0 -pvz 0
+		-tx ($M) -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 
+		-sx 1 -sy 0.95 -sz 0.95
+		-ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+		-ltz 0 -ws 1 -ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 1 -lsy 1 -lsz 1
+		-ldx 0 -ldy 0 -ldz 0 -w 0 -gx 0 -gy -1 -gz 0 -att 0 -mx 0 -my 0 -mz 0
+		-sma 30 ($Name[0] + ".f[" + $Face + "]" ) ;
+
+	select -r ($Name[0] + ".f[" + ($Face - 1) + "]" ) ;
+	move -r ($KeyWidth * 0.575) 0 0;
+		
+	polyExtrudeFacet -ch 0 -kft 1 -pvx 0  -pvy 0 -pvz 0
+		-tx ($KeyWidth * -0.575) -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 
+		-sx 1 -sy 1 -sz 1
+		-ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+		-ltz 0 -ws 1 -ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 1 -lsy 1 -lsz 1
+		-ldx 0 -ldy 0 -ldz 0 -w 0 -gx 0 -gy -1 -gz 0 -att 0 -mx 0 -my 0 -mz 0
+		-sma 30 ($Name[0] + ".f[" + ($Face - 1) + "]" ) ;
+	
+	polyExtrudeFacet -ch 0 -kft 1 -pvx 0  -pvy 0 -pvz 0
+		-tx -0.01 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 
+		-sx 1 -sy 1.5 -sz 1.5
+		-ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+		-ltz 0 -ws 1 -ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 1 -lsy 1 -lsz 1
+		-ldx 0 -ldy 0 -ldz 0 -w 0 -gx 0 -gy -1 -gz 0 -att 0 -mx 0 -my 0 -mz 0
+		-sma 30 ($Name[0] + ".f[" + ($Face - 1) + "]" ) ;
+	
+	float $M1 = (($Width * -1) + 0.01);
+		if ($Width > 150) {$M1 = (($Width * -1) + 0.01);}
+	
+	polyExtrudeFacet -ch 0 -kft 1 -pvx 0  -pvy 0 -pvz 0
+		-tx $M1 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 
+		-sx 1 -sy 1 -sz 1
+		-ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+		-ltz 0 -ws 1 -ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 1 -lsy 1 -lsz 1
+		-ldx 0 -ldy 0 -ldz 0 -w 0 -gx 0 -gy -1 -gz 0 -att 0 -mx 0 -my 0 -mz 0
+		-sma 30 ($Name[0] + ".f[" + ($Face - 1) + "]" ) ;
+	
+	polySubdivideFacet -dv 1 -m 1 -ch 0 ($Name[0] + ".f[" + $Face + "]" ) ;
+	polySubdivideFacet -dv 1 -m 1 -ch 0 ($Name[0] + ".f[" + ($Face - 1) + "]" ) ;
+
+	for ($i=1; $i<3; $i++)
+		{
+			$Temp = `polyCube -w ($KeyWidth) -h ($Key) -d (($Width * $i) - ($KeyWidth * 0.75))
+				-sx 2 -sy 1 -sz 1 -ax 0 1 0 -ch 0 -name ("Keyway_" + $i)`;
+			rotate -r 0 90 0  $Temp[0];
+			
+			$Temp = `polyCylinder -r ($KeyWidth * 0.5) -h ($Key) -sx 16 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ("KeyEnd" + $i)`;
+			move -r ((($Width * $i) - ($KeyWidth * 0.75)) * 0.5) 0 0 $Temp[0];
+			
+			$Temp = `polyCylinder -r ($KeyWidth * 0.5) -h ($Key) -sx 16 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ("KeyEnd" + ($i + 1))`;	
+			move -r ((($Width * $i) - ($KeyWidth * 0.75)) * -0.5) 0 0 $Temp[0];
+			
+			polyBoolOp -op 1 -name ("KeyWay" + ($i + 1)) -ch 0  ("Keyway_" + $i)  ("KeyEnd" + $i);
+			$Temp = `polyBoolOp -op 1 -name ("KeySlot" + $i) -ch 0 ("KeyWay" + ($i + 1))  ("KeyEnd" + ($i + 1))`;
+			select -r ($Temp[0] + ".vtx[0:49]") ;	delete;
+			move -r ($KeyWidth * 0.2) ($Shaft *0.5) 0 $Temp[0];
+			move -r ($Width * ($i - 01) * 0.5) 0 0 $Temp[0];
+			$Name[$i] = `rename $Temp[0] ("Key_" + $Num)`;
+			select -r $Name[$i];
+			makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+ 
+		}
+
+	select -r $Name[1];
+	polyCleanupArgList 3 { "0","1","0","0","1","1","0","0","0","0.001","0","0.001","0","1e-005","0","2","1" };
+		select -r $Name[1];
+		makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+			select -r $Name[1];
+			hyperShade -assign "initialShadingGroup";
+			hyperShade -assign $Shader[1];
+
+	$Temp = `polyBoolOp -op 2 -name ("Shaft" + $i) -ch 0 $Name[0] $Name[2]`;
+		$Name[0] = `rename $Temp[0] ("GearShaft_" + $Num)`;
+			select -r $Name[0];
+			makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+
+		parent $Name[1] $Name[0];
+	
+	
+	$Temp = `polyCylinder -r ($SetScrew * 0.5) -h ($ScrewL * 0.8) -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+		move -r 0 ((($Shaft + $Key + ($ScrewL * 0.8)) * 0.5) + ($SetScrew * 0.1)) 0;
+	
+		polyExtrudeFacet -ch 0 -kft 1 -pvx 0  -pvy 0 -pvz 0
+			-tx 0 -ty ($SetScrew * -0.05) -tz 0 -rx 0 -ry 0 -rz 0 
+			-sx 0.9 -sy 1 -sz 0.9
+			-ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+			-ltz 0 -ws 1 -ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 1 -lsy 1 -lsz 1
+			-ldx 0 -ldy 0 -ldz 0 -w 0 -gx 0 -gy -1 -gz 0 -att 0 -mx 0 -my 0 -mz 0
+			-sma 30 ($Temp[0] + ".f[18]" ) ;
+		
+		polyExtrudeFacet -ch 0 -kft 1 -pvx 0  -pvy 0 -pvz 0
+			-tx 0 -ty ($SetScrew * -0.05) -tz 0 -rx 0 -ry 0 -rz 0 
+			-sx 0.95 -sy 1 -sz 0.95
+			-ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+			-ltz 0 -ws 1 -ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 1 -lsy 1 -lsz 1
+			-ldx 0 -ldy 0 -ldz 0 -w 0 -gx 0 -gy -1 -gz 0 -att 0 -mx 0 -my 0 -mz 0
+			-sma 30 ($Temp[0] + ".f[18]" ) ;
+		
+		polyExtrudeFacet -ch 0 -kft 1 -pvx 0  -pvy 0 -pvz 0
+			-tx 0 -ty ($SetScrew * 0.05) -tz 0 -rx 0 -ry 0 -rz 0 
+			-sx 0.95 -sy 1 -sz 0.95
+			-ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+			-ltz 0 -ws 1 -ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 1 -lsy 1 -lsz 1
+			-ldx 0 -ldy 0 -ldz 0 -w 0 -gx 0 -gy -1 -gz 0 -att 0 -mx 0 -my 0 -mz 0
+			-sma 30 ($Temp[0] + ".f[19]" ) ;
+		
+		select -r $Temp[0];
+		hyperShade -assign "initialShadingGroup";
+		hyperShade -assign $Shader[2];		
+		$Name[2] = $Temp[0]; 
+	
+		$Temp = `polyCylinder -r ($SetScrew * 0.375) -h ($SetScrew * 0.9) -sx 8 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name Screw`;
+			move -r 0 (($Shaft + $Key + ($ScrewL * 1.6)) * 0.5) 0;
+			rotate -r 0 22.5 0;
+			
+			select -r $Temp[0];
+			hyperShade -assign "initialShadingGroup";
+			hyperShade -assign $Shader[1];		
+			
+		$Temp = `polyBoolOp -op 2 -ch 0 $Name[2] $Temp[0]`;
+			$Name[2] = `rename $Temp[0] ("SetScrew_" + $Num)`;
+
+		selectMode -object;
+			select -r $Name[2];
+			makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+		
+		parent $Name[2] $Name[0];
+	
+	
+		$Temp = `polyCylinder -r ($Shaft * 0.5) -h ($Width * 2.0) -sx $N -sy 1 -sz 1 
+									-ax 0 1 0 -ch 0 -name Shaft`;	
+			$Name[3] = `rename $Temp[0] ("BoolShaft" + $Num)`;
+			rotate -r  0 0 -90 $Name[3];
+			makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+			
+		$Temp = `polyCube -w ($KeyWidth) -h ($Key) -d ($Width * 2.1)
+					-sx 2 -sy 1 -sz 1 -ax 0 1 0 -ch 0 -name ("Keyway_" + $Num)`;
+				rotate -r 0 90 0  $Temp[0];
+				move -r 0 ($Shaft * 0.5) 0 $Temp[0];
+				$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Name[3] `;
+				select -r $Temp[0];
+				hyperShade -assign "initialShadingGroup";
+				hyperShade -assign $Shader[1];		
+		$Name[3] = `rename $Temp[0] ("BoolShaft_" + $Num)`;
+			
+			selectMode -object;
+			select -r $Name[3];
+			makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+			parent $Name[3] $Name[0];
+			
+		$Temp = `polyCylinder -r ($SetScrew * 0.5) -h ($ScrewL * 4.5) -sx 18
+							-sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+			move -r 0 ((($Shaft + $Key + ($ScrewL * 0.8)) * 0.5) + ($SetScrew * 0.1)) 0;
+		
+			select -r $Temp[0];
+			hyperShade -assign "initialShadingGroup";
+			hyperShade -assign $Shader[1];		
+			$Name[4] = `rename $Temp[0] ("BoolScrew_" + $Num)`;
+				
+			selectMode -object;
+			select -r $Name[4];
+			makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+			parent $Name[4] $Name[0];
+
+
+//	print ( "Shaft " + $Name[0] + " and " + $Name[1] + " have been built ready for use.. © Davvey..\n");
+	
+	select -r $Name[0];
+	
+	return $Name;
+	
+ }
+

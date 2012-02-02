@@ -1,0 +1,318 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davveys Stair Generator
+''    Author:  
+''    Last Updated: Mar 25, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4609.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Procedure to build a set of Stairs  
+
+global proc DVY_StairBuild()
+{
+	source DVY_StairMaker;
+// ******************************************************************************** //	
+//	Global Variables	
+	
+	global string $Units;
+	global float $DVYUnit;
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Local Variables
+	
+	string $Temp[], $Temps[], $Tmp[], $StairGrp[];
+	
+	float $DVYsData[];
+	int $DVYsOpt[];
+	int $ShOpt[];	
+	int $DVYcOpts[];
+	
+	int $a, $b, $c, $i, $j, $k;
+	int $Q = 1; 	// 0 = Plain edge, 1 = Front Bevel Edge, 2 = Double Bevel Edge,
+					// 3 = Front Round Edge, 4 == Both Edges Rounded.
+	
+	int $O = 1;		// 0 = Open Treads, 1 = Closed Treads (with Risers).
+	
+	int $T = 0;		// 0 = Standard Stair Rails, 1 = Inboard Rails.
+	
+		$StairCount[0] = 3;
+		$Risers[0] = $StairCount[0] - 1;
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Set Scaling unit for Global units used.
+		
+	DVY_ScaleSet;
+	print ("Current units are " + $Units + " and Scale Factor $DVYUnit is " + $DVYUnit + "\n");
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Build Straight Stairs.
+
+	if (`radioButtonGrp -q -sl StairTypeRadioButton` == 2)
+		{// Error Checking Section.
+			
+			if (`floatFieldGrp -q -v1 StaFloatFieldGrp_001` == 0)
+				{ error "OOps please enter value greater than 0 in Stair Tread Depth.. © Davvey..\n";}
+		
+			if (`floatFieldGrp -q -v1 StaFloatFieldGrp_002` == 0)
+				{ error "OOps please enter value greater than 0 in Stair Tread Width.. © Davvey..\n";}
+				
+			if (`floatFieldGrp -q -v1 StaFloatFieldGrp_003` == 0)
+				{ error "OOps please enter value greater than 0 in Step Height.. © Davvey..\n";}
+				
+			if (`floatFieldGrp -q -v1 StaFloatFieldGrp_004` == 0)
+				{ error "OOps please enter value greater than 0 in Step Thickness.. © Davvey..\n";}
+				
+			if (`floatFieldGrp -q -v1 StaFloatFieldGrp_004` > `floatFieldGrp -q -v1 StaFloatFieldGrp_003`)
+				{ error "OOps please set Step Height to be equal to or greater than Step Thickness.. © Davvey..\n";}
+			
+		// Straight Stair Data	
+			$DVYsData[0] = `floatFieldGrp -q -v1 StaFloatFieldGrp_001`; // Stair Tread Depth
+			$DVYsData[1] = `floatFieldGrp -q -v1 StaFloatFieldGrp_002`; // Stair Tread Width
+			$DVYsData[2] = `floatFieldGrp -q -v1 StaFloatFieldGrp_003`; // Step Height
+			$DVYsData[3] = `floatFieldGrp -q -v1 StaFloatFieldGrp_004`; // Stair Thickness
+			
+			$DVYsOpt[0] = `intFieldGrp -q -v1 StaIntField_000`;			// No of Steps;
+		
+		// Straight Stair Options
+			$DVYsOpt[1] = `radioButtonGrp -q -sl StairRisersRadioButton`;
+			$DVYsOpt[2] = `radioButtonGrp -q -sl StairSidesRadioButton`;
+			
+			$DVYsOpt[3] = `optionMenu -q -sl DVY_StStepStyleOption` - 1;
+			
+			$DVYsOpt[4] = `radioButtonGrp -q -sl StLeftHandRailRadioButton`;
+			$DVYsOpt[5] = `radioButtonGrp -q -sl StRightHandRailRadioButton`;
+			
+			$DVYsOpt[10] = 1;	$DVYsOpt[11] = 0; 	// Left HandRail styles
+			$DVYsOpt[12] = 0;					 	// Left HandRail Post styles
+			
+			$DVYsOpt[13] = 1;	$DVYsOpt[14] = 0;	// Right HandRail styles
+			$DVYsOpt[15] = 0;					 	// Right HandRail Post styles
+			
+			$DVYsOpt[6] = `radioButtonGrp -q -sl StPanelRadioButton`;
+			$DVYsOpt[7] = `radioButtonGrp -q -sl StHandRailRadioButton`;
+			
+		// Straight Stair Shader Options	
+			$ShOpt[0] = `optionMenu -q -sl DVY_StStepOption`;			// Shader for Steps
+			$ShOpt[1] = `optionMenu -q -sl DVY_StRailOption`;			// Shader for Stair Rail
+			$ShOpt[2] = `optionMenu -q -sl DVY_StLeftHandRailOption`;	// Shader for Left Hand Rail
+			$ShOpt[3] = `optionMenu -q -sl DVY_StRightHandRailOption`;	// Shader for Right Hand Rail
+			$ShOpt[4] = `optionMenu -q -sl DVY_StPanelOption`;			// Shader for Outer HandRail Panels.
+		
+				$StairGrp =	DVY_StraightStair($DVYsData, $DVYsOpt, $ShOpt);
+		
+		}
+		 
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Build Spiral Stairs.
+		
+	if (`radioButtonGrp -q -sl StairTypeRadioButton` == 3)
+		{// Error Checking Section.
+			
+			if (`floatFieldGrp -q -v1 StaFloatFieldGrp_101` == 0)
+				{ error "OOps please enter value greater than 0 in Stair Outside Diameter.. © Davvey..\n";}
+		
+			if (`floatFieldGrp -q -v1 StaFloatFieldGrp_102` == 0)
+				{ error "OOps please enter value greater than 0 in Stair Tread Width.. © Davvey..\n";}
+				
+			if (`floatFieldGrp -q -v1 StaFloatFieldGrp_103` == 0)
+				{ error "OOps please enter value greater than 0 in Step Height.. © Davvey..\n";}
+				
+			if (`floatFieldGrp -q -v1 StaFloatFieldGrp_104` == 0)
+				{ error "OOps please enter value greater than 0 in Step Thickness.. © Davvey..\n";}
+				
+			if (`floatFieldGrp -q -v1 StaFloatFieldGrp_104` > `floatFieldGrp -q -v1 StaFloatFieldGrp_103`)
+				{ error "OOps please set Step Height to be equal to or greater than Step Thickness.. © Davvey..\n";}
+			
+			// Spiral Stair Data	
+				$DVYsData[0] = `floatFieldGrp -q -v1 StaFloatFieldGrp_101`; // Stair Outside Diameter
+				$DVYsData[1] = `floatFieldGrp -q -v1 StaFloatFieldGrp_102`; // Stair Tread Width
+				$DVYsData[2] = `floatFieldGrp -q -v1 StaFloatFieldGrp_103`; // Step Height
+				$DVYsData[3] = `floatFieldGrp -q -v1 StaFloatFieldGrp_104`; // Stair Thickness
+				
+				$DVYsData[4] = `floatFieldGrp -q -v1 StaFloatField_100`; 	// No. of Turns of Spiral
+				$DVYsOpt[0] = `intFieldGrp -q -v1 StaIntField_100`;			// No of Steps per Turn;
+			
+			// Spiral Stair Options
+				$DVYsOpt[1] = `radioButtonGrp -q -sl SpiralColumnRadioButton`;
+				$DVYsOpt[2] = `radioButtonGrp -q -sl SpOuterHandRailRadioButton`;
+				$DVYsOpt[3] = `radioButtonGrp -q -sl SpInnerHandRailRadioButton`;
+				$DVYsOpt[4] = `radioButtonGrp -q -sl SpOuterPanelRadioButton`;
+				$DVYsOpt[5] = `radioButtonGrp -q -sl SpHandRailRadioButton`;
+	
+				$DVYsOpt[10] = 1;	$DVYsOpt[11] = 0; 	// Outer HandRail Top & Bottom styles
+				$DVYsOpt[12] = 0;					 	// Outer HandRail Post styles
+				
+				$DVYsOpt[13] = 1;	$DVYsOpt[14] = 0;	// Inner HandRail Top & Bottom styles
+				$DVYsOpt[15] = 0;					 	// Inner HandRail Post styles
+			
+			// Spiral Stair Shader Options	
+				$ShOpt[0] = `optionMenu -q -sl DVY_SpStepOption`;			// Shader for Steps
+				$ShOpt[1] = `optionMenu -q -sl DVY_SpColumnOption`;			// Shader for Center Column
+				$ShOpt[2] = `optionMenu -q -sl DVY_SpOutHandRailOption`;	// Shader for Outer HandRail
+				$ShOpt[3] = `optionMenu -q -sl DVY_SpInHandRailOption`;		// Shader for Inner HandRail
+				$ShOpt[4] = `optionMenu -q -sl DVY_SpOuterPanelOption`;		// Shader for Outer HandRail Panels.
+				
+				$StairGrp =	DVY_SpiralStair($DVYsData, $DVYsOpt, $ShOpt);
+		
+		}
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //
+// Complex Stairs Section
+
+	if (`radioButtonGrp -q -sl StairTypeRadioButton` == 4)
+		{// Error Checking Section.
+			
+			if (`optionMenu -q -sl  DVY_CStStairOption` == 1)
+				{ error "OOps please select style of Stairs required.. © Davvey..\n";}
+					
+			if (`floatFieldGrp -q -v1 StaFloatFieldGrp_201` == 0)
+				{ error "OOps please enter value greater than 0 in Stair Tread Depth.. © Davvey..\n";}
+		
+			if (`floatFieldGrp -q -v1 StaFloatFieldGrp_202` == 0)
+				{ error "OOps please enter value greater than 0 in Stair Tread Width.. © Davvey..\n";}
+				
+			if (`floatFieldGrp -q -v1 StaFloatFieldGrp_203` == 0)
+				{ error "OOps please enter value greater than 0 in Step Height.. © Davvey..\n";}
+				
+			if (`floatFieldGrp -q -v1 StaFloatFieldGrp_204` == 0)
+				{ error "OOps please enter value greater than 0 in Step Thickness.. © Davvey..\n";}
+				
+			if (`floatFieldGrp -q -v1 StaFloatFieldGrp_204` > `floatFieldGrp -q -v1 StaFloatFieldGrp_203`)
+				{ error "OOps please set Step Height to be equal to or greater than Step Thickness.. © Davvey..\n";}
+				
+			if (`intFieldGrp -q -v1  StaIntField_201` == 0)
+				{ error "OOps please enter number of steps required for first flight.. © Davvey..\n";}
+			
+			if (`optionMenu -q -sl  DVY_CStStairOption` > 2)
+				{
+				 if (`intFieldGrp -q -v2  StaIntField_201` == 0)
+					{ error "OOps please enter number of steps required for Second flight.. © Davvey..\n";}
+				}
+				
+			if (`optionMenu -q -sl  DVY_CStStairOption` == 5)
+				{
+				 if (`intFieldGrp -q -v3  StaIntField_201` == 0)
+					{ error "OOps please enter number of steps required for Third flight.. © Davvey..\n";}
+				}
+				
+			if ((`radioButtonGrp -q -sl CStLeftHandRailRadioButton` == 2) ||
+				(`radioButtonGrp -q -sl CStLeftHandRailRadioButton` == 2))
+				{
+					if (`optionMenu -q -sl DVY_CStHandRailStyleOption` == 1)
+					{ error "OOps please select style of Handrail required. © Davvey..\n";}
+					
+					if (`optionMenu -q -sl DVY_CStSpindleStyleOption` == 1)
+					{ error "OOps please select style of Spindles required. © Davvey..\n";}
+				}
+			
+			$DVYcOpts[0] =  `optionMenu -q -sl DVY_CStStairOption` ;
+				if (`optionMenu -q -sl DVY_CStStairOption` == 7) {$DVYcOpts[1] = 3;}
+				if (`optionMenu -q -sl DVY_CStStairOption` == 8) {$DVYcOpts[1] = 6;}
+				if (`optionMenu -q -sl DVY_CStStairOption` == 9) {$DVYcOpts[1] = 9;}
+				if (`optionMenu -q -sl DVY_CStStairOption` == 10) {$DVYcOpts[1] = 3;}
+		
+		// Complex Stair Data	
+			$DVYsData[0] = `floatFieldGrp -q -v1 StaFloatFieldGrp_201`; // Stair Tread Depth
+			$DVYsData[1] = `floatFieldGrp -q -v1 StaFloatFieldGrp_202`; // Stair Tread Width
+			$DVYsData[2] = `floatFieldGrp -q -v1 StaFloatFieldGrp_203`; // Step Height
+			$DVYsData[3] = `floatFieldGrp -q -v1 StaFloatFieldGrp_204`; // Stair Thickness
+			
+			$DVYsOpt[0] = `intFieldGrp -q -v1  StaIntField_201`;		// No of Steps first flight;
+			$DVYsOpt[1] = `intFieldGrp -q -v2  StaIntField_201`;		// No of Steps second flight;
+			$DVYsOpt[2] = `intFieldGrp -q -v3  StaIntField_201`;		// No of Steps third flight;
+		
+		// Complex Stair Options
+			$DVYsOpt[3] = `radioButtonGrp -q -sl CStairRisersRadioButton`;
+			$DVYsOpt[4] = `radioButtonGrp -q -sl CStairSidesRadioButton`;
+			
+			$DVYsOpt[5] = `optionMenu -q -sl DVY_CStepStyleOption` - 1;
+			
+			$DVYsOpt[6] = `radioButtonGrp -q -sl CStLeftHandRailRadioButton`;
+			$DVYsOpt[7] = `radioButtonGrp -q -sl CStRightHandRailRadioButton`;
+			
+			$DVYsOpt[10] = `optionMenu -q -sl DVY_CStHandRailStyleOption`;		// Left HandRail styles
+			$DVYsOpt[11] = 0; 
+			$DVYsOpt[12] = `optionMenu -q -sl DVY_CStSpindleStyleOption` -1;	// Left HandRail Post styles
+			
+			$DVYsOpt[13] = `optionMenu -q -sl DVY_CStHandRailStyleOption`;		// Right HandRail styles
+			$DVYsOpt[14] = 0;	
+			$DVYsOpt[15] = `optionMenu -q -sl DVY_CStSpindleStyleOption` -1;	// Right HandRail Post styles
+			
+			$DVYsOpt[8] = `radioButtonGrp -q -sl CStPanelRadioButton`;
+	//		$DVYsOpt[9] = `radioButtonGrp -q -sl CStHandRailRadioButton`;
+		
+		// Complex Stair Shader Options	
+			$ShOpt[0] = `optionMenu -q -sl DVY_CStStepOption`;			// Shader for Steps
+			$ShOpt[1] = `optionMenu -q -sl DVY_CStRailOption`;			// Shader for Stair Rail
+			$ShOpt[2] = `optionMenu -q -sl DVY_CStLeftHandRailOption`;	// Shader for Left Hand Rail
+			$ShOpt[3] = `optionMenu -q -sl DVY_CStRightHandRailOption`;	// Shader for Right Hand Rail
+			$ShOpt[4] = `optionMenu -q -sl DVY_CStPanelOption`;			// Shader for Outer HandRail Panels.
+	
+				$StairGrp =	DVY_ComplexStair($DVYsData, $DVYsOpt, $ShOpt, $DVYcOpts);
+				
+			if (`radioButtonGrp -q -sl CStLfRtRadioButton` == 1)
+				{ scale -1 1 1 $StairGrp[0];}
+		}
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Scale finished unit.
+					 
+	select -r $StairGrp[0];
+		makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+
+	scale $DVYUnit $DVYUnit $DVYUnit $StairGrp[0];
+		select -r $StairGrp[0];
+		delete -constructionHistory;
+		makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Lock off attributes.
+		
+	string $AttrA[] = {".tx", ".ty", ".tz", ".rx", ".ry", ".rz", ".sx", ".sy", ".sz"};
+	string $AttrB[] = {".rx", ".ry", ".rz", ".sx", ".sy", ".sz"};
+	string $AttrR[] = {".rx", ".ry", ".rz"}; 
+	string $AttrS[] = {".sx", ".sy", ".sz"};
+	string $AttrT[] = {".tx", ".ty", ".tz"};
+	
+	select -r -hi $StairGrp[0];
+	string $DSel[] = `ls -tr -sl`;
+	
+	for ($i= 1; $i < size($DSel); $i++)
+		{
+			for ($Att in $AttrA)
+				{ setAttr -l 1 -k 0 ($DSel[$i] + $Att); }
+		}
+			
+		for ($Att in $AttrS)
+			{ setAttr -l 1 -k 0 ($StairGrp[0] + $Att); }
+			
+	select -r $StairGrp[0];
+
+	print "Completed building Stairs Davvey © 2006..\n";
+			
+}

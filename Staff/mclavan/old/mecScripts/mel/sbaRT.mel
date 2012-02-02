@@ -1,0 +1,76 @@
+
+proc sbaRTTSLAdd()
+{
+	string $rtCommands[] = `runTimeCommand -q -ca`;
+	for ( $rtCom in $rtCommands )
+		textScrollList -e -append $rtCom "sbaRTTSL"; 
+}
+
+global proc sbaRTGui()
+{
+	string $winName = "sbaRTWin";
+	int $winWidth = 220;
+	int $winHeight = 300;
+	
+	//Check to see if the window exists
+	if( `window -q -ex $winName` )
+		deleteUI $winName;
+		
+	window -title "RunTime Identify" -w $winWidth -h $winHeight $winName;
+	columnLayout;
+	text -l "Select Runtime Command";
+	textScrollList -w $winWidth -h 150 
+		-sc "sbaRTAnn()"
+		"sbaRTTSL";
+	scrollField -w $winWidth -h 100 -wordWrap true -en true "sbaRTSF";
+	showWindow $winName;
+	
+	//Fill the textScrollList with runtime commands
+	sbaRTTSLAdd();
+}
+
+
+
+global proc sbaRTAnn()
+{
+	string $tslSel[] = `textScrollList -q -si "sbaRTTSL"`;
+	scrollField -e -text `runTimeCommand -q -ann $tslSel[0]` "sbaRTSF";
+}
+
+/*
+def gui():
+	'''
+	Generates GUI for Runtime command script.
+	'''
+	winName = "sbaWin"
+	winWidth = 220
+	winHeight = 300
+	if( cmds.window( winName, q=True, ex=True) ):
+		cmds.deleteUI(winName)
+	cmds.window(winName, title="RunTime Identify",
+		w=winWidth , h=winHeight )
+	cmds.columnLayout()
+	cmds.text(label="Select Runtime Command")
+	cmds.textScrollList( "sbaRTTSL", w=winWidth , h=150 ,
+		append=cmds.runTimeCommand( q=True, ca=True),
+		sc="sbaTD.rtAnn()")
+	cmds.scrollField( "sbaRTSF", 
+		w=winWidth, h=100, 
+		wordWrap=True, en=True)
+	
+	cmds.showWindow(winName)
+	
+def rtAnn():
+	'''
+	Takes the selected textScrollList runtime command and displays
+		what that runtime does.
+	'''	
+	# Grab the value from the textScrollList
+	tslSel = cmds.textScrollList( "sbaRTTSL", q=True, si=True)
+	
+	# Fill the scroll field
+	if( tslSel ):
+		cmds.scrollField( "sbaRTSF", edit=True, 
+			text=cmds.runTimeCommand(tslSel[0], q=True,ann=True))
+			
+*/

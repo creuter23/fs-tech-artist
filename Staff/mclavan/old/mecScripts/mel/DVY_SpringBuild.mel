@@ -1,0 +1,819 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davvey\'s Spring Generator
+''    Author:  
+''    Last Updated: Feb 19, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4556.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+
+/////////////////////////////////////////////////////////////////////////////			
+/*				
+	Copyright © 2006 DVY_SpringBuild. All rights reserved davvey@ntlworld.com
+
+						- DVY_SpringBuild -
+///////////////////////////////////////////////////////////////////////////////
+
+	This scipt is called by the GUI script DVY_Springs and is used to build
+	each section of the Spring. The individual parts are grouped under a Spring
+	Top Group Node as required.
+	The Top and Bottom sections are point and aim constrained to Top and Bottom
+	Locators which can be used to "operate the Spring".
+	
+	The spring will stretch as the Top and Bottom Locators are move in the Y-axis
+	The Move the spring use the Top Gotp Node to Transalte and Roate the Spring.
+	
+	The Spring is generated from a PolyHelix which is a locked Node to prevent 
+	deletion of its construction History. The Helix has is its Height attribute
+	connected to the output of a distance node which is in turn connected to the
+	world space postions of the Top and Bottom Locators. The Spring Body is
+	constrained to the Bottom End Section of the Spring and this ensures realistic
+	stretching of the spring when either end of the spring is pulled.
+	
+
+	Unused attributes are locked off if not required.
+	
+	If required the script can build a Spring to match a Round Cap End Piston 
+	previously built using Davvey's Piston Generator. 
+	To use this option load the Pistons Top Group Node into the GUI before pressing 
+	the Build Spring Button.
+	
+	
+	Note:- The Scale of the Spring will be adjusted to set correct Spring size
+	relevant to the correct size for the Users Maya Unit settings 
+	i.e mm, cm, m, in, ft, yd.
+	
+*/	
+///////////////////////////////////////////////////////////////////////////////
+//					DVY_SpringBuild Procedure
+////////////////////////////////////////////////////////////////////////////////
+
+
+global proc DVY_SpringBuild ()
+		
+{
+	
+// ******************************************************************************** //	
+//	Global Variables
+	
+	global string $Units;
+
+	global float $DVYUnit;
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Local Variables
+	
+	string $Temp[], $Temps[], $Shader[], $SName[], $Spring[], $SpringGrp[];
+	
+	int $a, $b, $c, $e, $i, $j, $k, $t, $T;
+	float $Pos[];
+	float $V = `about -version`;
+	
+	print ("Maya Version is " + $V + "\n");
+
+	if ($V >= 8.0) { print ("Version Number is " + $V + "\n");}
+	
+	$t = `radioButtonGrp -q -sl SpringType`;
+	
+	float $SpOD = `floatField -q -v SPFloatField_01`;
+	float $WrOD = `floatField -q -v SPFloatField_05`;
+	float $SpLn = `floatField -q -v SPFloatField_03`;
+	int $Coils = `intField -q -v SPIntField_01`;
+	
+	string $SpPiston = `textField -q -tx Select01`; 
+	if ($SpPiston != "")
+		{			
+			print ("Building Spring for Piston " + $SpPiston + " © Davvey..\n");
+			$SpOD = `getAttr ($SpPiston + ".SpringPCD")` * 2.0;
+			$WrOD = `getAttr ($SpPiston + ".SpringSection")` * 1.0;
+			$SpLn = `getAttr ($SpPiston + ".SpringLength")`;
+			$Coils = `getAttr ($SpPiston + ".SpringTurns")`;
+			$T = 2;
+		}
+		
+	float $SpHt = $SpLn - $WrOD;
+	
+	print ("Spring Length is " + $SpLn + "\n");
+	print ("Spring OD is " + $SpOD + "\n");
+	print ("Wire OD is " + $WrOD + "\n");
+	print ("Number of Spring Coils is " + $Coils + "\n");
+	
+//	select -r $Temp[50];
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Constants and "Static Data"
+	int $e = $E = 1;
+	
+		$SName = {" ", "Extension", "Compression", "Torsion"};
+			$SName[0] = ($SName[$t] + "_Spring_" + $E + "_");
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Set Scaling unit for Global units used.
+		
+	DVY_ScaleSet;
+	print ("Current units are " + $Units + " and Scale Factor $DVYUnit is " + $DVYUnit + "\n");
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Create Shaders for Pulley Parts.
+	
+	if(!`objExists SpringSteel_SH`) { $Shader[0] = `DVY_Shaders(35)`; }
+		 $Shader[0] = "SpringSteel_SH";		 
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+	if ($SpPiston == "")
+		{			
+			if ((`optionMenu -q -sl DVY_SpringExtTopOption` == 1 ) || (`optionMenu -q -sl DVY_SpringExtBotOption` == 1 ))
+				{
+					error "Please select Spring End Styles for Both ends of the Spring. © Davvey..\n";
+				}
+		}
+		
+	 while(`objExists ($SName[0] + "Main_GrpN_" + $E)`)
+		  {
+			 $E++;	print ("$E is " + $E + "\n");
+		  }
+			$SpringGrp[0] = `group -em -name ($SName[0] + "Main_GrpN_" + $E)`;
+			$SpringGrp[1] = `group -em -name ($SName[0] + "Spring_GrpN_" + $E)`;
+			$SpringGrp[2] = `group -em -name ($SName[0] + "SpringT_GrpN_" + $E)`;
+			
+			print ("Group is called " + $SpringGrp[0] + "\n");
+
+	 while(`objExists ($SName[0] + "MainBody_" + $e)`)	
+	 	{
+			$e++;	print ("$E is " + $e + "\n");
+	 	}
+	
+	$Temp = `polyHelix -c $Coils -h $SpHt -w $SpOD -r ($WrOD * 0.5) -sa 20 -sco 9 -sc 0 -d 1 -ax 0 1 0 -ch 1`;
+		$Spring[0] = `rename $Temp[0] ($SName[0] + "MainBody_" + $e)`;
+		$Spring[1] = `rename $Temp[1] ($SName[0] + "MainBodyHelix_" + $e)`;
+		
+		if ( $V >= 8.0)
+			{	
+				$Pos[0] = `getAttr ($Spring[0] + ".boundingBoxMinY")` * -1;
+				print ("$Pos[0] is " + $Pos[0] + "\n");
+				move -r 0 ($Pos[0]) 0 $Spring[0];
+				move -r 0 ($Pos[0]) 0 $SpringGrp[1];
+				move -r 0 ($Pos[0]) 0 $SpringGrp[2];
+			}
+			else {
+					move -r 0 ($WrOD * 0.5) 0 $Spring[0];
+					move -r 0 ($WrOD * 0.5) 0 $SpringGrp[1];
+				 }
+		
+			select -r $Spring[0] $SpringGrp[1] $SpringGrp[2];
+		makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+		
+		select -r $Spring[0];
+			hyperShade -assign "initialShadingGroup";
+			hyperShade -assign $Shader[0];
+
+// End of Spring Main Body Section
+			
+// -------------------------------------------------------------------------------- //
+// ******************************************************************************** //	
+// Spring Top and Bottom End Sections.
+	
+		if ((`optionMenu -q -sl DVY_SpringExtTopOption` == 2 ) || ($T == 2))
+			{// Extended Top Loop End Section
+				
+				$Temp = `polyHelix -c 0.90 -h ($WrOD * 0.75) -w ($SpOD * 1.0) -r ($WrOD * 0.5) -sa 20 -sco 18 -sc 0 -d 1 -ax 0 1 0 -ch 0`;
+					move -r 0 ($WrOD * -0.25) 0 $Temp[0];
+					rotate 0 36 0 $Temp[0];
+						polyCut  -ws 1  -pcx 0 -pcy 0 -pcz 0 -rx -90 -ry  90 -rz  0 -pw 1 -ph 1 -df 1 -ch 0 $Temp[0];
+						polyCloseBorder -ch 0 $Temp[0];
+							xform -ws -piv 0 0 0 $Temp[0];
+							rotate -r 180 0 0 $Temp[0];
+							move -r 0 ($WrOD * 1.0) 0 $Temp[0];
+					
+				$Spring[2] = `rename $Temp[0] ($SName[0] + "Top_End_" + $e)`;
+						
+				select -r $Spring[0] $Spring[2];
+					makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+					move -r 0 $SpHt 0 $Spring[2];
+			}
+					
+		if ((`optionMenu -q -sl DVY_SpringExtBotOption` == 2 )|| ($T == 2))
+			{// Extended Top Loop End Section
+	
+				$Temp = `polyHelix -c 0.90 -h ($WrOD * 0.75) -w ($SpOD * 1.0) -r ($WrOD * 0.5) -sa 20 -sco 9 -sc 0 -d 1 -ax 0 1 0 -ch 0`;
+					move -r 0 ($WrOD * -0.25) 0 $Temp[0];
+					rotate 0 36 0 $Temp[0];
+						polyCut  -ws 1  -pcx 0 -pcy 0 -pcz 0 -rx -90 -ry  90 -rz  0 -pw 1 -ph 1 -df 1 -ch 0 $Temp[0];
+						polyCloseBorder -ch 0 $Temp[0];
+						xform -ws -piv 0 0 0 $Temp[0];
+				
+					$Spring[3] = `rename $Temp[0] ($SName[0] + "Bot_End_" + $e)`;
+						
+					select -r $Spring[3];
+						makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+			}
+	
+		
+// -------------------------------------------------------------------------------- //
+// ******************************************************************************** //	
+		
+		if (`optionMenu -q -sl DVY_SpringExtTopOption` == 3 )
+			{// Open End Top Section
+
+				$Temp = `polyHelix -c 0.5 -h 0.0 -w ($SpOD * 1.0) -r ($WrOD * 0.5) -sa 20 -sco 9 -sc 0 -d 1 -ax 0 1 0 -ch 0`;
+					move -r 0 ($WrOD * 0.5) 0 $Temp[0];
+					
+						select -r ($Temp[0] + ".f[160:179]") ($Temp[0] + ".f[181] ");
+						delete;
+						polyCloseBorder -ch 0 $Temp[0];
+						scale 1 0.90 1  ($Temp[0] + ".f[161] ") ;
+						move -r 0 ($WrOD * 0.05) 0 ($Temp[0] + ".f[161] ") ;
+					
+						$Spring[2] = `rename $Temp[0] ($SName[0] + "Top_End_" + $e)`;
+						
+					select -r $Spring[0] $Spring[2];
+						makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+						move -r 0 $SpHt 0 $Spring[2];
+						
+			}		
+			
+		if (`optionMenu -q -sl DVY_SpringExtBotOption` == 3 )
+			{// Open End Bottom Section
+						
+				$Temp = `polyHelix -c 0.5 -h 0.0 -w ($SpOD * 1.0) -r ($WrOD * 0.5) -sa 20 -sco 18 -sc 0 -d 1 -ax 0 1 0 -ch 0`;
+					move -r 0 ($WrOD * 0.5) 0 $Temp[0];
+					
+						select -r ($Temp[0] + ".f[160:179]") ($Temp[0] + ".f[181] ");
+						delete;
+						polyCloseBorder -ch 0 $Temp[0];
+						scale 1 0.90 1 ($Temp[0] + ".f[161] ") ;
+						move -r 0 ($WrOD * 0.05) 0 ($Temp[0] + ".f[161] ") ;
+						rotate 180 0 0 $Temp[0];
+							$Spring[3] = `rename $Temp[0] ($SName[0] + "Bot_End_" + $e)`;
+						
+					select -r $Spring[3];
+						makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+			}	
+			
+// -------------------------------------------------------------------------------- //
+// ******************************************************************************** //	
+				
+		if (`optionMenu -q -sl DVY_SpringExtTopOption` == 4 )
+			{// Extended Top Loop End Section
+				
+				$Temp = `polyHelix -c 0.5 -h 0.0 -w ($SpOD * 1.0) -r ($WrOD * 0.5) -sa 20 -sco 18 -sc 0 -d 1 -ax 0 1 0 -ch 0`;
+					polyCut  -ws 1  -pcx 0 -pcy 0 -pcz 0 -rx 0 -ry  90 -rz  0 -pw 1 -ph 1 -df 1 -ch 0 $Temp[0];
+					polyCloseBorder -ch 0 $Temp[0];
+						select -r ($Temp[0] + ".f[201]");
+						move -r ($SpOD * -0.01) 0 0 ;
+						move -r 0 ($WrOD * 0.5) 0 $Temp[0];
+							$Spring[2] = `rename $Temp[0] ($SName[0] + "Top_End_" + $e)`;
+						
+					select -r $Spring[0] $Spring[2];
+						makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+						move -r 0 $SpHt 0 $Spring[2];
+			}			
+						
+		if (`optionMenu -q -sl DVY_SpringExtBotOption` == 4 )
+			{// Extended Bottom Loop End Section
+				
+				$Temp = `polyHelix -c 0.5 -h 0.0 -w ($SpOD * 1.0) -r ($WrOD * 0.5) -sa 20 -sco 18 -sc 0 -d 1 -ax 0 1 0 -ch 0`;
+					polyCut  -ws 1  -pcx 0 -pcy 0 -pcz 0 -rx 0 -ry  90 -rz  0 -pw 1 -ph 1 -df 1 -ch 0 $Temp[0];
+					polyCloseBorder -ch 0 $Temp[0];
+						select -r ($Temp[0] + ".f[201]");
+						move -r ($SpOD * -0.01) 0 0 ;
+						rotate 180 0 0 $Temp[0];
+						move -r 0 ($WrOD * 0.5) 0 $Temp[0];
+							$Spring[3] = `rename $Temp[0] ($SName[0] + "Bot_End_" + $e)`;
+						
+					select -r $Spring[3];
+						makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+			}
+				
+// -------------------------------------------------------------------------------- //
+// ******************************************************************************** //	
+			
+			if (`optionMenu -q -sl DVY_SpringExtTopOption` == 5 ) 
+				{// Top Hook Type End Section
+					
+					$Temp = `polyHelix -c 0.5 -h 0.0 -w ($SpOD * 0.5) -r ($WrOD * 0.5) -sa 20 -sco 18 -sc 0 -d 1 -ax 0 1 0 -ch 0`;
+						polyCut  -ws 1  -pcx 0 -pcy 0 -pcz 0 -rx 0 -ry  90 -rz  0 -pw 1 -ph 1 -df 1 -ch 0 $Temp[0];
+						polyCloseBorder -ch 0 $Temp[0];
+							select -r ($Temp[0] + ".f[201]");
+							move -r ($SpOD * -0.01) 0 0 ;
+					
+					$Spring[2] = `rename $Temp[0] ($SName[0] + "TopLoop_" + $e)`;
+						move -r ($SpOD * 0.5 - ($WrOD * 0.5)) ($SpOD * 0.25) 0 $Spring[2];
+						rotate 0 0 -90 $Spring[2];
+				
+					$Temp = `polyHelix -c 0.50 -h 0 -w ($SpOD * 1.0) -r ($WrOD * 0.5) -sa 20 -sco 18 -sc 0 -d 1 -ax 0 1 0 -ch 0`;
+						$Spring[3] = `rename $Temp[0] ($SName[0] + "TopHook_" + $e)`;
+							rotate 90 0 0 $Spring[3];
+							xform -ws -piv ($SpOD * 0.5 -($WrOD * 0.5)) 0 0 $Spring[3];
+						
+						move -r 0 ($SpOD * 0.25 + ($SpOD * 0.01)) ($SpOD * -0.25 + ($WrOD * 0.5)) $Spring[3];
+						
+						rotate -r 0 18 0 $Spring[3];
+						
+					$Temp = `polyBoolOp -op 1 -ch 0 $Spring[2] $Spring[3]`;
+						$Spring[2] = `rename $Temp[0] ($SName[0] + "Top_End_" + $e)`;
+						
+					select -r $Spring[0] $Spring[2];
+						makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+						move -r 0 $SpHt 0 $Spring[2];
+						
+				}// End of Top Hook Loop End Section	
+				
+			if (`optionMenu -q -sl DVY_SpringExtBotOption` == 5 ) 
+				{// Bottom Hook Type End Section
+					
+					$Temp = `polyHelix -c 0.5 -h 0.0 -w ($SpOD * 0.5) -r ($WrOD * 0.5) -sa 20 -sco 18 -sc 0 -d 1 -ax 0 1 0 -ch 0`;
+						polyCut  -ws 1  -pcx 0 -pcy 0 -pcz 0 -rx 0 -ry  90 -rz  0 -pw 1 -ph 1 -df 1 -ch 0 $Temp[0];
+						polyCloseBorder -ch 0 $Temp[0];
+							select -r ($Temp[0] + ".f[201]");
+							move -r ($SpOD * -0.01) 0 0 ;
+					
+					$Spring[3] = `rename $Temp[0] ($SName[0] + "BotLoop_" + $e)`;
+						move -r ($SpOD * 0.5 - ($WrOD * 0.5)) ($SpOD * 0.25) 0 $Spring[3];
+						rotate 0 0 -90 $Spring[3];
+				
+					$Temp = `polyHelix -c 0.50 -h 0 -w ($SpOD * 1.0) -r ($WrOD * 0.5) -sa 20 -sco 18 -sc 0 -d 1 -ax 0 1 0 -ch 0`;
+						$Spring[4] = `rename $Temp[0] ($SName[0] + "BotHook_" + $e)`;
+							rotate 90 0 0 $Spring[4];
+							xform -ws -piv ($SpOD * 0.5 -($WrOD * 0.5)) 0 0 $Spring[4];
+							move -r 0 ($SpOD * 0.25 + ($SpOD * 0.01)) ($SpOD * -0.25 + ($WrOD * 0.5)) $Spring[4];
+							rotate -r 0 18 0 $Spring[4];
+						
+					$Temp = `polyBoolOp -op 1 -ch 0 $Spring[3] $Spring[4]`;
+						$Spring[3] = `rename $Temp[0] ($SName[0] + "Bot_End_" + $e)`;
+							rotate 180 0 0 $Spring[3];
+							move -r 0 $WrOD 0 $Spring[3];
+						
+					select -r $Spring[3];
+						makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+				
+				}// End of Bottom Hook Type Loop End Section	
+				
+// -------------------------------------------------------------------------------- //
+// ******************************************************************************** //	
+				
+			if (`optionMenu -q -sl DVY_SpringExtTopOption` == 6 )
+				{// Full Top Loop End Section
+					
+					$Temp = `polyHelix -c 0.5 -h 0.0 -w ($SpOD * 0.5) -r ($WrOD * 0.5) -sa 20 -sco 18 -sc 0 -d 1 -ax 0 1 0 -ch 0`;
+						polyCut  -ws 1  -pcx 0 -pcy 0 -pcz 0 -rx 0 -ry  90 -rz  0 -pw 1 -ph 1 -df 1 -ch 0 $Temp[0];
+						polyCloseBorder -ch 0 $Temp[0];
+							select -r ($Temp[0] + ".f[201]");
+							move -r ($SpOD * -0.25) 0 0 ;
+				
+					$Spring[2] = `rename $Temp[0] ($SName[0] + "TopLoop_" + $e)`;
+						move -r ($SpOD * 0.25) ($WrOD * 0.5) 0 $Spring[2];
+						
+					$Temp = `polyHelix -c 1.0 -h ($WrOD * 1) -w ($SpOD * 0.8) -r ($WrOD * 0.5) -sa 20 -sco 18 -sc 0 -d 1 -ax 0 1 0 -ch 0`;
+						$Spring[3] = `rename $Temp[0] ($SName[0] + "TopHook_" + $e)`;
+							rotate -90 0 -90 $Spring[3];
+							
+							move -r 0 ($SpOD * 0.4) ($SpOD * -0.25 + ($WrOD * 0.5)) $Spring[3];
+							scale 1 -1 1 $Spring[3];
+						
+					$Temp = `polyBoolOp -op 1 -ch 0 $Spring[2] $Spring[3]`;
+						$Spring[2] = `rename $Temp[0] ($SName[0] + "Top_End_" + $e)`;
+						
+					select -r $Spring[0] $Spring[2];
+						makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+						move -r 0 $SpHt 0 $Spring[2];
+			
+				}// End of Full Top Loop End Section
+				
+			if (`optionMenu -q -sl DVY_SpringExtBotOption` == 6 )
+				{// Full Bottom Loop End Section
+					$Temp = `polyHelix -c 0.5 -h 0.0 -w ($SpOD * 0.5) -r ($WrOD * 0.5) -sa 20 -sco 18 -sc 0 -d 1 -ax 0 1 0 -ch 0`;
+						polyCut  -ws 1  -pcx 0 -pcy 0 -pcz 0 -rx 0 -ry  90 -rz  0 -pw 1 -ph 1 -df 1 -ch 0 $Temp[0];
+						polyCloseBorder -ch 0 $Temp[0];
+							select -r ($Temp[0] + ".f[201]");
+							move -r ($SpOD * -0.25) 0 0 ;
+				
+					$Spring[3] = `rename $Temp[0] ($SName[0] + "BotLoop_" + $e)`;
+						move -r ($SpOD * 0.25) ($WrOD * 0.5) 0 $Spring[3];
+						
+				
+					$Temp = `polyHelix -c 1.0 -h ($WrOD * 1) -w ($SpOD * 0.8) -r ($WrOD * 0.5) -sa 20 -sco 18 -sc 0 -d 1 -ax 0 1 0 -ch 0`;
+						$Spring[4] = `rename $Temp[0] ($SName[0] + "BotHook_" + $e)`;
+							rotate -90 0 -90 $Spring[4];
+							
+							move -r 0 ($SpOD * 0.4) ($SpOD * -0.25 + ($WrOD * 0.5)) $Spring[4];
+							scale 1 -1 1 $Spring[4];
+						
+					$Temp = `polyBoolOp -op 1 -ch 0 $Spring[3] $Spring[4]`;
+						$Spring[3] = `rename $Temp[0] ($SName[0] + "Bot_End_" + $e)`;
+							rotate 180 0 0 $Spring[3];
+							move -r 0 $WrOD 0 $Spring[3];
+						
+					select -r $Spring[3];
+						makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+			
+				}// End of Full Bottom Loop End Section
+				
+// -------------------------------------------------------------------------------- //
+// ******************************************************************************** //	
+				
+			if (`optionMenu -q -sl DVY_SpringExtTopOption` == 7 )
+				{// Extended Top Loop End Section	
+					$Temp = `polyHelix -c 0.5 -h 0.0 -w ($SpOD * 0.5) -r ($WrOD * 0.5) -sa 20 -sco 18 -sc 0 -d 1 -ax 0 1 0 -ch 0`;
+						polyCut  -ws 1  -pcx 0 -pcy 0 -pcz 0 -rx 0 -ry  90 -rz  0 -pw 1 -ph 1 -df 1 -ch 0 $Temp[0];
+						polyCloseBorder -ch 0 $Temp[0];
+							select -r ($Temp[0] + ".f[201]");
+							move -r ($SpOD * -0.25) 0 0 ;
+					
+					$Spring[2] = `rename $Temp[0] ($SName[0] + "TopLoop_" + $e)`;
+						move -r ($SpOD * 0.5 - ($WrOD * 0.5)) ($SpOD * 0.25) 0 $Spring[2];
+						rotate 0 0 -90 $Spring[2];
+				
+					$Temp = `polyHelix -c 0.50 -h 0 -w ($SpOD * 1.0) -r ($WrOD * 0.5) -sa 20 -sco 18 -sc 0 -d 1 -ax 0 1 0 -ch 0`;
+						$Spring[3] = `rename $Temp[0] ($SName[0] + "TopHook_" + $e)`;
+						
+						rotate 90 0 0 $Spring[3];
+						xform -ws -piv ($SpOD * 0.5 -($WrOD * 0.5)) 0 0 $Spring[3];
+						
+						move -r 0 ($SpOD * 0.5) ($SpOD * -0.25 + ($WrOD * 0.5)) $Spring[3];
+						select -r ($Spring[3] + ".f[361]");
+						move -r 0 ($SpOD * -0.40) 0 ;
+						
+						rotate -r 0 18 0 $Spring[3];
+						
+					$Temp = `polyBoolOp -op 1 -ch 0 $Spring[2] $Spring[3]`;
+						$Spring[2] = `rename $Temp[0] ($SName[0] + "Top_End_" + $e)`;
+						
+					select -r $Spring[0] $Spring[2];
+						makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+						move -r 0 $SpHt 0 $Spring[2];
+						
+				}// End of Extended Top Loop End Section		
+		
+			if (`optionMenu -q -sl DVY_SpringExtBotOption` == 7 )
+				{// Extended Bottom Loop End Section	
+					
+					$Temp = `polyHelix -c 0.5 -h 0.0 -w ($SpOD * 0.5) -r ($WrOD * 0.5) -sa 20 -sco 18 -sc 0 -d 1 -ax 0 1 0 -ch 0`;
+						polyCut  -ws 1  -pcx 0 -pcy 0 -pcz 0 -rx 0 -ry  90 -rz  0 -pw 1 -ph 1 -df 1 -ch 0 $Temp[0];
+						polyCloseBorder -ch 0 $Temp[0];
+							select -r ($Temp[0] + ".f[201]");
+							move -r ($SpOD * -0.25) 0 0 ;
+					
+					$Spring[3] = `rename $Temp[0] ($SName[0] + "TopLoop_" + $e)`;
+						move -r ($SpOD * 0.5 - ($WrOD * 0.5)) ($SpOD * 0.25) 0 $Spring[3];
+						rotate 0 0 -90 $Spring[3];
+				
+					$Temp = `polyHelix -c 0.50 -h 0 -w ($SpOD * 1.0) -r ($WrOD * 0.5) -sa 20 -sco 18 -sc 0 -d 1 -ax 0 1 0 -ch 0`;
+						$Spring[4] = `rename $Temp[0] ($SName[0] + "TopHook_" + $e)`;
+						
+						rotate 90 0 0 $Spring[4];
+						xform -ws -piv ($SpOD * 0.5 -($WrOD * 0.5)) 0 0 $Spring[4];
+						
+						move -r 0 ($SpOD * 0.5) ($SpOD * -0.25 + ($WrOD * 0.5)) $Spring[4];
+						select -r ($Spring[4] + ".f[361]");
+						move -r 0 ($SpOD * -0.40) 0 ;
+						
+						rotate -r 0 18 0 $Spring[4];
+						
+					$Temp = `polyBoolOp -op 1 -ch 0 $Spring[3] $Spring[4]`;
+						$Spring[3] = `rename $Temp[0] ($SName[0] + "Bot_End_" + $e)`;
+							rotate 180 0 0 $Spring[3];
+							move -r 0 $WrOD 0 $Spring[3];
+						
+					select -r $Spring[3];
+						makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+						
+				}// End of Extended Top Loop End Section	
+				
+// -------------------------------------------------------------------------------- //
+// ******************************************************************************** //	
+				
+//			float $D = (($SpOD * 0.5) - $WrOD) * (22.0/3.0) / 20;
+//			print ("$D is " + $D + "\n");
+			
+		if (`optionMenu -q -sl DVY_SpringExtTopOption` == 8 )
+			{// Top Cone End Section
+				
+				$Temp = `polyHelix -c 4 -h ($WrOD * 4) -w ($SpOD * 1.0) -r ($WrOD * 0.5) -sa 20 -sco 18 -sc 0 -d 1 -ax 0 1 0 -ch 0`;
+					
+				$Temps = `polyCylinder -r (($SpOD * 0.5) - ($WrOD * 1.0)) -h ($WrOD * 4.0) -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					move -r 0 ($WrOD * 1.75) 0 $Temps[0];
+				
+				$Temp = `polyUnite -ch 0 $Temp[0] $Temps[0]`;
+					$Temps = `nonLinear -type flare -lowBound -0.75 -highBound 0.25 -startFlareX 0 -startFlareZ 0 -endFlareX 1 -endFlareZ 1 -curve 0`;
+						select -r $Temp[0];
+						delete -ch;
+						move -r 0 ($WrOD * -3.5) 0 $Temp[0];
+				
+				$Temps = `polyHelix -c 0.5 -h 0 -w ($SpOD * 1.0) -r ($WrOD * 0.5) -sa 14 -sco 18 -sc 0 -d 1 -ax 0 1 0 -ch 1`;
+					move -r 0 ($WrOD * -4.5 + ($SpOD * -0.5)) 0 $Temps[0];
+					rotate -90 0 0 $Temps[0];
+						$Temp[1] = $Temps[0];
+				
+				$Temps = `polyHelix -c 0.5 -h 0 -w ($SpOD * 0.50 + ($WrOD * 0.5)) -r ($WrOD * 0.5) -sa 14 -sco 29 -sc 0 -d 1 -ax 0 1 0 -ch 1`;
+					rotate 90 0 0 $Temps[0];
+					polyCut -ws 1 -pcx 0 -pcy 0 -pcz 0 -rx 180 -ry 90 -rz  0 -pw 1 -ph 1 -df 1 -ch 0 $Temps[0];
+						$Temp[2] = $Temps[0];
+						move -r ($SpOD * -0.25 + ($WrOD *0.25)) 0 0 $Temps[0];
+				
+				$Temps = `polyHelix -c 0.5 -h 0 -w ($SpOD * 0.5 + ($WrOD * 0.5)) -r ($WrOD * 0.5) -sa 14 -sco 29 -sc 0 -d 1 -ax 0 1 0 -ch 1`;
+					rotate -90 0 0 $Temps[0];
+					polyCut -ws 1 -pcx 0 -pcy 0 -pcz 0 -rx 180 -ry 90 -rz  0 -pw 1 -ph 1 -df 1 -ch 0 $Temps[0];
+					rotate 90 0 180 $Temps[0];
+					move -r ($SpOD * -0.25 + ($WrOD *0.25)) ($SpOD * 0.5 + ($WrOD * -0.5)) 0 $Temps[0];
+						$Temp[3] = $Temps[0];
+				
+					$Temps = `polyUnite -ch 0 $Temp[3] $Temp[2]`;
+						move -r 0 ($WrOD * -4.5 + ($SpOD * -0.5)) 0 $Temps[0];
+				
+					$Temps = `polyUnite -ch 0 $Temp[1] $Temps[0]`;
+						$Temp[1] = $Temps[0];
+							polyExtrudeFacet -ch 0 -kft 1
+										-pvx 0 -pvy 0 -pvz 0
+										-tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1
+										-ltz ($WrOD * 4.5) -ltx 0 -lty 0
+										-lrx 0 -lry 0 -lrz 0 -lsx 1 -lsy 1 -lsz 1 -ldx 1 -ldy 0 -ldz 0
+										-ran 0 -divisions 1 -twist 0 -taper 1 -off 0 -ws 0
+										-w 0 -gx 0 -gy -1 -gz 0 -att 0
+										-mx 0 -my 0 -mz 0 -sma 30 ($Temp[1] + ".f[450]");
+			
+					$Temp = `polyUnite -ch 0 $Temp[1] $Temp[0]`;
+						$Spring[2] = `rename $Temp[0] ($SName[0] + "Top_End_" + $e)`;
+								rotate 180 0 0 $Spring[2];
+								move -r 0 $WrOD 0 $Spring[2];
+						
+					select -r $Spring[2];
+						makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+						move -r 0 $SpHt 0 $Spring[2];
+			}
+				
+		if (`optionMenu -q -sl DVY_SpringExtBotOption` == 8 )
+			{// Bottom Cone End Section
+				
+				$Temp = `polyHelix -c 4 -h ($WrOD * 4) -w ($SpOD * 1.0) -r ($WrOD * 0.5) -sa 20 -sco 18 -sc 0 -d 1 -ax 0 1 0 -ch 0`;
+					
+				$Temps = `polyCylinder -r (($SpOD * 0.5) - ($WrOD * 1.0)) -h ($WrOD * 4.0) -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					move -r 0 ($WrOD * 1.75) 0 $Temps[0];
+				
+				$Temp = `polyUnite -ch 0 $Temp[0] $Temps[0]`;
+					$Temps = `nonLinear -type flare -lowBound -0.75 -highBound 0.25 -startFlareX 0 -startFlareZ 0 -endFlareX 1 -endFlareZ 1 -curve 0`;
+						select -r $Temp[0];
+						delete -ch;
+						move -r 0 ($WrOD * -3.5) 0 $Temp[0];
+				
+				$Temps = `polyHelix -c 0.5 -h 0 -w ($SpOD * 1.0) -r ($WrOD * 0.5) -sa 14 -sco 18 -sc 0 -d 1 -ax 0 1 0 -ch 1`;
+					move -r 0 ($WrOD * -4.5 + ($SpOD * -0.5)) 0 $Temps[0];
+					rotate -90 0 0 $Temps[0];
+						$Temp[1] = $Temps[0];
+				
+				$Temps = `polyHelix -c 0.5 -h 0 -w ($SpOD * 0.50 + ($WrOD * 0.5)) -r ($WrOD * 0.5) -sa 14 -sco 29 -sc 0 -d 1 -ax 0 1 0 -ch 1`;
+					rotate 90 0 0 $Temps[0];
+					polyCut -ws 1 -pcx 0 -pcy 0 -pcz 0 -rx 180 -ry 90 -rz  0 -pw 1 -ph 1 -df 1 -ch 0 $Temps[0];
+						$Temp[2] = $Temps[0];
+						move -r ($SpOD * -0.25 + ($WrOD *0.25)) 0 0 $Temps[0];
+				
+				
+				$Temps = `polyHelix -c 0.5 -h 0 -w ($SpOD * 0.5 + ($WrOD * 0.5)) -r ($WrOD * 0.5) -sa 14 -sco 29 -sc 0 -d 1 -ax 0 1 0 -ch 1`;
+					rotate -90 0 0 $Temps[0];
+					polyCut -ws 1 -pcx 0 -pcy 0 -pcz 0 -rx 180 -ry 90 -rz  0 -pw 1 -ph 1 -df 1 -ch 0 $Temps[0];
+					rotate 90 0 180 $Temps[0];
+					move -r ($SpOD * -0.25 + ($WrOD *0.25)) ($SpOD * 0.5 + ($WrOD * -0.5)) 0 $Temps[0];
+						$Temp[3] = $Temps[0];
+				
+					$Temps = `polyUnite -ch 0 $Temp[3] $Temp[2]`;
+						move -r 0 ($WrOD * -4.5 + ($SpOD * -0.5)) 0 $Temps[0];
+				
+					$Temps = `polyUnite -ch 0 $Temp[1] $Temps[0]`;
+						$Temp[1] = $Temps[0];
+							polyExtrudeFacet -ch 0 -kft 1
+										-pvx 0 -pvy 0 -pvz 0
+										-tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1
+										-ltz ($WrOD * 4.5) -ltx 0 -lty 0
+										-lrx 0 -lry 0 -lrz 0 -lsx 1 -lsy 1 -lsz 1 -ldx 1 -ldy 0 -ldz 0
+										-ran 0 -divisions 1 -twist 0 -taper 1 -off 0 -ws 0
+										-w 0 -gx 0 -gy -1 -gz 0 -att 0
+										-mx 0 -my 0 -mz 0 -sma 30 ($Temp[1] + ".f[450]");
+			
+					$Temp = `polyUnite -ch 0 $Temp[1] $Temp[0]`;
+						$Spring[3] = `rename $Temp[0] ($SName[0] + "Bot_End_" + $e)`;
+						
+					select -r $Spring[3];
+						makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+				
+			}
+			
+		select -r $Spring[2] $Spring[3];
+			hyperShade -assign "initialShadingGroup";
+			hyperShade -assign $Shader[0];
+			
+// -------------------------------------------------------------------------------- //
+// ******************************************************************************** //	
+// Section to distance Node for calculating and driving Spring Length.
+		
+		$Node[0] = `createNode distanceBetween -name ($SName[0] + "SpringLength_" + $e)`;
+			connectAttr -f ($Spring[3] + ".translateX") ($Node[0] + ".point1X");
+			connectAttr -f ($Spring[3] + ".translateY") ($Node[0] + ".point1Y");
+			connectAttr -f ($Spring[3] + ".translateZ") ($Node[0] + ".point1Z");
+			
+			connectAttr -f ($Spring[2] + ".translateX") ($Node[0] + ".point2X");
+			connectAttr -f ($Spring[2] + ".translateY") ($Node[0] + ".point2Y");
+			connectAttr -f ($Spring[2] + ".translateZ") ($Node[0] + ".point2Z");
+			
+			connectAttr -f -l 1 ($Node[0] + ".distance") ($Spring[1] + ".height");
+		
+		parent $SpringGrp[2] $SpringGrp[1];
+		parent $SpringGrp[1] $SpringGrp[0];
+		parent $Spring[0] $SpringGrp[2];
+		parent $Spring[2] $Spring[3] $SpringGrp[0];
+		
+		
+		scale $DVYUnit $DVYUnit $DVYUnit $SpringGrp[0];
+			
+	$Temp = `spaceLocator -p 0 0 0`;
+		$Spring[4] = `rename $Temp ($SName[0] + "_Top_Locator" + $e)`;
+		delete `pointConstraint -offset 0 0 0 -weight 1 $Spring[2] $Spring[4]`;
+			
+	$Temp = `spaceLocator -p 0 0 0`;
+		$Spring[5] = `rename $Temp ($SName[0] + "_Bottom_Locator" + $e)`;
+		delete `pointConstraint -offset 0 0 0 -weight 1 $Spring[3] $Spring[5]`;
+	
+		select -r $Spring[4] $Spring[5];
+			makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+
+	parent $Spring[4] $Spring[5] $SpringGrp[0];
+	
+		pointConstraint -mo -weight 1 $Spring[4] $Spring[2];
+		aimConstraint -mo -weight 1 -aimVector 0 -1 0 -upVector 0 1 0 -worldUpType "scene"
+			$Spring[5] $Spring[2];
+		
+		pointConstraint -mo -weight 1 $Spring[5] $Spring[3];
+		parentConstraint -mo -weight 1 $Spring[3] $SpringGrp[1];
+		
+		aimConstraint -mo -weight 1 -aimVector 0 1 0 -upVector 0 1 0 -worldUpType "scene"
+			$Spring[4] $Spring[3];
+		
+		parentConstraint -mo -weight 1 $Spring[3] $Spring[0];
+		
+		if ( $V >= 8.0)
+			{	
+				$Node[2] = `shadingNode -asUtility multiplyDivide -name ($SName[0] + "SpringDistT_" + $e)`;
+					setAttr ($Node[2] + ".operation") 1;
+					connectAttr -f ($Spring[4] + ".translateX") ($Node[2] +  ".input1X");
+					connectAttr -f ($Spring[4] + ".translateY") ($Node[2] +  ".input1Y");
+					connectAttr -f ($Spring[4] + ".translateZ") ($Node[2] +  ".input1Z");
+				
+//					setAttr  ($Node[2] +  ".input2X") 1.0;
+					setAttr  ($Node[2] +  ".input2Y") -0.5;
+//					setAttr  ($Node[2] +  ".input2Z") 1.0;
+		
+					connectAttr -f -l 1($Node[2] +  ".outputY") ($SpringGrp[1] + ".translateY") ;
+				
+				$Node[3] = `shadingNode -asUtility multiplyDivide -name ($SName[0] + "SpringDistB_" + $e)`;
+					setAttr ($Node[3] + ".operation") 1;
+					connectAttr -f ($Spring[5] + ".translateX") ($Node[3] +  ".input1X");
+					connectAttr -f ($Spring[5] + ".translateY") ($Node[3] +  ".input1Y");
+					connectAttr -f ($Spring[5] + ".translateZ") ($Node[3] +  ".input1Z");
+				
+//					setAttr  ($Node[3] +  ".input2X") 1.0;
+					setAttr  ($Node[3] +  ".input2Y") 0.5;
+//					setAttr  ($Node[3] +  ".input2X") 1.0;
+		
+					connectAttr -f -l 1 ($Node[3] +  ".outputY") ($SpringGrp[2] + ".translateY") ;
+			}
+		
+// -------------------------------------------------------------------------------- //
+// ******************************************************************************** //	
+// set Up smoothing control for Main Body of spring		
+		
+		if (!`attributeExists "Smooth"  $SpringGrp[0]`)
+			{ addAttr -ln Smooth -at short -min 1 -max 8 $SpringGrp[0];}
+		      setAttr -l 0 -k 1 -cb 1 ($SpringGrp[0] + ".Smooth") 1;
+			  
+		$Node[1] = `shadingNode -asUtility multiplyDivide -name ($SName[0] + "SmoothNode_" + $e)`;
+			setAttr ($Node[1] + ".operation") 1;
+			connectAttr -f -l 1 ($SpringGrp[0] + ".Smooth") ($Node[1] + ".input1X");
+			setAttr -l 1 -k 0 ($Node[1] + ".input2X") 9;
+			connectAttr -f -l 1 ($Node[1] + ".outputX") ($Spring[1] + ".subdivisionsCoil");
+			
+				
+// -------------------------------------------------------------------------------- //
+// ******************************************************************************** //				
+// Lock off unused attributes.
+
+		setAttr -l 1 -k 0 ($Node[1] + ".input1Y");
+		setAttr -l 1 -k 0 ($Node[1] + ".input2Y");
+		setAttr -l 1 -k 0 ($Node[1] + ".input1Z");
+		setAttr -l 1 -k 0 ($Node[1] + ".input2Z");
+		
+
+		setAttr -l 1 -k 0 ($Spring[1] + ".coils");
+		setAttr -l 1 -k 0 ($Spring[1] + ".width");
+		setAttr -l 1 -k 0 ($Spring[1] + ".radius");
+		setAttr -l 1 -k 0 ($Spring[1] + ".subdivisionsAxis");
+		setAttr -l 1 -k 0 ($Spring[1] + ".subdivisionsCaps");
+		
+	string $AttrA[] = {".tx", ".ty", ".tz", ".rx", ".ry", ".rz", ".sx", ".sy", ".sz"};
+	string $AttrB[] = {".rx", ".ry", ".rz", ".sx", ".sy", ".sz"};
+	string $AttrS[] = {".sx", ".sy", ".sz"};
+	string $AttrR[] = {".rx", ".ry", ".rz"};
+	string $AttrT[] = {".tx", ".ty", ".tz"};
+	
+	
+	select -r -hi $SpringGrp[0];
+	string $Sel[] = `listRelatives -c -type transform `;
+	print $Sel;
+	
+	for ($each in $Sel)
+		{
+			if (`objExists $each`)
+				{
+					for ($Att in $AttrR) {setAttr -l 1 -k 0 ($each + $Att);}
+					for ($Att in $AttrS) {setAttr -l 1 -k 0 ($each + $Att);}
+				}
+		}
+		
+			setAttr -l 1 -k 0 ($Spring[4] + ".tx");
+			setAttr -l 1 -k 0 ($Spring[4] + ".tz");
+			setAttr -l 1 -k 0 ($Spring[5] + ".tx");
+			setAttr -l 1 -k 0 ($Spring[5] + ".tz");
+			
+	for ($each in $AttrS)
+		{ 
+				setAttr -l 1 -k 0 ($SpringGrp[0] + $each);
+		}
+		
+/*
+		for ($each in $AttrT)
+		{ 
+				setAttr -l 1 -k 0 ($Spring[2] + $each);
+				setAttr -l 1 -k 0 ($Spring[3] + $each);
+		}
+*/		
+// -------------------------------------------------------------------------------- //
+// ******************************************************************************** //	
+// Parent Spring to Piston Group if required,
+		
+	if ($SpPiston != "")
+		{	
+			$SpringGrp[4] = `group -em -name ($SpPiston + "_Combined_GrpN_" + $E)`;
+			
+			$Spring[6] = `getAttr ($SpPiston  + ".SpringEndR")`;
+			$Spring[7] = `getAttr ($SpPiston  + ".SpringEndC")`;
+			
+			for ($each in $AttrT)
+				{ 
+						setAttr -l 0 -k 0 ($Spring[4] + $each);
+						setAttr -l 0 -k 0 ($Spring[5] + $each);
+				}
+				
+			for ($each in $AttrR)
+				{ 
+						setAttr -l 0 -k 0 ($Spring[4] + $each);
+						setAttr -l 0 -k 0 ($Spring[5] + $each);
+				}
+				
+		// Add Constraint for Top and Bottom Spring Ends
+			parentConstraint -mo -weight 1 $Spring[6] $Spring[4];
+			parentConstraint -mo -weight 1 $Spring[7] $Spring[5];
+			
+			parent $SpPiston $SpringGrp[0] $SpringGrp[4];
+				
+		}
+				
+// -------------------------------------------------------------------------------- //
+// ******************************************************************************** //	
+// Lock off History Node on Main Spring Body to protect Helix Length
+		
+	lockNode -lock 1 $Spring[0];
+
+}
+
+
+// -------------------------------------------------------------------------------- //
+// ******************************************************************************** //	
+
+global proc DVY_Delete()
+{	
+	string $Sel[], $SelecT[];
+
+	$Sel = `ls -sl`;
+	select -r -hi $Sel[0];
+
+	$SelecT = `ls -sl`;
+
+	lockNode -lock 0;
+	
+	delete;
+}

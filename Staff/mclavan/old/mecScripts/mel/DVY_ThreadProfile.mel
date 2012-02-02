@@ -1,0 +1,1374 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davveys Nut and Bolt Generator
+''    Author:  
+''    Last Updated: Jan 29, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4402.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+
+/*
+/////////////////////////////////////////////////////////////////////////////			
+				
+	Copyright © 2006 DVY_ThreadProfile. All rights reserved davvey@ntlworld.com
+
+						- DVY_ThreadProfile -
+///////////////////////////////////////////////////////////////////////////////
+
+
+	
+	
+///////////////////////////////////////////////////////////////////////////////
+//					DVY_ThreadProfile Procedure
+////////////////////////////////////////////////////////////////////////////////
+*/
+	
+
+global proc string DVY_ThreadProfile(int $T, int $a, int $e)
+{
+	
+//	Pitch ($P) = 2h /sqrt3 (Nominal height of thread ($h); 
+//	Root cut is h/4
+//	Crown cut is h/8
+	
+	global string $Shader[];
+
+	global float $ThreadDiam[], $ThreadPitch[], $ThreadPitchF[];
+	global float $NutFlat[], $NutCorners[], $NutHeight[], $LockNutHeight[], $NyLocNutHeight[];
+	global float $BoltHead[], $WasherOutDiam[], $WasherThick[], $WasherSpODiam[];
+	global float $ThreadLength[], $ThreadLengthL[];
+	
+	float $THData[], $Pos[];
+	float $Lead, $Turns, $TurnsEach, $BoltLength, $ThLength;
+	float $XMax, $XMin, $YMax, $YMin;
+	float $P, $h, $TD, $PCD, $RD; 
+	float $Dp, $Ht, $Wt;
+	int $a, $b, $c, $e, $i, $j, $k, $r, $H, $N;
+	
+	string $ThreadType[], $Profiles[], $ThreadName[], $Temp[], $Temps[];
+	string $Barrel[], $Bolt[], $Nut[], $Hole[], $Washer[];
+	string $Thread, $ThreadT, $Name, $Groups[];
+	
+	string $SetAttrA[] = {".tx", ".tz", ".sx", ".sy", ".sz"};
+	string $SetAttrB[] = {".sx", ".sy", ".sz"};
+	string $SetAttrC[] = {".tx", ".ty", ".tz", ".rx", ".ry", ".rz", ".sx", ".sy", ".sz"};
+	
+	$ThreadName =	  {"1_6", "2", "2_5", "3", "4", "5", "6", "7", "8", "10", "12", "14", "16", "18",
+						"20", "22", "24", "30", "36", "42", "48", "56", "64", "72", "80", "90", "100"};
+	
+		$Ht = $ThreadDiam[$a] * 0.25;
+		$Wt = $ThreadDiam[$a] * 0.15;
+
+	$BoltLength = `intFieldGrp -q -v1 BoltLength`;
+	print ("$BoltLength is " + $BoltLength + "\n");
+	
+	if ($BoltLength >= $ThreadLength[$a])
+		{
+			$ThLength = $ThreadLength[$a];
+			if (`radioButtonGrp -q -sl BoltStyleCheck` == 2) 
+					{$ThLength = $BoltLength * 0.97;}
+					
+			if (`radioButtonGrp -q -sl BoltStyleCheck` == 3)		
+					{$ThLength = $BoltLength *0.99;}
+				
+			print ("$ThLength is " + $ThLength + "\n");	
+		}
+		else {
+				$ThLength = $BoltLength * 0.9;
+				print ("$ThLength is " + $ThLength + "\n");	
+			 }
+			 
+		if (`radioButtonGrp -q -sl BoltStyleCheck` == 4) 
+			{
+				if (`radioButtonGrp -q -sl StudStyleCheck` == 1)
+					{
+						{$ThLength = $BoltLength * 0.40;}
+						print ("$ThLength is " + $ThLength + "\n");	
+					}
+			
+				if (`radioButtonGrp -q -sl StudStyleCheck` == 2)
+					{
+						{$ThLength = $BoltLength *0.99;}
+						print ("$ThLength is " + $ThLength + "\n");	
+					}
+				if (`radioButtonGrp -q -sl StudStyleCheck` == 3)
+					{
+						{$ThLength = $BoltLength * 0.40;}
+						print ("$ThLength is " + $ThLength + "\n");	
+					}
+			}
+
+		
+/*
+	for ($i=0; $i<18; $i++)
+		{
+			print ("Thread Diamter is " + $ThreadDiam[$i] + " Pitch is " + $ThreadPitch[$i] + 
+				   " and bolt length is either " + $ThreadLength[$i] + " or " + $ThreadLengthL[$i] + " and ");
+			
+			print ("Nut Flats are " + $NutFlat[$i] + " Nut Height " + $NutHeight[$i] +
+				   " Lock Nut Height " + $LockNutHeight[$i] + " NyLocNut height " + $NyLocNutHeight[$i] + "\n");
+		}
+
+*/
+
+	$Name = ("Mx" + $ThreadName[$a] + "mm_");
+	print ("Bolt name is " + $Name + "\n");
+		
+		 
+// $a is Index of Shaft diamter Float Array ( and all other data arrays) 
+		 
+//	$a = 9; // 10 mm Thread Diameter
+	$N = 1; // No of Thread starts.
+	
+// Set Coarse or Fine Pitch 
+	
+	
+//	$P = $ThreadPitch[$a];
+	
+	if (`radioButtonGrp -q -sl ThreadStyleRadioGrp` == 1)
+		{
+			print " with a Coarse Thread";
+			$P = $ThreadPitch[$a];
+
+		}
+		
+	if (`radioButtonGrp -q -sl ThreadStyleRadioGrp` == 2)
+		{
+			print " with a Coarse Thread";
+			$P = $ThreadPitchF[$a];
+
+		}
+		 
+// Thread Height
+	$h =  ($P * sqrt(3))/2;
+	
+// Shaft Diamter, Pirch and Root or Base Circle Diamters are
+	$PCD = $ThreadDiam[$a] - $h;		 
+	$TD =  $ThreadDiam[$a] + (-2 * $h * 0.125);
+	$RD = $TD - (1.08 * $P);
+	
+// Calculate corners of Thread Profile.
+	$XMax = $h * 0.87 * 0.55;
+	$XMin = $h * 0.87 * 0.09;
+	$YMax = $h * 0.325;
+	$YMin = $h * -0.4;
+	
+/*	
+	print ("Pitch $P is " + $P + "\n");
+	print ("Thread Height $h is " + $h + "\n");
+	print ("$TD is " + $TD + "\n");
+	print ("$PCD is " + $PCD + "\n");
+	print ("$RD is " + $RD + "\n");
+	
+	print ("$XMax is " + $XMax + "\n");
+	print ("$XMin is " + $XMin + "\n");
+	print ("$YMin is " + $YMin + "\n");
+	print ("$YMin is " + $YMin + "\n");
+*/
+
+	if ($T <  20)
+	{//Section to generate any Threaded items
+		
+		// Generate Curve for Main Thread Profile
+			$Temp[0] = `curve -d 1 -n "ThreadProfile"
+							-p $XMax $YMin 0 
+							-p $XMin $YMax 0
+							-p ($XMin * -1) $YMax 0
+							-p ($XMax * -1) $YMin 0 
+							-p $XMax $YMin 0
+						-k 0 -k 1 -k 2 -k 3 -k 4 `;
+			
+		$Profiles[0] = $Temp[0];
+		
+		// set Rotation of profile for External (Bolt) or Internal (Nut or Hole).
+		if ($T > 9) {rotate -r 0 0 -90 $Profiles[0];}
+		if ($T < 10) {rotate -r 0 0 90 $Profiles[0];}
+	
+		// Generate Thread for Tapered ends of Threrad Profile.
+			$Temp[1] = `curve -d 1 -n "ThreadProfile1"
+							-p $XMax $YMin 0 
+							-p $XMin $YMax 0
+							-p ($XMin * -1) $YMax 0
+							-p ($XMax * -1) ($YMin * 1.25) 0 
+							-p $XMax ($YMin * 1.25) 0
+						-k 0 -k 1 -k 2 -k 3 -k 4 `;
+			$Profiles[1] = $Temp[1];
+		
+		// set Rotation of profile for External (Bolt) or Internal (Nut or Hole).
+			if ($T > 9) {rotate -r 0 0 -90 $Profiles[1];}
+			if ($T < 10) {rotate -r 0 0 90 $Profiles[1];}
+		
+		// Close profile curbes.
+			closeCurve -ch 0 -ps 1 -rpo 1 -bb 0.5 -bki 1 -p 0.1 $Temp[0];
+			closeCurve -ch 0 -ps 1 -rpo 1 -bb 0.5 -bki 1 -p 0.1 $Temp[1];
+		
+		// Calculate $Lead for start of Thread	
+			$Lead = $P * $N;	//	Pitch height for each Thread start
+			
+		// Thread Length for Bolt
+			if (($T > 9) && ($T <  20))
+				{ $Turns = ($ThLength/$P);}			//	Thread height / Thread start Pitch.
+					
+				
+		// Thread Length for Nut 
+			if ($T < 9)
+			{	
+				if ($T == 0) {$H = $NutHeight[$a];}
+				if ($T == 1) {$H = $LockNutHeight[$a];}
+				if ($T == 2) {$H = $NutHeight[$a];}
+				if ($T == 3) {$H = $NutHeight[$a];}
+				if ($T == 4) {$H = $NutHeight[$a];}
+				if ($T == 7) {$H = $NutHeight[$a];}
+				if ($T == 8) {$H = $NutHeight[$a];}
+
+				 $Turns = ($H * 1/$P);						//	Thread height / Thread start Pitch.
+				}
+			if ($T == 7)
+				{ $Turns = ($NutHeight[$a] * 1.3/$P);}		 //	Thread height for Castellated Nut / Thread start Pitch.
+				
+		// Thread Length for Hole 
+			if ($T == 9)
+				{ $Turns = ($NutHeight[$a] * 1.8/$P);}		 //	Thread height for Hole / Thread start Pitch.
+				
+				
+			$TurnEach = $Turns/ $N;							 //	No. of Turns per Thread start;
+		
+		// Temp value for No. of Thread Sections required.	
+			$Pos[0] = floor (($Turns * 8 / $N) - 8);
+//			print ("Sections required are " + $Pos[0] + "\n");
+
+//			print ("\n$Turns required per Tooth is " + $Turns + " and $Pos[0] is " + $Pos[0] + " Sections required\n");
+//			print ("Thread Height is " + ($Turns * $P) + ". © Davvey..\n");	
+			
+//			print ("Total no. of turns of Thread required $Turns " + $Turns + ". © Davvey..\n");	
+//			print ("Pitch for each thread start $Lead is " + $Lead + ". © Davvey..\n");	
+//			print ("No. of Turns of Thread per Thread start $TurnEach " + $TurnEach + ". © Davvey..\n");	
+
+	
+		// Set Thread prfiles to radius of Thread PCD.
+			move -r ($PCD * 0.5) 0 0 $Profiles;
+				
+			$Profiles[0] = `rename $Profiles[0] ("Screw_ThreadProfile_" + 1)`; 
+			$Profiles[1] = `rename $Profiles[1] ("Screw_ThreadProfile_" + 2)`; 
+		
+		// Groups to hold tapered Thread Profiles for Thread Ends.
+				group -em -name DVYThread;
+				group -em -name DVY1;
+				group -em -name DVY_0;
+				
+		// Scale down tapered ends and move into correct position
+			scale 0.9 0.85 1 $Profiles[1];
+			move -r ($Pos[1] * 1) 0 0 DVY1;
+				parent $Profiles[1] DVY1;
+				parent DVY1 DVY_0;
+		
+		// Rotate and raise up the thread ends to suit profile of thread
+			rotate -r 0 -15 0 DVY_0;
+			move -r 0 ($Lead/-24) 0 DVY_0;
+			parent DVY_0 DVYThread;
+			
+				$Temps[3] = $Profiles[1]; 
+				$Temps[4] = $Profiles[0];
+			
+		// Generate Start Taper of Thread Profile
+			$j = 2;
+			if ($T < 15) {$r = -1.5;}
+				if ($T > 9) {$r = 1;}
+			for ($i=0; $i<3; $i++)
+				{
+					select -r ("DVY_" + $i);
+					$Temp = `duplicate -rr -renameChildren`;
+					scale (1 - (0.1 * ($i + 2))) (1 - (0.15 * ($i + 2))) 1 ("Screw_ThreadProfile_" + ($i + 3));	//("DVY" + ($i + 2));
+					rotate -r 0 -15 0;
+					if ($i == 0) {move -r 0 ($Lead/-24) 0;}
+					if ($i > 0) {move -r ($P * -0.05 *$r) ($Lead/-24) ($P * -0.05 * $r);}
+					
+					$Temps[$j] = ("Screw_ThreadProfile_" + ($i + 3));
+					$j--;
+				}
+		
+					parent $Temps DVYThread;
+					xform -ws -piv 0 0 0 $Temps[4];
+					select -r $Temps[4];
+					$Temp = `duplicate -rr -renameChildren`;
+					$Temps[5] = $Temp[0];
+						rotate -r 0 45 0;
+						move -r 0 ($Lead/8) 0 $Temp[0];
+					
+		// Duplicate Thread Profiles for correct number of turns.
+			for ($j=0; $j< $Pos[0]; ++$j) 
+				{
+					$Temp = `duplicate -rr -renameChildren -st`;
+					$Temps[$j + 6] = $Temp[0];
+				}
+		
+		// Set size of profile array and get values to set position of end tapered section		
+			$j = `size $Temps` ;
+		//		print ("size is " + $Pos[0] + "\n");
+				$Pos = `xform -q -ws -t $Temps[$j - 1]`;
+				$Pos[3] = `getAttr ($Temps[$j - 1] + ".rx")`;
+				
+				
+			select $Temps[3] $Temps[2] $Temps[1] $Temps[0];
+				$Temp = `duplicate -rr -renameChildren -st`;
+				xform -ws -piv 0 0 0 $Temp;
+				select -r $Temp;
+				$Temp[10] = `group`; xform -os -piv 0 0 0;
+				move -r 0 $Pos[1] 0 $Temp[10];
+				scale 1 -1 1 $Temp[10];
+			
+			for ($k=0; $k<4; $k++)
+				{
+				// Set Profile positions for end of Bolt Thread
+					if (($T > 9) && ($T <  20)) {setAttr ($Temp[$k] + ".rx") ($Pos[3]* 1 + (-15 * ($k + 1)));}
+					
+				// Set Profile positions for end of Nut or Hole Thread
+					if ($T < 10) {setAttr ($Temp[$k] + ".rx") ($Pos[3]* 1 + (15 * ($k + 1)));}
+					
+				// Group and Flip profiles to set correct orientation	
+					select -r $Temp[$k];
+						$Tmp[0] = `group`;
+						CenterPivot;
+						scale 1 -1 1 $Tmp[0];	
+					
+					$Temps[$j + $k] = $Temp[$k];
+				}
+				select -r $Temps ; delete -ch;
+				
+		// Genrate Nurbs Profile and convert to Polygons.
+					
+			$Temp = `loft -name OneTurn -u 0 -c 0 -ar 1 -d 3 -ss 2 -rn 0 -po 0 -rsn true -ch 0 $Temps`;
+				$Temps = `nurbsToPoly -mnd 0  -f 3 -pt 1 -pc 800 -chr 0.1 -ft 0.01 -mel 0.001 -d 0.1 -ut 1
+										-un 3 -vt 1 -vn 3 -uch 0 -ucr 0 -cht 1 -es 0 -ntr 0 -mrt 0 -uss 1 -ch 0 $Temp[0]`;
+					polyCloseBorder -ch 0 $Temps[0];
+					polyMergeVertex -d ($P * 0.05) -ch 0 $Temps[0];
+				
+		// Duplicate and rotate profile of more than one thread start
+				if ($N > 1)
+				{
+				 for ($i=1; $i < $N; $i++) 
+					{
+					 select -r $Temps[0];
+						$Temp = `duplicate -rr -renameChildren`;
+						rotate 0 ((360/$N) * ($i)) 0;
+						$Temps[$i] = $Temp[0];
+					} 
+		
+						$Temps = `polyUnite -ch 0 -name ("ShaftThread_" + $e) $Temps`;
+							CenterPivot;
+							makeIdentity -apply true -t 1 -r 1 -s 1 -n 0 ;
+				}
+	
+		// Rename completed thread profile
+			if (($T > 9) && ( $T <  20))
+				{
+					while ( `objExists ($Name + "BoltThread_" + $e)`)	{ $e++;}
+						$Thread = `rename $Temps[0] ($Name + "BoltThread_" + $e)`;
+					select -r $Thread;
+				}
+			if ($T < 9)
+				{
+					while ( `objExists ($Name + "NutThread_" + $e)`)	{ $e++;}
+					$Thread = `rename $Temps[0] ($Name + "NutThread_" + $e)`;
+					select -r $Thread;
+				}
+				
+			if ($T == 9)
+				{
+					while ( `objExists ($Name + "HoleThread_" + $e)`)	{ $e++;}
+					$Thread = `rename $Temps[0] ($Name + "HoleThread_" + $e)`;
+					select -r $Thread;
+				}
+			
+		// raise Thread profile to zero in Y axis.		
+			$Pos[1] = `getAttr ($Thread + ".boundingBoxMinY")`;
+			move -r 0 ($Pos[1] * -1) 0 $Thread;
+				
+		// Rotate Thread 180 in Y axis if used as an Internal Thread
+			if ($T < 10)	{ rotate -r 0 180 0 $Thread ;}
+	
+	// -------------------------------------------------------------------------------- //
+	
+	// ******************************************************************************** //	
+		// End of Thread procedure and collect required Return Values or Data.
+				
+//			print ("Thread has been produce named " + $Thread);
+//			print ( " has been generated ready for use. © Davvey..\n");
+//			print ("\n   End of DVY_Thread procedure. © Davvey..\n"); 
+			
+	// -------------------------------------------------------------------------------- //
+	
+	// ******************************************************************************** //	
+		// Generate root diameter Barrel section of Bolt Thread.  
+		
+			if (($T > 9) && ($T < 20))
+				{
+					$Pos[0] = `getAttr ($Thread + ".boundingBoxMaxY")`;
+					
+					$Pos[1] = ($Pos[0] - $Pos[1]) * 0.5;
+					
+					$Barrel = `polyCylinder -r ($RD*0.49) -h ($Pos[1] * 2.01) -sx 24 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ("Barrel_" + $e)`;
+					print $Barrel;
+					move -r 0 ($Pos[1] * 0.97) 0 $Barrel[0];
+					
+					if (($T == 19) && (`radioButtonGrp -q -sl StudStyleCheck` == 2))
+						{	
+							polyBevel -offset 0.1 -offsetAsFraction 0 -autoFit 1 -segments 1 -worldSpace 0 
+										-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001
+										-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180 -ch 0
+										($Barrel[0] + ".f[24]") ($Barrel[0] + ".f[25]");
+						}
+						else {
+								polyBevel -offset 0.1 -offsetAsFraction 0 -autoFit 1 -segments 1 -worldSpace 0 
+											-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001
+											-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180 -ch 0
+											($Barrel[0] + ".f[24]");
+							 }
+				
+					// Parent Thread to Barrel of Bolt shaft
+					$Thread = `rename $Thread ($Name + "BoltThread_" + $e)`;
+					//	parent $Thread $Barrel ;
+				}
+		
+		// End of Bolt Barrel procedure .	
+	// -------------------------------------------------------------------------------- //
+	
+	// ******************************************************************************** //	
+		// Generate Bolt Head and Shaft	
+			if (($T > 9) && ($T < 18))
+				{	
+					float $D = ($NutFlat[$a] * 0.48);
+					
+					if ($ThreadDiam[$a] > 16 ) {$D = ($NutFlat[$a] * 0.48);}
+					if ($ThreadDiam[$a] > 20 ) {$D = ($NutFlat[$a] * 0.47);}
+					if ($ThreadDiam[$a] > 30 ) {$D = ($NutFlat[$a] * 0.46);}
+
+					if ($T == 10)
+						{// Hexagon Head Section
+							$H = $BoltHead[$a];		
+							$Bolt = `polyCylinder -r ($NutCorners[$a] * 0.5) -h ($H * 0.9) -sx 6 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ("Body_" + $e)`;
+								rotate -r 0 30 0 ;
+					
+							$Temp = `polySphere -r ($NutCorners[$a] * 0.5) -sx 24 -sy 30 -ax 0 1 0 -ch 0`;
+								scale 1 0.1 1 $Temp[0];
+								move -r 0 ($H * 0.45) 0 $Temp[0];
+								$Temp = `polyBoolOp -op 3 -ch 0 $Bolt[0] $Temp[0]`;
+							
+							$Temps = `polyCylinder -r ($NutCorners[$a] * 1.0) -h ($H * 0.7) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+								$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+
+							$Temps = `duplicate -rr`;
+							
+							$Nut = `polyCylinder -r ($NutCorners[$a] * 0.5) -h ($H * 0.875) -sx 6 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ("Body_" + $e)`;
+								rotate -r 0 30 0 ;
+								move -r 0 ($H * -0.8875) 0 $Temp[0];
+								
+								move -r 0 ($H * 0.8875) 0 $Temps[0];
+								rotate 180 0 0 $Temps[0];
+								
+							$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Bolt[0]`;
+							$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+								polySoftEdge -a 0 -ch 0 ($Temps[0] + ".f[126:127]");
+							
+						}// End of Hexagon Head Section
+					
+					if ($T == 11)
+						{// Pan Head with no Slots or Socket Drive
+							$Temps = `polyCylinder -r ($ThreadDiam[$a] * 0.75) -h ($BoltHead[$a] * 0.5) -sx 24 -sy 1 -sz 1 -ax 0 1 0 -ch 0 -name ("Head_" + $e)`;
+								move -r 0 ($BoltHead[$a] * 0.25) 0 ($Temps[0] + ".vtx[49]");	
+								move - r 0 ($BoltHead[$a] * -0.2) 0 $Temps[0];
+							}// End of Pan Head with no Slots or Socket Drive
+							
+							
+					if ($T == 12)
+						{// Pan Head with Hex Socket Drive
+							clear $Temps;
+							$Bolt = `polyCylinder -r ($ThreadDiam[$a] * 0.75) -h ($BoltHead[$a] * 0.5) -sx 24 -sy 1 -sz 1 -ax 0 1 0 -ch 0 -name ("Head_" + $e)`;
+								move -r 0 ($BoltHead[$a] * 0.25) 0 ($Bolt[0] + ".vtx[49]");	
+								
+							$Temp = `polyCylinder -r ($ThreadDiam[$a] * 0.40 ) -h $BoltHead[$a] -sx 6 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ("Head_" + $e)`;
+								move -r 0 ($BoltHead[$a] * 0.4) 0 ;
+							
+							$Temps = `polyBoolOp -op 2 -ch 0 $Bolt[0] $Temp[0]`;
+								move - r 0 ($BoltHead[$a] * -0.2) 0 $Temps[0];
+								
+						}// End of Pan Head with Hex Socket Drive
+						
+						
+					if ($T == 13)
+						{// Pan Head with Slotted Drive
+							clear $Temps;
+							$Bolt = `polyCylinder -r ($ThreadDiam[$a] * 0.75) -h ($BoltHead[$a] * 0.5) -sx 24 -sy 1 -sz 1 -ax 0 1 0 -ch 0 -name ("Head_" + $e)`;
+								move -r 0 ($BoltHead[$a] * 0.25) 0 ($Bolt[0] + ".vtx[49]");	
+								
+							$Temp = `polyCube -w $Wt -h ($Ht * 1.5) -d ($ThreadDiam[$a] * 3.0) -sx 1 -sy 1 -sz 3 -ax 0 1 0 -ch 0 -name ("Slot_" + $e)`;
+								move -r 0 ($BoltHead[$a] * 0.4) 0 ;
+							
+							$Temps = `polyBoolOp -op 2 -ch 0 $Bolt[0] $Temp[0]`;
+								move - r 0 ($BoltHead[$a] * -0.2) 0 $Temps[0];
+								
+						}// End of Pan Head with Slotted Drive
+						
+
+					if ($T == 14)
+						{// Phillips or Cross Head Drive for Pan Head 
+							$Bolt = `polyCylinder -r ($ThreadDiam[$a] * 0.75) -h ($BoltHead[$a] * 0.5) -sx 24 -sy 1 -sz 1 -ax 0 1 0 -ch 0 -name ("Head_" + $e)`;
+							move -r 0 ($BoltHead[$a] * 0.25) 0 ($Bolt[0] + ".vtx[49]");	
+							
+							$Temp = `polyCube -w $Wt -h $Ht -d ($ThreadDiam[$a] * 0.75) -sx 1 -sy 1 -sz 3 -ax 0 1 0 -ch 0 -name ("Slot_" + $e)`;
+								select -r ($Temp[0] + ".vtx[12:15]");
+								move -r 0 ($Ht * -1) 0 ;
+								
+							$Temps = `polyCube -w $Wt -h $Ht -d ($ThreadDiam[$a] * 0.75) -sx 1 -sy 1 -sz 3 -ax 0 1 0 -ch 0 -name ("Slot_" + $e)`;
+								select -r ($Temps[0] + ".vtx[12:15]");
+								move -r 0 ($Ht * -1) 0 ;
+								rotate -r 0 90 0 $Temps;
+								
+							$Temp = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+								move -r 0 ($BoltHead[$a] * 0.5) 0 ;
+							
+							$Temps = `polyBoolOp -op 2 -ch 0 $Bolt[0] $Temp[0]`;
+								move - r 0 ($BoltHead[$a] * -0.2) 0 $Temps[0];
+						}// End of Phillips or Cross Head Drive for Pan Head 
+						
+						
+					if ($T == 15)
+						{// Pan Head with no Slots or Socket Drive
+							$Bolt = `polyCylinder -r ($ThreadDiam[$a] * 0.75) -h ($BoltHead[$a] * 0.75) -sx 24 -sy 1 -sz 1 -ax 0 1 0 -ch 0 -name ("Head_" + $e)`;
+//								move -r 0 ($BoltHead[$a] * 0.25) 0 ($Temps[0] + ".vtx[49]");
+								
+							$Temp = `polySphere -r ($ThreadDiam[$a] * 0.75) -sx 24 -sy 12 -ax 0 1 0 -ch 0 -name ("Cap_" + $e)`;
+								scale 1 0.25 1 $Temp[0];
+								move -r 0 ($ThreadDiam[$a] * 0.25) 0 $Temp;
+								
+							$Temps = `polyBoolOp -op 1 -ch 0 $Bolt[0] $Temp[0]`;
+							
+							
+							if (`radioButtonGrp -q -sl BoltHeadStyle01Check` == 2)
+								{
+									$Temp = `polyCylinder -r ($ThreadDiam[$a] * 0.40 ) -h $BoltHead[$a] -sx 6 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ("Head_" + $e)`;
+										move -r 0 ($BoltHead[$a] * 0.4) 0 ;
+									
+									$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Temp[0]`;
+								
+								
+								}
+								
+							if (`radioButtonGrp -q -sl BoltHeadStyle01Check` == 3)
+								{
+									$Temp = `polyCube -w $Wt -h ($Ht * 1.5) -d ($ThreadDiam[$a] * 3.0) -sx 1 -sy 1 -sz 3 -ax 0 1 0 -ch 0 -name ("Slot_" + $e)`;
+										move -r 0 ($BoltHead[$a] * 0.4) 0 ;
+									
+									$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Temp[0]`;
+
+									
+								}
+									
+							if (`radioButtonGrp -q -sl BoltHeadStyle01Check` == 4)
+								{
+									$Bolt = `polyCube -w $Wt -h $Ht -d ($ThreadDiam[$a] * 0.75) -sx 1 -sy 1 -sz 3 -ax 0 1 0 -ch 0 -name ("Slot_" + $e)`;
+										select -r ($Bolt[0] + ".vtx[12:15]");
+										move -r 0 ($Ht * -1) 0 ;
+										
+									$Temp = `polyCube -w $Wt -h $Ht -d ($ThreadDiam[$a] * 0.75) -sx 1 -sy 1 -sz 3 -ax 0 1 0 -ch 0 -name ("Slot_" + $e)`;
+										select -r ($Temp[0] + ".vtx[12:15]");
+										move -r 0 ($Ht * -1) 0 ;
+										rotate -r 0 90 0 $Temp;
+										
+									$Temp = `polyBoolOp -op 1 -ch 0 $Bolt[0] $Temp[0]`;
+										move -r 0 ($BoltHead[$a] * 0.5) 0 ;
+									
+									$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Temp[0]`;
+									
+								}
+									
+							move - r 0 ($BoltHead[$a] * -0.1) 0 $Temps[0];
+						
+						}// End of Pan Head with no Slots or Socket Drive
+					
+					if ($T == 16)
+						{// Coach Bolt Section
+							$Bolt = `polyCylinder -r ($ThreadDiam[$a] * 0.9) -h ($BoltHead[$a] * 0.15) -sx 24 -sy 1 -sz 1 -ax 0 1 0 -ch 0 -name ("Head_" + $e)`;
+//								move -r 0 ($BoltHead[$a] * 0.25) 0 ($Temps[0] + ".vtx[49]");
+								
+							$Temp = `polySphere -r ($ThreadDiam[$a] * 0.9) -sx 24 -sy 12 -ax 0 1 0 -ch 0 -name ("Cap_" + $e)`;
+								scale 1 0.15 1 $Temp[0];
+								move -r 0 ($ThreadDiam[$a] * 0.05) 0 $Temp;
+								
+							$Temps = `polyBoolOp -op 1 -ch 0 $Bolt[0] $Temp[0]`;
+							
+							$Temp = `polyCube -w ($ThreadDiam[$a] * 1.1) -h ($Ht * 1.25) -d ($ThreadDiam[$a] * 1.1) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0 -name ("Slot_" + $e)`;
+					
+								scale 0.9 1 0.9 ($Temp[0] + ".f[3]") ;
+								polyBevel -offset 0.25 -offsetAsFraction 1 -autoFit 1 -segments 2 -worldSpace 0 -fillNgons 1
+										-mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180 -miteringAngle 180
+										-angleTolerance 180 -ch 0 ($Temp[0] + ".e[0]") ($Temp[0] + ".e[3:5]") ($Temp[0] + ".e[8:11]");
+								move -r 0 ($Ht * -0.6) 0 $Temp;
+
+							$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+								move -r 0 ($Ht * -0.5) 0 $Temps;
+								
+								
+							
+
+						}// End of Coach Bolt Section
+					
+						
+				// Socket Headed Bolt Section
+					if ($T == 17)
+						{
+							$Bolt = `polyCylinder -r ($ThreadDiam[$a] * 0.7) -h $BoltHead[$a] -sx 24 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ("Head_" + $e)`;
+							select -r ($Bolt[0] + ".f[0:23]") ;
+							
+							polyExtrudeFacet -ch 0 -kft 0 -pvx 0 -pvy 0 -pvz 0
+								-tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1
+								-ran 0 -divisions 0 -twist 0 -taper 1 -off 0 -ws 0
+								-ltz 0.25 -ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 0.95 -lsy 0.95 -lsz 1 
+								-ldx 1 -ldy 0 -ldz 0 -w 0 -gx 0 -gy -1 -gz 0 -att 0 -mx 0 -my 0 -mz 0 -sma 30
+								($Bolt[0] + ".f[0:23]");
+							
+							$Temp = `polyCylinder -r ($ThreadDiam[$a] * 0.40 ) -h $BoltHead[$a] -sx 6 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ("Head_" + $e)`;
+								move -r 0 ($BoltHead[$a] * 0.4) 0 ;
+							
+							$Temps = `polyBoolOp -op 2 -ch 0 $Bolt[0] $Temp[0]`;
+							
+						}// End of Socket Headed Bolt Section
+						
+						
+					$Pos[0] = `getAttr ($Barrel[0] + ".boundingBoxMaxY")`;
+					
+					move -r 0 (($BoltLength * 0.975) + ($BoltHead[$a] * 0.45)) 0 $Temps[0];
+					
+					$Bolt = `polyCylinder -r ($ThreadDiam[$a] * 0.5) -h ($BoltLength - ($Pos[0] * 1.0)) 
+											-sx 24 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ("BoltShaft_" + $e)`;
+						move -r 0 (($Pos[1] * 1.95)  + (($BoltLength - ($Pos[0] * 1.0)) * 0.5))  0;
+					
+					$Temps = `polyBoolOp -op 1 -ch 0 $Bolt[0] $Temps[0]`;
+					$Temps = `polyBoolOp -op 1 -ch 0 $Barrel[0] $Temps[0]`;
+					$Barrel[0] = `rename $Temps[0] ($Name + "Bolt_" + $e)`;
+					
+					select -r $Barrel[0];
+					CenterPivot;
+					
+					// Parent Thread to Barrel of Bolt shaft
+						parent $Thread $Barrel ;
+						
+				
+				}
+			
+	// -------------------------------------------------------------------------------- //
+	
+	// ******************************************************************************** //	
+		// Generate SetScrew or Stud
+				
+		if (($T == 18) && (`radioButtonGrp -q -sl BoltHeadStyle01Check` == 1))
+			{
+				$Barrel[0] = `rename $Barrel[0] ($Name + "SetScrew_" + $e)`;
+				
+			// Parent Thread to Barrel of Bolt shaft
+				parent $Thread $Barrel ;
+				$Thread = `rename $Thread ($Name + "SetScrewThread_" + $e)`;
+				
+			}
+				
+				
+		if (($T == 18) && (`radioButtonGrp -q -sl BoltHeadStyle01Check` == 2))
+			{	
+				$Pos[0] = `getAttr ($Barrel[0] + ".boundingBoxMaxY")`;
+				$Temp = `polyCylinder -r ($NutFlat[$a] * 0.2) -h $BoltHead[$a] -sx 6 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ("Head_" + $e)`;
+					move -r 0 $Pos[0] 0 ;
+				
+					$Temps = `polyBoolOp -op 2 -ch 0 $Barrel[0] $Temp[0]`;
+					$Barrel[0] = `rename $Temps[0] ($Name + "SetScrew_" + $e)`;
+				
+				select -r $Barrel[0];
+				CenterPivot;
+				
+				// Parent Thread to Barrel of Bolt shaft
+					parent $Thread $Barrel ;
+					$Thread = `rename $Thread ($Name + "SetScrewThread_" + $e)`;
+			}
+				
+		if (($T == 18) && (`radioButtonGrp -q -sl BoltHeadStyle01Check` == 3))
+			{	
+				$Pos[0] = `getAttr ($Barrel[0] + ".boundingBoxMaxY")`;
+						$Temp = `polyCube -w $Wt -h $Ht -d ($ThreadDiam[$a] * 2) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0 -name ("Slot_" + $e)`;
+							move -r 0 ($Pos[0]) 0 ;
+				
+					$Temps = `polyBoolOp -op 2 -ch 0 $Barrel[0] $Temp[0]`;
+					$Barrel[0] = `rename $Temps[0] ($Name + "SetScrew_" + $e)`;
+				
+				select -r $Barrel[0];
+				CenterPivot;
+				
+				$Temp = `polyCube -w $Wt -h $Ht -d ($ThreadDiam[$a] * 2) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0 -name ("Slot_" + $e)`;
+					move -r 0 ($Pos[0]) 0 ;
+				
+				$Temps = `polyBoolOp -op 2 -ch 0 $Thread $Temp[0]`;
+				$Thread = `rename $Temps[0] ($Name + "SetScrewThread_" + $e)`;
+			
+				// Parent Thread to Barrel of Bolt shaft
+					parent $Thread $Barrel ;
+			}
+				
+		if (($T == 18) && (`radioButtonGrp -q -sl BoltHeadStyle01Check` == 4))
+			{	
+				$Pos[0] = `getAttr ($Barrel[0] + ".boundingBoxMaxY")`;
+					$Temp = `polyCube -w $Wt -h $Ht -d ($ThreadDiam[$a] * 0.75) -sx 1 -sy 1 -sz 3 -ax 0 1 0 -ch 0 -name ("Slot_" + $e)`;
+						select -r ($Temp[0] + ".vtx[12:15]");
+						move -r 0 ($Ht * -1) 0 ;
+						
+					$Temps = `polyCube -w $Wt -h $Ht -d ($ThreadDiam[$a] * 0.75) -sx 1 -sy 1 -sz 3 -ax 0 1 0 -ch 0 -name ("Slot_" + $e)`;
+						select -r ($Temps[0] + ".vtx[12:15]");
+						move -r 0 ($Ht * -1) 0 ;
+						rotate -r 0 90 0 $Temps;
+							
+					$Temp = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+						scale 0.9 1 0.9 $Temp[0];
+						move -r 0 ($Pos[0]) 0 ;
+						
+					$Temps = `polyBoolOp -op 2 -ch 0 $Barrel[0] $Temp[0]`;
+					$Barrel[0] = `rename $Temps[0] ($Name + "SetScrew_" + $e)`;
+					$Thread = `rename $Thread ($Name + "SetScrewThread_" + $e)`;
+					
+				select -r $Barrel[0];
+				CenterPivot;
+				
+			// Parent Thread to Barrel of Bolt shaft
+				parent $Thread $Barrel ;
+		}	
+			
+
+	// -------------------------------------------------------------------------------- //
+	
+	// ******************************************************************************** //	
+	// Generate Stud Section
+			
+			if (($T == 19) && (`radioButtonGrp -q -sl StudStyleCheck` == 1))
+				{
+					$Pos[0] = `getAttr ($Thread + ".boundingBoxMaxY")`;
+				
+					$Bolt = `polyCylinder -r ($ThreadDiam[$a] * 0.5) -h ($BoltLength - ($Pos[0] * 1.0)) 
+											-sx 24 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ("BoltShaft_" + $e)`;
+						move -r 0 (($Pos[1] * 1.95)  + (($BoltLength - ($Pos[0] * 1.0)) * 0.5))  0;
+						
+					select -r ($Bolt[0] + ".f[25]") ;
+					polyBevel -offset 0.1 -offsetAsFraction 0 -autoFit 1 -segments 1 -worldSpace 0 
+								-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001
+								-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180 -ch 0 ($Bolt[0] + ".f[25]");
+
+			
+					$Temps = `polyBoolOp -op 1 -ch 0 $Bolt[0] $Barrel[0]`;
+					$Barrel[0] = `rename $Temps[0] ($Name + "Stud_" + $e)`;
+					$Thread  = `rename $Thread ($Name + "StudThread_" + $e)`;
+					
+					select -r $Barrel[0];
+					CenterPivot;
+					
+					// Parent Thread to Barrel of Bolt shaft
+						parent $Thread $Barrel ;
+				}
+				
+				
+			if (($T == 19) && (`radioButtonGrp -q -sl StudStyleCheck` == 2))
+				{
+					$Barrel[0] = `rename $Barrel[0] ($Name + "Stud_" + $e)`;
+					$Thread  = `rename $Thread ($Name + "StudThread_" + $e)`;
+					
+					select -r $Barrel[0];
+					CenterPivot;
+						
+					// Parent Thread to Barrel of Bolt shaft
+						parent $Thread $Barrel ;
+
+				}
+				
+			if (($T == 19) && (`radioButtonGrp -q -sl StudStyleCheck` == 3))
+				{
+					$Bolt = `polyCylinder -r ($ThreadDiam[$a] * 0.5) -h ($BoltLength - ($Pos[0] * 2.0)) 
+											-sx 24 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ("BoltShaft_" + $e)`;
+						move -r 0 (($Pos[1] * 1.95)  + (($BoltLength - ($Pos[0] * 2.0)) * 0.5)) 0;
+						
+						select -r $Barrel;
+						$Temp = `duplicate -rr -renameChildren -un`;
+						$Pos[3] = `getAttr ($Bolt[0] + ".boundingBoxMaxY")`;
+						rotate 180 0 0 $Temp[0];
+						move -r 0 ($Pos[3]) 0 $Temp[0];
+						$Temps = `polyBoolOp -op 1 -ch 0 $Bolt[0] $Barrel[0]`;
+						$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+						
+						$Barrel[0] = `rename $Temps[0] ($Name + "Stud_" + $e)`;
+						
+						CenterPivot;
+
+						select -r $Thread;
+						
+						$Temp = `duplicate -rr -renameChildren -un`;
+						move -r 0 ($Pos[3]) 0 $Temp[0];
+						
+					// Parent Threads to Barrel of Stud Shaft
+						parent $Thread $Temp[0] $Barrel[0] ;
+						
+						$ThreadT = `rename $Temp[0] ($Name + "StudTopThread_" + $e)`;
+						$Thread  = `rename $Thread ($Name + "StudBotThread_" + $e)`;
+					
+				}
+					
+			
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Generate Nut Flat Section.  
+		
+			if ($T < 6)
+				{
+					if ($T == 0) {$H = $NutHeight[$a];}
+					if ($T == 1) {$H = $LockNutHeight[$a];}
+					if ($T == 2) {$H = $NutHeight[$a];}
+					if ($T == 3) {$H = $NutHeight[$a];}
+					if ($T == 4) {$H = $NutHeight[$a];}
+						
+					$Pos[0] = `getAttr ($Thread + ".boundingBoxMaxY")`;
+					
+					$Pos[1] = ($Pos[0] - $Pos[1]) * 0.5;
+					$Nut = `polyCylinder -r ($NutCorners[$a] * 0.5) -h ($H * 0.9) -sx 6 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ("Body_" + $e)`;
+						rotate -r 0 30 0 ;
+			
+			
+					$Temp = `polySphere -r ($NutCorners[$a] * 0.5) -sx 24 -sy 30 -ax 0 1 0 -ch 0`;
+					
+						scale 1 0.1 1 $Temp[0];
+						move -r 0 ($H * 0.45) 0 $Temp[0];
+		
+						$Temp = `polyBoolOp -op 3 -ch 0 $Nut[0] $Temp[0]`;
+						
+					if ($T != 1)
+						{
+							$Temps = `polyCylinder -r ($NutCorners[$a] * 1.0) -h ($H * 0.75) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+						}	
+						
+					if ($T == 1)
+						{
+							$Temps = `polyCylinder -r ($NutCorners[$a] * 1.0) -h ($H * 0.65) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+						}	
+						
+						$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+						
+						
+						$Temps = `duplicate -rr`;
+						
+					if ($T != 1)
+						{
+							$Nut = `polyCylinder -r ($NutCorners[$a] * 0.5) -h ($H * 0.85) -sx 6 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ("Body_" + $e)`;
+							rotate -r 0 30 0 ;
+						
+							move -r 0 ($H * -0.875) 0 $Temp[0];
+							move -r 0 ($H * 0.875) 0 $Temps[0];
+							rotate 180 0 0 $Temps[0];
+						}	
+						
+					if ($T == 1)
+						{
+							$Nut = `polyCylinder -r ($NutCorners[$a] * 0.5) -h ($H * 0.75) -sx 6 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ("Body_" + $e)`;
+							rotate -r 0 30 0 ;
+							
+							move -r 0 ($H * -0.825) 0 $Temp[0];
+							move -r 0 ($H * 0.825) 0 $Temps[0];
+							rotate 180 0 0 $Temps[0];
+						
+						}	
+						
+					$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Nut[0]`;
+						
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+		
+			
+						polySoftEdge -a 0 -ch 0 ($Temps[0] + ".f[126:127]");
+		
+					float $D = ($NutCorners[$a] * 0.48);
+		
+			//		float $D = ($NutFlat[$a] * 0.48);
+					
+/*					if ($ThreadDiam[$a] > 16 ) {$D = ($NutFlat[$a] * 0.48);}
+					if ($ThreadDiam[$a] > 20 ) {$D = ($NutFlat[$a] * 0.47);}
+					if ($ThreadDiam[$a] > 30 ) {$D = ($NutFlat[$a] * 0.46);}
+*/
+/*
+					
+					$Temp = `polyCylinder -r $D -h ($H * 0.05) -sx 24 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ("TopSection_" + $e)`;
+						nonLinear -type flare -lowBound -1 -highBound 1
+									-startFlareX 1.0 -startFlareZ 1.0 
+									-endFlareX 0.8 -endFlareZ 0.8 -curve 0;		
+							setAttr "flare1Handle.scaleX" 1;
+							setAttr "flare1Handle.scaleY" 1;
+							setAttr "flare1Handle.scaleZ" 1;
+							
+					select $Temp; delete -ch;	
+					$Temps = `duplicate -rr -renameChildren -un`;
+					$Temp[1] = $Temps[0];
+					move -r 0 ($H * -0.475) 0$Temp[1]; ;
+					rotate -r 180 0 0 $Temp[1];
+					move -r 0 ($H * 0.475) 0 $Temp[0];
+					$Temps = `polyBoolOp -op 1 -ch 0 $Nut[0] $Temp[0]`;
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[1]`;
+					
+*/
+
+					if ($T == 2)
+						{// Generate dome for NylocNut
+							$Temp = `polySphere -r ($D * 0.85) -sx 24 -sy 8 -ax 0 1 0 -ch 0`;
+							move -r 0 ($H * -0.45) 0 ;
+							scale 1 0.5 1;
+							$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+							
+						}
+						
+					$Temp = `polyCylinder -r ($TD * 0.51) -h ($H * 4.0) -sx 24 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ("Bore_" + $e)`;
+							
+					$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Temp[0]`;
+					
+					if ($T == 2)
+						{// Generate lock ring for Nyloc Nut
+							$Nut = `polySphere -r ($D *0.70) -sx 24 -sy 8 -ax 0 1 0 -ch 0`;
+							move -r 0 ($H * -0.625) 0 ;
+							if ($ThreadDiam[$a] < 6) {move -r 0 ($H * -0.01) 0;}
+							if ($ThreadDiam[$a] < 3) {move -r 0 ($H * -0.1) 0;}
+							scale 1 0.3 1;
+							$Temp = `polyCylinder -r ($RD * 0.5) -h ($H * 4.0) -sx 24 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ("Bored_" + $e)`;
+							$Temp = `polyBoolOp -op 2 -ch 0 $Nut[0] $Temp[0]`;
+							$Temp[0] = `rename $Temp[0] ($Name + "NyLocRing_" + $e)`;
+							parent $Temp[0] $Temps[0];
+						}// End of Dome and lockring Section
+						
+						// Generate flanged and Domed Nut
+						if (($T == 3) ||  ($T == 4))
+							{// Generate Flanged Nut
+								$Temp = `polyCylinder -r ($D * 1.15) -h ($WasherThick[$a] * 0.5) -sx 24 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+								$Nut[1] = $Temp[0];
+									select -r ($Nut[1] + ".f[24]") ;
+									polyBevel -offset 0.5 -offsetAsFraction 0 -autoFit 1 -segments 1 -worldSpace 0
+											-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001
+											-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180 -ch 0 ($Nut[1] + ".f[24]");
+									
+									select -r ($Nut[1] + ".f[24]") ($Nut[1] + ".f[25]");
+									polySubdivideFacet -dv 1 -m 0 -ch 0 ($Nut[1] + ".f[24]") ($Nut[1] + ".f[25]");
+									rotate 180 0 0 $Nut[1];
+						
+								$Temp = `polyCylinder -r ($ThreadDiam[$a] * 0.51) -h ($WasherThick[$a] * 2) -sx 24 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+		
+								$Temp = `polyBoolOp -op 2 -ch 0 $Nut[1] $Temp[0]`;
+								move -r 0 ($H * -0.45) 0 $Temp[0];
+								
+							if ($T == 4)
+								{// Generate dome for Domed Nut
+									$Tmp = `polySphere -r ($D * 0.8) -sx 24 -sy 16 -ax 0 1 0 -ch 0`;
+									$Nut[3] = $Tmp[0];
+									scale 1 0.85 1 $Nut[3];
+									
+									$Tmp = `polyCube -w ($D * 2) -h $D -d ($D * 2) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0 -name ("Slot_" + $e)`;
+									move -r 0 ($D * -0.5) 0 $Tmp[0];
+									$Tmp = `polyBoolOp -op 2 -ch 0 $Nut[3] $Tmp[0]`;
+									select -r ($Tmp[0] + ".f[0]"); delete;
+									move -r 0 ($H * 0.45) 0 $Tmp[0];
+									$Temps = `polyBoolOp -op 1 -ch 0 $Tmp[0] $Temps[0]`;
+									
+								}// End of Domed Nut
+								
+								$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+								
+							}// End of Flanged and Domed Nut Section
+
+						$Nut[0] = `rename $Temps[0] ($Name + "Nut_" + $e)`;
+						move -r 0 ($H * 0.5) 0 $Nut[0];
+					
+				// Parent Thread to Body of the Nut of Bolt shaft
+						parent $Thread $Nut[0] ;
+						rotate  180 0 0 $Nut[0];
+
+				}	
+				
+	// Wing Nut Section
+
+		if ($T == 8)
+			{
+				$H = $NutHeight[$a];
+				
+				float $D = ($NutFlat[$a] * 0.48);
+				if ($ThreadDiam[$a] > 16 ) {$D = ($NutFlat[$a] * 0.48);}
+				if ($ThreadDiam[$a] > 20 ) {$D = ($NutFlat[$a] * 0.47);}
+				if ($ThreadDiam[$a] > 30 ) {$D = ($NutFlat[$a] * 0.46);}
+				
+			// Generate Nut Body
+				$Temps = `polyCylinder -r $D -h $H -sx 24 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					polyBevel -offset 0.25 -offsetAsFraction 1 -autoFit 1 -segments 3 -worldSpace 0
+							-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+							-miteringAngle 180 -angleTolerance 180 -ch 0 ($Temps[0] + ".f[25]"); 
+
+				$Tmp = `polyCylinder -r ($TD * 0.51) -h ($H * 4.0) -sx 24 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ("Bore_" + $e)`;
+							
+				$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Tmp[0]`;
+				move -r 0 ($H *0.5) 0 $Temps[0];
+				
+				// Generate "Wings" for Wing Nut.
+					$H = $NutHeight[$a];
+				
+					$Tmp = `polyCylinder -r ($D * 0.6) -h ($WasherThick[$a] * 1.17) -sx 24 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+						polyBevel -offset 0.5 -offsetAsFraction 1 -autoFit 1 -segments 2 -worldSpace 0
+								-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+								-miteringAngle 180 -angleTolerance 180 -ch 0 ($Tmp[0] + ".f[24]") ($Tmp[0] + ".f[25]"); 
+						move -r 0 ($WasherThick[$a] * 0.2) 0 ($Tmp[0] + ".f[24]");
+						move -r 0 ($WasherThick[$a] * -0.2) 0 ($Tmp[0] + ".f[25]");
+//						polySubdivideFacet -dv 1 -m 1 -ch 0 ($Tmp[0] + ".f[24:25]");
+						scale 1 1 0.8 $Tmp[0];
+				 		move -r ($D * 1.35) ($H * 0.85) 0 $Tmp[0];
+						rotate 90 0 30 $Tmp[0];
+						
+						
+					$Temp = `polyCube -w ($D * 0.25) -h ($H * 0.5) -d ($WasherThick[$a] * 1.0) -sx 2 -sy 1 -sz 1 -ax 0 1 0 -ch 0 -name ("Slot_" + $e)`;
+				 		move -r ($D * 0.85) ($H * 0.35) 0 $Temp[0];
+						
+						move -r ($D * 0.75) ($H * 0.25) 0 ($Temp[0] + ".vtx[5]") ($Temp[0] + ".vtx[8]") ;
+						scale 1 1 0.25 ($Temp[0] + ".vtx[5]") ($Temp[0] + ".vtx[8]") ;
+						scale 1 1 0.75 ($Temp[0] + ".vtx[4]") ($Temp[0] + ".vtx[7]") ;
+					
+					$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmp[0]`;
+						$Tmp = `duplicate -rr`;
+							rotate 0 180 0 $Tmp[0];
+							
+					$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmp[0]`;
+					
+					$Nut[0] = `rename $Temps[0] ($Name + "Nut_" + $e)`;
+		//			move -r 0 ($H * 0.5) 0 $Nut[0];
+					
+			// Parent Thread to Body of the Nut of Bolt shaft
+				parent $Thread $Nut[0] ;
+			
+			}// End of Wing Nut Section
+			
+		
+			// Castellated Nut Section
+				
+		if ($T == 7)
+			{
+					$Pos[0] = `getAttr ($Thread + ".boundingBoxMaxY")`;
+					
+					$Pos[1] = ($Pos[0] - $Pos[1]) * 0.5;
+					$Nut = `polyCylinder -r ($NutFlat[$a] *0.5) -h ($H * 0.9) -sx 8 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ("Body_" + $e)`;
+					rotate -r 0 22.5 0 ;
+					
+					float $D = ($NutFlat[$a] * 0.48);
+					
+					if ($ThreadDiam[$a] > 16 ) {$D = ($NutFlat[$a] * 0.48);}
+					if ($ThreadDiam[$a] > 20 ) {$D = ($NutFlat[$a] * 0.47);}
+					if ($ThreadDiam[$a] > 30 ) {$D = ($NutFlat[$a] * 0.46);}
+					
+					// Generate Nut Body Section
+					$Temp = `polyCylinder -r $D -h ($H * 0.05) -sx 24 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ("TopSection_" + $e)`;
+						nonLinear -type flare -lowBound -1 -highBound 1
+									-startFlareX 1.0 -startFlareZ 1.0 
+									-endFlareX 0.8 -endFlareZ 0.8 -curve 0;		
+							setAttr "flare1Handle.scaleX" 1;
+							setAttr "flare1Handle.scaleY" 1;
+							setAttr "flare1Handle.scaleZ" 1;
+							
+					select $Temp; delete -ch;	
+					$Temps = `duplicate -rr -renameChildren -un`;
+					$Temp[1] = $Temps[0];
+					move -r 0 ($H * -0.475) 0$Temp[1]; ;
+					rotate -r 180 0 0 $Temp[1];
+					move -r 0 ($H * 0.475) 0 $Temp[0];
+					$Temps = `polyBoolOp -op 1 -ch 0 $Nut[0] $Temp[0]`;
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[1]`;
+					
+					// Generate Castle Top Section of Nut.
+					
+						$Temp = `polyCylinder -r ($D * 0.8) -h ($H * 0.3) -sx 24 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ("Bore_" + $e)`;
+							move 0 ($H * 0.65) 0 $Temp[0];
+							
+						polyBevel -offset 0.3 -offsetAsFraction 1 -autoFit 1 -segments 2 -worldSpace 0
+								-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+								-miteringAngle 180 -angleTolerance 180 -ch 1 ($Temp[0] + ".f[25]"); 
+						$Nut[1] = $Temp[0];
+						
+						$Temp = `polyCube -w ($D * 4) -h ($H * 0.25) -d ($WasherThick[$a] * 0.5) -sx 2 -sy 1 -sz 1 -ax 0 1 0 -ch 0 -name ("Slot_" + $e)`;
+							move 0 ($H * 0.75) 0 $Temp[0];
+							$Nut[2] = $Temp[0];
+							
+						$Temp = `polyCube -w ($D * 4) -h ($H * 0.25) -d ($WasherThick[$a] * 0.5) -sx 2 -sy 1 -sz 1 -ax 0 1 0 -ch 0 -name ("Slot_" + $e)`;
+							move 0 ($H * 0.75) 0 $Temp[0];
+							rotate 0 45 0 $Temp[0];
+							$Nut[3] = $Temp[0];
+
+						$Temp = `polyCube -w ($D * 4) -h ($H * 0.25) -d ($WasherThick[$a] * 0.5) -sx 2 -sy 1 -sz 1 -ax 0 1 0 -ch 0 -name ("Slot_" + $e)`;
+							move 0 ($H * 0.75) 0 $Temp[0];
+							rotate 0 90 0 $Temp[0];
+							$Nut[4] = $Temp[0];
+					
+						$Temp = `polyCube -w ($D * 4) -h ($H * 0.25) -d ($WasherThick[$a] * 0.5) -sx 2 -sy 1 -sz 1 -ax 0 1 0 -ch 0 -name ("Slot_" + $e)`;
+							move 0 ($H * 0.75) 0 $Temp[0];
+							rotate 0 -45 0 $Temp[0];
+							$Nut[5] = $Temp[0];
+							
+						$Temp = `polyBoolOp -op 1 -ch 0 $Nut[2] $Nut[3]`;
+						$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Nut[4]`;
+						$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Nut[5]`;
+						$Tmp = `duplicate -rr`;
+						move -r 0 ($H * 0.5) 0 $Tmp[0];
+						
+						$Temp = `polyBoolOp -op 2 -ch 0 $Nut[1] $Temp[0]`;
+							
+						$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+							
+					// Generate Bore of Nut.
+					$Temp = `polyCylinder -r ($TD * 0.51) -h ($H * 4.0) -sx 24 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ("Bore_" + $e)`;
+							
+					$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Temp[0]`;
+						move -r 0 ($H * 0.5) 0 $Temps[0];
+				
+					$Nut[0] = `rename $Temps[0] ($Name + "Castellated_Nut_" + $e)`;
+					
+					$Temp = `polyBoolOp -op 2 -ch 0 $Thread $Tmp[0]`;
+					
+					$Thread = `rename $Temp ($Name + "NutThread_" + $e)`;
+					
+			// Parent Thread to Body of the Nut of Bolt shaft
+				parent $Thread $Nut[0] ;
+				
+				rotate  180 0 0 $Nut[0];
+			
+			}// End of Castellated Nut Section
+			
+			
+			
+	// -------------------------------------------------------------------------------- //
+	
+	// ******************************************************************************** //	
+		// Generate sleeve for Dummy Hole
+			if ($T == 9)
+			{ 
+				$Pos[0] = `getAttr ($Thread + ".boundingBoxMaxY")`;
+				$Pos[1] = ($Pos[0] - $Pos[1]) * 0.5;
+				
+				$Hole = `polyPipe -r ($ThreadDiam[$a] * 0.51) -h ($Pos[0] * 2.05) -t (($ThreadDiam[$a] -$TD) * 0.5) -sa 24 -sh 1 -sc 1 -ch 0 -name ("Hole_" + $e)`;
+					select -r $Hole;
+					move -r 0 ($Pos[0] *0.51) 0;
+				
+				$Temp = `polyPipe -r ($ThreadDiam[$a] * 0.51) -h ($NutHeight[$a] * 0.05) -t (($ThreadDiam[$a] -$PCD) * 0.49) -sa 24 -sh 1 -sc 1 -ch 0 -name ("LowerHole_" + $e)`;
+		
+				$Temps = `polyBoolOp -op 1 -ch 0 $Hole[0] $Temp[0]`;
+				
+				$Temp = `polyPipe -r ($PCD * 0.5) -h ($NutHeight[$a] * 0.5) -t (($ThreadDiam[$a] -$PCD) * 0.49) -sa 24 -sh 1 -sc 1 -ch 0 -name ("LowerHole_" + $e)`;
+					select -r $Temp;
+					move -r 0 ($NutHeight[$a] * -0.1)  0;
+				
+				$Temp = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+				
+				$Temps = `polyPipe -r ($PCD * 0.50) -h ($NutHeight[$a] * 0.5) -t (($ThreadDiam[$a] -$PCD) * 0.49) -sa 24 -sh 1 -sc 1 -ch 0 -name ("LowerHole_" + $e)`;
+					select -r $Temps;
+					move -r 0 ($NutHeight[$a] * -0.35)  0;
+				
+				$Temp = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+				
+					select -r ($Temp[0] + ".vtx[96:143]");
+					scale -r 0 1 0 ;
+					
+					$Hole[0] = `rename $Temp[0] ($Name + "Hole_" + $e)`;
+					parent $Thread $Hole;
+				
+			}
+			
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+// Add smoothing option to Thread Profile only (set at Zero i.e. no smoothing)
+			
+	if ($T < 21)
+		{
+			select -r $Thread ;
+			$Temp = `polySmooth  -mth 1 -dv 1 -c 1 -kb 1 -ksb 1 -khe 1 -kt 0 -kmb 1
+						-suv 1 -sl 0 -dpe 1 -ps 0.1 -ro 0.5 -ch 1 $Thread` ;
+			rename $Temp[0]  ($Thread + "_Smooth");
+			 
+		}
+	
+	if (($T == 19) && (`radioButtonGrp -q -sl StudStyleCheck` == 3))
+		{
+			select -r $ThreadT ;
+			$Temp = `polySmooth  -mth 1 -dv 1 -c 1 -kb 1 -ksb 1 -khe 1 -kt 0 -kmb 1
+						-suv 1 -sl 0 -dpe 1 -ps 0.1 -ro 0.5 -ch 1 $ThreadT`;
+			rename $Temp[0] ($ThreadT + "_Smooth");
+		}
+
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+// Clean up scene if required.
+
+	select -r "DVY*"; delete; 
+	select -r "OneTurn*"; delete;
+	
+	} // End of Section to generate any Threaded items
+	
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+// Generate Flat Washer
+	
+	if ($T == 21)
+		{
+			$Temp = `polyCylinder -r ($WasherOutDiam[$a] * 0.5) -h $WasherThick[$a] -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+			$Temps = `polyCylinder -r ($ThreadDiam[$a] * 0.51) -h ($WasherThick[$a] * 2) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+	
+			select -r ($Temp[0] + ".f[36]") ;
+			polyBevel -offset 0.5 -offsetAsFraction 0 -autoFit 1 -segments 1 -worldSpace 0
+						-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001
+						-smoothingAngle 60 -miteringAngle 180 -angleTolerance 180 -ch 0 ($Temp[0] + ".f[36]");
+
+				polySubdivideFacet -dv 1 -m 1 -ch 0 ($Temp[0] + ".f[36]") ($Temp[0] + ".f[37]");
+	
+			$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+			
+			while (`objExists ($Name + "Washer_" + $e)`) {$e++;}
+				$Washer[0] = `rename $Temp[0] ($Name + "Washer_" + $e)`;
+				
+		}
+		
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+// Generate Spring Washer
+		
+	if ($T == 22)
+		{
+			$r = ($WasherSpODiam[$a] - $ThreadDiam[$a]) ;
+			$w =  ($WasherSpODiam[$a] - $ThreadDiam[$a]) * 0.5;
+			$ht = $WasherThick[$a] ;
+				
+			$Temps = `polyPlane -w $w -h $Ht -sx 1 -sy 1 -ax 0 1 0 -ch 0 -name ("Spring_" + $e)`;
+			rotate -r 90 0 0;
+			move -r $r 0 0; 
+			
+			$Temp[0] = DVY_Spiral (($ht * 0.75), $r, 0.99);
+			move -r 0 ($ht * 0.375) 0 $Temp[0]; 
+			
+			select -r ($Temps[0] + ".f[0]");
+			polyExtrudeFacet -ch 0 -kft 1 -pvx 0 -pvy 0 -pvz 0 
+				-tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1
+				-ran 0 -divisions 36 -twist -10 -taper 1 -off 0 -ws 0
+				-ltz 0  -ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 1 -lsy 1 -lsz 1
+				-ldx 1 -ldy 0 -ldz 0 -w 0 -gx 0 -gy -1 -gz 0 -att 0
+				-mx 0 -my 0 -mz 0 -sma 90 -inputCurve $Temp[0] ($Temps[0] + ".f[0]");
+			
+			polyBevel -offset 0.3 -offsetAsFraction 0 -autoFit 1 -segments 3 -worldSpace 0
+						-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001
+						-smoothingAngle 60 -miteringAngle 180 -angleTolerance 180 -ch 0 ($Temps[0] + ".f[0:1]");
+			
+			select -r $Temps[0];
+			CenterPivot;
+			$Washer[0] = `rename $Temps[0] ($Name + "SpringWasher_" + $e)`;
+			select -r $Temp; delete;
+			
+		}
+
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+// End of Procedure.
+	string $Node[];
+	
+	if ($T < 9)
+		{
+			$Node[0] = `createNode multiplyDivide -name ($Name + "Rotator_Node_" + $e)`;
+				setAttr ($Node[0] + ".op") 1;
+					connectAttr -f ($Nut[0] + ".ty") ($Node[0] + ".input1Y");
+					connectAttr -f ($Node[0] + ".outputY") ($Nut[0] + ".ry");
+					setAttr ($Node[0] + ".input2Y") (360 / $P);
+		}
+		
+	if (($T > 9) && ($T < 21))
+		{
+			$Node[0] = `createNode multiplyDivide -name ($Name + "Rotator_Node_" + $e)`;
+				setAttr ($Node[0] + ".op") 1;
+					connectAttr -f ($Barrel[0] + ".ty") ($Node[0] + ".input1Y");
+					connectAttr -f ($Node[0] + ".outputY") ($Barrel[0] + ".ry");
+					setAttr ($Node[0] + ".input2Y") (360 / $P);
+		}
+
+	if (($T > 9) && ($T < 20)) 
+		{ 	
+			for ($each in $SetAttrC)
+				setAttr -l 1 -k 0 ($Thread + $each);
+			
+			for ($each in $SetAttrA)
+				setAttr -l 1 -k 0 ($Barrel[0] + $each);
+
+			select -r $Barrel; 
+			if (`optionMenu -q -sl DVY_BoltOption` > 1)
+				{
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[0];
+				}
+
+			return $Barrel[0];
+		}
+	
+	if ($T < 9)
+		{ 
+			for ($each in $SetAttrC)
+				setAttr -l 1 -k 0 ($Thread + $each);
+
+			for ($each in $SetAttrA)
+				setAttr -l 1 -k 0 ($Nut[0] + $each);
+			
+			select -r $Nut[0];
+			if (`optionMenu -q -sl DVY_NutOption` > 1)
+				{
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[1];
+				}
+			
+			
+			return $Nut[0];
+		}
+			
+	if ($T == 9)
+		{ 
+			for ($each in $SetAttrA)
+				setAttr -l 1 -k 0 ($Hole[0] + $each);
+			select -r $Hole[0];
+			return $Hole[0];
+		}
+	
+	if (($T == 21) || ($T == 22))
+		{ 
+			for ($each in $SetAttrB)
+				setAttr -l 1 -k 0 ($Washer[0] + $each);
+			
+			select -r $Washer[0]; 
+			if ((`optionMenu -q -sl DVY_WasherOption` > 1) && ($T == 21))
+				{
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[2];
+				}
+				
+			if ((`optionMenu -q -sl DVY_WasherOption` > 1) && ($T == 22))
+				{
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[3];
+				}
+				
+			return $Washer[0];
+			
+		}
+		
+		
+
+}	

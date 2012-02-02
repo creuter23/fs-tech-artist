@@ -1,0 +1,149 @@
+/*
+FK/IK Maker
+
+Orient constraints the binding chain between two other
+
+
+*/
+
+
+
+
+
+
+
+proc mecIKFKMaker(string $IKChain[], string $FKChain[], string $bind[], string $control )
+{
+
+     // Orient Constrain the joints together.
+     // the names of the constraints need to be caught.
+     string $OConst[];
+     
+     int $i;
+     // check to make sure the sizes of the chains are the same.
+     for($i = 0; $i < size($IKChain); $i++)
+     {
+                string $OC[] = `orientConstraint $IKChain[$i] $FKChain[$i] $bind[$i]`;
+                $OConst[$i] = $OC[0];
+     }
+
+     // Create attribute
+     string $driver = ($control + ".IKFK");
+     addAttr -ln IKFK -at double  -min 0 -max 10 -dv 0 $control;
+     setAttr -e -keyable true $driver;
+
+     // Make the SDK
+     // Set the correct attributes
+
+     for($i = 0; $i < size($IKChain) ; $i++)
+     {
+         string $OCIK = $OConst[$i] + "." + $IKChain[$i] + "W0";
+         string $OCFK = $OConst[$i] + "." + $FKChain[$i] + "W1";
+                  // "joint9_orientConstraint1.joint1W0" 0;
+    
+         setDrivenKeyframe -cd $driver -dv 0
+                           -v 1 $OCIK;
+         setDrivenKeyframe -cd $driver -dv 0
+                           -v 0 $OCFK;
+         setDrivenKeyframe -cd $driver -dv 10
+                           -v 0 $OCIK;
+         setDrivenKeyframe -cd $driver -dv 10
+                           -v 1 $OCFK;
+     } /*
+*/
+}
+
+global proc mecIKFKMakerFill(string $objName)
+{
+       string $sel[] = `ls -sl`;
+       for($s in $sel)
+              textScrollList -e -append $s $objName;
+}
+
+global proc mecIKFKMakerWork()
+{
+     string $Bind[] = `textScrollList -q -ai mecIKFKTSLBind`;
+     string $IK[] = `textScrollList -q -ai mecIKFKTSLIK`;
+     string $FK[] = `textScrollList -q -ai mecIKFKTSLFK`;
+     string $sel[] = `ls -sl`;
+
+     mecIKFKMaker($IK, $FK, $Bind, $sel[0]);
+
+}
+
+proc mecIKFKMakerGUI()
+{
+if(`window -exists mecIKFKGui`)
+		deleteUI mecIKFKGui;
+if( `windowPref -exists mecIKFKGui` )
+		windowPref -r mecIKFKGui;
+
+window -w 312 -h 194 -t "IKFK Maker"
+		-titleBar 1 -mnb 1 -mxb 1 -mb 1 
+		-tlb 0 -sizeable 1 mecIKFKGui;
+
+
+columnLayout mecIKFKColMain;
+text -h 5 -l "";
+rowLayout -w 310 -h 200 -nc 4 -columnWidth4 5 100 100 100 mecIKFKRL;
+
+columnLayout;
+text -l "" -w 5;
+setParent mecIKFKRL;
+
+columnLayout;
+text -w 80 -l "Binding";
+
+textScrollList -w 90 -numberOfRows 5 -allowMultiSelection false
+ 		-showIndexedItem 1
+ 		mecIKFKTSLBind;
+
+button -w 90 -l "Submit" -c "mecIKFKMakerFill(\"mecIKFKTSLBind\")";
+button -w 90 -l "Reset" -c "textScrollList -e -ra mecIKFKTSLBind";
+setParent mecIKFKRL;
+
+
+columnLayout;
+// Second Area
+
+text -w 80 -l "IK";
+
+textScrollList -w 90 -numberOfRows 5 -allowMultiSelection false 
+		-showIndexedItem 1
+ 		mecIKFKTSLIK;
+
+button -w 90 -l "Submit" -c "mecIKFKMakerFill(\"mecIKFKTSLIK\")";
+button -w 90 -l "Reset" -c "textScrollList -e -ra mecIKFKTSLIK";
+setParent mecIKFKRL;
+
+// Thrid Area
+columnLayout;
+
+text -w 80 -l "FK";
+
+textScrollList -w 90 -numberOfRows 5 -allowMultiSelection false 
+		-showIndexedItem 1
+ 		mecIKFKTSLFK;
+
+button -w 90 -l "Submit" -c "mecIKFKMakerFill(\"mecIKFKTSLFK\")";
+button -w 90 -l "Reset" -c "textScrollList -e -ra mecIKFKTSLFK";
+setParent mecIKFKColMain;
+text -l "" -h 5;
+button -l "Apply" -w 304 -c "mecIKFKMakerWork";
+
+/*
+textScrollList -w 90 -numberOfRows 5 -allowMultiSelection false 
+ 		-append "one"      -append "two"      -append "three" 
+ 		-append "four"     -append "five"     -append "six" 
+ 		-append "seven"    -append "eight"    -append "nine" 
+ 		-append "ten"      -append "eleven"   -append "twelve" 
+ 		-append "thirteen" -append "fourteen" -append "fifteen"
+ 		-selectItem "six"
+ 		-showIndexedItem 1
+		mecIKFKTSLBind;
+
+*/
+showWindow mecIKFKGui;
+}
+
+ mecIKFKMakerGUI;

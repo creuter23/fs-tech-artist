@@ -1,0 +1,76 @@
+def getImageRez( imagePath, output=0 )
+	tempFile = cmds.createNode( 'file' )
+	cmds.setAttr( "%s.fileTextureName" %tempFile, imagePath, type="string")
+	
+	# Do typical getting of info
+	fileName = cmds.getAttr( "%s.fileTextureName" %tempFile )
+	xSize= cmds.getAttr( "%s.outSizeX" %tempFile )
+	ySize = cmds.getAttr( "%s.outSizeY" %tempFile )
+	
+	if(output):
+		print( "%s  %s  %s" %(20*"-", file, 20*"-"))
+		print( "FileName: %s\nDimensions: %s x %s" %(fileName, xSize, ySize))               
+		print( 50*"-" )
+	
+	# return xSize, ySize
+	return [xSize, ySize]
+	
+# Hack for get the dimensions of an image (not loaded into a file node)
+
+# Creating a temp file node.
+tempFile = cmds.createNode( 'file' )
+currImage = r"C:\Users\mclavan\Desktop\sbaSymbol.jpg"
+cmds.setAttr( "%s.fileTextureName" %tempFile, currImage, type="string")
+
+# Do typical getting of info
+fileName = cmds.getAttr( "%s.fileTextureName" %tempFile )
+xSize= cmds.getAttr( "%s.outSizeX" %tempFile )
+ySize = cmds.getAttr( "%s.outSizeY" %tempFile )
+
+print( "%s  %s  %s" %(20*"-", file, 20*"-"))
+print( "FileName: %s\nDimensions: %s x %s" %(fileName, xSize, ySize))               
+print( 50*"-" )
+
+# Delete file node
+cmds.delete(tempFile)
+
+
+# Getting the dimensions of an image that is loaded into a file node.
+for file in cmds.ls( type="file" ):
+                fileName = cmds.getAttr( "%s.fileTextureName" %file )
+                xSize= cmds.getAttr( "%s.outSizeX" %file )
+                ySize = cmds.getAttr( "%s.outSizeY" %file )
+                print( "%s  %s  %s" %(20*"-", file, 20*"-"))
+                print( "FileName: %s\nDimensions: %s x %s" %(fileName, xSize, ySize))               
+                print( 50*"-" )
+		
+		
+#Determing is the texture is in a power of 2
+# Cheap way
+rezList = [2,4,8,16,32,64,128,256,512,1024,2048]
+
+sizeX = 512
+sizeY = 512
+
+if( sizeX not in rezList ):
+	print("X size isn't in a power of 2")
+if( sizeY not in rezList ):
+	print("Y size isn't in a power of 2")
+
+if( (sizeX in rezList) and (sizeY in rezList) ):
+	print("Image power of 2")
+else:
+	print("Image not power of 2")
+
+	
+# Math way
+sizeX = 512
+sizeY = 512
+if( sizeX & (sizeX - 1) ):
+	print("X size isn't in a power of 2")
+if( sizeY & (sizeY - 1) ):
+	print("Y size isn't in a power of 2")
+	
+if( (sizeX & (sizeX - 1)) or (sizeY & (sizeY - 1)) ):
+	print("Image isn't in the power of 2")
+	

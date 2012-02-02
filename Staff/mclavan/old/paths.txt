@@ -1,0 +1,34 @@
+
+Vista:
+C:\Users\mclavan\Documents\My Dropbox\scripts
+
+import os, os.path, sys
+devPath = os.path.join( os.environ['HOME'], "My Dropbox", "scripts" )
+sys.path.append(devPath)
+
+
+
+XP:
+C:\Documents and Settings\mclavan\My Documents\My Dropbox\scripts
+
+import os, os.path, sys
+devPath = os.path.join( os.environ['HOME'], "My Dropbox", "scripts" )
+devPath = devPath.replace("\\", "/")
+sys.path.append(devPath)
+
+
+OSX:
+import os, os.path, sysdevPath = os.path.join( os.environ['HOME'], "Documents",  "Dropbox", "scripts" )sys.path.append(devPath)
+
+
+Work Desktop:
+pathName = r'F:\Dropbox\My Dropbox\scripts'
+import sys
+sys.path.append(pathName)
+
+
+Run Script:
+import mecScripts
+reload(mecScripts)
+
+

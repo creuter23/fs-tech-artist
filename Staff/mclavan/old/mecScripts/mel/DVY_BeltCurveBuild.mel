@@ -1,0 +1,169 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davvey\'s Belt  & Pulley Generator
+''    Author:  
+''    Last Updated: Feb 02, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4509.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+///////////////////////////////////////////////////////////////////////////////
+/*			
+				
+	Copyright © 2006 DVY_BeltCurveBuild. All rights reserved davvey@ntlworld.com
+
+						- DVY_BeltCurveBuild -
+///////////////////////////////////////////////////////////////////////////////
+						
+//	DVY_BeltCurveBuild;
+//	Description and Usage Section
+
+//	Installation	
+		
+	Script is part of Davvey's Pulley  and Belt Generator script pack.
+	
+	It is called to build a Belt Curve Path around Pulleys as required.
+
+*/
+	
+//////////////////////////////////////////////////////////////////////////
+//					DVY_BeltCurveBuild Procedure
+//////////////////////////////////////////////////////////////////////////
+
+global proc string[] DVY_BeltCurveBuild()
+{
+	// Build Belt based on Pulley Group selected.
+		
+	global string $Units;
+
+	global float $DVYUnit;
+		
+		
+	string $Pulleys[], $PulleysGrp[], $Sel[], $Selected[], $buffer[];
+	string $Group[], $Temps[], $Temp[];
+	clear $PulleysGrp;
+	
+	float $SPVec1[], $SPVec2[], $SPVec3[];
+	float $Pos[], $SpPos[];
+		
+	float $CalcAngle[];
+	float $An[], $PCDS[];
+		
+	int $i, $j, $k, $q, $t,  $NT[]; 
+
+		$t = `radioButtonGrp -q -sl PulleyTypeRadioButton`;
+
+		$Sel = `ls -sl`;
+		$numTokens = `tokenize $Sel[0] "_" $buffer`;
+		print $buffer;
+		
+		select -r ( $buffer[0] + "_Belt_Grp_" + $buffer[4] + "_" + "Pulley_GrpN_*");
+		$PulleysGrp = `ls -tr -sl`;
+		
+		print $PulleysGrp;
+		string $Selected[];
+		$Selected[0] = ($buffer[0] + "_Main_" + $buffer[2] + "_" + $buffer[3]);
+		print $Selected;
+		
+		float $Center;// = `getAttr ($Selected[0] + ".CenterDistance")`;
+		$q = `size $PulleysGrp`;
+		print ("$q is " + $q + "\n");
+
+		
+		select -r ("Grp_" + $buffer[4] + "_Sphere_*");
+		$Temps = `ls -tr -sl`;
+		
+		string $DVYCurve; string $DVY_Curve[];
+		$DVYCurve = "curve -d 1 -p ";
+		int $Q = `size $Temps`;
+		print ("$Q is " + $Q + "\n");
+		for ($i=0; $i<$Q; $i++)
+			{
+				$POS = `xform -q -ws -bb $Temps[$i]`;
+				$Pos[0] = ($POS[0] + $POS[3]) *0.5;
+				$Pos[1] = ($POS[1] + $POS[4]) *0.5;
+				$Pos[2] = ($POS[2] + $POS[5]) *0.5;
+				
+				if ($i<$Q-1)
+				{ $DVYCurve = ($DVYCurve + $Pos[0] + " " + $Pos[1] + " " + $Pos[2] + " -p " );}
+				if ($i==$Q-1)
+				{ $DVYCurve = ($DVYCurve + $Pos[0] + " " + $Pos[1] + " " + $Pos[2] + " -name \"DVYCurve_1\" ;");}
+				
+			}
+		
+//			print $DVYCurve;
+			$Temp[0] = `eval ($DVYCurve)`;
+			print $Temp;
+			$DVY_Curve[0] = `rename $Temp[0] ($Sel[0] + "_BeltCurve_1")`;
+		
+		//  Add final CV at start location to end of Curve/
+				$POS = `xform -q -ws -bb $Temps[0]`;
+				$Pos[0] = ($POS[0] + $POS[3]) *0.5;
+				$Pos[1] = ($POS[1] + $POS[4]) *0.5;
+				$Pos[2] = ($POS[2] + $POS[5]) *0.5;
+					curve -os -a -p $Pos[0] $Pos[1] $Pos[2] $DVY_Curve[0] ;
+					
+		select $DVY_Curve[0];
+		ClusterCurve;
+		
+			for ($i=0; $i<$Q; $i++)
+				{
+					select -r $Temps[$i];
+					select -add ("cluster" + ($i+1) + "Handle");
+						parentConstraint -mo -weight 1;
+						
+				}		
+			
+			select -r $Temps[0];
+			select -add ("cluster" + ($Q + 1) + "Handle");
+				parentConstraint -mo -weight 1;
+			
+	$Pos = `xform -q -ws -rp $DVY_Curve[0]`;
+		
+			createNode implicitBox -name ($Sel[0] + "_Curve_TargetShape_1");
+				pickWalk -d up;
+					$Temp = `ls -sl`;
+					$DVY_Curve[1] = `rename $Temp[0] ($Sel[0] + "_Curve_Target_1")`;
+					move -r $Pos[0] $Pos [1] $Pos[2];
+					makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+					setAttr ($DVY_Curve[1] + ".visibility") 0;
+					
+
+/*
+					
+		// Rebuild and Close Curve with 3 Degress instead of a Linear Curve.
+				$Temp = `rebuildCurve -ch 0  -rpo 1 -rt 0 -end 0 -kr 2 -kcp 0 -kep 0 -kt 0 -s 36 -d 3 -tol 0 $DVY_Curve[0]`;
+					$DVY_Curve[0] = `rename $Temp[0] ($Sel[0] + "_BeltCurve_1")`;
+				
+					closeCurve -ch 0 -ps 2 -rpo 1 -bb 0.5 -bki 1 -p 0.1 $DVY_Curve[0] ;
+						select -r $DVY_Curve[0];
+						CenterPivot;
+						
+		// Add and Immplicit Cube as a "Target" for Motion Path items.
+
+select -r $Temp[50];	
+
+	$Pos = `xform -q -ws -rp $DVY_Curve[0]`;
+		
+			createNode implicitBox -name ($Sel[0] + "_Curve_TargetShape_1");
+				pickWalk -d up;
+					$Temp = `ls -sl`;
+					$DVY_Curve[1] = `rename $Temp[0] ($Sel[0] + "_Curve_Target_1")`;
+					move -r $Pos[0] $Pos [1] $Pos[2];
+					makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+					setAttr ($DVY_Curve[1] + ".visibility") 0;
+*/
+
+
+//		select -r $DVY_Curve;
+//		delete -ch;
+		
+		return $DVY_Curve;
+
+}

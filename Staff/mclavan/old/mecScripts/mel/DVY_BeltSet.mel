@@ -1,0 +1,64 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davvey\'s Belt  & Pulley Generator
+''    Author:  
+''    Last Updated: Feb 02, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4509.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+///////////////////////////////////////////////////////////////////////////////
+/*			
+				
+	Copyright © 2006 DVY_BeltSet. All rights reserved davvey@ntlworld.com
+
+						- DVY_BeltSet -
+///////////////////////////////////////////////////////////////////////////////
+						
+//	DVY_BeltSet;
+//	Description and Usage Section
+
+//	Installation	
+		
+	Script is part of Davvey's Belt Generator script pack.
+	
+	It is called to initiate rigging of Belt and Pulleys to set up
+	drive for group. The script checks correct node is selected and then
+	calls DVY_BeltDriver procedure to complete the rigging.
+
+*/
+	
+//////////////////////////////////////////////////////////////////////////
+//					DVY_BeltSet Procedure
+//////////////////////////////////////////////////////////////////////////
+
+global proc DVY_BeltSet()
+{
+	global string $Type[];
+
+	string $Groups[], $TempSel[];
+
+	int $ID, $Idx;
+	
+	$TempSel = `ls - sl`;
+	$Groups[0] =  $TempSel[0];
+	if ($Groups[0] == "")
+		{
+			error "OOps! Please select the Belt Pulleys Group Top Node and try again";
+		}
+		else{
+				$Idx = 0;// `getAttr ($Groups[0] + ".Type")`;
+				$ID = `getAttr ($Groups[0] + ".Grp_No_")`;
+				print $ID;
+				
+				DVY_BeltDriver($Groups[0], $Idx, $ID);
+			}
+
+	
+}

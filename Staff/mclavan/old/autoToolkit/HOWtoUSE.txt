@@ -1,0 +1,15 @@
+Auto Toolkit
+By: Michael Clavan
+
+Version: v1.0
+
+- Place your scripts and icons in the folders provided to you.
+- Change the main folder name "autoToolkit" to what every you want your menu name to be.
+- Update the xml file to add buttons to your menu.
+- Place the entire folder inside Maya's scripts folder.
+- Run the script by:
+
+import autoToolkit # Note this will change depending what you name the folder.
+
+reload( autoToolkit ) # To instantly update the menus do to changes to the xml file. 
+

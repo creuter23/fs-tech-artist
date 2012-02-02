@@ -1,0 +1,12 @@
+<icons>
+	<control>head_Ctrl
+		<width>99</width>
+		<height>33</height>
+		<ann>This is the head control.</ann>
+	</control>
+	<control>helmut_ctrl
+		<width>22</width>
+		<height>99</height>
+		<ann>This is the helmut control.</ann>
+	</control>
+</icons>

@@ -1,0 +1,573 @@
+/*
+  mecPadScript.mel
+  Created by:
+          Michael Clavan
+          www.3DSETUP.com
+          mc@3dsetup.com
+          mclavan@fullsail.com
+
+  The main purpose of this script is to generate a group that has a naming 
+  conventions of your choice.  The user has the choice to have the generated 
+  group have identical translation and or orientation.
+  
+  Directions:
+             - source mecPadScript.mel
+             - An interface will be generated.
+             - select object that you want to pad.
+               Select the desired options and then press apply.
+
+
+             Options
+             Parent = generated group will be parent to the selected object.
+             World = generated group will be parented to nothing.
+             Match Orient = Orients will be duplicated.
+             Match Point = Position will be duplicated.
+             Use Selected Name = Selected object will be added as a prefix 
+                 to what is inputted into the Name field.
+             Grab = The selected objects name will be placed into the Name 
+                  field and "Use Selected Name" will be unchecked.
+
+
+*/
+
+/* mecPadScript
+   Disc:
+        Starter procedure.
+        GUI is generated.
+        Once apply is hit on the interface work is done through another proc.
+
+*/
+
+proc mecSelectScriptGui()
+{
+	columnLayout mecSelScrCol;
+	
+	
+	separator -w 205 -hr 1 -st "single";
+	text -h 7 -l "";
+	
+	text -w 190 -vis 1
+		-label "Select"
+		-align "center" -font "boldLabelFont" ;
+	
+	text -h 2 -l "";
+	
+	
+	rowLayout -w 170 -nc 3 -columnWidth3 5 55 130 ;
+	text -w 5 -l "";
+	button -w 50 -l "Select" -align "center" 
+		 -c "mec_Sel(`textField -q -text mecSelSText`, 0)";
+	
+	textField -w 130 -text "_bind" mecSelSText;
+	
+	setParent mecSelScrCol;	
+}
+
+proc mecPadScript()
+{
+
+    if(`window -exists BasicFunRigging`)
+		deleteUI BasicFunRigging;
+    if( `windowPref -exists BasicFunRigging` )
+		windowPref -r BasicFunRigging;
+
+    window -w 205 -h 503 -t "Basic Fun"
+		-titleBar 1 -mnb 1 -mxb 1 -mb 1 
+		-tlb 0 -sizeable 1 BasicFunRigging;
+
+
+    columnLayout mecPadSColMain;
+    text -h 5 -l "";
+    
+    text -w 190 -vis 1
+		-label "Group Padding"
+		-align "center" -font "boldLabelFont" ;
+
+    text -h 5 -l "";
+
+     rowLayout -w 300 -nc 2 -columnWidth2 10 295 ;
+
+    text -w 10 -l "";
+    
+    columnLayout mecPadSCol;
+
+    // Parent/Child Area
+    rowLayout -w 300 -nc 3 -columnWidth3 60 60 60 ;
+    radioCollection mecPadSRadio;
+    radioButton -w 60
+    		-cl "mecPadSRadio"
+    		 -label "Parent" 
+    		-align "center"
+    		-sl mecPadSParent;
+
+    text -w 30 -l "";
+    radioButton -w 60
+    		 -label "World"
+    		-cl "mecPadSRadio" -align "center"
+    		mecPadSWorld;
+    setParent mecPadSCol;
+    text -h 5 -l "" ;
+    
+    rowLayout -w 300 -nc 2 -columnWidth2 100 90 ;
+    checkBox -w 90 -l "Match Orient"
+    		-v 1 -align "center" mecPadSCBOri;
+    checkBox -w 90 -l "Match Point"
+    		-v 1 -align "center" mecPadSCBP;
+    setParent mecPadSCol;
+    
+    checkBox -w 125 -l "Use Selected Name"
+    		-v 1 -align "center" mecPadSCB3;
+
+    text -h 5 -l "";
+    
+    // Object name area
+    rowLayout -w 300 -nc 3 -columnWidth3 33 110 70 ;
+    text -l "Name: ";
+    textField -w 105 -text "" mecPadSText;
+    button -l "Grab" -c "mecPadScriptExe(0)";
+    setParent mecPadSCol;
+    text -h 5 -l "";
+    
+    // Apply
+    rowLayout -w 300 -nc 2 -columnWidth2 35 100 ;
+    text -w 35 -l ""; 
+    button -l "Apply" -w 100 -h 25 -align "center"
+    	 -c "mecPadScriptExe(1)";
+
+ 
+    // Returning to the top parent
+    setParent mecPadSColMain;
+
+    text -h 10 -l "";
+
+    separator -w 205 -hr 1 -st "single";
+
+    columnLayout;
+
+    text -h 7 -l "";
+
+    text -w 190 -vis 1
+	-label "Joint Redraw"
+	-align "center" -font "boldLabelFont" ;
+
+    text -h 2 -l "";
+
+    rowLayout -w 300 -nc 2 -columnWidth2 35 280 ;
+    text -w 35 -l "";
+    
+    // Joint redraw options.
+    columnLayout mecJRedrawCol;
+    text -h 5 -l "";
+    checkBox -w 120 -l "Zero Out End Joint"
+    		-ann "Zero Out the Joint Orient of the end joint."
+    		-v 1 -align "center" mecJRedrawZero;
+    text -h 5 -l "";
+    
+    rowLayout -w 300 -nc 2 -columnWidth2 25 75 ;
+    text -w 25 -l "";
+    button -l "Apply" -w 75 -align "center" 
+    	 -c "mecJReDrawDoIt(`checkBox -q -v mecJRedrawZero`)";
+
+    setParent mecPadSColMain;
+    text -h 10 -l "";
+    separator -w 205 -hr 1 -st "single";
+    text -h 10 -l "";
+    text -w 205 -vis 1 
+    		-label "Misc. Buttons"
+    		-align "center" -font "boldLabelFont" ;
+    
+    rowLayout -w 205 -nc 2 -columnWidth2 15 200;
+    
+    text -l "";
+    
+    columnLayout -w 205 -cal "center" -adj true -rs 5;
+    text -h 5 -l "";
+    button -l "Duplicate" -w 160 -align "center"
+    	-ann "Duplicate with rename children." 
+    	 -c "duplicate -rc";
+    
+    
+    
+    columnLayout -w 205 -cal "center" -adj true;
+    
+    rowLayout -w 205 -nc 3 -columnWidth3 75 10 75;
+    
+    
+    button -l "Freeze Trans." -w 75 -align "center"
+    	-ann "Freeze Transforms" 
+    	 -c "makeIdentity -apply true -t 1 -r 1 -s 1 -n 0";
+    text -l "";
+    
+    button -l "Delete History" -w 75 -align "center"
+    	-ann "Delete History" 
+    	 -c "delete -ch;";
+setParent..;
+setParent..;
+	text -h 10 -l "";
+	
+	mecSelectScriptGui();
+	
+    showWindow BasicFunRigging;
+
+}
+
+
+/*  mecDupExists
+  Disc:
+       This procedure check to see if $obj exists anywhere in the scene.
+       An array is returned the first element is the name and the second 
+       is $obj exists in the scene.
+  Input:
+        $obj(string) - A object's name in maya need to be check if it has a duplicate.
+  Return:
+         (string[]) 2 indices. Index[0] = the name of the object and 
+                    Index[1] = Ether "none" == object is unique or 
+                    "match" == object has a duplicate.
+
+   STAND ALONE PROCEDURE
+*/
+proc string[] mecDupExists(string $obj)
+{
+    string $tok[];
+    tokenize $obj "|" $tok;
+    
+    string $last = $tok[(size($tok)-1)];
+
+    string $state = "none";
+    if(size(`ls $last`) > 0)
+           $state = "match";
+
+    return {$last, $state};
+
+}
+
+proc mecAROri( string $mecSource[], string $mecTarget[] )
+{
+
+	// Looping backwards, zero won't be done because it will be the root
+	//		of the joint chain. 
+	for( $i = (size($mecSource)-1) ; $i >= 0 ; $i--)
+	{
+		if( $i != 0 )
+		{
+			parent -w $mecSource[$i];
+			parent -w $mecTarget[$i];
+		}
+		
+		// Copy the Rotate Axis
+		float $mecScaleO = `getAttr ($mecSource[$i]+".rotateAxisX")`;
+		// Copy the Joint Orient
+		float $mecOri = `getAttr ($mecSource[$i]+".jointOrientX")`;
+
+		// Set the Rotate Axis and the Joint Orient for the target joint
+
+		setAttr ($mecTarget[$i]+".rotateAxisX") $mecScaleO;
+		setAttr ($mecTarget[$i]+".jointOrientX") $mecOri;
+
+	}
+	
+	// ReParent the joints together
+	//	This is not done in the loop before because the children positions
+	//	will get messed up.
+	for( $i = (size($mecTarget)-1) ; $i > 0 ; $i--)
+	{
+		parent $mecTarget[$i] $mecTarget[$i-1];
+		parent $mecSource[$i] $mecSource[$i-1];
+	}
+
+	select -cl;
+}
+
+// Redrawing of the joints.
+proc mecARReDo( string $mecJs[],  int $zeroOut )
+{
+
+	string $mecNew[] = `duplicate -rc $mecJs[0]`;
+	select -r $mecNew[0];
+	
+	// Switch the names
+	string $mecTemp[];	
+	for( $i = 0; $i < size($mecJs) ; $i++ )
+	{
+		$mecTemp[$i] = $mecJs[$i];
+		
+	}
+
+	// Cleaning the joints.
+	
+	// Cleaning the rotations off.
+	// Unparenting the joints
+	for ( $i = 0; $i < size($mecJs) ; $i++)
+	{
+		if($i != 0)
+		{
+			string $parentN[] = `parent -w $mecJs[$i]`;
+			$mecJs[$i] = $parentN[0];
+                        $parentN = `parent -w $mecNew[$i]`;
+                        $mecNew[$i] = $parentN[0];
+			//parent -w $mecJs[$i];
+			//parent -w $mecNew[$i];
+		}
+	}
+	
+	for( $i = 0; $i < size($mecJs) ; $i++)
+	{
+		parent $mecNew[$i] $mecJs[$i];
+		select -r $mecNew[$i];
+		makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+		parent -w $mecNew[$i];
+	}
+
+	
+	// Reparent the joints
+	// Clean the Translations values
+	for ( $i = 0 ; $i <= (size($mecJs)-1) ; $i++)
+	{
+		if( $i != 0 )
+		{
+			parent $mecJs[$i] $mecJs[$i-1];
+			parent $mecNew[$i] $mecNew[$i-1];
+		}
+	}
+/**/
+	// Duplicating joint chain before the clean
+	string $mecSource[] = `duplicate -rc $mecNew[0]`;
+	
+	joint -e -oj xyz -zso -ch $mecNew[0];
+	
+	//mecARReDo(`ls -type joint -dag LtLegRoot`);
+	//mecARReDo();	
+	// Correcting the orientations
+	delete $mecJs;
+	mecAROri( $mecSource, $mecNew );
+	delete $mecSource;
+	
+	for( $i = 0; $i < size($mecNew) ; $i++ )
+		rename $mecNew[$i] $mecTemp[$i];
+
+        if($zeroOut)
+        {
+            setAttr ($mecTemp[size($mecTemp)-1] + ".jointOrientX") 0;
+            setAttr ($mecTemp[size($mecTemp)-1] + ".jointOrientY") 0;
+            setAttr ($mecTemp[size($mecTemp)-1] + ".jointOrientZ") 0;
+        }
+}
+
+// Input: Array of strings that contain the proper orientation (source)
+//		  Array of strings that is the destination for the orientation info (Target)
+// Output: None
+// Discription:
+// Cleaning up the joints values.  Preserving the orginal joint's orientation, while
+//		resetting the rotates and scales to their defaults.  Finally making sure that
+//		there is only a value in translate x other than the root joint.
+
+
+
+global proc mecJReDrawDoIt(int $zeroOut)
+{
+       mecARReDo(`ls -sl -dag`, $zeroOut);
+}
+
+
+
+/* mecPadScriptWork
+   Disc:
+        All the work is done in this procedure.
+        Information is grabbed from the interface.
+        Duplicate objects are checked for.
+        Group is generated according to the options selected in the GUI.
+
+*/
+proc mecPadScriptWork()
+{
+     string $sel[] = `ls -sl`;
+     string $nameSel[] = mecDupExists($sel[0]);
+     string $name;
+     // Find out which options are selected.
+    if(`checkBox -q -v mecPadSCB3`)
+           $name = $nameSel[0];
+    $name += `textField -q -text mecPadSText`;
+
+
+    print ($name + "\n");
+   
+    string $nameEx[] = `mecDupExists($name)`;
+
+    if("match" == $nameEx[1])
+               error ($name + " allready exists!\n");
+
+    
+    string $grp = `group -em -w -n $name`;
+
+    
+    print($grp + "\n");
+    // If Ori is checked the group will match its orients.
+    if(`checkBox -q -v mecPadSCBOri`)
+    {
+                 string $OC[] = `orientConstraint  $sel[0] $grp`;
+                 delete $OC;
+                 clear($OC);
+    }
+   
+    // If Point is checked the group will match the selected .
+    if(`checkBox -q -v mecPadSCBP`)
+    {
+                 string $PC[] = `pointConstraint $sel[0] $grp`;
+                 delete $PC;
+                 clear($PC);
+    }
+
+
+    // Parenting the new group into its proper location.
+   
+    string $radio = `radioCollection -q -sl mecPadSRadio`;
+    if($radio == "mecPadSParent" )
+    {
+              string $parent[] = `listRelatives -p -f $sel[0]`;
+
+              if(size($parent) > 0)
+              {
+                    //parent -w $sel[0];
+                    print $parent;
+                    parent $grp $parent[0];
+              }
+              parent $sel[0] $grp;
+
+    }
+
+
+}
+
+/* mecPadScriptWork2
+   Disc:
+        Mainly this procedure will create a group, match its trans and ori, 
+               and then ether place the group in the world or parent to the 
+               main object.
+   Input: $sel(string) - object that is going to be mimiced.
+          $name(string) - name of the new object.
+          $ori(int) - Orient match (1==yes, 0==no)
+          $point(int) - Translate match (1==yes, 0==no)
+          $type(int) - parent == 1 or world == 0
+   Output:
+          (String) Returns the name of the new group unless the name exists and then it returns 0.
+   
+STAND ALONE PROCEDURE
+ */
+
+proc string mecPadScriptWork2(string $sel, string $name, int $ori, int $point, int $type)
+{
+    // Check to see if the $name exists in the scene file.
+    string $nameEx[] = `mecDupExists($name)`;
+
+    // If the name exists then 0 is returned.
+    if("match" == $nameEx[1])
+               return "0";
+
+    string $grp = `group -em -w -n $name`;
+
+    // If Ori is checked the group will match its orients.
+    if($ori == 1)
+    {
+                 string $OC[] = `orientConstraint  $sel $grp`;
+                 delete $OC;
+                 clear($OC);
+    }
+   
+    // If Point is checked the group will match the selected .
+    if($point == 1)
+    {
+                 string $PC[] = `pointConstraint $sel $grp`;
+                 delete $PC;
+                 clear($PC);
+    }
+
+
+    // Parenting the new group into its proper location.
+
+   if($type == 1 )
+    {
+              string $parent[] = `listRelatives -p -f $sel`;
+
+              if(size($parent) > 0)
+              {
+                    //parent -w $sel[0];
+                    print $parent;
+                    parent $grp $parent[0];
+              }
+              parent $sel $grp;
+
+    }
+
+    return $grp;
+}
+
+// This procedure moves the name of the selected to the mecPadSText text field.
+//      The main purpose is to be able to modify the naming convention of the 
+//      currently selected object.
+proc mecPadScriptGrab()
+{
+     string $sel[] = `ls -sl`;
+     string $selRef[] = mecDupExists($sel[0]);
+     textField -e -text $selRef[0] mecPadSText;
+
+     // Unchecking use selected name.
+     checkBox -e -v 0 mecPadSCB3;
+}
+
+// Triggers all the local procedures above.
+global proc mecPadScriptExe(int $val)
+{
+       if($val)
+               mecPadScriptWork();
+       else
+               mecPadScriptGrab();
+}
+
+/*
+// 	Procedure will select every object in the scene that has $selType somewhere in its name.
+//	
+//	Input: 	(string) $selType = Selection identifer
+//		(int)	 $addTog  = Should current group be added(1) or replace(0) current selection. 	
+//	Output: None
+//	Results:
+//		If the value $selType is present in the name of a node it will be selected along with 
+//		every other occurance in the scene file.  EVERY NODE IS CHECKED.
+
+
+
+Example
+	//"CtrlMC" is selected replacing anything else that is selected.
+	mec_Sel("CtrlMC", 0);
+
+	//"CtrlMC_Arm" is added to the currently selected nodes in the scene.
+	mec_Sel("CtrlMC_Arm", 1);
+*/
+
+
+global proc mec_Sel(string $selType, int $addTog)
+{
+
+	//Grab everything in the scene;
+	//	You might want to limit this to transforms.
+	string $sel[] = `ls`;
+	
+	//"CtrlMC"
+	// Items to be selected.	
+	string $select[];
+
+	for($s in $sel)
+	{
+		// Checking to see if node has $selType in its name
+		if( `gmatch $s ("*"+$selType+"*")` )
+			$select[size($select)] = $s;	
+
+	}
+	
+	if($addTog)
+		select -add $select;
+	else
+		select -r $select;
+}
+
+
+mecPadScript();
