@@ -10,6 +10,12 @@
 
 
 <body>
+	<script type="text/javascript">
+function redirectPage()
+	{
+		window.location = "http://localhost:8000/signup";
+	}
+</script>
 	<div class="key" id="mainform">
 		<h1>Setup Account</h1>
 			{% if valid_login %}
@@ -23,7 +29,7 @@
 					<P id="hsfields">Password: <input name="password" type="password" size="20" maxlength="50" required="required" /></P>
 				</fieldset>
 				<p><input name="submit" type="submit" /> </p>
-				<INPUT TYPE="button" VALUE="Sign Up" onClick="{% url mainsignup %}">
+				<INPUT TYPE="button" VALUE="Sign Up" onClick="redirectPage()">
 			</form>
 
 	</div>
