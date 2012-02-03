@@ -1,0 +1,292 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davvey\'s Window Generator
+''    Author: Davvey 
+''    Last Updated: Feb 26, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/1145.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+/*
+
+	DVY_FrameMaker(0, 1, 1, 1, 1000, 1200, 100, 100);
+	
+*/
+
+global proc string DVY_FrameMaker(int $T, int $C, int $E, int $e, float $FrHeight, float $FrWidth, int $HRatio, int $VRatio)
+{
+	
+// ******************************************************************************** //	
+//	Global Variables
+	
+	global string $Units;
+
+	global float $DVYUnit;
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Local Variables
+	
+	string $Temp[], $Temps[], $Shader[];
+	string $WName[] = {"Window_", "Door_"};
+		float $FW, $FH, $FD, $Width, $Height;
+		float $WW[], $WH[], $WD[];
+		
+	int $a, $b, $c, $i, $j, $k;	
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Create Shaders for Window Frame & Glass.
+	
+	if(!`objExists Frame_SH`) { $Shader[0] = `DVY_Shaders(40)`; }
+		 $Shader[0] = "Frame_SH";		 
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Window Frame dimensions
+		
+		float $FD = 40;		// Frame Depth
+		float $FW = 50;		// Frame Width
+		float $FH = 50;		// Frame Height
+		float $CD = 100;	// Cill Depth
+
+		float $Height = ($FrHeight - $FH * 2);
+		float $Width = ($FrWidth - $FW * 1);
+		$CD = 0; 
+		if ($C == 2) {$CD = 100;}
+		if ($C == 3) {$CD = 150;}
+		if ($C == 4) {$CD = 200;}
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Frame Type
+		
+	string $WinName = ($WName[$T] + $E);
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Build Frame
+	
+	$Temps = `polyCube -w $FrWidth -h $FH -d $FD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+	$Temp[$a++] = $Temps[0];
+	move -r 0 ($FH * 0.5) 0;
+	
+	$Temps = `polyCube -w $FrWidth -h $FH -d $FD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+	$Temp[$a++] = $Temps[0];
+	move -r 0 ($Height + $FH * 1.5) 0;
+	
+	$Temps = `polyCube -w ($FW * 0.999) -h $Height -d $FD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+	$Temp[$a++] = $Temps[0];
+	move -r ($Width * 0.5) ($Height * 0.5 + $FH * 1.0) 0;
+	
+	$Temps = `polyCube -w ($FW * 0.999) -h $Height -d $FD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+	$Temp[$a++] = $Temps[0];
+	move -r ($Width * -0.5) ($Height * 0.5 + $FH * 1.0) 0;
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Build Vertical Divisions in Frame
+	
+	if (($HRatio == 120) || ($HRatio == 111) ||($HRatio == 101))
+		{
+			$Temps = `polyCube -w ($FW * 0.999) -h $Height -d ($FD * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			$Temp[$a++] = $Temps[0];
+			move -r ($Width * -0.25) ($Height * 0.5 + $FH * 1.0) 0;
+		}
+		
+	if (($HRatio == 010) || ($HRatio == 111))
+		{
+			$Temps = `polyCube -w ($FW * 0.999) -h $Height -d ($FD * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			$Temp[$a++] = $Temps[0];
+			move -r 0 ($Height * 0.5 + $FH * 1.0) 0;
+		}
+		
+	if (($HRatio == 210) || ($HRatio == 111) ||($HRatio == 101))
+		{
+			$Temps = `polyCube -w ($FW * 0.999) -h $Height -d ($FD * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			$Temp[$a++] = $Temps[0];
+			move -r ($Width * 0.25) ($Height * 0.5 + $FH * 1.0) 0;
+		}
+		
+	if (($HRatio == 410) || ($HRatio == 111) ||($HRatio == 101))
+		{
+			$Temps = `polyCube -w ($FW * 0.999) -h ($Height * 0.25) -d ($FD * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			$Temp[$a++] = $Temps[0];
+			move -r 0 ($Height * 0.875 + $FH * 1.0) 0;
+		}
+		
+	if (($HRatio == 311) || ($HRatio == 333) || ($HRatio == 313))
+		{
+			$Temps = `polyCube -w ($FW * 0.999) -h $Height -d ($FD * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			$Temp[$a++] = $Temps[0];
+			move -r ($Width * -0.165) ($Height * 0.5 + $FH * 1.0) 0;
+		}
+		
+	if ($HRatio == 313)
+		{
+			$Temps = `polyCube -w ($FW * 0.999) -h ($Height * 0.25) -d ($FD * 0.99) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			$Temp[$a++] = $Temps[0];
+			move -r ($Width * 0.165) ($Height * 0.875 + $FH * 1.0) 0;
+		}
+		
+	if ($HRatio == 314)
+		{
+			$Temps = `polyCube -w ($FW * 0.999) -h ($Height * 0.25) -d ($FD * 0.99) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			$Temp[$a++] = $Temps[0];
+			move -r ($Width * -0.165) ($Height * 0.875 + $FH * 1.0) 0;
+		}
+		
+	if (($HRatio == 331) || ($HRatio == 333)|| ($HRatio == 314))
+		{
+			$Temps = `polyCube -w ($FW * 0.999) -h $Height -d ($FD * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			$Temp[$a++] = $Temps[0];
+			move -r ($Width * 0.165) ($Height * 0.5 + $FH * 1.0) 0;
+		}
+		
+	if ($HRatio == 411)
+		{
+			$Temps = `polyCube -w ($FW * 0.999) -h ($Height * 0.75) -d ($FD * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			$Temp[$a++] = $Temps[0];
+			move -r 0 ($Height * 0.375 + $FH * 1.0) 0;
+		}
+		
+	if ($HRatio == 555)
+		{
+			$Temps = `polyCube -w ($FW * 0.999) -h ($Height * 0.25) -d ($FD * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			$Temp[$a++] = $Temps[0];
+			move -r ($Width * -0.165) ($Height * 0.875 + $FH * 1.0) 0;
+			
+			$Temps = `polyCube -w ($FW * 0.999) -h ($Height * 0.25) -d ($FD * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			$Temp[$a++] = $Temps[0];
+			move -r ($Width * 0.165) ($Height * 0.875 + $FH * 1.0) 0;
+		}
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Build Horizontal Divisions in Frame
+		
+	if (($VRatio == 010) || ($VRatio == 111))
+		{
+			$Temps = `polyCube -w $FrWidth -h $FH -d $FD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			$Temp[$a++] = $Temps[0];
+			move -r 0 ($Height * 0.5 + $FH * 1.0) 0;
+		}
+		
+	if (($VRatio == 020) || ($VRatio == 120) || ($VRatio == 111))
+		{
+			$Temps = `polyCube -w $FrWidth -h $FH -d $FD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			$Temp[$a++] = $Temps[0];
+			move -r 0 ($Height * 0.75 + $FH * 1.0) 0;
+		}
+		
+	if (($VRatio == 020) || ($VRatio == 210) || ($VRatio == 111))
+		{
+			$Temps = `polyCube -w $FrWidth -h $FH -d $FD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			$Temp[$a++] = $Temps[0];
+			move -r 0 ($Height * 0.25 + $FH * 1.0) 0;
+		}
+		
+	if ($VRatio == 220)
+		{
+			$Temps = `polyCube -w ($FrWidth * 0.33 - $FW) -h $FH -d ($FD * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			$Temp[$a++] = $Temps[0];
+			move -r ($Width * 0.33) ($Height * 0.75 + $FH * 1.0) 0;
+			
+			$Temps = `polyCube -w ($FrWidth * 0.33 - $FW) -h $FH -d ($FD * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			$Temp[$a++] = $Temps[0];
+			move -r ($Width * -0.33) ($Height * 0.75 + $FH * 1.0) 0;
+		}
+		
+	if ($VRatio == 320)
+		{
+			$Temps = `polyCube -w ($FrWidth * 0.33 - $FW) -h $FH -d ($FD * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			$Temp[$a++] = $Temps[0];
+			move -r ($Width * 0.33) ($Height * 0.25 + $FH * 1.0) 0;
+			
+			$Temps = `polyCube -w ($FrWidth * 0.33 - $FW) -h $FH -d ($FD * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			$Temp[$a++] = $Temps[0];
+			move -r ($Width * -0.33) ($Height * 0.25 + $FH * 1.0) 0;
+		}
+		
+	if (($VRatio == 310) || ($VRatio == 320) || ($VRatio == 610) || ($VRatio == 620))
+		{
+			$Temps = `polyCube -w ($FrWidth * 0.33) -h $FH -d ($FD * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			$Temp[$a++] = $Temps[0];
+			move -r 0 ($Height * 0.75 + $FH * 1.0) 0;
+		}
+		
+	if (($VRatio == 410) || ($VRatio == 620))
+		{
+			$Temps = `polyCube -w ($FrWidth * 0.5 - $FW) -h $FH -d ($FD * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			$Temp[$a++] = $Temps[0];
+			move -r ($Width * -0.25) ($Height * 0.75 + $FH * 1.0) 0;
+		}
+		
+	if (($VRatio == 420) || ($VRatio == 610))
+		{
+			$Temps = `polyCube -w ($FrWidth * 0.5 - $FW) -h $FH -d ($FD * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			$Temp[$a++] = $Temps[0];
+			move -r ($Width * 0.25) ($Height * 0.75 + $FH * 1.0) 0;
+		}
+		
+	if ($VRatio == 630)
+		{
+			$Temps = `polyCube -w ($FrWidth * 0.5 - $FW) -h $FH -d ($FD * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			$Temp[$a++] = $Temps[0];
+			move -r 0 ($Height * 0.75 + $FH * 1.0) 0;
+		}
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Build Cill	
+	
+	if ($C >= 2)
+		{
+			$Temps = `polyCube -w $FrWidth -h ($FH * 0.5) -d $CD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			move -r 0 ($FH * 0.25) ($FD * 0.5 + ($CD * 0.5));
+			move -r 0 ($FH * -0.25) 0 ($Temps[0] + ".e[1]");
+			$Temp[$a++] = $Temps[0];
+		}
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Boolean Operation on all Frame Members	
+	
+	$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temp[1]`;
+	
+	for ($i=2; $i<size($Temp); $i++)
+		{
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[$i]`;
+		}
+	
+	$Temp[0] = `rename $Temps[0] ($WinName + "_Frame_" + $e)`;
+	
+		select -r $Temp[0];
+			hyperShade -assign "initialShadingGroup";
+			hyperShade -assign $Shader[0];
+			
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+	
+		select -r $Temp[0];
+//		makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+			
+	return $Temp[0];
+	
+}

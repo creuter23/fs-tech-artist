@@ -1,0 +1,15 @@
+No Transforms
+There are no transform values in the Y and Z axis of any child joints, and there are no rotation values on any joint.
+Transforms
+There are transformation values on the Y and/or Z six of some or all of your child joints, and/or there are rotation values on some or all of your joints.
+Oriented
+All joints are oriented with the X axis pointing down the bone.
+Not Oriented
+Not all of your joints are oriented properly.
+Un-Oriented due to Mirror
+You did not selected the correct options when you mirrored your joint chains.
+Leg Rotations
+Your leg joints have high rotation values.
+Posed
+You should leave a rig in the default T pose for turn in. It is only for critique that you should pose your right.
+

@@ -1,0 +1,149 @@
+import shutil, os.path
+import maya.mel as mel
+import maya.cmds as cmds
+
+'''
+# There are three preset nodes for render globals
+cmds.nodePreset( ls='defaultRenderQuality' )
+cmds.nodePreset( load=['defaultRenderQuality', 'aa'] )
+cmds.nodePreset( load=['defaultRenderGlobals', 'aa'] )
+cmds.nodePreset( load=['defaultResolution', 'aa'] )
+
+
+# Revert render globals to default
+# unifiedRenderGlobalsRevertToDefault;
+import maya.mel as mel
+mel.eval( 'unifiedRenderGlobalsRevertToDefault' )
+string $plress[] = `listConnections defaultRenderGlobals.resolution`;
+setAttr defaultRenderGlobals.imageFormat 20;
+// 8 for jpg
+setAttr defaultRenderGlobals.imageFormat 8;
+
+setAttr ($plress[0]+".width") 50;
+setAttr ($plress[0]+".height") 50;
+setAttr -type "string" defaultRenderGlobals.imageFilePrefix "";
+render camera1;
+'''
+
+currPath = os.path.split( __file__ )[-1]
+
+def renderSnapShot(presetName="iconSnapShot_mec", width=50, height=50, iconName='icon', iconFormat=20,
+                   presetOrginal=['defaultRenderQuality', 'defaultRenderGlobals', 'defaultResolution'], 
+                   iconPath=currPath):
+
+    state = createPresets( presetName, presetOrginal )
+    if( state ):
+        mel.eval( 'unifiedRenderGlobalsRevertToDefault' )
+              
+        renderConn = cmds.listConnections( 'defaultRenderGlobals.resolution' )
+        # bmp == 20, jpg == 8
+        imgFormat = 20
+        cmds.setAttr( 'defaultRenderGlobals.imageFormat', imgFormat )
+        cmds.setAttr( '%s.width' %renderConn[0] , width )
+        cmds.setAttr( '%s.height' %renderConn[0] , height )
+        cmds.setAttr( 'defaultRenderGlobals.imageFilePrefix', iconName, type='string')
+        fileName = cmds.render('camera1')
+        
+        loadRemovePreset( presetName )
+    
+    
+        # From here
+        # dest = r'C:\Documents and Settings\mclavan\My Documents\maya\New_Project\tmp'
+        # dest = os.path.join( dest, fileName )
+        # To There.
+        # targ = r'C:\Documents and Settings\mclavan\Desktop\scenes'
+        # targ = os.path.join( targ, fileName )
+
+        dest = fileName     
+        targ = os.path.join( iconPath, os.path.split(fileName)[-1] )   
+        print("Dest: %s Targ: %s" %(dest, targ))
+        shutil.move( dest, targ )
+        
+    else:
+         print("Duplicate presetName... Try Again") 
+           
+
+def renderPresetExists( presetName, presetOrginal=['defaultRenderQuality', 'defaultRenderGlobals', 'defaultResolution'] ):
+    '''
+    This function by default looks for presetNodes in the render global.
+    '''
+    state = 0
+    for preset in presetOrginal:
+        if( cmds.nodePreset( exists=[preset, presetName]) ):
+            state = 1
+    return state
+
+def createPresets(presetName, presetOrginal=['defaultRenderQuality', 'defaultRenderGlobals', 'defaultResolution'], set=1):
+    # Check to see if the presetName exists?
+    state = renderPresetExists( presetName, presetOrginal )
+    if( state ):
+        print("Preset Name: %s already exists." %presetName)
+        return 0
+    else:
+        for preset in presetOrginal:
+            cmds.nodePreset( save=[preset, presetName] )
+        return 1
+    
+
+def loadRemovePreset( presetName, presetOrginal=['defaultRenderQuality', 'defaultRenderGlobals', 'defaultResolution'] ):
+    '''
+    for preset in presets:
+        cmds.nodePreset( load=[presetName, preset] )    
+    for preset in presets:
+        cmds.nodePreset( delete=[presetName, preset] )      
+    '''
+    for preset in presetOrginal:
+        cmds.nodePreset( load=[preset, presetName] )    
+        cmds.nodePreset( delete=[preset, presetName] )         
+
+'''
+Render 2009
+
+renderWindowRenderCamera render renderView persp;
+import maya.app.stereo.stereoCameraRig as stereoCameraRig
+stereoCameraRig.isRigRoot('persp')
+# Result: False # 
+updateEditorFeedbackRenderLayer RenderLayerTab defaultRenderLayer;
+'''
+
+'''
+SnapShoot 2009
+
+renderWindowRenderCamera snapshot renderView persp;
+ModelEdMenu  renderWindowTMPModelEditor;
+import maya.app.stereo.stereoCameraRig as stereoCameraRig
+stereoCameraRig.isRigRoot('persp')
+# Result: False # 
+playbackStateChanged;
+// Result: 1 // 
+playbackStateChanged;
+// Result: 1 // 
+updateModelPanelBar modelPanel4;
+updateModelPanelBar modelPanel4;
+updateModelPanelBar modelPanel4;
+updateModelPanelBar modelPanel4;
+updateModelPanelBar modelPanel4;
+updateModelPanelBar modelPanel4;
+
+
+'''
+
+'''
+Snap shot 2011
+
+renderWindowRenderCamera snapshot renderView persp;
+ModelEdMenu  renderWindowTMPModelEditor;
+import maya.app.stereo.stereoCameraRig as stereoCameraRig
+stereoCameraRig.isRigRoot('persp')
+# Result: False # 
+playbackStateChanged;
+// Result: 1 // 
+playbackStateChanged;
+// Result: 1 // 
+updateModelPanelBar modelPanel4;
+updateModelPanelBar modelPanel4;
+updateModelPanelBar modelPanel4;
+updateModelPanelBar modelPanel4;
+updateModelPanelBar modelPanel4;
+updateModelPanelBar modelPanel4;
+'''

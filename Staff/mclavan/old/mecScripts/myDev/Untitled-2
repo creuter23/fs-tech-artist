@@ -1,0 +1,19 @@
+'''
+Michael Clavan's Toolkit
+
+Place everything in one folder and forget it.
+
+
+'''
+
+'''
+string $newIcon = `getenv XBMLANGPATH`;
+print($newIcon)
+$newIcon += ";C:/Users/mclavan/Desktop/icons"
+putenv XBMLANGPATH $newIcon;
+'''
+
+mel.eval( "putenv XBMLANGPATH %s" %(mel.eval( "getenv XBMLANGPATH" ) + os.path.join( __path__[0], "icons") ) )
+
+
+

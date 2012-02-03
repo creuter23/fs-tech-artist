@@ -1,0 +1,79 @@
+'''
+Adventure Girl Rig Interface
+criAdvGUI.py
+
+Description:
+	
+How To Run:
+	
+	
+'''
+
+
+scriptName = __name__
+
+def gui():
+	'''
+	Generates the interface for adventure girl.
+	'''
+	win = "criAdvGUIWin"
+
+	if( cmds.window(win, q=True, ex=True)):
+		cmds.deleteUI(win)
+		
+	cmds.window(win, title="Adventure Girl Rig Interface", w=300, h=300)
+	cmds.columnLayout("criAdvGUIMC")
+	
+	# Generate the character Selection area
+	charSel()
+	
+	cmds.showWindow(win)	
+	
+	
+
+def charSel():
+	'''
+	This is the character selection gui for adventure girl.
+	'''
+	
+	# ColumnLayout Name
+	# string $mainCol = "criAdvGUIMC"
+	mainCol = "criAdvGUIMC"
+	# Full Image 374x395
+	# Seperate into rows. 9 Rows
+	
+	# Row 1
+	# h=100
+	cmds.rowColumnLayout( nc=5, cw=[[1,122],[2,21],[3,86],[4,23],[5,122]] )
+
+	# Row 2
+	# h=20
+	cmds.rowColumnLayout( nc=6, cw=[[1,62,[2,70],[3,52],[4,53],[5,73], [6,64]] )
+	
+	# Row 3
+	# h=22
+	cmds.rowColumnLayout( nc=7, cw=[[1,60],[2,46],[3,56],[4,43],[5,64],[6,40],[7,65]] )
+	
+	# Row 4
+	# h=20
+	cmds.rowColumnLayout( nc=3, cw=[[1,163],[2,42],[3,169]] )
+	
+	# Row 5
+	# h=34
+	cmds.rowColumnLayout( nc=3, cw=[[1,142],[2,85],[3,147]] )
+	
+	# Row 6 is only one doesn't need a rowcolumn
+	# 374 x 68
+	
+	# Row 7
+	# h=32
+	cmds.rowColumnLayout( nc=4, cw=[[1,148],[2,36],[3,34],[4,156]] )
+	
+	# Row 8 is only one doesn't need a rowcolumn
+	# 374 x 51
+	
+	# Row 9
+	# h=48
+	cmds.rowColumnLayout( nc=4, cw=[[1,132],[2,53],[3,53],[4,137]] )
+	
+	

@@ -1,0 +1,55 @@
+'''
+Michael Clavan
+mecRenameAPI.py
+
+Description:
+	- This renaming script is different because it uses Maya's API to grab 
+	  directly access the names of the objects.  So, it doesn't matter 
+	  which heirarchy they belong to it still will stay connected.
+
+How To Run:
+
+import mecRenameAPI
+mecRenameAPI.gui()
+
+Debug:
+import mecRenameAPI
+reload(mecRenameAPI)
+mecRenameAPI.gui()
+'''
+
+print( "mecRenameAPI imported" )
+
+import maya.cmds as cmds
+import maya.OpenMaya as om
+
+'''
+def nameToDag( name ):
+> >  sel = api.MSelectionList()
+> >  sel.add( name )
+> >  node = api.MDagPath()
+> >  sel.getDagPath( 0, node )
+> >  return node
+'''
+
+# Get what is currently selected and rename them.
+
+# Get what is currently selected
+
+# Add what is currently selected.
+
+
+selList = om.MSelectionList()
+om.MGlobal.getActiveSelectionList(selList)
+
+node = om.MDagPath()
+selList.getDagPath( 0, node )
+
+
+# Getting the shapeNode (if only one)
+
+# Getting how many shape nodes are below.
+
+
+# Adding 
+

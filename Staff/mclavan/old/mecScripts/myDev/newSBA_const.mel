@@ -1,0 +1,84 @@
+/*
+Constraint Script
+
+
+How is it going to work covering mel and python in the same month?
+*/
+
+// Mel
+//pointConstraint -mo -weight 1;
+//pointConstraint -offset 0 0 0 -weight 1;
+
+global proc sbaConstGUI()
+{
+	window;
+	columnLayout;
+	rowColumnLayout -nc 2 -cw 1 75 -cw 2 50;
+	button -label "Point Const";
+	checkBox -label "offset" "sbaPCOff";
+	showWindow;
+}
+
+global proc sbaConstPC()
+{
+	$checked = `checkBox -q -v "sbaPCOff"`;
+	if($checked)
+	{
+		pointConstraint -mo -weight 1;
+	}
+	else
+	{
+		pointConstraint -offset 0 0 0 -weight 1;
+	}
+}
+	
+/*
+# Python Version
+
+import maya.cmds as cmds
+def gui():
+	cmds.window()
+	cmds.columnLayout()
+	cmds.rowColumnLayout(nc=2, cw=[[1,75],[2,50]])
+	cmds.button(label="Point Const")
+	cmds.checkBox("sbaPCOff", label="Offset")
+	cmds.showWindow()
+
+def sbaConstPC():
+	checked = cmds.checkBox("sbaPCOff", q=True, v=True)
+	if( checked ):
+		cmds.pointConstraint( mo=True, weight=True )
+	else:
+		cmds.pointConstraint( offset=[0,0,0], weight=True )
+*/
+
+
+/*
+Modular Design
+
+proc sbaConstGUI()
+{
+	rowColumnLayout -nc 2 -cw 1 75 -cw 2 50;
+	button -label "Point Const";
+	checkBox -label "offset" "sbaPCOff";
+}
+
+global proc sbaBaseGUI()
+{
+	$win = "sbaWindowName";
+	
+	if( `window -q -ex $win` )
+		deleteUI $win;
+		
+	window -w 300 -h 300 $win;
+	columnLayout;
+	
+	// Run seperate code
+	sbaConstGUI()
+	
+	setParent "..";
+	showWindow $win;
+}
+
+*/
+

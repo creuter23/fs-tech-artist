@@ -1,0 +1,635 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davvey\'s Belt  & Pulley Generator
+''    Author:  
+''    Last Updated: Feb 02, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4509.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+
+//////////////////////////////////////////////////////////////////////////////////////
+//	Title Section
+
+//						-  DVY_ToothPulleyBuild -
+
+
+//////////////////////////////////////////////////////////////////////////////////////
+//	Description and Usage Section
+/*
+
+	Called by DVY_Pulleys to build various styles of Tooth Pulleys and 
+	then add basic Shaders to each part if required.
+		
+	
+	All Pulleys are produced to Metric Size / Scale and is correctly set to suit Maya's
+	user preferences settings.
+
+
+*/		
+//////////////////////////////////////////////////////////////////////////////////////
+
+global proc DVY_ToothPulleyBuild()
+{
+
+	print "Start of DVY_ToothPulleyBuild procedure. © Davvey..\n";
+	
+	if (`floatField -q -v BFloatField_2205` == 0)
+		{ error "Please select Belt Width © Davvey..\n"; }
+		
+	if (`floatField -q -v BFloatField_1001` == 0)
+		{ error "Please select Belt Pitch © Davvey..\n"; }
+		
+	if (`floatField -q -v BFloatField_202` == 0)
+		{ error "Please enter Number of Teeth for Pulleys © Davvey..\n"; }
+	
+	if (`floatField -q -v BFloatField_204` == 0)
+		{ error "Please select Pulley Shaft Diameter © Davvey..\n"; }
+		
+	if (`floatField -q -v BFloatField_204` >= `floatField -q -v BFloatField_202`)
+		{ error "Please set Pulley Shaft Diameter less than Pulley Outside Diameter © Davvey..\n"; }
+
+		
+// ******************************************************************************** //	
+//	Global Variables
+	
+	global string $Units;
+
+	global float $DVYUnit;
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Local Variables
+	
+	string $Temp[], $Temps[], $DVYToothCurve, $Groups[], $DVYTooth[], $Material;
+	string $PuName, $PuGroup[], $Pulley[], $PulleyGrp[], $Shader[], $Group[], $DVYSpheres[];
+	int $PType, $PStyle, $NT;
+	
+	int $a, $b, $c, $E, $i, $j, $k, $q, $Rot, $S, $T, $t;
+	
+	float $BTh, $Pitch, $PuCD, $ShD, $OD, $Width, $PuWidth, $FlOD, $FlThick;
+	float $Pos[];
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Constants and "Static Data"
+	$e = $E = 1;
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Set Scaling unit for Global units used.
+		
+	DVY_ScaleSet;
+	print ("Current units are " + $Units + " and Scale Factor $DVYUnit is " + $DVYUnit + "\n");
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Create Shaders for Pulley Parts.
+	
+//	string $SHName = `optionMenu -q -v DVY_ToothMaterial`;
+	string $SHName = "Aluminium";
+	$SHName = ($SHName + "_SH");
+	int $Sh = 2; //`optionMenu -q -sl DVY_ToothMaterial`;
+	
+	print $SHName;
+	
+	if ($Sh > 1)
+		{
+			$s = 33;
+			if(!`objExists $SHName`)
+				{
+					$Shader[3] = `DVY_Shaders($s)`; 
+			 	}	
+				$Shader[3] = $SHName;
+		}
+
+	print "$Shaders are \n";
+		print $Shader;
+
+// -------------------------------------------------------------------------------//
+	
+// *******************************************************************************//
+//	Section to generate simple Blue and Red Shaders for Door and or Hood Spheres.
+	
+	$ShaderName = "RedSphere";	
+	if (`objExists($ShaderName + "_SH")`) {$Shader[0] = ($ShaderName + "_SH");}
+		else{
+				$DVYColour = {1.0, 0.0, 0.0};
+				$DVYSpColour = {0.1, 0.1, 0.1};
+				$DVYDiffColour = {0.6, 0.6, 0.6};
+			
+					$NameOfShader = `shadingNode -asShader blinn`;
+					$NameOfShader = `rename $NameOfShader ($ShaderName + "_SH")`;
+						setAttr ($NameOfShader + ".colorR") $DVYColour[0] ;
+						setAttr ($NameOfShader + ".colorG") $DVYColour[1] ;
+						setAttr ($NameOfShader + ".colorB") $DVYColour[2] ;
+					$Shader[0] = $NameOfShader;
+			}
+				
+	print "$Shaders are \n";
+	print $Shader;
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Generate and Use new Group Node
+	
+	$Pitch = `floatField -q -v BFloatField_1001`;
+	$Width = `floatField -q -v BFloatField_2205`;
+	
+		if ($Pitch == 0)
+			{	error "Please enter Belt Pitch © Davvey..\n";	}
+			
+		if ($Width == 0)
+			{	error "Please enter Belt Width © Davvey..\n";	}
+
+	$PuName = "Toothed_Belt_";
+	
+	 while(`objExists ($PuName + "Main_GrpN_" + $E)`)
+		  {
+			 $E++;	print ("$E is " + $E + "\n");
+		  }
+			$PuGroup[0] = `group -em -name ($PuName + "Main_GrpN_" + $E)`;
+			print ("Group is called " + $PuGroup[0] + "\n");
+
+		if (!`attributeExists "NameOfGearGrp" $PuGroup[0]`) 
+			{ addAttr -ln NameOfGearGrp -dt "string" $PuGroup[0];}
+		       setAttr -l 1 -k 0 -type "string" ($PuGroup[0] + ".NameOfGearGrp") $PuGroup[0];
+
+		if (!`attributeExists "BeltType" $PuGroup[0]`) 
+			{ addAttr -ln Type -dt "string" $PuGroup[0];}
+		       setAttr -l 1 -k 0 -type "string" ($PuGroup[0] + ".Type") "Tooth";
+			   
+		if (!`attributeExists "BeltWidth" $PuGroup[0]`) 
+			{ addAttr -ln BeltWidth -at double $PuGroup[0];}
+		       setAttr -l 1 -k 0 ($PuGroup[0] + ".BeltWidth") $Width;
+			   
+		if (!`attributeExists "Pitch" $PuGroup[0]`) 
+			{ addAttr -ln Pitch -at double $PuGroup[0];}
+		       setAttr -l 1 -k 0 ($PuGroup[0] + ".Pitch") $Pitch;
+
+		if (!`attributeExists "Grp_No_" $PuGroup[0]`)
+			{ addAttr -ln Grp_No_ -at short $PuGroup[0];}
+		      setAttr -l 1 -k 0 ($PuGroup[0] + ".Grp_No_") $E;
+			  
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+	
+	for ($i=0; $i<5; $i++)
+		{
+			float $Q = `floatField -q -v ("BFloatField_2" + $i + "2")`;
+			if ( $Q > 0){ $q++;}
+		}
+		print ("$q is " + $q + "\n");
+		
+		
+		for ($i=1; $i<$q+1; $i++)
+			{
+				if (!`attributeExists ("Pulley_No" + $i + "_Rotate") $PuGroup[0]`)
+					{ addAttr -ln ("Pulley_No" + $i + "_Rotate") -at double $PuGroup[0];}
+			     	  setAttr -l 0 -k 0 -cb 1 ($PuGroup[0] + (".Pulley_No" + $i + "_Rotate")) 0;
+			}
+		
+	for ($i=0; $i<$q; $i++)
+		{
+			if (`optionMenu -q -sl ("DVY_FlTooth0" + ($i+1))` > 1) 
+				{
+					if ((`floatField -q -v ("BFloatField_2" + $i + "6")` == 0) || (`floatField -q -v ("BFloatField_2" + $i + "8")` == 0))
+						{
+							error "Please set flange sizes © Davvey..\n";
+						}
+						
+					if (`floatField -q -v ("BFloatField_2" + $i + "8")` <= `floatField -q -v ("BFloatField_2" + $i + "2")`)
+						{
+							error "Please set Flange Outside Diameter larger than Pulley Outside Diameter © Davvey..\n";
+						}
+				}
+			
+		$NT = `intField -q -v ("TIntField_2" + $i +"1")`;
+
+		$OD = `floatField -q -v ("BFloatField_2" + $i + "2")`;
+		$ShD = `floatField -q -v ("BFloatField_2" + $i + "4")`;
+//		$Material = `optionMenu -q -v DVY_ToothMaterial`;
+		$PType = `optionMenu -q -sl ("DVY_PuTooth0" + ($i+1))`;
+		
+		$FlThick = `floatField -q -v ("BFloatField_2" + $i + "7")`;
+		$FlOD = `floatField -q -v ("BFloatField_2" + $i + "9")`;
+		
+			
+		$PuWidth = $Width * 1.1;
+		$PuCD = ($NT * $Pitch)/(22.0/7.0);
+		float $Angle = 360.0 / ($NT * 1.0);
+				
+		if ($OD == 0) { error "Please enter values for all fields for each Pulley to be built © Davvey..\n"; }
+
+			print ("$PuName is " + $PuName + "\n");
+			print ("Tooth Pulley number of Teeth is " + $NT + " . © Davvey..\n");
+			print ("Tooth Pulley OD is " + $OD + " . © Davvey..\n");
+			
+			print ("Tooth Pulley Shaft Diameter is " + $ShD + ". © Davvey..\n");
+			print ("Tooth Pulley Width is " + $PuWidth + ". © Davvey..\n");
+			print ("Tooth Pulley Flange Thickness is " + $FlThick + ". © Davvey..\n");
+			print ("Tooth Pulley Flange OD is " + $FlOD + ". © Davvey..\n");
+			
+			print ("Tooth Belt Width is " + $Width + ". © Davvey..\n");
+			print ("Tooth Belt Pitch is " + $Pitch + ". © Davvey..\n");
+			print ("Tooth Pulley material is " + $Material + ". © Davvey..\n");
+			
+			print ("Tooth $Angle is " + $Angle + ". © Davvey..\n");
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+				
+		while (`objExists ($PuName + "Grp_" + $E + "_Pulley_GrpN_" + $e)`)
+			{
+				$e++;
+				print ("$e is " + $e + "\n");
+			}
+				
+			$PulleyGrp[0] = `group -em -name ($PuName + "Grp_" + $E + "_Pulley_GrpN_" + $e)`;
+			$PulleyGrp[1] = `group -em -name ($PuName + "Grp_" + $E + "_PulleyRotate_GrpN_" + $e)`;
+			$PulleyGrp[2] = `group -em -name ($PuName + "Grp_" + $E + "_PulleyShaft_GrpN_" + $e)`;
+				
+			parent $PulleyGrp[2] $PulleyGrp[1];
+				parent $PulleyGrp[1] $PulleyGrp[0];
+				parent $PulleyGrp[0] $PuGroup[0];
+			
+		$PuGroup[$i+1] = $PulleyGrp[0];
+				
+		if (!`attributeExists "NameOfGearGrp"  $PulleyGrp[0]`) 
+			{ addAttr -ln NameOfGearGrp -dt "string"  $PulleyGrp[0];}
+		       setAttr -l 1 -k 0 -type "string" ( $PulleyGrp[0] + ".NameOfGearGrp") $PuGroup[0];
+
+		if (!`attributeExists "BeltType" $PulleyGrp[0]`) 
+			{ addAttr -ln Type -dt "string" $PulleyGrp[0];}
+		       setAttr -l 1 -k 0 -type "string" ($PulleyGrp[0]+ ".Type") "Tooth";
+
+		if (!`attributeExists "PCD" $PulleyGrp[0]`) 
+			{ addAttr -ln PCD -at double  $PulleyGrp[0];}
+		       setAttr -l 1 -k 0 ($PulleyGrp[0] + ".PCD") $PuCD;
+			   
+		if (!`attributeExists "Teeth" $PulleyGrp[0]`) 
+			{ addAttr -ln Teeth -at short $PulleyGrp[0];}
+		       setAttr -l 1 -k 0 ($PulleyGrp[0] + ".Teeth") $NT;
+			   
+		if (!`attributeExists "BeltWidth"  $PulleyGrp[0]`) 
+			{ addAttr -ln BeltWidth -at double  $PulleyGrp[0];}
+		       setAttr -l 1 -k 0 ($PulleyGrp[0] + ".BeltWidth") $Width;
+			   
+		if (!`attributeExists "Pitch"  $PulleyGrp[0]`) 
+			{ addAttr -ln Pitch -at double  $PulleyGrp[0];}
+		       setAttr -l 1 -k 0 ($PulleyGrp[0] + ".Pitch") $Pitch;
+			   
+			   
+
+		if (!`attributeExists "Grp_No_"  $PulleyGrp[0]`)
+			{ addAttr -ln Grp_No_ -at short  $PulleyGrp[0];}
+		      setAttr -l 1 -k 0 ($PulleyGrp[0] + ".Grp_No_") $E;
+			  
+		
+		$Temp = `polyPipe -r ($PuCD * 0.5) -h ($Width * 2.1) -t ($Pitch * 0.5) -sa 36 -sh 1 -sc 1 -ch 0`;
+				polyBevel -offset 0.3 -offsetAsFraction 1 -autoFit 1 -segments 3 -worldSpace 0 
+						  -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+						  -miteringAngle 180 -angleTolerance 180 -ch 0  ($Temp[0] + ".e[72:143]") ;
+				
+			$Temps = `polyCube -w ($Pitch * 0.6) -h ($PuWidth * 2.0) -d ($Pitch * 0.5) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`; 	
+				scale 0.75 1 1 ($Temps[0] + ".f[2]");
+				polyBevel -offset 0.2 -offsetAsFraction 1 -autoFit 1 -segments 2 -worldSpace 0 
+						  -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+						  -miteringAngle 180 -angleTolerance 180 -ch 0  ($Temps[0] + ".f[2]") ;
+				
+				
+				move - r 0 0 ($PuCD * 0.5) $Temps[0];
+				xform -ws -piv 0 0 0 $Temps[0];
+				$Temp[1] = $Temps[0];
+				
+				for ($j=1; $j<$NT; $j++)
+					{
+						select -r $Temp[1];
+						$Temps = `duplicate -rr`;
+						rotate 0 ($j * $Angle) 0 $Temps[0];
+						$Temp[$j+1] = $Temps[0];
+					}
+					
+					$Temps = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temp[1]`;
+					
+					for ($j=2; $j<$NT+1; $j++)
+						{	
+							$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Temp[$j]`;
+						}
+					
+					
+				$Pulley[1] = `rename $Temps[0] ($PuName + "Grp_"+ $E + "_PulleyTeeth_" + $e)`;
+					rotate 0 0 90  $Pulley[1];
+		
+				select -r $Pulley[1];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[3];
+				
+				
+		$Temp = `polyPipe -r ($PuCD * 0.5 - $Pitch *0.5) -h ($PuWidth * 2.1) -t ($Pitch * 1.0) -sa 36 -sh 1 -sc 1 -ch 0`;
+				polyBevel -offset 0.3 -offsetAsFraction 1 -autoFit 1 -segments 3 -worldSpace 0 
+						  -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+						  -miteringAngle 180 -angleTolerance 180 -ch 0  ($Temp[0] + ".e[0:143]") ;
+
+		
+		if (`optionMenu -q -sl ("DVY_PuTooth0" + ($i+1))` == 1)
+			{
+				$Temps = `polyCylinder -r ($PuCD * 0.5 - $Pitch * 1.5) -h ($PuWidth * 0.25) -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+		
+				$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+				
+				$Temps = `polyCylinder -r ($PuCD * 0.25) -h ($PuWidth * 1.0) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+						polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 3 -worldSpace 0 
+								  -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+								  -miteringAngle 180 -angleTolerance 180 -ch 0 ($Temps[0] + ".f[36:37]") ;
+						polySubdivideFacet -dv 1 -m 1 -ch 0 ($Temps[0] + ".f[36:37]");
+						
+				$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+		}
+				
+		if (`optionMenu -q -sl ("DVY_PuTooth0" + ($i+1))` == 2)
+			{
+				$Temps = `polyCylinder -r ($PuCD * 0.5 - $Pitch * 1.5)  -h ($PuWidth * 0.98) -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				
+				$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+			}		
+			
+		if (`optionMenu -q -sl ("DVY_PuTooth0" + ($i+1))` == 3)
+			{
+				$Temps = `polyCube -w ($PuWidth * 0.75) -h (($PuCD * 0.5 ) - $Pitch * 2.0) -d ($PuWidth * 0.25) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`; 	
+					scale 0.5 1 0.75 ($Temps[0] + ".f[1]");
+					polyBevel -offset 0.4 -offsetAsFraction 1 -autoFit 1
+							  -segments 2 -worldSpace 0 -fillNgons 1 -mergeVertices 1
+							  -mergeVertexTolerance 0.0001 -smoothingAngle 180 -miteringAngle 180
+							  -angleTolerance 180 -ch 0 ($Temps[0] + ".f[0]") ($Temps[0] + ".f[2]") ($Temps[0] + ".f[4:5]");
+						
+						rotate 0 0 90 $Temps[0];
+						move -r (($PuCD * -0.25) + $Pitch * 0.25) 0 0 $Temps[0];
+						xform -ws -piv 0 0 0 $Temps[0];
+								
+					$Temp[1] = $Temps[0];
+						select -r $Temp[1];
+						makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+					
+					for ($j=1; $j<6; $j++)
+						{
+							select -r $Temp[1];
+							$Temps = `duplicate -rr`;
+							rotate 0 ($j * 60) 0 $Temps[0];
+							$Temp[$j+1] = $Temps[0];
+						}
+				
+				$Temps = `polyCylinder -r ($PuCD * 0.25) -h ($PuWidth * 1.0) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+						polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 3 -worldSpace 0 
+								  -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+								  -miteringAngle 180 -angleTolerance 180 -ch 0 ($Temps[0] + ".f[36:37]") ;
+							polySubdivideFacet -dv 1 -m 1 -ch 0 ($Temps[0] + ".f[36:37]");
+							
+					for ($j=1; $j<7; $j++)
+						{
+							$Temps = `polyBoolOp -op 1 -ch 0 $Temp[$j] $Temps[0]`;
+						}
+				
+					$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+			}
+			
+			
+			$Pulley[0] = `rename $Temp[0] ($PuName + "Grp_"+ $E + "_Body_" + $e)`;
+				rotate 0 0 90  $Pulley[0];
+			
+			select -r $Pulley[0];
+				hyperShade -assign "initialShadingGroup";
+				hyperShade -assign $Shader[3];
+		
+		//	Add Flanges to one or both Sides	
+			if ((`optionMenu -q -sl ("DVY_FlTooth0" + ($i+1))` == 2) ||
+				(`optionMenu -q -sl ("DVY_FlTooth0" + ($i+1))` == 4) )
+				{
+					$Pos[0] = ($FlOD - $PuCD) * 0.5 + ($Pitch * 1.5);
+					$Temps = `polyPipe -r ($FlOD * 0.5) -h ($FlThick * 2.0) -t ($Pos[0]) -sa 36 -sh 1 -sc 1 -ch 0`;
+							polyBevel -offset 0.3 -offsetAsFraction 1 -autoFit 1 -segments 3 -worldSpace 0 
+									  -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+									  -miteringAngle 180 -angleTolerance 180 -ch 0  ($Temps[0] + ".e[0:143]") ;
+						rotate 0 0 90  $Temps[0];
+							
+					move -r  (($Width * -0.55) + ($FlThick * -0.50)) 0 0 $Temps[0];
+					
+					$Pulley[2] = `rename $Temps[0] ($PuName + "Grp_"+ $E + "_PulleyFrFlange_" + $e)`;
+				
+				select -r $Pulley[2];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[3];
+				}
+			
+			if ((`optionMenu -q -sl ("DVY_FlTooth0" + ($i+1))` == 3) ||
+				(`optionMenu -q -sl ("DVY_FlTooth0" + ($i+1))` == 4) )
+				{
+					$Pos[0] = ($FlOD - $PuCD) * 0.5 + ($Pitch * 1.5);
+					$Temps = `polyPipe -r ($FlOD * 0.5) -h ($FlThick * 2.0) -t ($Pos[0]) -sa 36 -sh 1 -sc 1 -ch 0`;
+							polyBevel -offset 0.3 -offsetAsFraction 1 -autoFit 1 -segments 3 -worldSpace 0 
+									  -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+									  -miteringAngle 180 -angleTolerance 180 -ch 0  ($Temps[0] + ".e[0:143]") ;
+						rotate 0 0 90  $Temps[0];
+							
+						move -r  (($Width * 0.55) + ($FlThick * 0.50)) 0 0 $Temps[0];
+					
+					$Pulley[3] = `rename $Temps[0] ($PuName + "Grp_" + $E + "_PulleyRrFlange_" + $e)`;
+					
+					select -r $Pulley[3];
+						hyperShade -assign "initialShadingGroup";
+						hyperShade -assign $Shader[3];
+				}
+			// End of Flange section.
+		
+			rotate 0 0 90  $Pulley[0];
+				select -r $Pulley[0];
+				makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+
+			
+		//	Shaft Design Section
+			float $ScrewL = $PuCD *0.25 - $ShD *0.5;
+			string $Hub; string $ShaftGrp[];
+			int $Bool;
+			print $ScrewL; print " is the screw length\n";
+			
+			$ShaftGrp = DVY_ShaftDesign ($ShD, $PuWidth , $NT, $ScrewL, $Hub, $Bool, $e);
+			
+			$Pos[0] = `getAttr ($ShaftGrp[2] + ".boundingBoxSizeX")`;
+				print $Pos[0]; print " ScrewSize is \n";
+				scale 1 0.5 1 $ShaftGrp[4];
+				
+				select -r $ShaftGrp[2] $ShaftGrp[4];
+					move -r ($PuWidth * 0.5 - ($Pos[0] * 1.1)) 0 0;
+					xform -ws -piv 0 0 0  $ShaftGrp[0];
+			
+			$Temp = `polyBoolOp -op 2 -ch 0 $Pulley[0] $ShaftGrp[3]`;
+			$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $ShaftGrp[4]`;
+			
+			$Pulley[0] = `rename $Temp[0] ($PuName + "Grp_"+ $E + "_PulleyBody_" + $e)`;
+			
+				if ((`optionMenu -q -sl ("DVY_FlTooth0" + ($i+1))` == 2) ||
+					(`optionMenu -q -sl ("DVY_FlTooth0" + ($i+1))` == 4) )
+					{
+						parent $Pulley[2] $Pulley[0];
+					}
+				if ((`optionMenu -q -sl ("DVY_FlTooth0" + ($i+1))` == 3) ||
+					(`optionMenu -q -sl ("DVY_FlTooth0" + ($i+1))` == 4) )
+					{
+						parent $Pulley[3] $Pulley[0];
+					}
+			
+			parent $Pulley[1] $Pulley[0];
+	
+		for ($j=0; $j < `size $ShaftGrp`; $j++)
+			{
+				if (`objExists $ShaftGrp[$j]`)
+					{
+						$ShaftGrp[$j] = `rename $ShaftGrp[$j] ($PuName + "Grp_"+ $E + "_" + $ShaftGrp[$j])`;
+					}
+			}
+		
+		$ShaftGrp[0] = `rename $ShaftGrp[0] ($PuName + "Grp_" + $E + "_" + "Shaft" + $e)`;
+			
+		parent $Pulley[0] $ShaftGrp[0];
+		parent $ShaftGrp[0] $PulleyGrp[2];
+	
+		for ($j=0; $j<3; $j++)
+			{ $PulleyGrp[($j + 3)] = $ShaftGrp[$j];}
+
+		print $PulleyGrp;
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Section to add Spheres to aid setting curve path.
+	
+		$Group[$e] = `group -em -name ($PuName + "Grp_" + $E + "Group_" + $e)`;
+			parent $Group[$e] $PulleyGrp[0];
+		
+			for ($j=0; $j<7; $j++)
+				{
+					$Temp = `polySphere -r ($Pitch * 1) -sx 10 -sy 10 -ax 0 1 0 -ch 0 `;		
+					move -r 0 0 0 $Temp[0];
+					move -r 0 0 (($PuCD * -0.5) - ($Pitch * 0.1)) $Temp[0];					
+					
+					select -r $Temp[0];
+						hyperShade -assign "initialShadingGroup";
+						hyperShade -assign $Shader[0];
+											
+					xform -ws -piv 0 0 0 $Temp[0];
+					rotate ($j * -30) 0 0 $Temp[0];
+					parent $Temp[0] $Group[$e];
+					$DVYSpheres[$k] = `rename $Temp[0] ("Grp_" + $E + "_Sphere_" + ($k+1))`;
+					$k++;
+				}
+			
+		if ($e > 1)
+			{ 
+				rotate 180 0 0 $Group[$e];
+			}
+				select -r $Group[$e];
+				makeIdentity -apply true -t 0 -r 1 -s 0 -n 0;
+				
+	//	print $DVYSpheres;
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Section to move and set position for Pulleys if more than one in the Group.
+		
+		clear $Pos;
+	
+		$Pos[1] = (`getAttr (($PuName + "Grp_" + $E + "_Pulley_GrpN_" + (1)) + ".PCD")` * 0.75);
+		$Pos[2] = (`getAttr (($PuName + "Grp_" + $E + "_Pulley_GrpN_" + $e) + ".PCD")` * 0.75);
+	
+		float $Move;
+	
+			// Section to move Pulleys if all in one Group.
+			if ($e > 1)
+				{
+					for ($j=2; $j<$e; $j++)
+						{
+							$Pos[4] = (`getAttr (($PuName + "Grp_" + $E + "_Pulley_GrpN_" + $j)  + ".PCD")` * 1.5);
+							$Pos[5] = ($Pos[5] + $Pos[4]);
+						}
+						
+					$Move = ($Pos[1] +  $Pos[2] + $Pos[5]);
+						move -r 0 $Move 0 $PulleyGrp[0];
+					
+		
+				}// End of Pulley Moves if all in one group.
+				
+		connectAttr -f -l 1 ($PuGroup[0] + ".Pulley_No" + ($e) + "_Rotate") ($PulleyGrp[1] + ".rx") ;		
+	
+		}	
+		
+
+		scale $DVYUnit $DVYUnit $DVYUnit $PuGroup[0];
+		select -r $PuGroup[0];
+		delete -ch;
+		
+		select -r -hi $PuGroup[0];
+		$List = `ls -tr -sl`;
+			
+		string $AttrA[] = {".tx", ".ty", ".tz", ".rx", ".ry", ".rz", ".sx", ".sy", ".sz"};
+			for ($each in $List)
+				{
+					for ($Att in $AttrA) {setAttr -l true -k false ($each + $Att);}
+				}
+
+				
+		select -r  ($PuName + "Grp_" + $E + "_Pulley_GrpN_*") ;
+		$List = `ls -tr -sl`;
+		
+		string $AttrA[] = {".ty", ".tz"};
+			for ($each in $List)
+				{
+					for ($Att in $AttrA) {setAttr -l false -k true ($each + $Att);}
+						setAttr ($each + ".displayHandle") 1;
+				}
+		
+		setAttr -l true -k false ($PuName + "Grp_" + $E + "_Pulley_GrpN_1.ty") ;
+		setAttr -l true -k false ($PuName + "Grp_" + $E + "_Pulley_GrpN_1.tz") ;
+		
+		$s = `size $DVYSpheres`;
+		for ($j=0; $j<$s; $j++)
+			{
+				setAttr -l false -k true ($DVYSpheres[$j] + ".rx");
+			}
+			
+		select -r  ($PuName + "Grp_" + $E + "_Pulley_GrpN_*") ;
+		$List = `ls -tr -sl`;
+		
+		$s = `size $Group`;
+		for ($j=1; $j<$s; $j++)
+			{
+				setAttr -l false -k true ($Group[$j] + ".rx");
+			}
+		
+			
+		print $PuGroup;
+		print $Group;
+			
+		for ($i=1; $i<$q; $i++)
+			{
+				select -r $PuGroup[$i] ;
+				select -add $Group[$i+1] ;
+				aimConstraint -offset 0 0 0 -weight 1 -aimVector 0 -1 0 -upVector 0 0 0 
+					-worldUpType "vector" -worldUpVector 0 0 0 -skip y -skip z;	
+				
+			}
+		
+			
+}

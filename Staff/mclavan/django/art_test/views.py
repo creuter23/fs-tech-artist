@@ -2,9 +2,10 @@
 from django.template.loader import get_template
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 
+
 # validation
 from django.core.context_processors import csrf
-from django.shortcuts import render_to_response
+from django.shortcuts import render_to_response, redirect
 
 
 # Accessing data from a Template
@@ -14,14 +15,21 @@ from django.template import Template, Context
 from django.core.mail import send_mail
 
 # Database access
-from users.models import Student
-
+from users.models import Student, Disc, Category
+# 
 def gateway(request):
     # Opens up the main web page.
     t = get_template(r'login.html')
-    html = t.render(Context())
-    return HttpResponse(html)
+    html = t.render(Context({"valid_login": False}))
     
+    return HttpResponse(html)
+
+def bad_gateway(request):
+    print 'Poor Choice.'
+    t = get_template(r'login.html')
+    html = t.render(Context({"valid_login": True}))
+    return HttpResponse(html)
+   
 def login(request):
     
     '''
@@ -51,15 +59,18 @@ def login(request):
                 request.session['student_id'] = m.student_id
                 return HttpResponseRedirect('/apply/')
         
-        return HttpResponse("Your response is %s" %m)
+        login_correct = False
+        return HttpResponseRedirect('/bad_gateway/')
+        # return redirect(bad_gateway)
+        # return HttpResponse("Please returnYour response is %s" %m)
         
     except:
-        # Database accesss
-        m = Student.objects.get(username=request.POST['user_name'])
-        
-        user = m.username
-        pasw = m.password
-        return HttpResponse("Your username and password didn't match. %s, %s, %s" % (m, user, pasw))
+        login_correct = False
+        return HttpResponseRedirect('/bad_gateway/')
+        return HttpResponseRedirect('<script>')
+
+
+        # return redirect(bad_gateway)
     # return render_to_response("Your username and password didn't match.", c)
     
 
@@ -131,3 +142,29 @@ def user_check(request):
             error_line += '%s<br>' % error 
         return HttpResponse(error_line)
     
+    
+    
+    
+    
+    
+    
+    
+    
+def index(request):
+    return render_to_response('index.html', {
+        'categories': Category.objects.all(),
+        'posts': Blog.objects.all()[:5]
+    })
+
+def view_post(request, slug):   
+    return render_to_response('view_post.html', {
+        'post': get_object_or_404(Blog, slug=slug)
+    })
+
+def view_category(request, slug):
+    category = get_object_or_404(Category, slug=slug)
+    return render_to_response('view_category.html', {
+        'category': category,
+        'posts': Blog.objects.filter(category=category)[:5]
+    })
+

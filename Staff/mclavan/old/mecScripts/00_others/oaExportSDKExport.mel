@@ -1,0 +1,89 @@
+////////////////////////////////////////////////////////////////////////////////
+global proc string oaExportSDKExport(int $shelfButton, string $search, string $replace) {
+/*
+AUTHORS: "Oleg Alexander" <olegalexander@gmail.com>
+DESCRIPTION: Export the Set Driven Keys commands of all selected objects to the Script Editor.
+TO USE: Call the proc from the UI or call it directly with arguments.
+RETURNS: The Set Driven Keys command string. 
+*/
+
+	
+	//Get selection
+	string $selected[] = `ls -sl`;
+	if (`size $selected` == 0) error "Nothing is selected.";
+	
+	//Declare the command string
+	string $command = "\n//START EXPORT SET DRIVEN KEYS\n";
+
+	//For every object...
+	for ($object in $selected) {
+		
+		//Get the driven attributes
+		string $drivens[] = `setDrivenKeyframe -q -dn $object`;
+		
+		//If there are no driven attributes, skip that object
+		if ($drivens[0] == "No driven attributes found on the selected item.") {
+			warning ("No driven attributes found on " + $object + ". Skipping...");
+			continue;
+		}
+
+		//For every driven attribute...
+		for ($driven in $drivens) {
+			
+			//Append to the command string
+			$command += ("\n//Set Driven Keys for " + $driven);
+			
+			//Get the driver values
+			float $driverValues[] = `keyframe -q -floatChange $driven`;
+			//Get the driven values
+			float $drivenValues[] = `keyframe -q -valueChange $driven`;
+			
+			//Get the in tangents and out tangents
+			string $inTangents[] = `keyTangent -q -itt $driven`;
+			string $outTangents[] = `keyTangent -q -ott $driven`;
+			
+			//Get pre and post infinity types for this attribute
+			string $infinity[] = `setInfinity -q -pri -poi $driven`;
+			
+			//For every driven value...
+			for ($i = 0; $i < size($drivenValues); $i++) {
+				
+				//Get the current driver attribute of the current driven attribute
+				string $driver[] = `setDrivenKeyframe -q -cd $driven`;
+				
+				//Append to the command string
+				$command += "\n";
+				$command += ("catch(`setAttr " + $driver[0] + " " + $driverValues[$i] + "`);\n");
+				$command += ("catch(`setAttr " + $driven + " " + $drivenValues[$i] + "`);\n");
+				$command += ("catch(`setDrivenKeyframe -itt " + $inTangents[$i] + " -ott " + $outTangents[$i] + " -cd " + $driver[0] + " " + $driven + "`);\n");
+				$command += ("catch(`setInfinity -pri " + $infinity[0] + " -poi " + $infinity[1] + " " + $driven + "`);\n");
+
+			}
+		
+		}
+
+	}
+	
+	//Append to the command string
+	$command +=  "\n//END EXPORT SET DRIVEN KEYS\n\n";
+	
+	//Search and Replace
+	while (`match $search $command` != "") {
+		$command = `substitute $search $command $replace`;
+	}
+	
+	//Output command string to the script editor
+	print $command;
+	
+	//If shelf button is on
+	if ($shelfButton == 1) textToShelf "SDK" $command;
+	
+	//Confirmation
+	print "Set Driven Keys exported successfully! Open Script Editor for details...";
+	
+	//Return the command string
+	return $command;
+	
+} //End of oaExportSDKExport
+
+

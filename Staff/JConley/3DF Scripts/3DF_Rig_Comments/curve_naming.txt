@@ -1,0 +1,6 @@
+A
+All of your curves were named.
+F - Few
+One or a few of your curves were not named.
+F - Many
+Many or all of your curves were not named.

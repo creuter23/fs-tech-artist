@@ -1,0 +1,645 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davveys Nut and Bolt Generator
+''    Author:  
+''    Last Updated: Jan 29, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4402.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+///////////////////////////////////////////////////////////////////////////////
+/*			
+				
+	Copyright © 2006 DVY_NutandBoltBuild. All rights reserved davvey@ntlworld.com
+
+						- DVY_NutandBoltBuild -
+*/
+///////////////////////////////////////////////////////////////////////////////
+
+
+	
+	
+//////////////////////////////////////////////////////////////////////////
+//					DVY_NutandBoltBuild Procedure
+//////////////////////////////////////////////////////////////////////////
+
+
+//============================================================================
+//	GLOBAL VARIABLES
+//============================================================================
+	global int $DVYDebug;
+
+// Integer Flag that allows print statements to be output to
+// message field for tracking purposes.
+		
+//============================================================================
+
+global proc DVY_NutandBoltBuild()
+{
+	print "\n Starting NutandsBoltBuild Procedure. © Davvey 2006\n\n";
+	
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+// Global Variables	
+	
+	global string $Units;
+	global string $Shader[]; clear $Shader;
+
+	global float $ThreadDiam[], $ThreadPitch[], $ThreadPitchF[];
+	global float $NutFlat[], $NutCorners[], $NutHeight[], $LockNutHeight[], $NyLocNutHeight[];
+	global float $BoltHead[], $WasherOutDiam[], $WasherThick[], $WasherSpODiam[];
+	global float $ThreadLength[], $ThreadLengthL[];
+	global float $DVYUnit;
+	
+	global int $SIZE;
+	
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+// Local Variables	
+	
+	float $Dist; 
+	
+	string $ThreadType[], $Profiles[], $ThreadName[], $Temp[], $Temps[];
+	string $Groups[], $Barrel[], $Bolt[], $Nut[], $Hole[], $Washer[];
+	string $Thread, $Name;
+	string $SetAttrN[] = {".sx", ".sy", ".sz"};
+	
+	int $a, $b, $c, $e, $i, $j, $k, $N;
+	
+// ******************************************************************************** //	
+//	Constants and "Static Data"
+	$a = $SIZE;
+	
+	$ThreadName =	  {"1_6", "2", "2_5", "3", "4", "5", "6", "7", "8", "10", "12", "14", "16", "18",
+						"20", "22", "24", "30", "36", "42", "48", "56", "64", "72", "80", "90", "100"};
+	
+	$Name = ("Mx" + $ThreadName[$a] + "mm_");
+	
+	DVY_ScaleSet;
+	
+	print ("Current units are " + $Units + " and Scale Factor $DVYUnit is " + $DVYUnit + "\n");
+
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+// 	Test Diameter seleceted.	
+	
+	string $name = `optionMenu -q -v DVY_DiamOption`;
+	
+		if ($name == "Diameter ")
+			{ error "Oops please select Diamter required before pressing `Build` Button.  © Davvey 2006\n";}
+			
+	if (`radioButtonGrp -q -sl ThreadStyleRadioGrp` < 1)
+			{ error "Oops please select Thread Pitch required before pressing `Build` Button.  © Davvey 2006\n";}
+			
+
+		if (`checkBox -q -v BoltOptionCheck` == 1)
+			{
+				if (`radioButtonGrp -q -sl BoltStyleCheck` < 1)
+					{ error "Oops please select Bolt Style before pressing `Build` Button.  © Davvey 2006\n";}
+
+				if (`radioButtonGrp -q -sl BoltHeadStyleCheck` < 1)
+					{ error "Oops please select Bolt Head Style before pressing `Build` Button.  © Davvey 2006\n";}
+			}
+		
+		if (`checkBox -q -v NutOptionCheck` == 1)			
+			{
+				if ((`radioButtonGrp -q -sl NutStyleCheck` < 1) && (`radioButtonGrp -q -sl NutStyle01Check` < 1))
+					{ error "Oops please select Nut Style before pressing `Build` Button.  © Davvey 2006\n";}
+			}
+
+		if (`checkBox -q -v WasherOptionCheck` == 1)			
+			{
+				if (`radioButtonGrp -q -sl WasherStyleCheck` < 1)
+					{ error "Oops please select Washer Style before pressing `Build` Button.  © Davvey 2006\n";}
+			}
+			
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+//	Create Shaders for Nut and Bolt Parts.
+					
+	string $SHName;
+	int $s, $Sh = 0;
+	if (`optionMenu -q -sl DVY_BoltOption` > 1)
+		{
+			$SHName = `optionMenu -q -v DVY_BoltOption`;
+			$s = `optionMenu -q -sl DVY_BoltOption`;
+			
+			print ("Shader name is " + $SHName + "\n");
+			if ($s == 2) {$Sh = 30;}
+			if ($s == 3) {$Sh = 37;}
+			
+			if ($s == 4) {$Sh = 34;}
+			if ($s == 5) {$Sh = 33;}
+			if ($s == 6) {$Sh = 21;}
+			if ($s == 7) {$Sh = 27;}
+			
+			if (!`objExists ($SHName + "_SH") `) { $Shader[0] = `DVY_Shaders($Sh)`; }
+				 $Shader[0] = ($SHName + "_SH");
+		
+		}
+	
+	if (`optionMenu -q -sl DVY_NutOption` > 1)
+		{
+			$SHName = `optionMenu -q -v DVY_NutOption`;
+			$s = `optionMenu -q -sl DVY_NutOption`;
+			
+			print ("Shader name is " + $SHName + "\n");
+			if ($s == 2) {$Sh = 30;}
+			if ($s == 3) {$Sh = 37;}
+			
+			if ($s == 4) {$Sh = 34;}
+			if ($s == 5) {$Sh = 33;}
+			if ($s == 6) {$Sh = 21;}
+			if ($s == 7) {$Sh = 27;}
+			
+			if (!`objExists ($SHName + "_SH") `) { $Shader[1] = `DVY_Shaders($Sh)`; }
+				 $Shader[1] = ($SHName + "_SH");
+			
+		}
+	
+	if (`optionMenu -q -sl DVY_WasherOption` > 1)
+		{
+			$SHName = `optionMenu -q -v DVY_WasherOption`;
+			$s = `optionMenu -q -sl DVY_WasherOption`;
+			
+			print ("Shader name is " + $SHName + "\n");
+			if ($s == 2) {$Sh = 30;}
+			if ($s == 3) {$Sh = 37;}
+			
+			if ($s == 4) {$Sh = 34;}
+			if ($s == 5) {$Sh = 33;}
+			if ($s == 6) {$Sh = 21;}
+			if ($s == 7) {$Sh = 27;}
+			
+			if (!`objExists ($SHName + "_SH") `) { $Shader[2] = `DVY_Shaders($Sh)`; }
+				 $Shader[2] = ($SHName + "_SH");
+				 
+			$SHName = "SpringSteel";
+			if (!`objExists ($SHName + "_SH") `) { $Shader[3] = `DVY_Shaders(35)`; }
+				 $Shader[3] = ($SHName + "_SH");
+				 
+			
+		}
+		
+		print "\nShaders used are..\n";
+		print $Shader;
+		
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+			
+	if ($name != "Diameter ")
+	  {// Ok to proceed as Diameter selected
+			print ("Diameter selected is " + $name + " © Davvey 2006\n");
+		if ((`checkBox -q -v BoltOptionCheck` == 1) || (`checkBox -q -v NutOptionCheck` == 1) || 
+			(`checkBox -q -v WasherOptionCheck` == 1) || (`checkBox -q -v HoleOptionCheck` == 1))
+			{// start of Option selected check
+		
+			// Create Group Node to hold all parts of a set
+				// $e count of Group  Nodes  required
+				$e =1;
+			
+				while (`objExists ($Name + "GrpN_" + $e)`)
+					{
+						$e++;	print ("$e is " + $e + "\n");
+					}
+			
+					$Groups[0] = `group -em -name ($Name + "GrpN_" + $e)`;
+					addAttr -k 1 -ln ThreadSmooth -at double -min 0 -max 4 -dv 0 $Groups[0];
+					setAttr -l 1 -k 0 ($Groups[0] + ".sx");
+					setAttr -l 1 -k 0 ($Groups[0] + ".sy");
+					setAttr -l 1 -k 0 ($Groups[0] + ".sz");
+	
+			// Setup Bolt Build Options.
+		
+			if (`checkBox -q -v BoltOptionCheck` == 1)
+				{// Bolt Selection section 
+					print "Bolt to be set up";
+					
+				if (`radioButtonGrp -q -sl BoltStyleCheck` == 1)
+					{
+						print " with a Standard Thread";
+					}
+					
+				if (`radioButtonGrp -q -sl BoltStyleCheck` == 2)
+					{
+						print " with a Full Thread";
+					}
+					
+					
+				if (`radioButtonGrp -q -sl BoltStyleCheck` == 3)
+					{
+						print " with a Headless Set Screw is to be used";
+						if (`radioButtonGrp -q -sl BoltHeadStyle01Check` > 0)
+							{
+							if (`radioButtonGrp -q -sl BoltHeadStyle01Check` == 1)
+								{
+									print " with No Drive Slot\n";
+								}
+							if (`radioButtonGrp -q -sl BoltHeadStyle01Check` == 2)
+								{
+									print " with a Socket Drive \n";
+								}
+
+							if (`radioButtonGrp -q -sl BoltHeadStyle01Check` == 3)
+								{
+									print " with a Slotted Drive \n";
+								}
+
+							if (`radioButtonGrp -q -sl BoltHeadStyle01Check` == 4)
+								{
+									print " With a Cross or Phillips type Drive \n";
+									}
+								
+								$Temp[0] =  DVY_ThreadProfile(18, $a, $e);
+						//			print ("$Temp[0] is " + $Temp[0] + "\n");
+									parent $Temp[0] $Groups[0];
+									connectAttr -f ($Groups[0] + ".ThreadSmooth")
+													($Name + "SetScrewThread_" + $e + "_Smooth.subdivisionLevels");
+							}
+							
+							
+					}
+					
+				if (`radioButtonGrp -q -sl BoltStyleCheck` < 3)
+					{// Bolt Head Style Selection section
+						if (`radioButtonGrp -q -sl BoltHeadStyleCheck` == 1)
+							{
+								print " and a Hexagon Head\n";
+								$Temp[0] =  DVY_ThreadProfile(10, $a, $e);
+									parent $Temp[0] $Groups[0];
+									connectAttr -f ($Groups[0] + ".ThreadSmooth")
+													($Name + "BoltThread_" + $e + "_Smooth.subdivisionLevels");
+							}
+							
+							
+						if (`radioButtonGrp -q -sl BoltHeadStyleCheck` == 2)
+							{
+								if (`radioButtonGrp -q -sl BoltHeadStyle01Check` == 1)
+									{
+										print " and a Pan Head\n";
+										$Temp[0] =  DVY_ThreadProfile(11, $a, $e);
+											parent $Temp[0] $Groups[0];
+											connectAttr -f ($Groups[0] + ".ThreadSmooth")
+															($Name + "BoltThread_" + $e + "_Smooth.subdivisionLevels");
+									}
+									
+								if (`radioButtonGrp -q -sl BoltHeadStyle01Check` == 2)
+									{
+										print " With a Hex Socket Drive\n";
+										$Temp[0] =  DVY_ThreadProfile(12, $a, $e);
+											parent $Temp[0] $Groups[0];
+											connectAttr -f ($Groups[0] + ".ThreadSmooth")
+															($Name + "BoltThread_" + $e + "_Smooth.subdivisionLevels");
+									}
+									
+								if (`radioButtonGrp -q -sl BoltHeadStyle01Check` == 3)
+									{
+										print " and a Slotted Screwdriver Head\n";
+										$Temp[0] =  DVY_ThreadProfile(13, $a, $e);
+											parent $Temp[0] $Groups[0];
+											connectAttr -f ($Groups[0] + ".ThreadSmooth")
+															($Name + "BoltThread_" + $e + "_Smooth.subdivisionLevels");
+									}
+							
+								if (`radioButtonGrp -q -sl BoltHeadStyle01Check` == 4)
+									{
+										print " and a Cross or Phillips type Screwdriver Head\n";
+										$Temp[0] =  DVY_ThreadProfile(14, $a, $e);
+											parent $Temp[0] $Groups[0];
+											connectAttr -f ($Groups[0] + ".ThreadSmooth")
+															($Name + "BoltThread_" + $e + "_Smooth.subdivisionLevels");
+									}
+
+
+							}	
+							
+						if (`radioButtonGrp -q -sl BoltHeadStyleCheck` == 4)
+							{
+								if (`radioButtonGrp -q -sl BoltHeadStyle01Check` == 1)
+									{
+										print " and a Cheese Head\n";
+										$Temp[0] =  DVY_ThreadProfile(15, $a, $e);
+											parent $Temp[0] $Groups[0];
+											connectAttr -f ($Groups[0] + ".ThreadSmooth")
+															($Name + "BoltThread_" + $e + "_Smooth.subdivisionLevels");
+									}
+									
+								if (`radioButtonGrp -q -sl BoltHeadStyle01Check` == 2)
+									{
+										print " and a Cheese Head with Hex Drive\n";
+										$Temp[0] =  DVY_ThreadProfile(15, $a, $e);
+											parent $Temp[0] $Groups[0];
+											connectAttr -f ($Groups[0] + ".ThreadSmooth")
+															($Name + "BoltThread_" + $e + "_Smooth.subdivisionLevels");
+									}
+									
+								if (`radioButtonGrp -q -sl BoltHeadStyle01Check` == 3)
+									{
+										print " and a Cheese Head with a Slotted Drive\n";
+										$Temp[0] =  DVY_ThreadProfile(15, $a, $e);
+											parent $Temp[0] $Groups[0];
+											connectAttr -f ($Groups[0] + ".ThreadSmooth")
+															($Name + "BoltThread_" + $e + "_Smooth.subdivisionLevels");
+									}
+									
+								if (`radioButtonGrp -q -sl BoltHeadStyle01Check` == 4)
+									{
+										print " and a Cheese Head with a Phillips Drive\n";
+										$Temp[0] =  DVY_ThreadProfile(15, $a, $e);
+											parent $Temp[0] $Groups[0];
+											connectAttr -f ($Groups[0] + ".ThreadSmooth")
+															($Name + "BoltThread_" + $e + "_Smooth.subdivisionLevels");
+									}
+									
+							}
+				// Coach Bolt Section
+				
+				if (`radioButtonGrp -q -sl BoltHeadStyleCheck` == 3)
+					{
+						print " With a Coach Bolt Head\n";
+						$Temp[0] =  DVY_ThreadProfile(16, $a, $e);
+							parent $Temp[0] $Groups[0];
+							connectAttr -f ($Groups[0] + ".ThreadSmooth")
+											($Name + "BoltThread_" + $e + "_Smooth.subdivisionLevels");
+					}
+					
+				// Socket Headed Bolt Section
+				
+				if (`radioButtonGrp -q -sl BoltHead01StyleCheck` == 1)
+					{
+						print " With a Hex Socket Drive\n";
+						$Temp[0] =  DVY_ThreadProfile(17, $a, $e);
+							parent $Temp[0] $Groups[0];
+							connectAttr -f ($Groups[0] + ".ThreadSmooth")
+											($Name + "BoltThread_" + $e + "_Smooth.subdivisionLevels");
+					}
+							
+							
+					}// End of Bolt Head Style Selection section
+					
+					
+					
+	
+				if (`radioButtonGrp -q -sl BoltStyleCheck` == 4)
+					{// Stud Threaad style Selection section
+						print " as a Stud";
+					
+					if (`radioButtonGrp -q -sl StudStyleCheck` == 1)
+						{
+							print " with a Single end of Thread is to be used\n";
+								$Temp[0] =  DVY_ThreadProfile(19, $a, $e);
+									parent $Temp[0] $Groups[0];
+									connectAttr -f ($Groups[0] + ".ThreadSmooth")
+													($Name + "StudThread_" + $e + "_Smooth.subdivisionLevels");
+							
+						}
+						
+					if (`radioButtonGrp -q -sl StudStyleCheck` == 2)
+						{
+							print " with a Full Thread is to be used\n";
+								$Temp[0] =  DVY_ThreadProfile(19, $a, $e);
+									parent $Temp[0] $Groups[0];
+									connectAttr -f ($Groups[0] + ".ThreadSmooth")
+													($Name + "StudThread_" + $e + "_Smooth.subdivisionLevels");
+						}
+						
+					if (`radioButtonGrp -q -sl StudStyleCheck` == 3)
+						{
+							print " with a Double End Thread is to be used\n";
+								$Temp[0] =  DVY_ThreadProfile(19, $a, $e);
+									parent $Temp[0] $Groups[0];
+									connectAttr -f ($Groups[0] + ".ThreadSmooth")
+													($Name + "StudTopThread_" + $e + "_Smooth.subdivisionLevels");
+									connectAttr -f ($Groups[0] + ".ThreadSmooth")
+													($Name + "StudBotThread_" + $e + "_Smooth.subdivisionLevels");
+									
+						}
+					}// End of Stud Threaad style Selection section
+	
+				}// End of Bolt Selection section
+		
+			if (`checkBox -q -v NutOptionCheck` == 1)
+				{// Nut Selection section 
+					print "Nut to be set up";
+				
+				if (`radioButtonGrp -q -sl NutStyleCheck` == 1)
+					{
+						print " as Standard Size.\n";
+						$Temp[1] = DVY_ThreadProfile(0, $a, $e);
+						parent $Temp[1] $Groups[0];
+						connectAttr -f ($Groups[0] + ".ThreadSmooth")
+									($Name + "NutThread_" + $e + "_Smooth.subdivisionLevels");
+					}
+				
+				if (`radioButtonGrp -q -sl NutStyleCheck` == 2)
+					{
+						print " as Standard Size plus a Thinner Locknut.\n";
+						$Temp[1] = DVY_ThreadProfile(0, $a, $e);
+						move -r 0 $LockNutHeight[$a] 0 $Temp[1];
+						parent $Temp[1] $Groups[0];
+						connectAttr -f ($Groups[0] + ".ThreadSmooth")
+									($Name + "NutThread_" + $e + "_Smooth.subdivisionLevels");
+	
+						$Temp[2] = DVY_ThreadProfile(1, $a, $e);
+						$Temp[2] =`rename $Temp[2] ($Name + "LockNut_" + $e)`;
+						parent $Temp[2] $Groups[0];
+						rename ($Name + "NutThread_" + ($e+1)) ($Name + "LockNutThread_" + $e);
+						rename ($Name + "NutThread_" + ($e+1) +"_Smooth") ($Name + "LockNutThread_" + $e +"_Smooth");
+						
+						connectAttr -f ($Groups[0] + ".ThreadSmooth")
+									($Name + "LockNutThread_" + $e + "_Smooth.subdivisionLevels");
+					}
+				
+				if (`radioButtonGrp -q -sl NutStyleCheck` == 3)
+					{
+						print " as a self locking NyLocNut.\n";
+						$Temp[1] = DVY_ThreadProfile(2, $a, $e);
+						parent $Temp[1] $Groups[0];
+					}
+					
+				if (`radioButtonGrp -q -sl NutStyle01Check` == 1)
+					{
+						print " as Flanged Nut.\n";
+						$Temp[1] = DVY_ThreadProfile(3, $a, $e);
+						parent $Temp[1] $Groups[0];
+						connectAttr -f ($Groups[0] + ".ThreadSmooth")
+									($Name + "NutThread_" + $e + "_Smooth.subdivisionLevels");
+					}
+	
+				if (`radioButtonGrp -q -sl NutStyle01Check` == 2)
+					{
+						print " as Dome Headed Nut.\n";
+						$Temp[1] = DVY_ThreadProfile(4, $a, $e);
+						parent $Temp[1] $Groups[0];
+						connectAttr -f ($Groups[0] + ".ThreadSmooth")
+									($Name + "NutThread_" + $e + "_Smooth.subdivisionLevels");
+					}
+					
+				if (`radioButtonGrp -q -sl NutStyle01Check` == 3)
+					{
+						print " as a Wing Nut.\n";
+						$Temp[1] = DVY_ThreadProfile(8, $a, $e);
+						rotate 180 0 0 $Temp[1];
+						parent $Temp[1] $Groups[0];
+						connectAttr -f ($Groups[0] + ".ThreadSmooth")
+									($Name + "NutThread_" + $e + "_Smooth.subdivisionLevels");
+						move 0 ($NutHeight[$a] * 0.75) 0 $Temp[1];
+					}
+					
+				if (`radioButtonGrp -q -sl NutStyle01Check` == 4)
+					{
+						print " as a Castellated Nut Size.\n";
+						$Temp[1] = DVY_ThreadProfile(7, $a, $e);
+						parent $Temp[1] $Groups[0];
+						connectAttr -f ($Groups[0] + ".ThreadSmooth")
+									($Name + "NutThread_" + $e + "_Smooth.subdivisionLevels");
+					}
+					
+					
+				}// End of Nut Selection section
+				
+				
+			if (`checkBox -q -v WasherOptionCheck` == 1)
+				{// Washer Selection section 
+					print "Washer to be set up";
+				
+				if (`radioButtonGrp -q -sl WasherStyleCheck` == 1)
+					{
+						print " using a Plain Style.\n";
+						$Temp[3] = DVY_ThreadProfile(21, $a, $e);
+						print ("$Temp[3] is " + $Temp[3] + "\n");
+						if (`objExists $Temp[1]`) 
+							{ move -r 0 ($NutHeight[$a] + ($WasherThick[$a] * 0.5)) 0 $Temp[3];}
+						
+						if (`objExists $Temp[2]`)
+							{ move -r 0 ($LockNutHeight[$a] ) 0 $Temp[3];}
+						parent $Temp[3] $Groups[0];
+					}
+				
+				if (`radioButtonGrp -q -sl WasherStyleCheck` == 2)
+					{
+						print " using 2 x Plain Style.\n";
+						
+						$Temp[3] = DVY_ThreadProfile(21, $a, $e);
+						print ("$Temp[3] is " + $Temp[3] + "\n");
+						if (`objExists $Temp[1]`) 
+							{ move -r 0 ($NutHeight[$a] + ($WasherThick[$a] * 0.5)) 0 $Temp[3];}
+						
+						if (`objExists $Temp[2]`)
+							{ move -r 0 ($LockNutHeight[$a] ) 0 $Temp[3];}
+						
+						parent $Temp[3] $Groups[0];
+						
+						$Temp[4] = DVY_ThreadProfile(21, $a, $e);
+						print ("$Temp[4] is " + $Temp[4] + "\n");
+						$Temp[4] =`rename $Temp[4] ($Name + "WasherTwo_" + $e)`;
+						rotate -r 180 0 0 $Temp[4];
+						if (`objExists $Temp[1]`) 
+							{ move -r 0 ($NutHeight[$a] + ($WasherThick[$a] * 1.5)) 0 $Temp[4];}
+						if (`objExists $Temp[2]`)
+							{ move -r 0 ($LockNutHeight[$a]) 0 $Temp[4];}
+		
+						parent $Temp[4] $Groups[0];
+					}
+				
+				if (`radioButtonGrp -q -sl WasherStyleCheck` == 3)
+					{
+						print " as a Single Turn Spring Coil Style.\n";
+						
+						$Temp[3] = DVY_ThreadProfile(22, $a, $e);
+						print ("$Temp[3] is " + $Temp[3] + "\n");
+						
+						if (`objExists $Temp[1]`) 
+							{ move -r 0 ($NutHeight[$a] + ($WasherThick[$a] * 0.5)) 0 $Temp[3];}
+						
+						if (`objExists $Temp[2]`)
+							{ move -r 0 ($LockNutHeight[$a] ) 0 $Temp[3];}
+
+						parent $Temp[3] $Groups[0];
+					}
+					
+				if (`radioButtonGrp -q -sl WasherStyleCheck` == 4)
+					{
+						print " with a Plain and a Single Turn Spring Coil Style.\n";
+						
+						$Temp[3] = DVY_ThreadProfile(21, $a, $e);
+						print ("$Temp[3] is " + $Temp[3] + "\n");
+						if (`objExists $Temp[1]`) 
+							{ move -r 0 ($NutHeight[$a] + ($WasherThick[$a] * 0.5)) 0 $Temp[3];}
+						
+						if (`objExists $Temp[2]`)
+							{ move -r 0 ($LockNutHeight[$a] ) 0 $Temp[3];}
+						
+						parent $Temp[3] $Groups[0];
+						
+						
+						$Temp[4] = DVY_ThreadProfile(22, $a, $e);
+						print ("$Temp[4] is " + $Temp[4] + "\n");
+						
+						if (`objExists $Temp[1]`) 
+							{ move -r 0 ($NutHeight[$a] + ($WasherThick[$a] * 1.5)) 0 $Temp[4];}
+						
+						if (`objExists $Temp[2]`)
+							{ move -r 0 ($LockNutHeight[$a] ) 0 $Temp[4];}
+						parent $Temp[4] $Groups[0];
+					}
+					
+				}// End of Washer Selection section
+				
+				if (`checkBox -q -v HoleOptionCheck` == 1)
+					{// Dummy Hole Selection section 
+						print "A `Dummy` Threaded Hole is to be set up to be set inside a user preformed blank hole.\n";
+			
+						$Temp[10] = DVY_ThreadProfile(9, $a, $e);
+						print ("$Temp[1] is " + $Temp[10] + "\n");
+						parent $Temp[10] $Groups[0];
+						
+
+					}// End of Dummy Hole Section
+					
+				for ($each in $SetAttrN)
+					{ setAttr -l 0 -k 0 ($Groups[0] + $each);}
+					
+					scale $DVYUnit $DVYUnit $DVYUnit $Groups[0];
+
+				for ($each in $SetAttrN)
+					{ setAttr -l 1 -k 0 ($Groups[0] + $each);}
+					
+			print "\n DVY_NutandBoltBuild procedure has completed building required parts. © Davvey 2006";
+		
+		}// End of Option selected check
+		else { print "Please Select sections to be setup before pressing build button. © Davvey..\n";}
+
+		$k = 1; $Dist = $ThreadDiam[$a] * 2;
+			if (`intSliderGrp -q -v ItemsReqSliderGrp` > 1)
+				{
+					$j = `intSliderGrp -q -v ItemsReqSliderGrp` - 1;
+					print ("Duplicating orginal to give required Quantity of " + $j + ". © Davvey 2006");
+					select -r $Groups[0];
+		
+					for ($i=0; $i<$j; ++$i)
+					{
+						$Temps = `duplicate -rr -renameChildren -un`; 
+						$Groups[$k] = $Temps[0];
+						move -r $Dist 0 0 $Groups[$k++];
+												
+					}		
+		
+				}
+		
+	}// End of Build Options Section
+	  
+	
+	
+}

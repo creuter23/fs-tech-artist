@@ -1,9 +1,12 @@
 from django.db import models
+from django.contrib.auth.models import User
+from django.db.models import permalink
 
 # Create your models here.
 class Student(models.Model):
+    user = models.ForeignKey(User, unique=True)
     name = models.CharField(max_length=50)
-    username = models.CharField(max_length=25)
+    user_name = models.CharField(max_length=25)
     password = models.CharField(max_length=25)
     email = models.EmailField(max_length=100)
     disc = models.CharField(null=True, max_length=18)
@@ -12,7 +15,7 @@ class Student(models.Model):
     comments = models.CharField(null=True, max_length=255)
 
     def __unicode__(self):
-        return '%s: %s %s' %(self.name, self.username, self.email)
+        return '%s: %s %s' %(self.name, self.user_name, self.email)
  
 # Username: mclavan_hsdb dbPassword = FS!@#$% student table
 class Art_Test(models.Model):
@@ -24,3 +27,37 @@ class Art_Test(models.Model):
     asset_status = models.CharField(max_length=2, choices=asset_types)
     assesment = models.CharField(max_length=6, choices=asses_types)
     student = models.ForeignKey(Student)
+    art_director = models.CharField(max_length=50)
+    AD_Email = models.EmailField(max_length=100)
+    
+
+
+
+
+
+
+class Disc(models.Model):
+    title = models.CharField(max_length=100, unique=True)
+    slug = models.SlugField(max_length=100, unique=True)
+    body = models.TextField()
+    posted = models.DateTimeField(db_index=True, auto_now_add=True)
+    category = models.ForeignKey('users.Category')
+
+    def __unicode__(self):
+        return '%s' % self.title
+
+    @permalink
+    def get_absolute_url(self):
+        return ('view_blog_post', None, { 'slug': self.slug })
+
+class Category(models.Model):
+    title = models.CharField(max_length=100, db_index=True)
+    slug = models.SlugField(max_length=100, db_index=True)
+
+    def __unicode__(self):
+        return '%s' % self.title
+
+    @permalink
+    def get_absolute_url(self):
+        return ('view_disc_category', None, { 'slug': self.slug })
+

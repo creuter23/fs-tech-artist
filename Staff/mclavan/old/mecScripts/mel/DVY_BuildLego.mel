@@ -1,0 +1,1257 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davveys Lego Generator
+''    Author:  
+''    Last Updated: Jun 30, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4782.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+
+/////////////////////////////////////////////////////////////////////////////			
+/*				
+	Copyright © 2007 DVY_BuildLego. All rights reserved davvey@ntlworld.com
+
+						- DVY_BuildLego -
+						
+/////////////////////////////////////////////////////////////////////////////
+		
+	This script is called by the GUI DVY_Lego to carry out the building
+	of the various lego parts
+	
+	Usage
+
+	Type DVY_Lego in command line or middle mouse drag it to a shelf.
+	There is an Icon file supplied to use with the Shelf Button.
+	
+	Installation
+	
+	Install all scripts in any Maya Script folder and install all image files
+	in Maya's Icon folder.
+	
+	Description	
+
+	This script is called by the GUI DVY_lego where relevant options
+	can be entered to generate dimensionally accurate Lego Parts. 
+	
+	After construction the Parts are named according to Part type,
+	and Number of Pitches of Lego and a sequential number.
+	If there is a Part of exactly the same size and type the script will
+	automatically number the Part with next available number.
+	The Names used in the naming are based on the naming convention used
+	in the Option Menu list which are based on the standard Parts from
+	the Lego Parts List.
+	
+	Note:- The Scale of the Parts will be adjusted to set correct size 
+	relevant to the correct size for the Users Maya Unit settings
+	i.e mm, cm, m, in, ft, yd.
+	
+	If there are any additional Lego Parts you would like added to
+	the list please let me know at Davvey@ntlworld.com and I will try
+	and add them to the scripts.	
+	
+*****************************************************************************************
+
+	 "Lego" is a trademark of The Lego Group.  These scripts etc are not 
+	 endorsed  by The Lego Group nor does it receive endorsement from it. 
+	 It is just for fun.
+	 All trademarks and copyrights are respected.
+	 
+*****************************************************************************************
+
+*/	
+///////////////////////////////////////////////////////////////////////////////
+//					DVY_BuildLego Procedure
+////////////////////////////////////////////////////////////////////////////////
+
+proc string LegoWall(int $Hp, int $Wp, int $Lp, int $S, int $T, int $St, string $BrName)
+{
+	int $i, $j, $k, $M, $N;
+	string $Tmp[], $Temp[], $Tmps[], $Temps[];
+
+	float $H = ($Hp * 9.6);
+	float $L = ($Lp * 8.0) - 0.2 ;
+	float $W = ($Wp * 8.0) - 0.2 ;
+	
+		print ("$St is " + $St + "\n");		print ("$H is " + $H + "\n");	
+		print ("$L is " + $L + "\n");		print ("$W is " + $W + "\n");
+	
+	// Build Top Rail of Frame				
+		$Temps = `polyCube -w $W -h 2 -d $L -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+		move 0 1.0 0;
+	
+	// Build Top Lugs
+	 	$Temp = `polyPipe -r 2.45 -h 3.60 -t 0.60 -sa 16 -sh 1 -sc 1 -ch 0`;
+			move 0 (2.0 + 0.90) 0;
+			select -r $Temp[0];
+		
+		$M = ($Wp * 8 * 0.5) - 4;
+			if ($Wp > 1)
+				{	move -r $M 0 0;
+				 for ($i=1; $i< $Wp; $i++)
+					{	$Tmp = `duplicate -rr`;
+						move -r -8.0 0 0;
+						$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmp[0]`;
+				 	}
+				}
+	
+		$N = ($Lp * 8 * 0.5) - 4;
+			if ($Lp > 1)
+				{	move -r 0 0 $N;
+				 for ($i=1; $i< $Lp; $i++)
+					{	$Tmp = `duplicate -rr`;
+						move -r 0 0 -8.0;
+						$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmp[0]`;
+				 	}
+				}
+
+	// Combine Brick Body and Top Knobs.	
+		$Temps = `polyUnite -ch 0 $Temp[0] $Temps[0]`;		
+			move 0 ($H - 2.0) 0;
+			
+	// Build Front Face
+		$Temp = `polyCube -w 1.0 -h ($H - 4.0) -d $L -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+		
+		if ($St > 3)
+			{	$Tmp = `polyCube -w 2.0 -h ($H - 8.0) -d ($L - 4.0) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				if ($St == 5) {scale 1 1 0.40;}
+		
+				polyBevel -offset 0.25 -offsetAsFraction 1 -autoFit 1 -segments 5
+					-worldSpace 1 -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001
+					-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180 -ch 0
+					($Tmp[0] + ".e[0:3]");
+				
+				if ($St == 5)
+					{	move 0 0 ($L * 0.25);
+						$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Tmp[0]`;
+						
+						$Tmp = `polyCube -w 2.0 -h ($H - 8.0) -d ($L - 4.0) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						scale 1 1 0.40;
+			
+						polyBevel -offset 0.25 -offsetAsFraction 1 -autoFit 1 -segments 5
+							-worldSpace 1 -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001
+							-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180 -ch 0
+							($Tmp[0] + ".e[0:3]");
+					
+						move 0 0 ($L * -0.25);
+					}
+					
+					$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Tmp[0]`;
+					
+					$Tmp = `polyCube -w 1.0 -h ($H - 4.0) -d 1.0 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move -1.0 0 ($L * 0.5 - 0.50);
+						$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmp[0]`;		
+					
+					$Tmp = `polyCube -w 1.0 -h ($H - 4.0) -d 1.0 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move -1.0 0 ($L * -0.5 + 0.50);
+						$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmp[0]`;		
+			}
+				
+		move 3.40 ($H * 0.5) 0;
+		$Tmps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;		
+
+		// Build Bottom Rail of Frame				
+			$Temps = `polyCube -w $W -h 2 -d $L -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 1.0 0;
+	
+		// Build Bottom Cut Outs for Bottpm Rail
+			$Temp = `polyCylinder -r 2.45 -h 1.8 -sx 16 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+				move 0 0.89 0;
+				select -r $Temp[0];
+		
+			$M = ($Wp * 8 * 0.5) - 4;
+				if ($Wp > 1)
+					{	move -r $M 0 0;
+					 for ($i=1; $i< $Wp; $i++)
+						{	$Tmp = `duplicate -rr`;
+							move -r -8.0 0 0;
+							$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmp[0]`;
+					 	}
+					}
+		
+			$N = ($Lp * 8 * 0.5) - 4;
+				if ($Lp > 1)
+					{	move -r 0 0 $N;
+					 for ($i=1; $i< $Lp; $i++)
+						{	$Tmp = `duplicate -rr`;
+							move -r 0 0 -8.0;
+							$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmp[0]`;
+					 	}
+					}
+
+			$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Temp[0]`;
+			$Temps = `polyUnite -ch 0 $Tmps[0] $Temps[0]`;
+
+			polyMergeVertex -d 0.10 -ch 0 $Temps[0];
+		$Temps[0] = `rename $Temps[0]($BrName + "_" + $Lp + "x" + $Hp + "_No_1")`;	
+	
+	return $Temps[0];
+}
+
+proc string LegoWindow(int $Hp, int $Wp, int $Lp, int $S, int $T, int $St, string $BrName)
+{
+	int $i, $j, $k, $M, $N;
+	string $Tmp[], $Temp[], $Tmps[], $Temps[];
+
+	float $H = ($Hp * 9.6);
+	float $L = ($Lp * 8.0) - 0.2 ;
+	float $W = ($Wp * 8.0) - 0.2 ;
+	
+		print ("$St is " + $St + "\n");	print ("$H is " + $H + "\n");	
+		print ("$L is " + $L + "\n");	print ("$W is " + $W + "\n");
+	
+		// Build Top Rail of Frame				
+			$Temps = `polyCube -w $W -h 2 -d $L -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			move 0 1.0 0;
+		
+		// Build Top Lugs
+		 	$Temp = `polyPipe -r 2.45 -h 3.60 -t 0.60 -sa 16 -sh 1 -sc 1 -ch 0`;
+				move 0 (2.0 + 0.90) 0;
+				select -r $Temp[0];
+		
+			$M = ($Wp * 8 * 0.5) - 4;
+				if ($Wp > 1)
+					{	move -r $M 0 0;
+					 for ($i=1; $i< $Wp; $i++)
+						{	$Tmp = `duplicate -rr`;
+							move -r -8.0 0 0;
+							$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmp[0]`;
+					 	}
+					}
+		
+			$N = ($Lp * 8 * 0.5) - 4;
+				if ($Lp > 1)
+					{	move -r 0 0 $N;
+					 for ($i=1; $i< $Lp; $i++)
+						{	$Tmp = `duplicate -rr`;
+							move -r 0 0 -8.0;
+							$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmp[0]`;
+					 	}
+					}
+	
+		// Combine Brick Body and Top Knobs.	
+			$Temps = `polyUnite -ch 0 $Temp[0] $Temps[0]`;		
+				move 0 ($H - 2.0) 0;
+		
+		// Build Sides of Frame
+			$Temp = `polyCube -w $W -h ($H - 4.0) -d 1.0 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 ($H * 0.5) ($L * -0.5 + 0.5);
+				$Temps = `polyUnite -ch 0 $Temp[0] $Temps[0]`;		
+				
+			$Temp = `polyCube -w $W -h ($H - 4.0) -d 1.0 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 ($H * 0.5) ($L * 0.5 - 0.5);
+				$Tmps = `polyUnite -ch 0 $Temp[0] $Temps[0]`;
+		
+		// Build Bottom Rail of Frame				
+			$Temps = `polyCube -w $W -h 2 -d $L -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 1.0 0;
+	
+		// Build Bottom Cut Outs for Bottpm Rail
+			$Temp = `polyCylinder -r 2.45 -h 1.8 -sx 16 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+				move 0 0.89 0;
+				select -r $Temp[0];
+		
+			$M = ($Wp * 8 * 0.5) - 4;
+				if ($Wp > 1)
+					{	move -r $M 0 0;
+					 for ($i=1; $i< $Wp; $i++)
+						{	$Tmp = `duplicate -rr`;
+							move -r -8.0 0 0;
+							$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmp[0]`;
+					 	}
+					}
+		
+			$N = ($Lp * 8 * 0.5) - 4;
+				if ($Lp > 1)
+					{	move -r 0 0 $N;
+					 for ($i=1; $i< $Lp; $i++)
+						{	$Tmp = `duplicate -rr`;
+							move -r 0 0 -8.0;
+							$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmp[0]`;
+					 	}
+					}
+
+			$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Temp[0]`;
+			$Temps = `polyUnite -ch 0 $Tmps[0] $Temps[0]`;
+				
+		// Build Inner Frame		
+			$Tmp = `polyCube -w 2.0 -h 1.0 -d ($L - 4.0) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 ($H - 2.5) 0;
+				$Temp[0] = $Tmp[0];
+				
+			$Tmp = `polyCube -w 2.0 -h ($H - 4.0) -d 1.0 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 ($H  * 0.5) ($L * 0.5 - 1.5);
+				$Temp[1] = $Tmp[0];
+				
+			$Tmp = `polyCube -w 2.0 -h ($H - 4.0) -d 1.0 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 ($H  * 0.5) ($L * -0.5 + 1.5);
+				$Temp[2] = $Tmp[0];
+				
+			if ($St < 3)
+				{	$Tmp = `polyCube -w 2.0 -h 1.0 -d ($L - 4.0) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move 0 2.5 0;
+					$Temp[3] = $Tmp[0];
+				}
+				
+			$Temp = `polyUnite -ch 0 $Temp`;
+			
+			if ($St == 3) { move 2.9 0 0;}
+				
+			$Temps = `polyUnite -ch 0 $Temps[0] $Temp[0]`;
+				
+		// Build Top and Bottom Half Lugs
+			if ($St == 2)
+				{	$Temp = `polyCylinder -r 2.45 -h 1.0 -sx 16 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					$Tmp = `polyCube -w 4.0 -h 2.0 -d 6.0 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move 2.0 0 0;
+			
+					$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Tmp[0]`;
+						move -3.90 0.50 ($L * -0.5);
+						select -r $Temp[0];
+				
+						$Tmp = `duplicate -rr`;
+							move -3.90 0.50 ($L * 0.5);
+							$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmp[0]`;
+		
+						select -r $Temp[0];
+			
+					$Tmp = `duplicate -rr`;
+						move 0 ($H - 1.0) 0;
+						$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmp[0]`;
+
+					$Temps = `polyUnite -ch 0 $Temps[0] $Temp[0]`;
+				}
+
+			polyMergeVertex -d 0.10 -ch 0 $Temps[0];
+		$Temps[0] = `rename $Temps[0]($BrName + "_" + $Lp + "x" + $Hp + "_No_1")`;	
+		
+		
+		if ($St == 2)
+			{	$Tmp = `polyCube -w 1.0 -h ($H - 4.0) -d ($L - 2.0) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -1.5 ($H * 0.50) 0;
+					$Tmp[0] = `rename $Tmp[0]("Glass_" + $Lp + "x" + $Hp + "_No_1")`;
+					parent $Tmp[0] $Temps[0];
+			}
+				
+		if ($St == 4) 
+			{	$Tmp = `polyCube -w 2.0 -h 2.0 -d ($L - 6.0) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move 2.0 ($H - 3.0) 0;
+					$Temp[0] = $Tmp[0];
+				
+				$Tmp = `polyCube -w 2.0 -h 2.0 -d ($L - 6.0) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move 2.0 3.0 0;
+					$Temp[1] = $Tmp[0];
+					
+				$Tmp = `polyCube -w 2.0 -h ($H - 4.0) -d 2.0 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move 2.0 ($H * 0.5) ($L * -0.5 + 2.0);
+					$Temp[2] = $Tmp[0];
+					
+				$Tmp = `polyCube -w 2.0 -h ($H - 4.0) -d 2.0 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move 2.0 ($H * 0.5) ($L * 0.5 - 2.0);
+					$Temp[3] = $Tmp[0];
+					
+				$Tmp = `polyCube -w 1.0 -h 2.0 -d ($L - 6.0) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move 2.5 ($H * 0.33) 0;
+					$Temp[4] = $Tmp[0];		
+					
+				$Tmp = `polyCube -w 1.0 -h 2.0 -d ($L - 6.0) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move 2.5 ($H * 0.67) 0;
+					$Temp[5] = $Tmp[0];	
+					
+				$Tmp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temp[1]`;
+				$Tmp = `polyBoolOp -op 1 -ch 0 $Temp[2] $Tmp[0]`;
+				$Tmp = `polyBoolOp -op 1 -ch 0 $Temp[3] $Tmp[0]`;
+				$Tmp = `polyBoolOp -op 1 -ch 0 $Temp[4] $Tmp[0]`;
+				$Temp = `polyBoolOp -op 1 -ch 0 $Temp[5] $Tmp[0]`;
+				
+				xform -ws -piv 2.0 ($H * 0.5) ($L * 0.5 - 2.0) $Temp[0];
+				
+				$Temp[0] = `rename $Temp[0]("Door_" + $Lp + "x" + $Hp + "_No_1")`;	
+				parent $Temp[0] $Temps[0];
+				
+				$Tmp = `polyCube -w 1.0 -h ($H - 6.0) -d ($L - 6.0) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move 1.5 ($H * 0.50) 0;
+					$Tmp[0] = `rename $Tmp[0]("Glass_" + $Lp + "x" + $Hp + "_No_1")`;
+					parent $Tmp[0] $Temp[0];
+			}
+			
+			
+			
+			
+			
+	return $Temps[0];
+}
+
+proc string LegoDoor(int $Hp, int $Wp, int $Lp, int $S, int $T, int $St, string $BrName)
+{
+	int $i, $j, $k, $M, $N;
+	string $Tmp[], $Temp[], $Temps[];
+
+	float $H = ($Hp * 9.60);
+	float $L = ($Lp * 9.6) ;
+	float $W = ($Wp * 8.0) ;
+	
+	print ("$St is " + $St + "\n");		print ("$H is " + $H + "\n");	
+	print ("$L is " + $L + "\n");	
+	
+	if ($St < 11)
+		{	$Temp = `polyPipe -r 3.90 -h ($H * 2) -t 1.45 -sa 16 -sh 1 -sc 1 -ch 0`;
+			move 0 ($H * 0.5) 0;
+		}
+		
+	if (($St > 10) && ($St < 16))
+		{	$Temp = `polyPipe -r 3.90 -h ($H * 2 - 6.0) -t 1.45 -sa 16 -sh 1 -sc 1 -ch 0`;}
+		
+		rotate 0 11.25 0;
+		
+	if (($St > 10) && ($St < 16))
+		{	
+			$Temps = `polyCube -w 8 -h ($H *2) -d 8 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			if (($St == 9) || ($St == 11) || ($St == 13))
+				{move 4 0 0;}
+				
+			if (($St == 10) || ($St == 12) || ($St == 14) || ($St == 15))
+				{move -4 0 0;}
+			
+			$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+			
+				$Temps = `polyCube -w 8 -h ($H * 2) -d 8 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move 0 0 -4;
+					$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+			move 0 ($H * 0.5 + 0.5) 0;
+		}
+	
+
+		if (($St > 10) && ($St < 16))
+			{
+				$Temps = `polyCylinder -r 3.90 -h 1.0 -sx 16 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move 0 ($H - 0.5) 0;
+					rotate 0 11.25 0;
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+					
+				$Temp = `polyCylinder -r 3.90 -h 0.2 -sx 16 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move 0 1.90 0;
+					rotate 0 11.25 0;
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+					
+				$Temp = `polyPipe -r 3.90 -h 3.60 -t 1.45 -sa 16 -sh 1 -sc 1 -ch 0`;
+					move 0 0.9 0;
+					rotate 0 11.25 0;
+					$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+			}
+		
+			$Temps = `polyCylinder -r 2.45 -h 1.8 -sx 16 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 ($H + 0.90) 0;
+				rotate 0 11.25 0;
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+			
+			$Temp = `polyCube -w ($L - 3.9) -h $H -d 1.40 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+		
+				if (($St == 9) || ($St == 10) || ($St == 13) || ($St == 14) || ($St == 15))
+					{	$Tmp = `polyCube -w 16 -h 12 -d 4 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+							move 0 ($H * 0.25) 0;
+						
+						$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Tmp[0]`;
+					}
+				
+				if (($St == 5) || ($St == 7) || ($St == 9) || ($St == 11) || ($St == 13) || ($St == 15))
+					{	move ($L * 0.5 - 1.95) ($H * 0.5) 3.13;}
+						
+				if (($St == 6) || ($St == 8) || ($St == 10) || ($St == 12) || ($St == 14) || ($St == 15))
+					{	move ($L * -0.5 + 1.95) ($H * 0.5) 3.13;}
+						
+				$Temps = `polyUnite -ch 0 $Temp[0] $Temps[0]`;
+				
+			if ($St == 15) 	
+				{	$Temp = `polyCube -w 1.0 -h 12 -d 1.40 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						
+					$Tmp = `polyCube -w 16.0 -h 1.0 -d 1.40 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					
+					$Temp = `polyUnite -ch 0 $Temp[0] $Tmp[0]`;
+						move ($L * -0.5 + 1.95) ($H * 0.75) 3.13;
+						
+					$Temps = `polyUnite -ch 0 $Temps[0] $Temp[0]`;
+						
+				}
+				
+			polyMergeVertex -d 0.10 -ch 0 $Temps[0];
+			$Temps[0] = `rename $Temps[0]($BrName + "_" + $Lp + "x" + $Hp + "_No_1")`;	
+		
+	return $Temps[0];
+}
+
+proc string LegoTechAxle(int $Hp, int $Wp, int $Lp, int $S, int $T, int $St, string $BrName)
+{
+	int $i, $j, $k, $M, $N;
+	string $Tmp[], $Temp[], $Temps[];
+
+	int $Sy = 1;
+	if ($Lp > 6) {$Sy = 2;}
+	float $H = ($Hp * 3.20) * $S;
+	float $L = ($Lp * 10.0) ;
+	float $W = ($Wp * 8.0) ;
+	
+	print ("$St is " + $St + "\n");	
+	
+	$Temps = `polyCylinder -r 2.40 -h $L -sx 16 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+		rotate 0 0 90;
+
+	if ($St < 6)
+		{	polyBevel -offset 0.25 -offsetAsFraction 1 -autoFit 0 -roundness 0.5
+				-segments 2 -worldSpace 1 -fillNgons 1 -mergeVertices 1
+				-mergeVertexTolerance 0.0001 -smoothingAngle 120 -miteringAngle 180
+				-angleTolerance 180 -ch 0 ($Temps[0] + ".f[16:17]");
+		}
+
+		$Temp = `polyCube -w ($L * 2) -h (6) -d 4 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			move 0 0 3;
+			$Temps[1] = $Temp[0];
+			
+			$Temp = `polyCube -w ($L * 2) -h (6) -d 4 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 0 -3;
+				$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Temps[1]`;
+				$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Temp[0]`;
+					$Temp = `duplicate -rr`;
+						rotate 90 0 0;
+						$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+		
+	if ($St == 2)
+		{	$Temp = `polyPipe -r 3.0 -h (2) -t 1.00 -sa 16 -sh 1 -sc 1 -ch 0`;
+				rotate 0 0 90;
+				$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Temp[0]`;
+	
+			$Temp = `polyPipe -r 3.0 -h (2) -t 1.00 -sa 16 -sh 1 -sc 1 -ch 0`;
+				rotate 0 0 90;
+				move 6 0 0;
+				$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Temp[0]`;
+	
+			$Temp = `polyPipe -r 3.0 -h (2) -t 1.00 -sa 16 -sh 1 -sc 1 -ch 0`;
+				rotate 0 0 90;
+				move -6 0 0;
+				$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Temp[0]`;
+		}
+		
+	if ($St == 6)
+		{	$Temp = `polyCylinder -r 3.0 -h $L -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+				rotate 0 0 90;
+		
+				scale 2 1 1 $Temps[0];
+				$Temps = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+				
+				select -r ($Temps[0] + ".e[111]")  ($Temps[0] + ".e[116]")
+					 ($Temps[0] + ".e[120]")  ($Temps[0] + ".e[125]");
+				scale 1 0.85 0.85;
+		}
+	
+		$Temps[0] = `rename $Temps[0]($BrName + "_" + $Wp + "x" + $Lp + "_No_1")`;	
+	
+	return $Temps[0];
+}
+
+proc string LegoTechBrick(int $Hp, int $Wp, int $Lp, int $S, int $T, int $St, string $BrName)
+{
+	int $i, $j, $k, $M, $N;
+	string $Name, $Tmp[], $Temp[], $Temps[], $Type[];
+
+	int $Sy = 1;
+	if ($Lp > 6) {$Sy = 2;}
+	float $H = ($Hp * 3.20) * $S;
+	float $L = ($Lp * 8.0) - 0.20;
+	float $W = ($Wp * 8.0) - 0.20;
+	
+	print ("$St is " + $St + "\n");	
+	
+	$Temp = `polyCube -w $W -h $H -d $L -sx 1 -sy $Sy -sz 1 -ax 0 1 0 -ch 0`;
+		move 0 ($H *0.5) 0;
+		
+	$Temps = `polyCube -w ($W - 3.0) -h ($H - 1.19) -d ($L - 3.0) -sx 1 -sy $Sy -sz 1 -ax 0 1 0 -ch 0`;
+		move 0 ($H * 0.5 - 0.6) 0;
+		
+	$Temps = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+
+	if ($T > 0)
+		{// Build Top Lugs
+		 	$Temp = `polyPipe -r 2.45 -h 3.60 -t 0.60 -sa 16 -sh 1 -sc 1 -ch 0`;
+				move 0 ($H + 0.9) 0;
+				select -r $Temp[0];
+		
+			$M = ($Wp * 8 * 0.5) - 4;
+				if ($Wp > 1)
+					{	move -r $M 0 0;
+					 for ($i=1; $i< $Wp; $i++)
+						{	$Tmp = `duplicate -rr`;
+							move -r -8.0 0 0;
+							$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmp[0]`;
+					 	}
+					}
+		
+			$N = ($Lp * 8 * 0.5) - 4;
+				if ($Lp > 1)
+					{	move -r 0 0 $N;
+					 for ($i=1; $i< $Lp; $i++)
+						{	$Tmp = `duplicate -rr`;
+							move -r 0 0 -8.0;
+							$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmp[0]`;
+					 	}
+					}
+			// Combine Brick Body and Top Knobs.	
+				$Temps = `polyUnite -ch 0 $Temp[0] $Temps[0]`;
+		}
+		
+	if (($St > 5) && ($St < 11))
+		{ 	$Temp = `polyPipe -r 2.45 -h 3.60 -t 0.60 -sa 16 -sh 1 -sc 1 -ch 0`;
+			move ($W * 0.5 + 0.9) 5.80 0;
+			rotate 0 0 90;
+			$Temps[1] = $Temp[0];
+			
+			if (($St > 5) && ($St < 9))
+				{	$Temp = `polyPipe -r 2.45 -h 3.60 -t 0.60 -sa 16 -sh 1 -sc 1 -ch 0`;
+					move ($W * -0.5 - 0.9) 5.80 0;
+					rotate 0 0 90;
+					$Temps[2] = $Temp[0];
+					
+					if ($St == 8) {move -r 0 0 -4;}
+				}
+				
+			if ($St == 7)
+				{	$Temp = `polyPipe -r 2.45 -h 3.60 -t 0.60 -sa 16 -sh 1 -sc 1 -ch 0`;
+					move 0 5.80 ($W * -0.5 - 0.9);
+					rotate 90 0 90;
+					$Temps[3] = $Temp[0];
+					
+					$Temp = `polyPipe -r 2.45 -h 3.60 -t 0.60 -sa 16 -sh 1 -sc 1 -ch 0`;
+					move 0 5.80 ($W * 0.5 + 0.9);
+					rotate 90 0 90;
+				}
+			
+			 $N = ($Lp * 8 * 0.5) - 4;
+				if ($Lp > 1)
+					{	select -r $Temps[1];
+						move -r 0 0 $N;
+						for ($i=2; $i< $Lp+1; $i++)
+							{	$Tmp = `duplicate -rr`;
+								move -r 0 0 -8.0;
+								$Temp[$i-1] = $Tmp[0];
+						 	}
+					}
+					
+				if ($St == 8)
+					{	$Tmp = `polyPipe -r 2.45 -h 3.60 -t 0.60 -sa 16 -sh 1 -sc 1 -ch 0`;
+						move ($W * -0.5 - 0.9) 5.80 ($W * 0.5);
+						rotate 0 0 90;
+						$Temps[3] = $Tmp[0];
+					}
+			// Combine Brick Body and Top Knobs.	
+				$Temps = `polyUnite -ch 0 $Temps $Temp`;
+		}
+		
+	int $A = 1;
+	if (($Wp == 1) && ($Lp == 1)) {$A = 0;}
+	
+	if (($A == 0) && ($St < 6))
+		{// Cut out Axle Holes.
+			$Temp = `polyCylinder -r 2.99 -h ($W * 2.5) -sx 16 -sy 3 -sz 0 -ax 0 1 0 -ch 0`;
+			rotate 0 0 90;
+			move 0 5.8 0;
+			$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Temp[0]`;
+			
+		// Create Axle sleeves	
+			$Temp = `polyPipe -r 3.0 -h ($W * 2 - 3.0) -t 0.60 -sa 16 -sh 1 -sc 1 -ch 0`;	
+			rotate 0 0 90;
+			move 0 5.8 0;
+			
+		// Combine Brick Body and Axle Sleeves.	
+			$Temps = `polyUnite -ch 0 $Temps[0] $Temp`;
+		}
+	
+	if (($A >0) && ($St < 6))
+		{// Cut out Axle Holes.
+			$Temp = `polyCylinder -r 2.99 -h ($W * 2.5) -sx 16 -sy 3 -sz 0 -ax 0 1 0 -ch 0`;
+			rotate 0 0 90;
+			move 0 5.8 0;
+	
+			 $N = ($Lp * 8 * 0.5) - 8;
+				if ($Lp > 2)
+					{	move -r 0 0 $N;
+					 for ($i=2; $i< $Lp; $i++)
+						{	$Tmp = `duplicate -rr`;
+							move -r 0 0 -8.0;
+							$Temp[$i-1] = $Tmp[0];
+					 	}
+					}
+
+				// Make Cut outs
+				for ($i=0; $i< `size $Temp`; $i++)
+					{$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Temp[$i]`;}
+					
+				// Create Axle sleeves	
+				$Temp = `polyPipe -r 3.0 -h ($W * 2 - 3.0) -t 0.60 -sa 16 -sh 1 -sc 1 -ch 0`;	
+					rotate 0 0 90;
+					move 0 5.8 0;
+				
+				if ($Lp > 2)
+					{	move -r 0 0 $N;
+					 for ($i=2; $i< $Lp; $i++)
+						{	$Tmp = `duplicate -rr`;
+							move -r 0 0 -8.0;
+							$Temp[$i-1] = $Tmp[0];
+					 	}
+					}
+			// Combine Brick Body and Axle Sleeves.	
+				$Temps = `polyUnite -ch 0 $Temps[0] $Temp`;
+		}
+		
+		float $Ht = ($S * 3.2 - 6.2);
+		if (($St > 5) && ($St < 11)) {$Ht = ($S * 3.2 - 1.2);}
+			
+		if ($A >0) 
+			{// Build Underside Pegs.
+			 if ($Wp == 1)
+				{	$Temp = `polyCylinder -r 1.5 -h ($Ht) -sx 16 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					move 0 ($Ht * 0.5) 0;
+				}
+				
+			 if ($Wp > 1)
+				{	$Temp = `polyPipe -r 3.25 -h ($Ht * 2) -t 0.85 -sa 16 -sh 1 -sc 1 -ch 0`;
+					move 0 ($Ht * 0.5) 0;
+				}
+			
+			 $M = ($Wp * 8 * 0.5) - 8;
+				if ($Wp > 2)
+					{	move -r $M 0 0;
+					 for ($i=2; $i< $Wp; $i++)
+						{	$Tmp = `duplicate -rr`;
+							move -r -8.0 0 0;
+							$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmp[0]`;
+					 	}
+					}
+		
+			 $N = ($Lp * 8 * 0.5) - 8;
+				if ($Lp > 2)
+					{	move -r 0 0 $N;
+					 for ($i=2; $i< $Lp; $i++)
+						{	$Tmp = `duplicate -rr`;
+							move -r 0 0 -8.0;
+							$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmp[0]`;
+					 	}
+					}
+		
+				$Temps = `polyUnite -ch 0 $Temp[0] $Temps[0]`;
+			}
+	
+		$Temps[0] = `rename $Temps[0]($BrName + "_" + $Wp + "x" + $Lp + "_No_1")`;	
+	
+	return $Temps[0];
+}
+
+proc string LegoTile(int $Hp, int $Wp, int $Lp, int $S, int $T, int $Ang)
+{
+	int $i, $j, $k, $M, $N;
+	string $Name, $Tmp[], $Temp[], $Temps[], $Type[];
+	
+		$Type = {"Plate_", "Brick_", "RoofTile_", "RidgeTile_"};
+		$Name = $Type[$T];
+
+	if ($S == 3) {$Name = $Type[1];}
+	if ($T == 1) {$Name = $Type[2];}
+	
+	float $H = ($Hp * 3.20) * $S;
+	float $L = ($Lp * 8.0) - 0.20;
+	float $W = ($Wp * 8.0) - 0.20;
+	
+	$Temp = `polyCube -w $W -h $H -d $L -sx 2 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+		move 0 ($H *0.5) 0;
+	
+	$Temps = `polyCube -w ($W - 3.0) -h ($H - 1.19) -d ($L - 3.0) -sx 2 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+		move 0 ($H * 0.5 - 0.6) 0;
+		
+	$Temps = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;	
+	
+	if ($T == 3)
+		{	move -r 0 -7.8 0 ($Temps[0] + ".vtx[14:15]");
+			move -r 0 -6.8 0 ($Temps[0] + ".vtx[4:5]");
+			move -r 0 -6.8 0 ($Temps[0] + ".vtx[3]");
+			move -r 0 -0.46 0 ($Temps[0] + ".vtx[1:2]");
+		}
+		
+		move -r 0 -7.8 0 ($Temps[0] + ".vtx[18:19]");
+		move -r 0 -6.8 0 ($Temps[0] + ".vtx[0]");
+		
+	if (($T == 0) || ($T == 2) )
+		{	move -r 0 -6.8 0 ($Temps[0] + ".vtx[3]");
+			move -r -0.40 0 0 ($Temps[0] + ".vtx[1:2]");
+	
+			if ($Ang == 25) 
+				{	move -r -4.0 0 0 ($Temps[0] + ".vtx[1:2]");
+					move -r -4.0 0 0 ($Temps[0] + ".vtx[8]");
+					move -r -4.0 0 0 ($Temps[0] + ".vtx[11]");
+					move -r -4.0 0 0 ($Temps[0] + ".vtx[20:23]");
+				}
+		}
+		
+	if (($T == 0) || ($T == 2) )
+		{// Build Top Lugs
+			$Temp = `polyCylinder -r 2.45 -h 1.80 -sx 16 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+			if ($Ang == 45) {move -4 ($H + 0.9) 0;}
+			if ($Ang == 25) {move -8 ($H + 0.9) 0;}
+				select -r $Temp[0];
+		
+			$N = ($Lp * 8 * 0.5) - 4;
+				if ($Lp > 1)
+					{	move -r 0 0 $N;
+						 for ($i=1; $i< $Lp; $i++)
+							{	$Tmp = `duplicate -rr`;
+								move -r 0 0 -8.0;
+								$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmp[0]`;
+						 	}
+					}
+		// Combine Brick Body and Top Knobs.	
+			$Temps = `polyUnite -ch 0 $Temp[0] $Temps[0]`;
+		}
+		
+	int $A = 1;
+	if (($Wp == 1) && ($Lp == 1)) {$A = 0;}
+	
+	if ($A >0)
+		{// Build Underside Pegs.
+		 if ($Lp == 1)
+			{	$Temp = `polyCylinder -r 1.5 -h ($S * 3.2 - 1.2) -sx 16 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+				move 0 (($S * 3.2 - 1.2) * 0.5) 0;
+			}
+			
+		 if ($Lp > 1)
+			{	$Temp = `polyPipe -r 3.25 -h (($S * 3.2 - 1.2) * 2) -t 0.85 -sa 16 -sh 1 -sc 1 -ch 0`;
+				move 0 (($S * 3.2 - 1.2) * 0.5) 0;
+			}
+			
+			 $M = ($Wp * 8 * 0.5) - 8;
+				if ($Wp > 2)
+					{	move -r $M 0 0;
+						for ($i=2; $i< $Wp; $i++)
+							{	$Tmp = `duplicate -rr`;
+								move -r -8.0 0 0;
+								$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmp[0]`;
+						 	}
+					}
+	
+			 $N = ($Lp * 8 * 0.5) - 8;
+				if ($Lp > 2)
+					{	move -r 0 0 $N;
+						for ($i=2; $i< $Lp; $i++)
+							{	$Tmp = `duplicate -rr`;
+								move -r 0 0 -8.0;
+								$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmp[0]`;
+						 	}
+					}
+		
+				$Temps[1] = $Temp[0];
+				$Temp = `polyCube -w $W -h ($H * 2) -d $L -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move ($W * 0.5) ($H) 0;
+					xform -ws -piv 0 0 0 $Temp[0];
+					move -r (($W  - 3)* 0.5) 1.5 0;
+					rotate -r 0 0 (90 - $Ang);
+					
+			// Cut Underside Lugs to suit Angle.	
+				$Temp = `polyBoolOp -op 2 -ch 0 $Temps[1] $Temp[0]`;
+			
+			if ($T == 3)
+				{	$Temps[1] = $Temp[0];
+				
+					$Temp = `polyCube -w $W -h ($H * 2) -d $L -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move ($W * -0.5) ($H) 0;
+						xform -ws -piv 0 0 0 $Temp[0];
+						move -r (($W  - 3) * -0.5) 1.5 0;
+						rotate -r 0 0 ((90 - $Ang) * -1);
+						
+				// Cut Underside Lugs to suit Angle.	
+					$Temp = `polyBoolOp -op 2 -ch 0 $Temps[1] $Temp[0]`;
+				}
+				
+		// Combine Brick Body and Underside Lugs.	
+			$Temps = `polyUnite -ch 0 $Temp[0] $Temps[0]`;
+		}
+	
+		$Temps[0] = `rename $Temps[0] ($Type[$T] + $Wp + "x" + $Lp + "_No_1")`;	
+	
+	return $Temps[0];
+}
+
+proc string LegoBrick(int $Hp, int $Wp, int $Lp, int $S, int $T)
+{
+	int $i, $j, $k, $M, $N;
+	string $Name, $Tmp[], $Temp[], $Temps[], $Type[];
+	
+		$Type = {"Plate_", "Brick_", "RoofTile_", "RidgeTile_"};
+		$Name = $Type[$T];
+		
+	if ($S == 3) {$Name = $Type[1];}
+	if ($T == 1) {$Name = $Type[2];}
+	
+	float $H = ($Hp * 3.20) * $S;
+	float $L = ($Lp * 8.0) - 0.20;
+	float $W = ($Wp * 8.0) - 0.20;
+	
+	$Temp = `polyCube -w $W -h $H -d $L -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+		move 0 ($H *0.5) 0;
+		
+	if ($T == 1)
+		{	polyBevel -offset 0.25 -offsetAsFraction 1 -autoFit 0 -roundness 0.5 -segments 1
+				-worldSpace 1 -fillNgons 1 -mergeVertices 1	-mergeVertexTolerance 0.0001
+				-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180 -ch 0 ($Temp[0] +".f[1]");
+		}
+	
+	$Temps = `polyCube -w ($W - 3.0) -h ($H - 1.19) -d ($L - 3.0) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+		move 0 ($H * 0.5 - 0.6) 0;
+		
+	$Temps = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;	
+
+	if ($T == 0)
+		{// Build Top Lugs
+			$Temp = `polyCylinder -r 2.45 -h 1.80 -sx 16 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+				move 0 ($H + 0.9) 0;
+				select -r $Temp[0];
+		
+			$M = ($Wp * 8 * 0.5) - 4;
+				if ($Wp > 1)
+					{	move -r $M 0 0;
+					 for ($i=1; $i< $Wp; $i++)
+						{	$Tmp = `duplicate -rr`;
+							move -r -8.0 0 0;
+							$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmp[0]`;
+					 	}
+					}
+		
+			$N = ($Lp * 8 * 0.5) - 4;
+				if ($Lp > 1)
+					{	move -r 0 0 $N;
+					 for ($i=1; $i< $Lp; $i++)
+						{	$Tmp = `duplicate -rr`;
+							move -r 0 0 -8.0;
+							$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmp[0]`;
+					 	}
+					}
+	
+			// Combine Brick Body and Top Knobs.	
+				$Temps = `polyUnite -ch 0 $Temp[0] $Temps[0]`;
+		}
+		
+	int $A = 1;
+	if (($Wp == 1) && ($Lp == 1)) {$A = 0;}
+	
+	if ($A >0)
+		{// Build Underside Pegs.
+		 if ($Wp == 1)
+			{	$Temp = `polyCylinder -r 1.5 -h ($S * 3.2 - 1.2) -sx 16 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+				move 0 (($S * 3.2 - 1.2) * 0.5) 0;
+			}
+			
+		 if ($Wp > 1)
+			{	$Temp = `polyPipe -r 3.25 -h (($S * 3.2 - 1.2) * 2) -t 0.85 -sa 16 -sh 1 -sc 1 -ch 0`;
+				move 0 (($S * 3.2 - 1.2) * 0.5) 0;
+			}
+			
+			 $M = ($Wp * 8 * 0.5) - 8;
+				if ($Wp > 2)
+					{	move -r $M 0 0;
+					 for ($i=2; $i< $Wp; $i++)
+						{	$Tmp = `duplicate -rr`;
+							move -r -8.0 0 0;
+							$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmp[0]`;
+					 	}
+					}
+		
+			 $N = ($Lp * 8 * 0.5) - 8;
+				if ($Lp > 2)
+					{	move -r 0 0 $N;
+					 for ($i=2; $i< $Lp; $i++)
+						{	$Tmp = `duplicate -rr`;
+							move -r 0 0 -8.0;
+							$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmp[0]`;
+					 	}
+					}
+		
+			$Temps = `polyUnite -ch 0 $Temp[0] $Temps[0]`;
+		}
+	
+		$Temps[0] = `rename $Temps[0]($Name + $Wp + "x" + $Lp + "_No_1")`;	
+	
+	return $Temps[0];
+}
+
+proc DVY_LegoNode(string $Bl)
+{
+	string $Node[];
+	
+	setAttr ($Bl + ".doubleSided") 0;
+
+	// Add custom Attributes
+	addAttr -k 0 -ln "MoveX_and_Z" -at double -dv 8.0 $Bl;
+		setAttr -cb 1 -l 1 ($Bl + ".MoveX_and_Z");
+	addAttr -k 0 -ln "MoveY" -at double -dv 9.6 $Bl;
+		setAttr -cb 1 -l 1 ($Bl + ".MoveY");
+	addAttr -k 0 -ln "Small_Move_Y" -at double -dv 3.2 $Bl;
+		setAttr -cb 1 -l 1 ($Bl + ".Small_Move_Y");
+
+	string $LAttrA[] = {".sx", ".sy", ".sz"};
+		for ($Att in $LAttrA) {setAttr -k false ($Bl + $Att);}
+		
+}
+
+proc DVY_LegoNode1(string $Bl[])
+{
+	string $Node[];
+
+	string $LAttrR[] = {".rx", ".ry", ".rz"};
+	string $LAttrS[] = {".sx", ".sy", ".sz"};
+	string $LAttrT[] = {".tx", ".ty", ".tz"};
+	
+		
+		for ($Att in $LAttrR) {setAttr -k false -l true ($Bl[2] + $Att);}
+		for ($Att in $LAttrS) {setAttr -k false -l true ($Bl[2] + $Att);}
+		for ($Att in $LAttrT) {setAttr -k false -l true ($Bl[2] + $Att);}
+		
+}
+
+proc DVY_LegoNode2(string $Bl[])
+{
+	string $Node[];
+
+
+	string $LAttrR[] = {".rx", ".ry", ".rz"};
+	string $LAttrS[] = {".sx", ".sy", ".sz"};
+	string $LAttrT[] = {".tx", ".ty", ".tz"};
+	
+		for ($Att in $LAttrS) {setAttr -k false ($Bl[2] + $Att);}
+		for ($Att in $LAttrT) {setAttr -k false ($Bl[2] + $Att);}
+			setAttr -k false -l true ($Bl[2] + ".rx");
+			setAttr -k false -l true ($Bl[2] + ".rz");
+		
+		
+		for ($Att in $LAttrR) {setAttr -k false ($Bl[4] + $Att);}
+		for ($Att in $LAttrS) {setAttr -k false ($Bl[4] + $Att);}
+		for ($Att in $LAttrT) {setAttr -k false ($Bl[4] + $Att);}
+		
+}
+
+
+global proc DVY_BuildLego()
+{
+// ******************************************************************************** //	
+//	Global Variables	
+	
+	global string $Units;
+	global float $DVYUnit;	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Local Variables
+	string $Block[], $List[], $Shader[], $Temp[], $Temps[];
+	string $Colour[] = {"White", "Red", "Yellow", "Blue", "BlueGreen",
+						"Blue", "Purple", "Brown", "LightGrey", "DarkGrey", "Black"};
+	int $Hp, $Lp, $St, $Wp;
+	
+	float $H = 3.20;	float $W = 8.00;	float $L = 8.00;
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Set Scaling unit for Global units used.
+		
+	DVY_ScaleSet;
+	print ("Current units are " + $Units + " and Scale Factor $DVYUnit is " + $DVYUnit + "\n");
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Create Shaders for Window Frame & Glass.
+	
+	int $Sh = `optionMenu -q -sl DVY_LegoColourOption`;
+//	print ("$Sh is " + $Sh + "\n");
+	int $Nsh = $Sh + 68;
+//	print ("$NSh is " + $Nsh + "\n");
+	
+	string	$LColour = `optionMenu -q -v DVY_LegoColourOption`;
+	if ($Sh > 1)
+		{//	print ("Colour is " + $LColour + "\n");
+			if(!`objExists ("Lego" + $LColour + "_SH")`) { $Shader[0] = `DVY_Shaders($Nsh)`; }
+				$Shader[0] = ("Lego" + $LColour + "_SH");
+		}
+		
+		
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+	string $LegoMessage, $buffer[], $Result[];
+	int $Ang, $HW, $LW, $LL;
+	// Create one Lego Brick	
+	if (`optionMenu -q -sl  DVY_LegoBrickOption` > 1)
+		{	$LegoMessage = `optionMenu -q -v DVY_LegoBrickOption`;
+			$numTokens = tokenize( $LegoMessage, " ", $buffer);
+//				print $buffer;
+			$numTokens = tokenize( $buffer[1], "x", $Result);
+//				print $Result;
+			$LW = $Result[0]; $LL = $Result[1];
+		// LegoBrick(int $Hp, int $Wp, int $Lp, int $S, int $T)
+			$Block[0] = LegoBrick(1, $LW, $LL, 3, 0);
+		}
+		
+	if (`optionMenu -q -sl  DVY_LegoPlateOption` > 1)
+		{	$LegoMessage = `optionMenu -q -v DVY_LegoPlateOption`;
+			$numTokens = tokenize( $LegoMessage, " ", $buffer);
+				print $buffer;
+			$numTokens = tokenize( $buffer[1], "x", $Result);
+				print $Result;
+			$LW = $Result[0]; $LL = $Result[1];
+		// LegoBrick(int $Hp, int $Wp, int $Lp, int $S, int $T)
+			$Block[0] = LegoBrick(1, $LW, $LL, 1, 0);
+		}
+		
+	if (`optionMenu -q -sl  DVY_LegoFlatTileOption` > 1)
+		{	$LegoMessage = `optionMenu -q -v DVY_LegoFlatTileOption`;
+			$numTokens = tokenize( $LegoMessage, " ", $buffer);
+				print $buffer;
+			$numTokens = tokenize( $buffer[1], "x", $Result);
+				print $Result;
+			$LW = $Result[0]; $LL = $Result[1];
+		// LegoBrick(int $Hp, int $Wp, int $Lp, int $S, int $T)
+			$Block[0] = LegoBrick(1, $LW, $LL, 1, 1);
+		}
+		
+		
+	if (`optionMenu -q -sl  DVY_LegoTileOption` > 1)
+		{
+			$LegoMessage = `optionMenu -q -v DVY_LegoTileOption`;
+			$numTokens = tokenize( $LegoMessage, " ", $buffer);
+				print $buffer;
+			$numTokens = tokenize( $buffer[1], "x", $Result);
+				print $Result;
+			$LW = $Result[0]; $LL = $Result[1]; $Ang = $Result[2];
+		
+			if (`optionMenu -q -sl  DVY_LegoTileOption` < 5)
+				{	$Block[0] = LegoTile(1, $LW, $LL, 3, 3, $Ang);}
+			
+			if (`optionMenu -q -sl  DVY_LegoTileOption` > 5)
+				{	$Block[0] = LegoTile(1, $LW, $LL, 3, 2, $Ang);}
+		}
+		
+	if (`optionMenu -q -sl DVY_LegoWinDoorOption` > 1)
+		{	$St = `optionMenu -q -sl DVY_LegoWinDoorOption`;
+			$LegoMessage = `optionMenu -q -v DVY_LegoWinDoorOption`;
+			$numTokens = tokenize( $LegoMessage, " ", $buffer);
+				print $buffer;
+			$numTokens = tokenize( $buffer[1], "x", $Result);
+				print $Result;
+			$HW = $Result[1]; $LL = $Result[0]; $LW = 1;
+		
+			if (($St == 2) || ($St < 5))
+				{if (($St == 2)  || ($St == 4))
+					{ if(!`objExists ("LegoGlass_SH")`) { $Shader[1] = `DVY_Shaders(81)`; }
+						$Shader[1] = ("LegoGlass_SH");
+					}
+					
+					$Block[0] = LegoWindow($HW, $LW, $LL, 3, 3, $St, $buffer[0]);
+				}
+				
+			if (($St > 4) && ($St < 16))
+				{$Block[0] = LegoDoor($HW, $LW, $LL, 3, 3, $St, $buffer[0]);}
+			
+			
+		}
+		
+	if (`optionMenu -q -sl DVY_LegoWallOption` > 1)
+		{	$St = `optionMenu -q -sl DVY_LegoWallOption`;
+			$LegoMessage = `optionMenu -q -v DVY_LegoWallOption`;
+			$numTokens = tokenize( $LegoMessage, " ", $buffer);
+				print $buffer;
+			$numTokens = tokenize( $buffer[1], "x", $Result);
+				print $Result;
+			$HW = $Result[1]; $LL = $Result[0]; $LW = 1;
+		
+			$Block[0] = LegoWall($HW, $LW, $LL, 3, 3, $St, $buffer[0]);
+			
+		}
+		
+	if (`optionMenu -q -sl DVY_LegoTechnicOption` > 1)
+		{	$St = `optionMenu -q -sl DVY_LegoTechnicOption`;
+			$LegoMessage = `optionMenu -q -v DVY_LegoTechnicOption`;
+			$numTokens = tokenize( $LegoMessage, " ", $buffer);
+				print $buffer;
+			$numTokens = tokenize( $buffer[1], "x", $Result);
+				print $Result;
+			$LW = $Result[0]; $LL = $Result[1]; 
+		// LegoTechBrick(int $Hp, int $Wp, int $Lp, int $S, int $T, int $St, $buffer[0])
+
+			if (`optionMenu -q -sl  DVY_LegoTechnicOption` < 6)			
+				{$Block[0] = LegoTechBrick (1, $LW, $LL, 3, 4, $St, $buffer[0]);}
+				
+			if ((`optionMenu -q -sl  DVY_LegoTechnicOption` > 5) 
+				&& (`optionMenu -q -sl  DVY_LegoTechnicOption` < 11))
+				{$Block[0] = LegoTechBrick (1, $LW, $LL, 3, 4, $St, $buffer[0]);}
+		
+		}
+		
+	if (`optionMenu -q -sl DVY_LegoTechAxleOption` > 1)
+		{	$St = `optionMenu -q -sl DVY_LegoTechAxleOption`;
+			$LegoMessage = `optionMenu -q -v DVY_LegoTechAxleOption`;
+			$numTokens = tokenize( $LegoMessage, " ", $buffer);
+				print $buffer;
+			$numTokens = tokenize( $buffer[1], "x", $Result);
+				print $Result;
+			$LW = $Result[0]; $LL = $Result[1]; 
+		// LegoTechBrick(int $Hp, int $Wp, int $Lp, int $S, int $T, int $St, $buffer[0])
+
+			$Block[0] = LegoTechAxle (1, $LW, $LL, 3, 4, $St, $buffer[0]);
+		
+		}
+		
+	// Add Shader colour if selected	
+	if ($Sh > 1)
+		{			
+			select -r $Block[0];
+				hyperShade -assign "initialShadingGroup";
+				hyperShade -assign $Shader[0];
+				$Block[0] = `rename $Block[0] ($LColour + "_" + $Block[0])`;
+		}
+		
+			if (`optionMenu -q -sl DVY_LegoWinDoorOption` > 1)
+				{if (($St == 2) || ($St == 4))
+					{	select -r -hi $Block[0];
+						$List = `ls -sl`;
+						print $List;
+						select -r $List[$St];
+						hyperShade -assign "initialShadingGroup";
+						hyperShade -assign $Shader[1];
+					}
+				}
+		
+//		scale $DVYUnit $DVYUnit $DVYUnit $Block[0];
+		select -r $Block[0];
+		delete -constructionHistory;
+		makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+	
+		DVY_LegoNode($Block[0]);
+		if (`optionMenu -q -sl DVY_LegoWinDoorOption` > 1) 
+			{if (($St > 4) && ($St < 16))
+				{	setAttr -k false -l true ($Block[0] + ".rx");
+					setAttr -k false -l true ($Block[0] + ".rz");
+				}
+			}
+			
+		if (`optionMenu -q -sl DVY_LegoWinDoorOption` > 1) 
+			{ if ($St == 2)
+				{ DVY_LegoNode1($List);}
+				
+			 if ($St == 4)
+				{ DVY_LegoNode2($List);}	
+			}
+			
+	select -r $Block[0];
+		
+}

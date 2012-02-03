@@ -1,0 +1,1790 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davvey\'s Window Generator
+''    Author: Davvey 
+''    Last Updated: Feb 26, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/1145.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+/*
+
+	DVY_WindowBuild;
+	
+*/
+
+global proc DVY_WindowBuild()
+	
+{
+// ******************************************************************************** //	
+//	Global Variables
+	
+	global string $Units;
+
+	global float $DVYUnit;
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Local Variables
+	
+	string $Temp[], $Temps[], $Shader[], $WinName[], $WindowGrp[];
+	string $WName[] = {"Window_", "Door_"};
+	float $FrWide[], $FrHigh[];	// individual Window sizes
+	
+	float $Width = `floatField -q -v WFloatField_01`;
+	float $Height = `floatField -q -v WFloatField_03`;
+		
+	int $a, $b, $c, $i, $j, $k;	
+	int $E = $e = $Q = 1;	// Count for Group and Window sections.
+	int $HRatio, $VRatio; 	// Integers to set frame configuration.
+	int $T = 0;				// Frame Type 0 = Window, 1 = Door.
+	int $C = 1; 			// 1 = No Cill, 2 = 100 mm Cill, 3 = 150 mm Cill 4 = 200 mm Cill.
+	int $H = 1;				// Hinge Positions 0 = "TopHung_", 1 = "LeftHung_",
+							// 2 = "RightHung_", 3 = "Fixed_", 4 = "TiltLeft_", 5 = "TiltRight_";
+	int $F = 0;				// 0 = Fixed, 1 = Hinged.	
+	int $FixH[];			// Fixed or Hinged for individual Windows.
+	
+	int $Fix, $Side, $Top, $Combine;
+	
+	$Fix = `optionMenu -q -sl DVY_FixedWinOption`;
+	$Side = `optionMenu -q -sl DVY_SideHungWinOption`;
+	$Top = `optionMenu -q -sl DVY_TopHungWinOption`;
+	$Combine = `optionMenu -q -sl DVY_CombinedWinOption`;
+	$C = `radioButtonGrp -q -sl CillRadioButtonGrp`;
+	
+	if (($Fix == 1) && ($Side == 1) && ($Top == 1) && ($Combine == 1))
+		{
+			error "Oops!! Please select a Window Style and try again";
+		}
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Window Frame dimensions
+		
+		float $FD = 40;	// Frame Depth
+		float $FW = 50;	// Frame Width
+		float $FH = 50;	// Frame Height
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Set Scaling unit for Global units used.
+		
+	DVY_ScaleSet;
+	print ("Current units are " + $Units + " and Scale Factor $DVYUnit is " + $DVYUnit + "\n");
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Section to Build Window Frame Group.	
+	
+	$a = 2;
+	$WinName[0] = $WName[$T];
+	
+	 while(`objExists ($WinName[0] + "Main_GrpN_" + $E)`)
+		{
+			$E++;	print ("$E is " + $E + "\n");
+		}
+	
+	$WindowGrp[0] = `group -em -name ($WinName[0] + "Main_GrpN_" + $E)`;
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Section to Build Window Frame.	
+
+	$T = 0; $Q = 1;
+	
+	if ($Fix == 2)  { $HRatio = 100; $VRatio = 100;}
+	if ($Fix == 3)  { $HRatio = 100; $VRatio = 120;}
+	if ($Fix == 4)  { $HRatio = 100; $VRatio = 020;}
+	if ($Fix == 5)  { $HRatio = 410; $VRatio = 120;}
+	if ($Fix == 6)  { $HRatio = 010; $VRatio = 100;}
+	if ($Fix == 7)  { $HRatio = 010; $VRatio = 120;}
+	if ($Fix == 8)  { $HRatio = 333; $VRatio = 100;}
+	if ($Fix == 9)  { $HRatio = 333; $VRatio = 120;}
+	if ($Fix == 10) { $HRatio = 111; $VRatio = 100;}
+	if ($Fix == 11) { $HRatio = 111; $VRatio = 120;}
+	
+	
+	if (($Side == 2) || ($Side == 3))
+		{ $HRatio = 100; $VRatio = 100;}
+		
+	if (($Side == 4) || ($Side == 5) )
+		{ $HRatio = 100; $VRatio = 120;}
+	
+	if (($Side == 6) || ($Side == 7))
+		{ $HRatio = 100; $VRatio = 020;}
+	
+	if (($Side == 8)|| ($Side == 9) || ($Side == 10))
+		{ $HRatio = 010; $VRatio = 100;}
+	
+	if (($Side == 11)|| ($Side == 12) || ($Side == 13))
+		{$HRatio = 411; $VRatio = 120;}
+		
+	if (($Side == 14)|| ($Side == 15) || ($Side == 16))
+		 { $HRatio = 333; $VRatio = 100;}
+	
+	if ($Side == 17) { $HRatio = 333; $VRatio = 120;}
+	if ($Side == 18) { $HRatio = 333; $VRatio = 220;}
+	if ($Side == 19) { $HRatio = 333; $VRatio = 210;}
+	if ($Side == 20) { $HRatio = 333; $VRatio = 320;}
+	if ($Side == 21) { $HRatio = 111; $VRatio = 100;}
+	
+	
+	if ($Top == 2) { $HRatio = 100; $VRatio = 100;}
+	
+	if (($Top == 3) || ($Top == 4) || ($Top == 5) )
+		 { $HRatio = 100; $VRatio = 120;}
+		
+	if (($Top == 6) || ($Top == 7))
+		{ $HRatio = 100; $VRatio = 020;}
+	
+	if (($Top == 8) || ($Top == 9) || ($Top == 10) )
+		{ $HRatio = 010; $VRatio = 100;}
+		
+	if (($Top == 11) || ($Top == 13) || ($Top == 16) )
+		{ $HRatio = 010; $VRatio = 410;}
+	
+	if (($Top == 12) || ($Top == 14) || ($Top == 15) )
+		{ $HRatio = 010; $VRatio = 420;}
+	
+	if (($Top == 17) || ($Top == 18)) 
+		{ $HRatio = 411; $VRatio = 120;}
+	
+	if ($Top == 19) { $HRatio = 410; $VRatio = 120;}
+	if ($Top == 20) { $HRatio = 010; $VRatio = 120;}
+	
+	if (($Top == 21) || ($Top == 22) || ($Top == 23)) 
+		{ $HRatio = 333; $VRatio = 100;}
+		
+	if (($Top == 24) || ($Top == 29))
+		{ $HRatio = 333; $VRatio = 310;}
+	
+	if ($Top == 25) { $HRatio = 333; $VRatio = 220;}
+	
+	if (($Top == 26) || ($Top == 27))
+		{ $HRatio = 555; $VRatio = 120;}
+	
+	if (($Top == 28) || ($Top == 30) || ($Top == 32) || ($Top == 33))
+		{ $HRatio = 333; $VRatio = 120;}
+	
+	if ($Top == 31) { $HRatio = 333; $VRatio = 310;}
+	if ($Top == 34) { $HRatio = 111; $VRatio = 100;}
+	if ($Top == 35) { $HRatio = 111; $VRatio = 120;}
+	
+
+	
+	if (($Combine == 2) || ($Combine == 3))
+		{ $HRatio = 100; $VRatio = 120;}
+	
+	if (($Combine == 4) || ($Combine == 7))
+		{ $HRatio = 010; $VRatio = 410;}
+	
+	if (($Combine == 5) || ($Combine == 6))
+		{ $HRatio = 010; $VRatio = 420;}
+	
+	if (($Combine == 8) || ($Combine == 9) || ($Combine == 10))
+		{ $HRatio = 411; $VRatio = 120;}
+	
+	if (($Combine == 11) || ($Combine == 12) ||
+		($Combine == 13) || ($Combine == 14) || ($Combine == 15))
+		{ $HRatio = 010; $VRatio = 120;}
+	
+	if ($Combine == 16) { $HRatio = 333; $VRatio = 310;}
+	
+	if (($Combine == 17) || ($Combine == 20) || ($Combine == 21))
+		{ $HRatio = 333; $VRatio = 120;}
+	
+	if ($Combine == 18) { $HRatio = 333; $VRatio = 320;}
+	if ($Combine == 19) { $HRatio = 333; $VRatio = 220;}
+	if ($Combine == 22) { $HRatio = 313; $VRatio = 610;}
+	if ($Combine == 23) { $HRatio = 314; $VRatio = 620;}
+	if ($Combine == 24) { $HRatio = 101; $VRatio = 630;}
+
+	if (($Combine == 25) || ($Combine == 26) )
+		{ $HRatio = 111; $VRatio = 120;}
+	
+	if ($Combine == 27) { $HRatio = 111; $VRatio = 630;}
+	
+		$WindowGrp[1] =	DVY_FrameMaker($T, $C, $E, $Q, $Height, $Width, $HRatio, $VRatio);
+	
+		print ("Window Frame is " + $WindowGrp[1] + "\n");
+		
+		parent $WindowGrp[1] $WindowGrp[0];
+	
+//	select -r $Temp[50];
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Section to set sizes for all Windows
+	
+	$FrWide[0] = ($Width - (2 * $FW));				// Full width Window sizes
+	$FrWide[1] = ($Width * 0.75 - (2 * $FW));		// 3/4 width Window sizes
+	$FrWide[2] = ($Width * 0.5 - (1.5 * $FW));		// 1/2 width Window sizes
+	$FrWide[3] = ($Width * 0.25 - (1.25 * $FW));	// 1/4 width Window sizes
+	
+	$FrWide[4] = ($Width - (4 * $FW)) * 0.333;		// 1/3 width Window sizes
+	$FrWide[5] = ($FrWide[4] * 2) + $FW;			// 2/3 width Window sizes
+	
+	$FrHigh[0] = ($Height - (2 * $FH));				// Full Height sizes
+	$FrHigh[1] = ($Height * 0.75 - (2 * $FH));		// 3/4 Height sizes
+	$FrHigh[2] = ($Height * 0.5 - (2.0 * $FH)) ;	// 1/2 Height sizes
+	$FrHigh[3] = ($Height * 0.25 - (1.0 * $FH));	// 1/4 Height sizes
+	
+	$FrHigh[4] = ($Height * 0.333 - (1.5 * $FH));	// 1/3 Height sizes
+	$FrHigh[5] = ($Height - (3 * $FH)) * 0.667;		// 2/3 Height sizes
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Section to Build Windows for Frame.
+	// $T = Type // $H = Hinge Position	// $F = Fixed or Hinged = $FixH[0];
+	// $E = Group Number	// $E = Window Number	// $FrFeight = Frame Height
+	// $FrWidth = Frame Width
+	// $H = 1;	// Hinge Positions 0 = "TopHung_", 1 = "LeftHung_",
+				// 2 = "RightHung_", 3 = "Fixed_", 4 = "TiltLeft_", 5 = "TiltRight_";
+//		$Temps =  DVY_WindowMaker($T, $H, $FixH[0], $E, 1, $FrHigh[0], $FrWide[0]);
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Section to Build Fixed Windows for Frame.
+
+	if (($Fix >= 2) && ($Fix <= 11))
+		{ $H = 3;	$FixH[0] = 0;
+			$Temps =  DVY_WindowMaker($T, $H, $FixH[0], $E, 1, $FrHigh[0], $FrWide[0]);
+				move -r 0 ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Section to Side Hung Windows for Frame.
+		
+	if (($Side == 2) || ($Side == 3))
+		{ $H = 1;	$FixH[0] = 1;
+			if ($Side == 3) {$H = 2;}
+			$Temps =  DVY_WindowMaker($T, $H, $FixH[0], $E, 1, $FrHigh[0], $FrWide[0]);
+				move -r 0 ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	if (($Side == 4) || ($Side == 5))
+		{ $H = 1;	$FixH[0] = 0;	$FixH[1] = 1;
+			if ($Side == 5) {$H = 2;}
+			$Temps =  DVY_WindowMaker($T, $H, 1, $E, 1, $FrHigh[1], $FrWide[0]);
+				move -r 0 ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[3], $FrWide[0]);
+				move -r 0 ($Height * 0.75 ) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	if (($Side == 6) || ($Side == 7))
+		{ $H = 1;	$FixH[0] = 0;	$FixH[1] = 1;
+			if ($Side == 7) {$H = 2;}
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 1, $FrHigh[3], $FrWide[0]);
+				move -r 0 ($Height * 0.75 ) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, $H, 1, $E, 2, $FrHigh[2], $FrWide[0]);
+				move -r 0 ($Height * 0.25 + $FH ) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[3], $FrWide[0]);
+				move -r 0 ($FH ) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Side Hung Window 2Hx1V_Left";
+	if (($Side == 8))
+		{ $H = 1;	$FixH[0] = 0;	$FixH[1] = 1;
+			$Temps =  DVY_WindowMaker($T, $H, 1, $E, 1, $FrHigh[0], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[0], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+	
+	// "Side Hung Window 2Hx1V_Right";	
+	if (($Side == 9))
+		{ $H = 2;	$FixH[0] = 0;	$FixH[1] = 1;
+			$Temps =  DVY_WindowMaker($T, $H, 1, $E, 1, $FrHigh[0], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[0], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Side Hung Window 2Hx1V_Both";
+	if (($Side == 10))
+		{ $H = 2;	$FixH[0] = 0;	$FixH[1] = 1;
+			$Temps =  DVY_WindowMaker($T, 1, 1, $E, 1, $FrHigh[0], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 2, 1, $E, 2, $FrHigh[0], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Side Hung Window 2Hx2V_Left";	
+	if (($Side == 11))
+		{ $H = 2;	$FixH[0] = 0;	$FixH[1] = 1;
+			$Temps =  DVY_WindowMaker($T, 1, 1, $E, 1, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[3], $FrWide[0]);
+				move -r 0 ($Height * 0.75 ) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Side Hung Window 2Hx2V_Right";	
+	if (($Side == 12))
+		{ $H = 2;	$FixH[0] = 0;	$FixH[1] = 1;
+			$Temps =  DVY_WindowMaker($T, 2, 1, $E, 1, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[3], $FrWide[0]);
+				move -r 0 ($Height * 0.75 ) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Side Hung Window 2Hx2V_Both";	
+	if (($Side == 13))
+		{ $H = 2;	$FixH[0] = 0;	$FixH[1] = 1;
+			$Temps =  DVY_WindowMaker($T, 1, 1, $E, 1, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 2, 1, $E, 2, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[3], $FrWide[0]);
+				move -r 0 ($Height * 0.75 ) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Side Hung Window 3Hx1V_CenterLeft" and "Side Hung Window 3Hx1V_CenterRight";	
+	if (($Side == 14) || ($Side == 15))
+		{ $H = 1;	$FixH[0] = 0;	$FixH[1] = 1;
+			if ($Side == 15) {$H = 2;}
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 1, $FrHigh[0], ($FrWide[4] * 1.01));
+				move -r (($FrWide[4] + $FH ) * -1) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, $H, 1, $E, 2, $FrHigh[0], $FrWide[4]);
+				move -r 0 ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[0], ($FrWide[4] * 1.01));
+				move -r ($FrWide[4] + $FH ) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Side Hung Window 3Hx1V_Both";
+	if (($Side == 16))
+		{ $H = 1;	$FixH[0] = 0;	$FixH[1] = 1;
+			$Temps =  DVY_WindowMaker($T, 1, 1, $E, 1, $FrHigh[0], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * -1) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[0], ($FrWide[4] * 1.01));
+				move -r 0 ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 2, 1, $E, 3, $FrHigh[0], $FrWide[4]);
+				move -r ($FrWide[4] + $FH ) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Side Hung Window 3Hx2V_FixedBoth";	
+	if ($Side == 17)
+		{ $H = 1;	$FixH[0] = 0;	$FixH[1] = 1;
+			$Temps =  DVY_WindowMaker($T, 1, 1, $E, 1, $FrHigh[1], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * -1) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[1], ($FrWide[4] * 1.01));
+				move -r 0 ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 2, 1, $E, 3, $FrHigh[1], $FrWide[4]);
+				move -r ($FrWide[4] + $FH ) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 4, $FrHigh[3], ($FrWide[4] * 1.01));
+				move -r (($FrWide[4] + $FH ) * -1) ($Height * 0.75 ) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 5, $FrHigh[3],($FrWide[4] * 1.01));
+				move -r 0 ($Height * 0.75 ) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 6, $FrHigh[3], ($FrWide[4] * 1.01));
+				move -r ($FrWide[4] + $FH ) ($Height * 0.75 ) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Side Hung Window 3Hx2V_BotBoth";
+	if ($Side == 18)
+		{ $H = 1;	$FixH[0] = 0;	$FixH[1] = 1;
+			$Temps =  DVY_WindowMaker($T, 1, 1, $E, 1, $FrHigh[1], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * -1) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[0], ($FrWide[4] * 1.01));
+				move -r 0 ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 2, 1, $E, 3, $FrHigh[1], $FrWide[4]);
+				move -r ($FrWide[4] + $FH ) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 4, $FrHigh[3], ($FrWide[4] * 1.01));
+				move -r (($FrWide[4] + $FH ) * -1) ($Height * 0.75 ) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 5, $FrHigh[3], ($FrWide[4] * 1.01));
+				move -r ($FrWide[4] + $FH ) ($Height * 0.75 ) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// 	"Side Hung Window 3Hx2V_TopBoth";
+	if ($Side == 19)
+		{ $H = 1;	$FixH[0] = 0;	$FixH[1] = 1;
+			$Temps =  DVY_WindowMaker($T, 1, 1, $E, 1, $FrHigh[1], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * -1) ($Height * 0.25 + $FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[1], ($FrWide[4] * 1.01));
+				move -r 0 ($Height * 0.25 + $FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 2, 1, $E, 3, $FrHigh[1], $FrWide[4]);
+				move -r ($FrWide[4] + $FH ) ($Height * 0.25 + $FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 4, $FrHigh[3], ($FrWide[4] * 1.01));
+				move -r (($FrWide[4] + $FH ) * -1) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 5, $FrHigh[3], $FrWide[4]);
+				move -r 0 $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 6, $FrHigh[3], ($FrWide[4] * 1.01));
+				move -r ($FrWide[4] + $FH ) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+	
+	// "Side Hung Window 3Hx2V_CenterBoth";	
+	if ($Side == 20)
+		{ $H = 1;	$FixH[0] = 0;	$FixH[1] = 1;
+			$Temps =  DVY_WindowMaker($T, 1, 1, $E, 1, $FrHigh[1], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * -1) ($Height * 0.25 + $FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[0], ($FrWide[4] * 1.01));
+				move -r 0 ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 2, 1, $E, 3, $FrHigh[1], $FrWide[4]);
+				move -r ($FrWide[4] + $FH ) ($Height * 0.25 + $FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 4, $FrHigh[3], ($FrWide[4] * 1.01));
+				move -r (($FrWide[4] + $FH ) * -1) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 5, $FrHigh[3], ($FrWide[4] * 1.01));
+				move -r ($FrWide[4] + $FH ) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Side Hung Window 4Hx1V_CenterBoth";
+	if ($Side == 21)
+		{ $H = 1;	$FixH[0] = 0;	$FixH[1] = 1;
+			$Temps =  DVY_WindowMaker($T, 1, 1, $E, 1, $FrHigh[0], $FrWide[3]);
+				move -r (($FrWide[3] * 1.5 + $FH * 1.5) * -1) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[0], ($FrWide[3] * 1.01));
+				move -r (($FrWide[3] + $FH) * -0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[0], $FrWide[3]);
+				move -r (($FrWide[3] + $FH) * 0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 2, 1, $E, 4, $FrHigh[0], ($FrWide[3] * 1.01));
+				move -r ($FrWide[3] * 1.5 + $FH * 1.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Section to Build Top Hung Windows for Frame.
+		
+	// "Top Hung Window 1Hx1V_Top";	
+	if ($Top == 2)
+		{ $H = 0;	$FixH[0] = 1;
+			$Temps =  DVY_WindowMaker($T, $H, $FixH[0], $E, 1, $FrHigh[0], $FrWide[0]);
+				move -r 0 ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	//	"Top Hung Window 1Hx2V_Top";
+	if ($Top == 3)
+		{ $H = 0;	$FixH[0] = 1;
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 1, $FrHigh[1], $FrWide[0]);
+				move -r 0 ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[0]);
+				move -r 0 ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+	
+	// "Top Hung Window 1Hx2V_Bot";
+	if ($Top == 4)
+		{ $H = 0;	$FixH[0] = 1;
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 1, $FrHigh[1], $FrWide[0]);
+				move -r 0 ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[3], $FrWide[0]);
+				move -r 0 ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Top Hung Window 1Hx2V_Both";	
+	
+	if ($Top == 5)
+		{ $H = 0;	$FixH[0] = 1;
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 1, $FrHigh[1], $FrWide[0]);
+				move -r 0 ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[0]);
+				move -r 0 ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	//	"Top Hung Window 1Hx3V_Mid";
+	if ($Top == 6)
+		{ $H = 0;	$FixH[0] = 1;
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 1, $FrHigh[3], $FrWide[0]);
+				move -r 0 ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[2], $FrWide[0]);
+				move -r 0 ($Height * 0.25 + $FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[3], $FrWide[0]);
+				move -r 0 ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Top Hung Window 1Hx3V_Top";
+	if ($Top == 7)
+		{ $H = 0;	$FixH[0] = 1;
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 1, $FrHigh[3], $FrWide[0]);
+				move -r 0 ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[2], $FrWide[0]);
+				move -r 0 ($Height * 0.25 + $FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 3, $FrHigh[3], $FrWide[0]);
+				move -r 0 ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	//  "Top Hung Window 2Hx1V_Left";	
+	if($Top == 8) 
+		{ $H = 0;	$FixH[0] = 1;
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 1, $FrHigh[0], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[0], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Top Hung Window 2Hx1V_Right";
+	if($Top == 9) 
+		{ $H = 0;	$FixH[0] = 1;
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 1, $FrHigh[0], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[0], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Top Hung Window 2Hx1V_Both";
+	if($Top == 10) 
+		{ $H = 0;	$FixH[0] = 1;
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 1, $FrHigh[0], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[0], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Top Hung Window 2Hx2V_TopLeft";	
+	if($Top == 11) 
+		{ $H = 0;	$FixH[0] = 1;
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 1, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[0], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Top Hung Window 2Hx2V_TopRight";	
+	if($Top == 12) 
+		{ $H = 0;	$FixH[0] = 1;
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 1, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[0], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Top Hung Window 2Hx2V_BothLeft";	
+	if($Top == 13) 
+		{ $H = 0;	$FixH[0] = 1;
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 1, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[0], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Top Hung Window 2Hx2V_BothRight";	
+	if($Top == 14) 
+		{ $H = 0;	$FixH[0] = 1;
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 1, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 3, $FrHigh[0], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+		
+	// "Top Hung Window 2Hx2V_Both";	
+	if($Top == 15) 
+		{ $H = 0;	$FixH[0] = 1;
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 1, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 3, $FrHigh[0], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Top Hung Window 2Hx2V_Both";	
+	if($Top == 16) 
+		{ $H = 0;	$FixH[0] = 1;
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 1, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 3, $FrHigh[0], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Top Hung Window 2Hx2V_BotBoth";	
+	if($Top == 17) 
+		{ $H = 0;	$FixH[0] = 1;
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 1, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[3], $FrWide[0]);
+				move -r 0 ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 3, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Top Hung Window 2Hx2V_All";	
+	if($Top == 18) 
+		{ $H = 0;	$FixH[0] = 1;
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 1, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[0]);
+				move -r 0 ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 3, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Top Hung Window 2Hx2V_TopBoth";	
+	if($Top == 19) 
+		{ $H = 0;	$FixH[0] = 1;
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 1, $FrHigh[3], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[1], $FrWide[0]);
+				move -r 0 $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Top Hung Window 2Hx2V_TopBoth";	
+	if($Top == 20) 
+		{ $H = 0;	$FixH[0] = 1;
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 1, $FrHigh[3], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 4, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Top Hung Window 3Hx1V_Center";
+	if (($Top == 21))
+		{ 
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 1, $FrHigh[0], ($FrWide[4] * 1.01));
+				move -r (($FrWide[4] + $FH ) * -1) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[0], $FrWide[4]);
+				move -r 0 ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[0], ($FrWide[4] * 1.01));
+				move -r ($FrWide[4] + $FH ) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Top Hung Window 3Hx1V_Both";
+	if (($Top == 22))
+		{ 
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 1, $FrHigh[0], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * -1) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[0], ($FrWide[4] * 1.01));
+				move -r 0 ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 3, $FrHigh[0], $FrWide[4]);
+				move -r ($FrWide[4] + $FH ) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+
+	// "Top Hung Window 3Hx1V_All";
+	if (($Top == 23))
+		{ 
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 1, $FrHigh[0], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * -1) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[0], $FrWide[4]);
+				move -r 0 ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 3, $FrHigh[0], $FrWide[4]);
+				move -r ($FrWide[4] + $FH ) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+		
+	// "Top Hung Window 3Hx2V_All";
+	if (($Top == 24))
+		{ 
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 1, $FrHigh[0], ($FrWide[4] * 1.01));
+				move -r (($FrWide[4] + $FH ) * -1) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[1], ($FrWide[4] * 1.01));;
+				move -r 0 ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 3, $FrHigh[3], $FrWide[4]);
+				move -r 0 ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 4, $FrHigh[0], $FrWide[4]);
+				move -r ($FrWide[4] + $FH ) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Top Hung Window 3Hx2V_Both";
+	if (($Top == 25))
+		{ 
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 1, $FrHigh[1], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * -1) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * -1) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[0], ($FrWide[4] * 1.01));
+				move -r 0 ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 3, $FrHigh[3], $FrWide[4]);
+				move -r ($FrWide[4] + $FH ) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 4, $FrHigh[1], $FrWide[4]);
+				move -r ($FrWide[4] + $FH ) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+		
+	// "Top Hung Window 3Hx2V_TopBoth";
+	if (($Top == 26))
+		{ 
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 1, $FrHigh[3], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * -1) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[3], ($FrWide[4] * 1.01));
+				move -r 0 ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 3, $FrHigh[3], $FrWide[4]);
+				move -r ($FrWide[4] + $FH ) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 4, $FrHigh[1], $FrWide[0]);
+				move -r 0 $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}		
+	
+	// "Top Hung Window 3Hx2V_TopAll";
+	if (($Top == 27))
+		{ 
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 1, $FrHigh[3], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * -1) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[4]);
+				move -r 0 ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 3, $FrHigh[3], $FrWide[4]);
+				move -r ($FrWide[4] + $FH ) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 4, $FrHigh[1], $FrWide[0]);
+				move -r 0 $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}		
+		
+	// "Top Hung Window 3Hx2V_TopAll";
+	if (($Top == 28))
+		{ 
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 1, $FrHigh[3], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * -1) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], ($FrWide[4] * 1.01));
+				move -r 0 ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 3, $FrHigh[3], $FrWide[4]);
+				move -r ($FrWide[4] + $FH ) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 4, $FrHigh[1], ($FrWide[4] * 1.01));;
+				move -r (($FrWide[4] + $FH ) * -1) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 5, $FrHigh[1], ($FrWide[4] * 1.01));
+				move -r 0 $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 6, $FrHigh[1], ($FrWide[4] * 1.01));
+				move -r ($FrWide[4] + $FH ) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}		
+		
+	// "Top Hung Window 3Hx2V_TopCenter";
+	if (($Top == 29))
+		{ 
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 1, $FrHigh[0], ($FrWide[4] * 1.01));
+				move -r (($FrWide[4] + $FH ) * -1) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], ($FrWide[4] * 1.01));
+				move -r 0 ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[1], ($FrWide[4] * 1.01));
+				move -r 0 $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 4, $FrHigh[0], ($FrWide[4] * 1.01));
+				move -r ($FrWide[4] + $FH ) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}		
+		
+	// "Top Hung Window 3Hx2V_TopCenter";
+	if (($Top == 30))
+		{ 
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 1, $FrHigh[3], ($FrWide[4] * 1.01));
+				move -r (($FrWide[4] + $FH ) * -1) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[4]);
+				move -r 0 ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[3], ($FrWide[4] * 1.01));
+				move -r ($FrWide[4] + $FH ) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 4, $FrHigh[1], ($FrWide[4] * 1.01));
+				move -r (($FrWide[4] + $FH ) * -1) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 5, $FrHigh[1], ($FrWide[4] * 1.01));
+				move -r 0 $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 6, $FrHigh[1], ($FrWide[4] * 1.01));
+				move -r ($FrWide[4] + $FH ) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}		
+		
+	// "Top Hung Window 3Hx2V_BothCenter";
+	if (($Top == 31))
+		{ 
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 1, $FrHigh[0], ($FrWide[4] * 1.01));
+				move -r (($FrWide[4] + $FH ) * -1) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[4]);
+				move -r 0 ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[0], ($FrWide[4] * 1.01));
+				move -r ($FrWide[4] + $FH ) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 4, $FrHigh[1], $FrWide[4]);
+				move -r 0 $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+		}		
+		
+	// "Top Hung Window 3Hx2V_BothBoth";
+	if (($Top == 32))
+		{ 
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 1, $FrHigh[3], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * -1) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[3], ($FrWide[4] * 1.01));
+				move -r 0 ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 3, $FrHigh[3], $FrWide[4]);
+				move -r ($FrWide[4] + $FH ) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 4, $FrHigh[1], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * -1) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 5, $FrHigh[1], ($FrWide[4] * 1.01));
+				move -r 0 $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 6, $FrHigh[1], $FrWide[4]);
+				move -r ($FrWide[4] + $FH ) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}		
+		
+	// "Top Hung Window 3Hx2V_AllBoth";
+	if (($Top == 33))
+		{ 
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 1, $FrHigh[3], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * -1) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[4]);
+				move -r 0 ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 3, $FrHigh[3], $FrWide[4]);
+				move -r ($FrWide[4] + $FH ) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 4, $FrHigh[1], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * -1) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 5, $FrHigh[1], ($FrWide[4] * 1.01));
+				move -r 0 $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 6, $FrHigh[1], $FrWide[4]);
+				move -r ($FrWide[4] + $FH ) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}		
+		
+	// "Top Hung Window 4Hx1V_Both";
+	if ($Top == 34)
+		{ 
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 1, $FrHigh[0], $FrWide[3]);
+				move -r (($FrWide[3] * 1.5 + $FH * 1.5) * -1) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[0], ($FrWide[3] * 1.01));
+				move -r (($FrWide[3] + $FH) * -0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[0], $FrWide[3]);
+				move -r (($FrWide[3] + $FH) * 0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 4, $FrHigh[0], ($FrWide[3] * 1.01));
+				move -r ($FrWide[3] * 1.5 + $FH * 1.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Top Hung Window 4Hx1V_Both";
+	if ($Top == 35)
+		{
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 1, $FrHigh[1], $FrWide[3]);
+				move -r (($FrWide[3] * 1.5 + $FH * 1.5) * -1) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[1], ($FrWide[3] * 1.01));
+				move -r (($FrWide[3] + $FH) * -0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[1], $FrWide[3]);
+				move -r (($FrWide[3] + $FH) * 0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 4, $FrHigh[1], ($FrWide[3] * 1.01));
+				move -r ($FrWide[3] * 1.5 + $FH * 1.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 5, $FrHigh[3], $FrWide[3]);
+				move -r (($FrWide[3] * 1.5 + $FH * 1.5) * -1) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 6, $FrHigh[3], ($FrWide[3] * 1.01));
+				move -r (($FrWide[3] + $FH) * -0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 7, $FrHigh[3], $FrWide[3]);
+				move -r (($FrWide[3] + $FH) * 0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 8, $FrHigh[3], ($FrWide[3] * 1.01));
+				move -r ($FrWide[3] * 1.5 + $FH * 1.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Section to Build Combination Windows for Frame.
+		
+	// "Combined Window 1Hx2V_TopLeft" and "Combined Window 1Hx2V_TopRight";	
+	if (($Combine == 2) || ($Combine == 3))
+		{ $H = 1;	if ($Combine == 3) { $H = 2;}
+			$Temps =  DVY_WindowMaker($T, $H, 1, $E, 1, $FrHigh[1], $FrWide[0]);
+				move -r 0 ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[0]);
+				move -r 0 ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Combined Window 2Hx1V_TopLeft";	
+	if ($Combine == 4)
+		{
+			$Temps =  DVY_WindowMaker($T, 1, 1, $E, 1, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[0], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Combined Window 2Hx1V_TopRight";	
+	if ($Combine == 5)
+		{
+			$Temps =  DVY_WindowMaker($T, 2, 1, $E, 1, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[0], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Combined Window 2Hx1V_LeftTop";	
+	if ($Combine == 6)
+		{
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 1, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 1, 1, $E, 3, $FrHigh[0], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Combined Window 2Hx1V_RightTop";	
+	if ($Combine == 7)
+		{
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 1, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 2, 1, $E, 3, $FrHigh[0], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Combined Window 2Hx1V_CenterLeft";	
+	if ($Combine == 8) 
+		{
+			$Temps =  DVY_WindowMaker($T, 1, 1, $E, 1, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[0]);
+				move -r 0 ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Combined Window 2Hx1V_CenterRight";	
+	if ($Combine == 9) 
+		{
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 1, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[0]);
+				move -r 0 ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 2, 1, $E, 3, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+
+	// "Combined Window 2Hx1V_CenterBoth";	
+	if ($Combine == 10) 
+		{
+			$Temps =  DVY_WindowMaker($T, 1, 1, $E, 1, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[0]);
+				move -r 0 ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 2, 1, $E, 3, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+		
+	// "Combined Window 2Hx1V_TopLeft";	
+	if ($Combine == 11) 
+		{
+			$Temps =  DVY_WindowMaker($T, 1, 1, $E, 1, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5)  ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 4, $FrHigh[3], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Combined Window 2Hx1V_TopRight";	
+	if ($Combine == 12) 
+		{
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 1, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[3], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5)  ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 2, 1, $E, 3, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 4, $FrHigh[3], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Combined Window 2Hx1V_LeftTop";	
+	if ($Combine == 13) 
+		{
+			$Temps =  DVY_WindowMaker($T, 1, 1, $E, 1, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[3], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5)  ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 4, $FrHigh[3], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Combined Window 2Hx1V_RightTop";	
+	if ($Combine == 14) 
+		{
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 1, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5)  ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 2, 1, $E, 3, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 4, $FrHigh[3], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Combined Window 2Hx1V_All";	
+	if ($Combine == 15) 
+		{
+			$Temps =  DVY_WindowMaker($T, 1, 1, $E, 1, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5) ($FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * -0.5)  ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 2, 1, $E, 3, $FrHigh[1], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 4, $FrHigh[3], $FrWide[2]);
+				move -r (($FrWide[2] + $FH) * 0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Combined Window 3Hx2V_TopBoth";
+	if ($Combine == 16)
+		{ 
+			$Temps =  DVY_WindowMaker($T, 1, 1, $E, 1, $FrHigh[0], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * -1) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[4]);
+				move -r 0 ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[1], ($FrWide[4] * 1.01));
+				move -r 0 $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 2, 1, $E, 4, $FrHigh[0], $FrWide[4]);
+				move -r ($FrWide[4] + $FH ) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Combined Window 3Hx2V_TopBoth";
+	if ($Combine == 17)
+		{ 
+			$Temps =  DVY_WindowMaker($T, 1, 1, $E, 1, $FrHigh[1], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * -1) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[3], ($FrWide[4] * 1.01));
+				move -r (($FrWide[4] + $FH ) * -1) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 3, $FrHigh[3], $FrWide[4]);
+				move -r 0 ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 4, $FrHigh[3], ($FrWide[4] * 1.01));
+				move -r ($FrWide[4] + $FH ) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];				
+				
+			$Temps =  DVY_WindowMaker($T, 2, 1, $E, 5, $FrHigh[1], $FrWide[4]);
+				move -r ($FrWide[4] + $FH ) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 6, $FrHigh[1], ($FrWide[4] * 1.01));
+				move -r 0 $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+
+	// "Combined Window 3Hx2V_BotBoth";
+	if ($Combine == 18)
+		{ 
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 1, $FrHigh[1], ($FrWide[4] * 1.01));
+				move -r 0 $FH 0  $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[3], ($FrWide[4] * 1.01));
+				move -r (($FrWide[4] + $FH ) * -1) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 1, 1, $E, 3, $FrHigh[1], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * -1) ($Height * 0.25 + $FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 4, $FrHigh[3], $FrWide[4]);
+				move -r 0 ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 2, 1, $E, 5, $FrHigh[1], $FrWide[4]);
+				move -r ($FrWide[4] + $FH ) ($Height * 0.25 + $FH) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 6, $FrHigh[3], ($FrWide[4] * 1.01));
+				move -r ($FrWide[4] + $FH ) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];				
+		}
+		
+	// "Combined Window 3Hx2V_BothBoth";
+	if ($Combine == 19)
+		{ 
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 1, $FrHigh[0], ($FrWide[4] * 1.01));
+				move -r 0 $FH 0  $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 1, 1, $E, 2, $FrHigh[1], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * -1) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 3, $FrHigh[3], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * -1) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 4, $FrHigh[3], $FrWide[4]);
+				move -r ($FrWide[4] + $FH ) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 2, 1, $E, 5, $FrHigh[1], $FrWide[4]);
+				move -r ($FrWide[4] + $FH ) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];				
+		}
+		
+		
+	// "Combined Window 3Hx2V_BothBoth";
+	if ($Combine == 20)
+		{ 
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 1, $FrHigh[1], ($FrWide[4] * 1.01));
+				move -r 0 $FH 0  $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 1, 1, $E, 2, $FrHigh[1], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * -1) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 3, $FrHigh[3], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * -1) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 4, $FrHigh[3], ($FrWide[4] * 1.01));
+				move -r 0 ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 5, $FrHigh[3], $FrWide[4]);
+				move -r ($FrWide[4] + $FH ) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 2, 1, $E, 6, $FrHigh[1], $FrWide[4]);
+				move -r ($FrWide[4] + $FH ) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];				
+		}
+		
+	// "Combined Window 3Hx2V_AllBoth";
+	if ($Combine == 21)
+		{ 
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 1, $FrHigh[1], ($FrWide[4] * 1.01));
+				move -r 0 $FH 0  $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 1, 1, $E, 2, $FrHigh[1], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * -1) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 3, $FrHigh[3], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * -1) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 4, $FrHigh[3], $FrWide[4]);
+				move -r 0 ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 5, $FrHigh[3], $FrWide[4]);
+				move -r ($FrWide[4] + $FH ) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 2, 1, $E, 6, $FrHigh[1], $FrWide[4]);
+				move -r ($FrWide[4] + $FH ) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];				
+		}
+		
+	// "Combined Window 3Hx2V_Left2Top";
+	if ($Combine == 22)
+		{ 
+			$Temps =  DVY_WindowMaker($T, 1, 1, $E, 1, $FrHigh[0], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * -1) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[4]);
+				move -r 0 ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 3, $FrHigh[3], $FrWide[4]);
+				move -r ($FrWide[4] + $FH ) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 4, $FrHigh[1], ($FrWide[5] * 1.01));
+				move -r (($Width - $FW) * 0.167) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Combined Window 3Hx2V_Right2Top";
+	if ($Combine == 23)
+		{ 
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 1, $FrHigh[1], ($FrWide[5] * 1.01));
+				move -r (($Width - $FW) * -0.167) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * -1) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 3, $FrHigh[3], $FrWide[4]);
+				move -r 0 ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 2, 1, $E, 4, $FrHigh[0], $FrWide[4]);
+				move -r (($FrWide[4] + $FH ) * 1) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Combined Window 4Hx2V_TopBoth";
+	if ($Combine == 24)
+		{
+			$Temps =  DVY_WindowMaker($T, 1, 1, $E, 1, $FrHigh[0], $FrWide[3]);
+				move -r (($FrWide[3] * 1.5 + $FH * 1.5) * -1) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+								
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 2, $FrHigh[3], ($FrWide[3] * 1.01));
+				move -r (($FrWide[3] + $FH) * -0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 3, $FrHigh[3], $FrWide[3]);
+				move -r (($FrWide[3] + $FH) * 0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 2, 1, $E, 4, $FrHigh[0], ($FrWide[3] * 1.01));
+				move -r ($FrWide[3] * 1.5 + $FH * 1.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 5, $FrHigh[1], $FrWide[2]);
+				move -r 0 $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+	
+	// "Combined Window 4Hx2V_TopBoth";
+	if ($Combine == 25)
+		{
+			$Temps =  DVY_WindowMaker($T, 1, 1, $E, 1, $FrHigh[1], $FrWide[3]);
+				move -r (($FrWide[3] * 1.5 + $FH * 1.5) * -1) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[1], ($FrWide[3] * 1.01));
+				move -r (($FrWide[3] + $FH) * -0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[1], ($FrWide[3] * 1.01));
+				move -r (($FrWide[3] + $FH) * 0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 2, 1, $E, 4, $FrHigh[1], ($FrWide[3] * 1.01));
+				move -r ($FrWide[3] * 1.5 + $FH * 1.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 5, $FrHigh[3], $FrWide[3]);
+				move -r (($FrWide[3] * 1.5 + $FH * 1.5) * -1) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 6, $FrHigh[3], ($FrWide[3] * 1.01));
+				move -r (($FrWide[3] + $FH) * -0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 7, $FrHigh[3],  ($FrWide[3] * 1.01));
+				move -r (($FrWide[3] + $FH) * 0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 8, $FrHigh[3], $FrWide[3]);
+				move -r ($FrWide[3] * 1.5 + $FH * 1.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Combined Window 4Hx2V_TopBoth";
+	if ($Combine == 26)
+		{
+			$Temps =  DVY_WindowMaker($T, 1, 1, $E, 1, $FrHigh[1], $FrWide[3]);
+				move -r (($FrWide[3] * 1.5 + $FH * 1.5) * -1) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[1], ($FrWide[3] * 1.01));
+				move -r (($FrWide[3] + $FH) * -0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[1], ($FrWide[3] * 1.01));
+				move -r (($FrWide[3] + $FH) * 0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 2, 1, $E, 4, $FrHigh[1], ($FrWide[3] * 1.01));
+				move -r ($FrWide[3] * 1.5 + $FH * 1.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 5, $FrHigh[3], ($FrWide[3] * 1.01));
+				move -r (($FrWide[3] * 1.5 + $FH * 1.5) * -1) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 6, $FrHigh[3], $FrWide[3]);
+				move -r (($FrWide[3] + $FH) * -0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 7, $FrHigh[3], $FrWide[3]);
+				move -r (($FrWide[3] + $FH) * 0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 8, $FrHigh[3], ($FrWide[3] * 1.01));
+				move -r ($FrWide[3] * 1.5 + $FH * 1.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+	// "Combined Window 4Hx2V_BothTop";
+	if ($Combine == 27)
+		{
+			$Temps =  DVY_WindowMaker($T, 1, 1, $E, 1, $FrHigh[0], $FrWide[3]);
+				move -r (($FrWide[3] * 1.5 + $FH * 1.5) * -1) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 2, $FrHigh[1], ($FrWide[3] * 1.01));
+				move -r (($FrWide[3] + $FH) * -0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 3, 0, $E, 3, $FrHigh[1], ($FrWide[3] * 1.01));
+				move -r (($FrWide[3] + $FH) * 0.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 2, 1, $E, 4, $FrHigh[0], ($FrWide[3] * 1.01));
+				move -r ($FrWide[3] * 1.5 + $FH * 1.5) $FH 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 5, $FrHigh[3], $FrWide[3]);
+				move -r (($FrWide[3] + $FH) * -0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+				
+			$Temps =  DVY_WindowMaker($T, 0, 1, $E, 6, $FrHigh[3], $FrWide[3]);
+				move -r (($FrWide[3] + $FH) * 0.5) ($Height * 0.75) 0 $Temps[0];
+				parent $Temps[0] $WindowGrp[0];
+		}
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Scale finished unit.
+	
+	scale $DVYUnit $DVYUnit $DVYUnit $WindowGrp[0];
+		select -r $WindowGrp[0];
+		makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Lock off attributes.
+		
+	string $AttrA[] = {".tx", ".ty", ".tz", ".rx", ".ry", ".rz", ".sx", ".sy", ".sz"};
+	string $AttrB[] = {".rx", ".ry", ".rz", ".sx", ".sy", ".sz"};
+	string $AttrR[] = {".rx", ".ry", ".rz"}; 
+	string $AttrS[] = {".sx", ".sy", ".sz"};
+	string $AttrT[] = {".tx", ".ty", ".tz"};
+	
+	select -r -hi $WindowGrp[0];
+	string $DSel[] = `ls -tr -sl`;
+	
+	for ($i= 1; $i < size($DSel); $i++)
+		{
+			for ($Att in $AttrA)
+				{ setAttr -l 1 -k 0 ($DSel[$i] + $Att); }
+		}
+		
+	select -cl;
+		catch (`select -r ("*_LeftHung_*_GrpN_*")`);
+		catch (`select -add ("*_RightHung_*_GrpN_*")`);
+		$DSel = `ls -tr -sl`;
+		
+		if (size ($DSel) > 0)
+			{
+				for ($i= 0; $i < size($DSel); $i++)
+					{
+						setAttr -l 0 -k 1 ($DSel[$i] + ".ry");
+					}
+			}
+		
+	select -cl;
+		catch (`select -r ("*_TopHung_*_GrpN_*")`);
+		catch (`select -add ("*_BotHung_*_GrpN_*")`);
+		$DSel = `ls -tr -sl`;
+		
+		if (size ($DSel) > 0)
+			{
+			for ($i= 0; $i < size($DSel); $i++)
+				{
+					setAttr -l 0 -k 1 ($DSel[$i] + ".rx");
+				}
+			}
+			
+		for ($Att in $AttrS)
+			{ setAttr -l 1 -k 0 ($WindowGrp[0] + $Att); }
+			
+		
+	print "Completed building Window Davvey © 2006..\n";
+		
+}

@@ -1,0 +1,504 @@
+/*
+// This procedure is called when the 'Open' button of the dialog is clicked.
+		// The procedure recieves the name of the file and it's extension
+		proc int onOk(string $dirpath,string $type) {
+		   print($dirpath+"\n");
+		   return true;
+		}
+		
+		// The final parameter indicates the type of file dialog. 4=Folder Dialog
+		// The 1st parameter is a function to call when OK is pressed.
+		// The 2nd parameter is the text to appear on the OK button.
+		// The 3rd parameter is the type of file, somewhat meaningless here
+		fileBrowser( "onOk", "Text", "", 4 );
+
+*/
+
+global proc mecRigGuiBWork(string $dirPath, string $type)
+{
+/*     //Get the width,height
+       int $width = `intField -q -v mecRigGuiWidth`;
+       int $winWidth = 328; //`window -q -w mecRigGuiBGui`;
+       int $height = `intField -q -v mecRigGuiHeight`;
+       int $winHeight = 215;//`window -q -h mecRigGuiBGui`;
+
+       // Getting the new window size.
+       if(!($width < $winWidth))
+       {
+            // Getting the difference
+            int $widthDiff = $width - $winWidth;
+            window -e -w ($winWidth + $widthDiff) mecRigGuiBGui;
+       }
+       else
+           window -e -w $winWidth mecRigGuiBGui;
+
+       window -e -h ($winHeight + $height) mecRigGuiBGui;
+
+*/
+
+       // Get the internal var for maya
+
+
+       string $mayaPath = `internalVar -uad`;
+
+       if(!`gmatch $dirPath ($mayaPath+"*")`)
+           error "Please select a folder in the maya perference area.";
+
+       //string $pathEnding = substituteAllString( $path, $mayaPath, "");
+
+
+        window -e -h 640 mecRigGuiBGui;
+       frameLayout -l "" -w 330 -h 400 -p mecRigMast
+    		-la "top" -bs "in"
+    		mecRigGuiFrm;
+       scrollLayout -w 330 -h 400 -p "mecRigGuiFrm" -hst 8 -vst 8 mecRigScL;
+    
+
+       //columnLayout -p mecRigScL mecRigGuiDel;
+       formLayout -p mecRigScL mecRigGuiBMF;
+
+//       print("Width: " + $width + " Height: " + $height + " FullWidth: " + ($width+$winWidth) + " FullHeight " + ($height+$winHeight) + "\n");
+       //Add the width and height given to the dimension of the window.
+       textField -e -en 1 -tx $dirPath mecRigGuiDir;
+       textField -e -en 1 mecRigGuiDir;
+       
+
+       mecFireForm("mecRigGuiBMF", 0);
+       
+       button -e -en 1 -p mecRigMast mecRigGuiButGen;
+}
+
+/*
+  This procedure is ment just to place one piece of the puzzel.  Another procedure will put those pieces
+  together.
+  
+  This procedure chooses if the item is a going to be placed in the form as a symbol button or an image.
+  
+  Input:
+        $name (string) The root name of the image file.
+        $row (int) Which row the image is.
+        $column (int) Which column the image is.
+        $cmd (string) This will determine if the a symbol button will be used.
+        $cmdLine (string) The formName.
+
+
+*/
+
+proc string[] mecFormBld(string $path, string $file, string $cmdLine, string $parent, int $print)
+{
+
+           string $fileLine[];
+           // syntax to place the control in a form.
+           string $controlPrint;
+           // syntax to place the control in the proper place on the form.
+           string $frmPrint;
+
+           //Check this line.
+           tokenize($file, "_", $fileLine);
+           
+           //Clean off extension if it is on windows it will allways be .bmp.
+           $fileLine[size($fileLine)-1] = basename( $fileLine[size($fileLine)-1], ".bmp" );
+
+           int $width;
+           int $height;
+           //Name of command to be created.
+           string $cmdName;
+
+           // Need to get width and height for the current image.
+           if(`window -exists mecGetDimensions`)
+		deleteUI mecGetDimensions;
+            if( `windowPref -exists mecGetDimensions` )
+            		windowPref -r mecGetDimensions;
+
+            window -w 300 -h 300 -t "PictureDimensions" 
+            		-titleBar 1 -mnb 1 -mxb 1 -mb 1
+            		-tlb 0 -sizeable 1 mecGetDimensions;
+            
+            columnLayout;
+            picture -i ($path+$file) mecGetDimensionsPic;
+
+            $width = `picture -q -w mecGetDimensionsPic`;
+            $height = `picture -q -h mecGetDimensionsPic`;
+
+           // The parents of the printed code need to be variable so that they can be
+           //     easily changed.
+           string $newParent = "$mecRigGuiParentFrm";
+/*
+// Example: "C:/Documents and Settings/mclavan/My Documents/maya
+string $mecMaya = `internalVar -uad`;
+
+image -w 500 -h 10 -p $mecRigGuiParentFrm
+	-i ($mecMaya+"/mecImages/Horse/HORSE_01_01_img.bmp")
+	mecHORSE_01_01_img;
+	// $path and file is the fullpath;
+	($path+$file)
+*/        string $mecMaya = `internalVar -uad`;
+          string $pathLineEnd = substituteAllString(($path+$file), $mecMaya, "");
+          
+//          "($mecMaya+"+$pathLineEnd")"
+            string $ctrl = "ctrl";
+           if($fileLine[(`size($fileLine)`-1)] != $ctrl )
+           {
+                    //Create an image instead of a symbol button.
+                    $cmdName = "mec" + basename( $file, ".bmp" );
+                    
+                    // The proc is divided into two parts generating the images for display and
+                    //     connecting the controls.  If print is set only the code will be returned
+                    //     instead of the control being generated.
+                    if(!$print)
+                               image -w $width -h $height -p $parent -i ($path+$file) $cmdName;
+                    
+                    //New code will replace lines above.
+/*                    
+$controlPrint =
+        "image -w " + $width + " -h " + $height + " -p "
+        + $newParent + " \n\t-i \"" + ($path+$file) + "\" \n\t" + $cmdName + ";";  */
+
+                    $controlPrint =
+                                  "image -w " + $width + " -h " + $height + " -p " 
+                                  + $newParent + " \n\t-i ($mecMaya + \"" + $pathLineEnd + "\") \n\t" 
+                                  + $cmdName + ";";
+                                  
+                                 // "-i ($mecMaya + "+$pathLineEnd")"
+
+           }
+           else
+           {
+                    $cmdName = "mec" + basename( $file, ".bmp" );
+                    // symbol button will be created here.
+
+                    // A control from the row above is needed to get the proper vertical position.
+                    // Mainly the first control from the row above.
+                    //   A control to the left is needed unless it is the first item on that row.
+                    string $newLine = "mecRigGuiB( \"" + $cmdName + "\");";
+                    
+                    if(!$print)
+                    {
+                    symbolButton -w $width -h $height -p $parent -i ($path+$file)
+                                 -c $newLine $cmdName;
+                    }
+
+
+                    string $annLine = `symbolButton -q -ann $cmdName`;
+
+                    $controlPrint =
+                                "symbolButton -w " + $width + " -h " + $height
+                                + " -p " + $newParent 
+                                + " \n\t-i ($mecMaya + \"" + $pathLineEnd + "\") \n\t-c \""
+                                + $annLine + "\" " + $cmdName + ";";
+/*
+$controlPrint =
+            "symbolButton -w " + $width + " -h " + $height
+            + " -p " + $newParent
+            + " \n\t-i \"" + ($path+$file) +"\" \n\t-c \""
+            + $annLine + "\" " + $cmdName + ";";
+*/
+            //" \n\t-i \"" + ($path+$file) + "\"
+            //"-i ($mecMaya + "+$pathLineEnd")"
+             }
+
+
+
+
+/* Future work.
+if($fileLine[(`size($fileLine)`-1)] == "schk")
+{
+   // Create a symbol checkbox
+   // Connect the control to another attribute
+}
+*/
+           //Determining the image above and to the left of the current icon.
+       int $rowNum = (int)$fileLine[1];
+       int $colNum = (int)$fileLine[2];
+       string $row = "" + $rowNum;
+       string $rowSub = "" + ($rowNum - 1);
+       string $col = "" + $colNum;;
+       string $colSub = "" + ($colNum - 1);;
+
+       if($rowNum <= 10)
+       {
+          if($rowNum < 10) $row = "0" + $rowNum;
+          $rowSub = "0" + ($rowNum - 1);
+       }
+
+       if($colNum <= 10)
+       {
+          if($colNum < 10) $col = "0" + $colNum;
+          $colSub = "0" + ($colNum - 1);
+       }
+
+       // This will be the search line for the cell above and the first column of that row.
+       // Remember that there may not be a 2nd column so we need to always get the first because it will allways be there.
+       // Row needs to be subtracted here anywhere else. Because a pad maybe required.
+       string $strTemp = $fileLine[0] + "_" + $rowSub + "_" + "01";
+
+       // Get the file on the row above and it's first column
+       string $listTemp[] = `getFileList -folder $path -filespec ($strTemp+"*.bmp")`;
+       string $topItem = $listTemp[0];
+
+       // Getting the file to its right
+       $strTemp = $fileLine[0] + "_" + $row + "_" + $colSub;
+       $listTemp = `getFileList -folder $path -filespec ($strTemp+"*.bmp")`;
+       string $leftItem = $listTemp[0];
+
+       // Finding out if the top item is a button or img
+       string $ctrlTemp[];
+       tokenize($topItem, "_", $ctrlTemp);
+       $topItem = "mec" + basename( $topItem, ".bmp" );
+       $leftItem = "mec" + basename( $leftItem, ".bmp" );
+
+      if($rowNum == 1)
+      {
+           // Column
+           if($colNum == 1)
+           {
+             //If its the first column and the first row.  The control is attached to the form
+             if(!$print)
+                        formLayout -e -af $cmdName "right" 0 $parent;
+             $frmPrint = "formLayout -e -af \"" + $cmdName + "\" \"right\" 0 " +
+                       " \n\t" + $newParent + ";";
+
+
+           }
+           else
+           {
+               if(!$print)
+                          formLayout -e -ac $cmdName "left" 0 $leftItem  $parent;
+               $frmPrint = "formLayout -e -ac \"" + $cmdName + "\" \"left\" 0 \"" + $leftItem +
+                         "\" \n\t" + $newParent + ";";
+           }
+      }
+      else
+      {
+           //column
+           if($colNum == 1)
+           {
+               if(!$print)
+                          formLayout -e -ac $cmdName "top" 0 $topItem $parent;
+               $frmPrint = "formLayout -e -ac \"" + $cmdName + "\" \"top\" 0 \"" + $topItem + "\" \n\t" +
+                              $newParent + ";";
+           }
+           else
+           {
+               if(!$print)
+               {
+                         formLayout -e -ac $cmdName "left" 0 $leftItem
+                                       -ac $cmdName "top" 0 $topItem
+                                    $parent;
+               }
+               $frmPrint = "formLayout -e -ac \"" + $cmdName + "\" \"left\" 0 \"" + $leftItem +
+                                "\"\n\t -ac \"" + $cmdName + "\" \"top\" 0 \"" + $topItem + "\" \n\t" +
+                              $newParent + ";";
+           }
+      }
+
+      return {$controlPrint, $frmPrint};
+}
+
+global proc string mecFireForm(string $parent, int $print)
+{
+//       string $path = `internalVar -uad`+"mecImages/";
+         string $path = `textField -q -tx mecRigGuiDir` + "/";
+         string $controlLines;
+         string $frmLines;
+// FullPrint needs to have the window info and the formlayout inputed.
+         string $fullPrint;
+/*
+(print (`internalVar -uad` +"images/");
+C:/Documents and Settings/mclavan/My Documents/maya/mecImages/
+*/
+       // Get the files in the list.
+// 	getFileList -folder `internalVar -userScriptDir` -filespec "*.mel";
+       string $fileList[] = `getFileList -folder $path -filespec "*.bmp"`;
+       // Get the base name of the image.  This will be the baseName for the form and the window.
+
+
+       string $topItem;
+       string $leftItem;
+       for($file in $fileList)
+       {
+//             print("File dimensions for: " + $file + "\n");
+             string $tempArray[] = mecFormBld($path, $file, "select -cl;", $parent, $print); // Need to give proper name for layout.
+             $controlLines = $controlLines + $tempArray[0] + "\n";
+             $frmLines = $frmLines + $tempArray[1] + "\n";
+
+
+       }
+       
+       // putting both the controls and the form parts together.
+       $fullPrint = $controlLines + $frmLines;
+       return $fullPrint;
+}
+
+global proc mecRigGuiB(string $objName)
+{
+      string $sel[] = `ls -sl`;
+      
+      if(`size($sel)` != 0)
+      {
+          string $selAll;
+          for($s in $sel)
+              $selAll = $selAll + " " + $s;
+          string $annObj = "select -r " + $selAll + ";";
+          //button -e -ann $annObj $objName;
+          button -e -ann $annObj $objName;
+      }
+      else
+      {
+          string $newLine = "mecRigGuiB( \"" + $objName + "\");";
+          button -e -ann $newLine $objName;
+      }
+}
+
+proc mecRigGuiB()
+{
+    if(`window -exists mecRigGuiBGui`)
+    		deleteUI mecRigGuiBGui;
+    if( `windowPref -exists mecRigGuiBGui` )
+    		windowPref -r mecRigGuiBGui;
+    
+    window -w 335 -h 250 -t "Rig Gui Builder"
+    		-titleBar 1 -mnb 1 -mxb 1 -mb 1 
+    		-tlb 0 -sizeable 1 mecRigGuiBGui;
+    
+    columnLayout mecRigMast;
+    rowLayout -nc 2 -columnWidth2 5 400 mecRigMastR;
+    text -l "" -w 5 -p mecRigMastR;
+    
+    columnLayout -p mecRigMastR mecRigGUIMC;
+    
+    text -h 25 -l "Enter the width and height of the full image.";
+    
+
+    rowLayout -w 350  -nc 4 -p mecRigGUIMC
+    	-columnWidth4 80 50 60 50 mecRigGuiRLWH;
+    text -l "Width" -w 30  -al "center" -p mecRigGuiRLWH;
+    intField -w 35 -p mecRigGuiRLWH mecRigGuiWidth;
+    text -l "Height" -al "center" -p mecRigGuiRLWH;
+    intField -w 35 -p mecRigGuiRLWH mecRigGuiHeight;
+    
+    //text -l "" -h 5 -p mecRigGUIMC;
+    text -h 25 -l  "Upon choosing a directory the images will be loaded automaticly." -p mecRigGUIMC;
+    rowLayout -w 350 -h 40 -p mecRigGUIMC
+    	-nc 2 -columnWidth2 100 250  mecRigGuiRL;
+    button -w 95 -l "Select Directory" -p mecRigGuiRL
+           -c "fileBrowser( \"mecRigGuiBWork\", \"ImgDir\", \"\", 4 );";
+    textField -en 0 -w 210 -tx "No Directory Currently Selected..." -p mecRigGuiRL mecRigGuiDir;
+
+/*    button -l "  ..." -w 30 -p mecRigGuiRL
+    	-c "fileBrowser( \"mecRigGuiBWork\", \"ImgDir\", \"\", 4 );";
+*/
+    text -l "" -h 5 -p mecRigGUIMC;
+    string $mecLine = ("Control Setup\n"+
+    "1) Select a control.\n"+
+    "2) Press proper interface button.\n"+
+    "3) When finished click Generate Code Button.");
+    text -h 60 -l $mecLine -al "left" -p mecRigGUIMC;
+    /**/
+    
+    button -w 320 -l "Reset" -p mecRigMast
+
+           //-c "deleteUI mecRigGuiBMF; formLayout -p mecRigScL mecRigGuiBMF;";
+           //-c "deleteUI mecRigGuiFrm; frameLayout -w 330 -h 400 -p mecRigMast  -la \"top\" -bs \"in\" mecRigGuiFrm; scrollLayout -w 330 -h 400 -p \"mecRigGuiFrm\" -hst 8 -vst 8 mecRigScL; formLayout -p mecRigScL mecRigGuiBMF;";
+           -c "deleteUI mecRigGuiFrm;";
+    text -h 5 -l "" -p "mecRigMast";
+    button -w 320 -l "Generate Code" -en 1 -p mecRigMast
+           -c "mecRigGuiCodeGen()" mecRigGuiButGen;
+/*
+
+    frameLayout -l "" -w 330 -h 400 -p mecRigMast
+    		-la "top" -bs "in" 
+    		mecRigGuiFrm;
+    scrollLayout -w 330 -h 400 -p "mecRigGuiFrm" -hst 8 -vst 8 mecRigScL;
+    
+
+    //columnLayout -p mecRigScL mecRigGuiDel;
+    formLayout -p mecRigScL mecRigGuiBMF;
+*/
+
+
+
+    // Frame goes here.
+    showWindow mecRigGuiBGui;
+}
+
+
+// This window has the final code to implant in users code
+global proc mecRigGuiCodeGen()
+{
+      // Need to create code for window.
+      // Use the base name of the file to create the name of the window.
+      // Need to create a parent
+
+      // Needs window name, window title, window size
+      
+      // Using the directory field to get a file for the nessary information.
+      // This code will be used in the text generator to make sure the parent and location of the
+      //      files is the same.
+      string $dir = `textField -q -tx mecRigGuiDir`+"/";
+      string $files[] = `getFileList -folder $dir -filespec "*.bmp"`;
+      string $file[];
+      tokenize($files[0],"_",$file);
+      //$file[0] will be the base name of the images.  This will be used to name
+      //         the parts of the interface.
+      // Code for generating the form.
+
+// Code for generating the window.
+/*
+if(`window -exists mecRigGuiBCodeWin`)
+		deleteUI mecRigGuiBCodeWin;
+if( `windowPref -exists mecRigGuiBCodeWin` )
+		windowPref -r mecRigGuiBCodeWin;
+
+window -w 490 -h 534 -t "Rig Gui Builder Code Window"
+		-titleBar 1 -mnb 1 -mxb 1 -mb 1
+		-tlb 0 -sizeable 1 mecRigGuiBCodeWin;
+
+
+      // Code for generating the form.
+      string $mecRigGuiParent = "mec"+$file[0]+"FrmMain";
+      formLayout $mecRigGuiParent;
+*/
+      // Creating the form layout and a variable for its parent.
+      string $allLines = "string $mecRigGuiParentFrm = \"mec\"+ \"" + $file[0] + "\" + \"FrmMain\";\n";
+      string $allLines = $allLines + "formLayout $mecRigGuiParentFrm;\n\n";
+
+      // Creating a path to maya default area for the image area of the generated code
+      // Example: "C:/Documents and Settings/mclavan/My Documents/maya
+      //string $mecMaya = `internalVar -uad`;
+      string $varLines = "// Example: \"C:/Documents and Settings/mclavan/My Documents/maya\n";
+      $varLines = $varLines + "string $mecMaya = `internalVar -uad`;\n\n";
+
+      string $allLines = $allLines + $varLines;
+      string $lines = mecFireForm("mecRigGuiBMF", 1);
+//      int $winWidth2 = `window -q -w mecRigGuiBCodeWin`;
+//      int $winHeight2 = `window -q -h mecRigGuiBCodeWin`;
+
+      string $allLines = $allLines + $lines;
+
+// showWindow would be added here.
+
+      if(`window -exists mecRigGuiBCodeWin`)
+      		deleteUI mecRigGuiBCodeWin;
+      if( `windowPref -exists mecRigGuiBCodeWin` )
+      		windowPref -r mecRigGuiBCodeWin;
+
+      window -w 490 -h 534 -t "Rig Gui Builder Code Window" 
+      		-titleBar 1 -mnb 1 -mxb 1 -mb 1 
+      		-tlb 0 -sizeable 1 mecRigGuiBCodeWin;
+      
+
+/*scrollField -wordWrap true -w ($winWidth2-5) -h ($winHeight2-35)
+ 		mecRigGuiBCode;
+  */  
+      columnLayout -adjustableColumn true;
+      scrollField -h 500 -wordWrap true -tx $allLines
+ 		mecRigGuiBCode2;
+      // Generate code text.
+
+
+      showWindow mecRigGuiBCodeWin;
+      print $lines;
+}
+
+mecRigGuiB();
