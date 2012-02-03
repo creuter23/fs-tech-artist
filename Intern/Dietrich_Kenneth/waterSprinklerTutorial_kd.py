@@ -126,4 +126,10 @@ part_rgbPO_attrs = {'colorRed':0.2, 'colorGreen':0.5, 'colorBlue':1.0, 'particle
 
 for attr, value in part_rgbPO_attrs.items():
     cmds.setAttr('%s.%s' %(mist_part_2[1], attr), value)
-    
+
+#Change the Lifespan of droplets particles
+part_lifespan_attrs = {'lifespanMode':3}
+
+for attr, value in part_lifespan_attrs.items():
+    cmds.setAttr('%s.%s' %(part[1], attr), value)
+
