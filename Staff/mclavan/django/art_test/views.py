@@ -17,6 +17,23 @@ from django.core.mail import send_mail
 # Database access
 from users.models import Student, Disc, Category
 # 
+
+# Import form from form.py
+from form import SignupForm
+
+def signup(request):
+    if request.method == 'POST':
+        form = SignupForm(data=request.POST)
+        if form.is_valid():
+            new_user = form.save()
+            return HttpResponseRedirect("/vfx/")
+    else:
+        form = SignupForm()
+    return render_to_response('signup.html', { 'form': form })
+
+
+
+
 def gateway(request):
     # Opens up the main web page.
     t = get_template(r'login.html')
@@ -79,13 +96,17 @@ def apply(request):
     t = get_template(r'apply.html')
     html = t.render(Context())
     return HttpResponse(html)
-    
+
+
+''' 
 def signup(request):
     if request.method != 'POST':
         raise Http404('Only POSTs are allowed')
     t = get_template(r'signup.html')
     html = t.render(Context())
     return HttpResponse(html)    
+'''
+
 
 def user_check(request):
     errors = []
