@@ -1,0 +1,100 @@
+'''
+Lecture 11 - Strings, Lists, & standard library
+
+
+
+'''
+
+
+'''
+Parts 1 Strings
+'''
+# http://docs.python.org/
+# http://docs.python.org/library/string.html
+
+'''
+String Concatination
+'''
+# http://rgruet.free.fr/PQR26/PQR2.6.html
+
+'''
+String methods
+'''
+# python help docs
+
+# split()
+# replace()
+# rstrip()
+# lstrip()
+# fine
+
+# Base examples
+
+
+'''
+Selecting the faces from one object, and appling it to another.
+'''
+#-- Steps
+# Assuming the user has faces selected.
+# 1) Get Selection
+# 
+# 2) Remove object name
+#  - replace with different objects
+
+
+
+'''
+Split Example
+'''
+#-- Steps
+# Get Selection
+# Store it
+# Assuming the user has faces selected.
+selected = cmds.ls(sl=True)
+# Result: [u'HighBody.f[740:1644]', u'HighBody.f[2156:2248]', u'HighBody.f[2989:3893]', u'HighBody.f[4405:4497]'] # 
+
+# Assuming the user selects the a transform
+selected = cmds.ls(sl=True)[0]
+# Remove object name
+#  - replace with different objects
+# split method
+# 'HighBody.f[740:1644]'
+# 'HighBody' & '.f[740:1644]'
+
+faces = []
+# Empty List
+for sel in selected:
+	pieces = sel.split(".")  # ['HighBody', 'f[740:1644]']
+	faces.append( selected + "." + pieces[-1] )
+	
+
+'''
+Replace
+'''
+
+
+'''
+Renaming
+In Maya
+'''
+
+
+'''
+In System
+'''
+
+
+'''
+Lists and Dictionaries
+'''
+# http://docs.python.org/tutorial/datastructures.html
+
+
+'''
+textScrollList
+'''
+# Showing all the files in a directory.
+
+'''
+Standard Library
+'''

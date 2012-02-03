@@ -1,0 +1,218 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davveys Gear Generator
+''    Author:  
+''    Last Updated: Apr 07, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4442.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+//////////////////////////////////////////////////////////////////////////////////////
+//	Title Section
+
+//								- DVY_ToothProfile -
+
+//////////////////////////////////////////////////////////////////////////////////////
+//	Description and Usage Section
+/*
+
+
+
+*/
+//////////////////////////////////////////////////////////////////////////////////////
+//								- Test Data;-
+
+/*
+
+	float $Profiles[]; float $Angle; int $m;
+	$Angle = 10;
+	$m = 5;
+	$Profiles[0] = 6;		// 	Type of Tooth Profile required
+
+	$Profiles[1] = 1;		// 	Quantity of main profiles required
+	$Profiles[2] = 0;		//	Quantity of EndCapProfiles required.
+	$Profiles[3] = 0;		//	Quantity of EndAngledProfiles required.
+	$Profiles[4] = 0;		//	Quantity of LoweredCenterProfiles required.
+
+
+	DVY_ToothProfile($Profiles, $Angle, $m);
+
+
+*/
+
+//////////////////////////////////////////////////////////////////////////////////////
+
+global proc DVY_ToothProfile(float $Profiles[], float $Angle, int $m)
+ {	
+
+// ******************************************************************************** //	
+//	Global Variables
+
+	global string $TeethProfiles[]; clear $TeethProfiles;
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Local Variables
+	
+	
+	string $Temps[], $GearTypes[], $Sel[];
+	clear $Temps;
+	
+	float $P;
+	
+	int $i = 0; 
+	int $e = 1;
+	
+	// Set ToothProfile name
+	int $I = $Profiles[0]; 
+	
+	$GearType = {"Spur", "Helical", "Bevel", "Toothed", "Worm", "Screw", "TankWheel", "Vee", "Flat", "Chain"};
+	
+	string $Name = $GearType[$I];
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+
+	if ($Angle == 0) {$P = 1;}
+		else {$P = (1/`sind (90-$Angle)`);}
+//	print ("$Angle is " + $P + "\n");
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+	
+	if ($Profiles[1] != 0)
+		{// Main Tooth Profile
+			$TeethProfiles[$i] = `curve -d 1 -name ($Name + "_ToothMainProfile_" + $e)
+						-p 0 -1.35 0     -p 0 -1.35 0.96  -p 0 -0.99 0.83  -p 0 -0.63 0.88
+						-p 0 -0.38 0.86  -p 0 0 0.77      -p 0 0.28 0.68   -p 0 0.56 0.57
+						-p 0 0.84 0.44   -p 0 1.00 0.35   -p 0 1.0 0       -p 0 1.0 -0.35
+						-p 0 0.84 -0.44  -p 0 0.56 -0.57  -p 0 0.28 -0.68  -p 0 0 -0.77
+						-p 0 -0.38 -0.86 -p 0 -0.63 -0.88 -p 0 -0.99 -0.83 -p 0 -1.35 -0.96 `;
+				closeCurve -ch 0 -ps 1 -rpo 1 -bb 0.5 -bki 0 -p 0.1 $TeethProfiles[$i] ;
+				scale 1 ($m * 1) ($m * 1) $TeethProfiles[$i];
+	
+			if ($Profiles[1] > 1)	
+				{
+					select -r $TeethProfiles[$i];
+					$Temps = `duplicate -rr -renameChildren`;
+					$TeethProfiles[++$i] = $Temps[0];
+					clear $Temps;
+				}
+		}// End of Main Tooth Profile
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+
+	if ($Profiles[2] != 0)
+		{// End Cap Tooth Profile
+			$TeethProfiles[++$i] = `curve -d 1 -name ($Name + "_ToothEndCapProfile_" + $e)
+						-p 0 -1.35 0        -p 0 -1.35 0.96     -p 0 -0.99 0.73      -p 0 -0.63 0.78
+						-p 0 -0.38 0.76     -p -0.04 0 0.67     -p -0.07 0.28 0.58   -p -0.15 0.56 0.47
+						-p -0.34 0.84 0.34  -p -0.5 1.0 0.25    -p -0.5 1.0 0        -p -0.5 1.0 -0.25
+						-p -0.34 0.84 -0.34 -p -0.15 0.56 -0.47 -p -0.07 0.28 -0.58  -p -0.04 0 -0.67
+						-p 0 -0.38 -0.76    -p 0 -0.63 -0.78    -p 0 -0.99 -0.73     -p 0 -1.35 -0.96 `;
+				closeCurve -ch 0 -ps 1 -rpo 1 -bb 0.5 -bki 0 -p 0.1 $TeethProfiles[$i] ;
+				scale 1 ($m * 1) ($m * 1) $TeethProfiles[$i];
+				$Temps = `detachCurve -ch 1 -cos on -rpo 0 ($TeethProfiles[$i] + ".ep[0]") ($TeethProfiles[$i] + ".ep[10]")`;
+				parent $Temps[0] $Temps[1] $TeethProfiles[$i];
+				$TeethProfiles[++$i] = $Temps[0];
+				$TeethProfiles [++$i] = $Temps[1];
+				clear $Temps;
+				
+			if ($Profiles[2] > 1)	
+				{
+					select -r -hi $TeethProfiles[$i-2];
+					$Temps = `duplicate -rr -renameChildren`;
+					scale -1 ($m * 1) ($m * 1) $Temps[0];
+					$TeethProfiles[++$i] = $Temps[0];
+					$TeethProfiles [++$i] = $Temps[2];
+					$TeethProfiles [++$i] = $Temps[4];
+					clear $Temps;
+				}			
+		}// End of End Cap Tooth Profile
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+
+	if ($Profiles[3] != 0)
+		{// Angled End Cap Tooth Profile
+			
+			$TeethProfiles[++$i] = `curve -d 1 -name ($Name + "_ToothEndAngleProfile_" + $e)
+						-p 0 -1.35 0   -p 0 -1.35 (0.96 *$P) -p 0 -0.99 (0.83 *$P) -p 0 -0.63 (0.88 *$P)
+						-p 0 -0.38 (0.86 *$P)  -p 0 0 (0.77 *$P) -p 0 0.28 (0.68 *$P) -p 0 0.56 (0.57 *$P)
+						-p 0 0.84 (0.44 * $P) -p -0.1 1.00 (0.35 * $P)  -p -0.1 1.0 0 -p -0.1 1.0 (-0.35 *$P)
+						-p 0 0.84  (-0.44 *$P) -p 0 (0.56 *$P) (-0.57 *$P) -p 0 (0.28 *$P) (-0.68 *$P)
+						-p 0 0  (-0.77 *$P) -p 0 -0.38 (-0.86 *$P) -p 0 -0.63  (-0.88 * $P)
+						-p 0 -0.99 (-0.83 *$P) -p 0 -1.35 (-0.96 *$P) `;
+				closeCurve -ch 0 -ps 1 -rpo 1 -bb 0.5 -bki 0 -p 0.1 $TeethProfiles[$i] ;
+				scale ($m * 1) ($m * 1) ($m * 1) $TeethProfiles[$i];
+				$Temps = `detachCurve -ch 1 -cos on -rpo 0 ($TeethProfiles[$i] + ".ep[0]") ($TeethProfiles[$i] + ".ep[10]")`;
+				parent $Temps[0] $Temps[1] $TeethProfiles[$i];
+				$TeethProfiles[++$i] = $Temps[0];
+				$TeethProfiles [++$i] = $Temps[1];
+				clear $Temps;
+				
+			if ($Profiles[3] > 1)	
+				{
+					select -r -hi $TeethProfiles[$i-2];
+					$Temps = `duplicate -rr -renameChildren`;
+					$TeethProfiles[++$i] = $Temps[0];
+					$TeethProfiles [++$i] = $Temps[2];
+					$TeethProfiles [++$i] = $Temps[4];
+					clear $Temps;
+				}
+		}// End of Angled End Cap Tooth Profile
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+	
+	if ($Profiles[4] != 0)
+		{// Lowered Center Section Tooth Profile
+			$TeethProfiles[++$i] = `curve -d 1 -name ($Name + "_ToothLoweredCenterProfile_" + $e)
+						-p 0 (-1.35 - ($m * 0.165)) 0 -p 0 (-1.35- ($m * 0.165))  1.08
+						-p 0 -0.99 0.83  -p 0 -0.63 0.88 -p 0 -0.38 0.86 -p 0 -0.15 0.81
+						-p 0 0 0.77  -p 0 0.17 0.72 -p 0 0.28 0.68 -p 0 0.56 0.57
+						-p 0 0.56 0 -p 0 0.56 -0.57 -p 0 0.28 -0.68 -p 0 0.17 -0.72
+						-p 0 0 -0.77  -p 0 -0.15 -0.81 -p 0 -0.38 -0.86 -p 0 -0.63 -0.88
+						-p 0 -0.99 -0.83 -p 0  (-1.35 - ($m * 0.165)) -1.08 `;
+				closeCurve -ch 0 -ps 1 -rpo 1 -bb 0.5 -bki 0 -p 0.1 $TeethProfiles[$i] ;
+				scale 1 ($m * 0.975) ($m * 0.975) $TeethProfiles[$i];
+	
+			if ($Profiles[4] > 1)	
+				{
+					select $TeethProfiles[$i];
+					$Temps = `duplicate -rr -renameChildren`;
+					scale 1 ($m * 0.975) ($m * 0.975) $Temps[0];
+					$i++;
+					$TeethProfiles[$i] = $Temps[0];
+				}
+			$i++;
+		}// End of Lowered Center Section Tooth Profile
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+
+//		print "\n";
+//		print $TeethProfiles;
+ 
+ }// End of DVY_ToothProfile procedure
+ 
+ 
+ 
+ 
+ 
+ 
+ 

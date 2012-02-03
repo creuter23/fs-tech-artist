@@ -1,0 +1,88 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davveys Gear Generator
+''    Author:  
+''    Last Updated: Apr 07, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4442.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+
+
+//	DVY_HelixProfile($PCD, $Angle, $Height, $Name);
+
+/*
+
+	DVY_HelixProfile(90, 7.76517, 24, "ToothProfile");
+
+*/
+
+global proc string[] DVY_HelixProfile(float $PCD, float $Angle, float $Height, string $Name)
+ {
+	
+	string $Temp[], $Locators[], $Names[];
+	vector $PosC[];	float $Pos[];
+	
+	 $Name = ($Name + "_1");
+
+	cylinder -p 0 0 0 -ax 0 1 0 -ssw ($Angle * 0.5) -esw ($Angle * -0.5) -r 1 -hr 1 -d 3
+			 -ut 0 -tol 0.01 -s 4 -nsp 4 -ch 1 - name $Name; 
+			  scale -r ($PCD * 0.5) ($Height * 0.5) ($PCD * 0.5); 
+			  rotate -r 0 0 90;
+
+	int $i = 0; int $j = 6;
+	  
+	for ($i=0; $i<7; $i++)
+		 {	
+			$Pos = `xform -q -ws -t ($Name + ".cv[" + $j + "][" + $i + "]")` ;
+			$PosC[$i] = << $Pos[0], $Pos[1], $Pos[2]>>;
+//			print (" CV[" + $i + "][ " + $j + "] "  + $i + " is located at " + $PosC[$i] + "\n");
+			$j--;
+		 }
+	
+		$Names[0] = `eval ("curve -d 3 -p " + $PosC[6] + " -p " + $PosC[5]
+					+ " -p " + $PosC[4]+ " -p " + $PosC[3] + " -p " + $PosC[2]
+					+ " -p " + $PosC[1] + " -p " + $PosC[0] + ";") `;
+			$Names[1] = `rename $Names[0] ("PCurve_1")`;
+			$Temp = `reverseCurve -ch 0 -rpo 0 $Names[1]`;
+			$Names[2] = `rename $Temp[0] ("PCurve_2")`;
+
+	$i = 0; $j = 6;
+	
+	for ($i=0; $i<5; $i++)
+	 {	
+		$Pos = `xform -q -ws -t ($Names[1] + ".ep[" + $i + "]")` ;
+		$Temp = `spaceLocator -p 0 0 0` ;
+		$Locators[$i] = `rename $Temp[0] ("DVYLocator" + ($i+1))` ;
+		move -r  $Pos[0] $Pos[1] $Pos[2] $Locators[$i];
+		CenterPivot;
+		$Names[($i + 3)] = $Locators[$i];
+		$j--;
+	 }
+		
+	$i = 0; $j = 5;
+	
+	for ($i=1; $i<5; $i++)
+	 {	
+		delete `aimConstraint -offset 0 0 0 -weight 1 -aimVector 1 0 0 -upVector 0 1 0
+			-worldUpType "vector" -worldUpVector 0 1 0 $Locators[$i] $Locators[$i-1]`;
+			$j--;
+	 }
+	
+	 delete `aimConstraint -offset 0 0 0 -weight 1 -aimVector 1 0 0 -upVector 0 1 0
+			-worldUpType "vector" -worldUpVector 0 1 0 $Locators[3] $Locators[4]`;
+	 
+		$Group = `group -em -name "HelixGroup_"`;
+		$Names[0] = $Name;	
+		parent $Names $Group;
+
+	return $Names;
+ }
+
+

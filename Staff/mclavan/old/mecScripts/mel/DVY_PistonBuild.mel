@@ -1,0 +1,1735 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davvey\'s Piston Generator
+''    Author:  
+''    Last Updated: Feb 17, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4528.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+
+/////////////////////////////////////////////////////////////////////////////			
+/*				
+	Copyright © 2006 DVY_PistonBuild. All rights reserved davvey@ntlworld.com
+
+						- DVY_PistonBuild -
+///////////////////////////////////////////////////////////////////////////////
+
+	This scipt is called by the GUI script DVY_Pistons and is used to build
+	each section of the cylinder. The individual parts are group as required.
+	The groups are point and aim constrained to give realistic movement of the
+	cylinder IN and OUT.
+	Unused attributes are locked off if not required.
+	Script also adds hidden attributes to the Piston Group Top Node for use
+	with Davvey's Spring Generator to allow building of a Spring to suit size
+	of Cylinder built. These are only added to Round Cap end Cylinders.
+	
+	Note:- The Scale of the Piston will be adjusted to set correct Piston size
+	relevant to the correct size for the Users Maya Unit settings 
+	i.e mm, cm, m, in, ft, yd.
+	
+	Matching Spring.
+	
+	If Required After Building the Piston please use Davvey's Spring Generator
+	a Spring to match the Piston and before moving Piston away from default
+	build position.
+	
+*/	
+///////////////////////////////////////////////////////////////////////////////
+//					DVY_PistonBuild Procedure
+////////////////////////////////////////////////////////////////////////////////
+
+global proc DVY_PistonBuild()
+{
+	
+		
+// ******************************************************************************** //	
+//	Global Variables
+	
+	global string $Units;
+
+	global float $DVYUnit;
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Local Variables
+	
+	string $Temp[], $Temps[], $PistonGrp[], $Piston[], $Shader[];
+	
+	int $a, $b, $c, $i, $j, $k, $q;
+	
+	float $RodLen, $RodDiam, $BoreID, $BoreOD, $BoreLen, $Pos[];
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Constants and "Static Data"
+	int $e = $E = 1;
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Set Scaling unit for Global units used.
+		
+	DVY_ScaleSet;
+	print ("Current units are " + $Units + " and Scale Factor $DVYUnit is " + $DVYUnit + "\n");
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Error Checking section.	
+	
+	if (`optionMenu -q -sl  DVY_Cylinder1Option` == 1)
+		{
+			error "Please select Cylinder Mounting type. © Davvey..\n";
+		}
+	
+	if (`optionMenu -q -sl  DVY_Rod1Option` == 1)
+		{
+			error "Please select Piston Rod End type. © Davvey..\n";
+		}
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Create Shaders for Gear Parts.
+					
+	if(!`objExists Stainless_SH `) { $Shader[0] = `DVY_Shaders(37)`; }
+		 $Shader[0] = "Stainless_SH";
+	if(!`objExists Brass_SH`) { $Shader[1] = `DVY_Shaders(21)`; }
+		 $Shader[1] = "Brass_SH";	
+	if(!`objExists Black_SH`) { $Shader[2] = `DVY_Shaders(34)`; }
+		 $Shader[2] = "Black_SH";	
+	if(!`objExists Steel_SH`) { $Shader[3] = `DVY_Shaders(30)`; }
+		 $Shader[3] = "Steel_SH";	
+	if(!`objExists Shaft_SH`) { $Shader[4] = `DVY_Shaders(9)`; }
+		 $Shader[4] = "Shaft_SH";	
+	if(!`objExists SpringSteel_SH`) { $Shader[5] = `DVY_Shaders(35)`; }
+		 $Shader[5] = "SpringSteel_SH";		 
+			 
+//		print "\nShaders used are..\n";
+//		print $Shader;
+
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+		
+	$RodDiam = `floatField -q -v PFloatField_01`;
+	$BoreID = `floatField -q -v PFloatField_05`;
+	$BoreOD = `floatField -q -v PFloatField_07`;
+	$RodLen = `floatField -q -v PFloatField_03` - ($BoreID * 0.5);
+	$BoreLen = `floatField -q -v PFloatField_09`;
+	
+	print ("Rod Length is " + $RodLen + "\n");
+	print ("Rod Diameter is " + $RodDiam + "\n");
+	print ("Cylinder Inside Diameter is " + $BoreID + "\n");
+	print ("Cylinder Outside Diameter is " + $BoreOD + "\n");
+	print ("Cylinder Length is " + $BoreLen + "\n");
+	
+	$PisName = "Piston_";
+	
+	 while(`objExists ($PisName + "Main_GrpN_" + $E)`)
+		  {
+			 $E++;	print ("$E is " + $E + "\n");
+		  }
+			$PistonGrp[0] = `group -em -name ($PisName + "Main_GrpN_" + $E)`;
+			print ("Group is called " + $PistonGrp[0] + "\n");
+
+		while (`objExists ($PisName + "Grp_" + $E + "_Cylinder_GrpN_" + $e)`)
+			{
+				$e++;
+				print ("$e is " + $e + "\n");
+			}
+	
+	$PistonGrp[1] = `group -em -name ($PisName + "Grp_" + $E + "_Rod_GrpN_" + $e)`;
+	$PistonGrp[2] = `group -em -name ($PisName + "Grp_" + $E + "_Cylinder_GrpN_" + $e)`;
+			
+	parent $PistonGrp[1] $PistonGrp[2] $PistonGrp[0];
+// -------------------------------------------------------------------------------- //
+// ******************************************************************************** //	
+// Section to generate Piston Rod.
+
+	$Temps = `polyCylinder -r ($RodDiam * 0.5) -h ($RodLen) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+	
+		polyExtrudeFacet -ch 0 -kft 1 -ws 0 -w 0 -gx 0 -gy -1 -gz 0 -att 0
+						-ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+						-pvx 0 -pvy 0 -pvz 0 -tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1 
+						-ltx 0 -lty 0 -ltz 0 -lrx 0 -lry 0 -lrz 0 -lsx 0.8 -lsy 0.8 -lsz 1
+						-ldx 1 -ldy 0 -ldz 0 -mx 0 -my 0 -mz 0 -sma 30 ($Temps[0] + ".f[36]");
+	
+		polyExtrudeFacet -ch 0 -kft 1 -ws 0 -w 0 -gx 0 -gy -1 -gz 0 -att 0
+						-ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+						-pvx 0 -pvy 0 -pvz 0 -tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1 
+						-ltx 0 -lty 0 -ltz ($BoreID * 0.50) -lrx 0 -lry 0 -lrz 0 -lsx 1 -lsy 1 -lsz 1
+						-ldx 1 -ldy 0 -ldz 0 -mx 0 -my 0 -mz 0 -sma 30 ($Temps[0] + ".f[36]");
+	
+		polyExtrudeFacet -ch 0 -kft 1 -ws 0 -w 0 -gx 0 -gy -1 -gz 0 -att 0
+						-ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+						-pvx 0 -pvy 0 -pvz 0 -tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1 
+						-ltx 0 -lty 0 -ltz 0 -lrx 0 -lry 0 -lrz 0 -lsx 0.9 -lsy 0.9 -lsz 1
+						-ldx 1 -ldy 0 -ldz 0 -mx 0 -my 0 -mz 0 -sma 30 ($Temps[0] + ".f[36]");
+		
+		polyExtrudeFacet -ch 0 -kft 1 -ws 0 -w 0 -gx 0 -gy -1 -gz 0 -att 0
+						-ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+						-pvx 0 -pvy 0 -pvz 0 -tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1 
+						-ltx 0 -lty 0 -ltz ($BoreID * 0.1) -lrx 0 -lry 0 -lrz 0 -lsx 1 -lsy 1 -lsz 1 
+						-ldx 1 -ldy 0 -ldz 0 -mx 0 -my 0 -mz 0 -sma 30 ($Temps[0] + ".f[36]");
+		
+		polyExtrudeFacet -ch 0 -kft 1 -ws 0 -w 0 -gx 0 -gy -1 -gz 0 -att 0
+						-ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+						-pvx 0 -pvy 0 -pvz 0 -tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1
+						-ltx 0 -lty 0 -ltz ($BoreID * 0.02) -lrx 0 -lry 0 -lrz 0 -lsx 0.9 -lsy 0.9 -lsz 1
+						-ldx 1 -ldy 0 -ldz 0 -mx 0 -my 0 -mz 0 -sma 30 ($Temps[0] + ".f[36]");
+	
+			polySubdivideFacet -dv 1 -m 1 -ch 0 ($Temps[0] + ".f[36]");
+		
+		polyExtrudeFacet -ch 0 -kft 1 -ws 0 -w 0 -gx 0 -gy -1 -gz 0 -att 0
+						-ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+						-pvx 0 -pvy 0 -pvz 0 -tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1 
+						-ltx 0 -lty 0 -ltz 0 -lrx 0 -lry 0 -lrz 0 -lsx 0.5 -lsy 0.5 -lsz 1
+						-ldx 1 -ldy 0 -ldz 0 -mx 0 -my 0 -mz 0 -sma 30 ($Temps[0] + ".f[72]");
+	
+		polyExtrudeFacet -ch 0 -kft 1 -ws 0 -w 0 -gx 0 -gy -1 -gz 0 -att 0
+						-ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+						-pvx 0 -pvy 0 -pvz 0 -tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1 
+						-ltx 0 -lty 0 -ltz ($BoreID * 0.20) -lrx 0 -lry 0 -lrz 0 -lsx 1 -lsy 1 -lsz 1
+						-ldx 1 -ldy 0 -ldz 0 -mx 0 -my 0 -mz 0 -sma 30 ($Temps[0] + ".f[72]");
+		
+		polyExtrudeFacet -ch 0 -kft 1 -ws 0 -w 0 -gx 0 -gy -1 -gz 0 -att 0
+						-ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+						-pvx 0 -pvy 0 -pvz 0 -tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1 
+						-ltx 0 -lty 0 -ltz ($BoreID * 0.02) -lrx 0 -lry 0 -lrz 0 -lsx 0.9 -lsy 0.9 -lsz 1
+						-ldx 1 -ldy 0 -ldz 0 -mx 0 -my 0 -mz 0 -sma 30 ($Temps[0] + ".f[72]");
+		
+			polySubdivideFacet -dv 1 -m 1 -ch 0 ($Temps[0] + ".f[72]");
+			move -r 0 ($RodLen * 0.5 + ($BoreID * 0.5)) 0 $Temps[0];
+	
+		$Piston[0] = `rename $Temps[0] ($PisName + "Grp_" + $E + "_Rod_" + $e)`;
+		
+		select -r $Piston[0];
+			hyperShade -assign "initialShadingGroup";
+			hyperShade -assign $Shader[4];
+	
+// -------------------------------------------------------------------------------- //
+// ******************************************************************************** //	
+// Section to generate Cylinder Piston.
+	$Pos[0] = $BoreID - ($RodDiam * 0.8);
+
+		$Temp = `polyPipe -r ($BoreID * 0.5) -h ($BoreID * 1.0) -t ($Pos[0] * 0.5) -sa 36 -sh 1 -sc 1 -ch 0`;
+			polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 2 -worldSpace 0 
+					-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+					-miteringAngle 180 -angleTolerance 180 -ch 0  ($Temp[0] + ".e[72:143]") ;
+			move -r 0 ($BoreID * 0.25) 0 $Temp[0];
+			
+			$Piston[1] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_Piston_" + $e)`;
+
+			select -r $Piston[1];
+				hyperShade -assign "initialShadingGroup";
+				hyperShade -assign $Shader[1];
+			
+// -------------------------------------------------------------------------------- //
+// ******************************************************************************** //	
+// Section to generate Rod End Mounts.
+			
+	$Temp = `polyPipe -r ($RodDiam * 0.6) -h ($RodDiam * 1.0) -t ($RodDiam * 0.35) -sa 36 -sh 1 -sc 1 -ch 0`;
+		polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 2 -worldSpace 0 
+				-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+				-miteringAngle 180 -angleTolerance 180 -ch 0  ($Temp[0] + ".e[72:143]") ;
+		
+		$Piston[2] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_RodEnd_" + $e)`;
+		
+		select -r $Piston[2];
+			hyperShade -assign "initialShadingGroup";
+			hyperShade -assign $Shader[2];
+		
+	
+		if (`optionMenu -q -sl DVY_Rod1Option` == 2)
+			{// Section to generate Bush Mount for Rod End
+				$Temps = `polyCube -w ($RodDiam * 0.9) -h ($BoreID * 0.25) -d ($RodDiam * 0.70) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r 0 ($RodDiam * 0.5) 0 $Temps[0];
+					
+				$Temp = `polyBoolOp -op 1 -ch 0 $Piston[2] $Temps[0]`;
+				
+				$Temps = `polyCylinder -r ($RodDiam * 0.45) -h ($RodDiam * 0.70) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					rotate 90 0 0 $Temps[0];
+					move -r 0 ($RodDiam * 0.75) 0 $Temps[0];
+			
+				$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+					polyBevel -offset 0.5 -offsetAsFraction 1 -autoFit 1 -segments 2 -worldSpace 0 
+							-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+							-miteringAngle 180 -angleTolerance 180 -ch 0 
+							($Temp[0] + ".e[0:17]") ($Temp[0] + ".e[19:36]") ($Temp[0] + ".e[673:676]");
+				
+				$Temps = `polyCylinder -r ($RodDiam * 0.2) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					rotate -r 90 0 0 $Temps[0];
+					move -r 0 ($RodDiam * 0.75) 0 $Temps[0];
+					
+				$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					polySoftEdge -a 90 -ch 0 ($Temp[0] + ".f[109:112]");
+						
+				$Piston[2] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_Bush_RodEnd_" + $e)`;
+				
+				select -r $Piston[2];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[2];
+					
+				$Temps = `polyCylinder -r ($RodDiam * 0.2) -h ($BoreID * 0.75) -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					rotate -r 90 0 0 $Temps[0];
+					polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 1 -worldSpace 0 
+						  -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+						  -miteringAngle 180 -angleTolerance 180 -ch 0 ($Temps[0] + ".f[18:19]") ;
+					polySubdivideFacet -dv 1 -m 1 -ch 0 ($Temps[0] + ".f[18:19]") ;
+					move -r 0 ($RodDiam * 0.75) 0 $Temps[0];
+				
+				$Piston[3] = `rename $Temps[0] ($PisName + "Grp_" + $E + "_RodEnd_Pin" + $e)`;
+				
+				select -r $Piston[3];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[3];
+					
+				parent $Piston[3] $Piston[2];
+					move -r 0 ($RodLen * 1.0 + ($BoreID * 0.625)) 0 $Piston[2];
+				
+				$Pos = `xform -q -ws -t $Piston[3]`;
+				move -r $Pos[0] $Pos[1] $Pos[2] $PistonGrp[1];
+				parent $Piston[0] $Piston[1] $Piston[2] $Piston[3] $PistonGrp[1];
+			}
+				
+		if (`optionMenu -q -sl DVY_Rod1Option` == 3)
+			{// Section to generate Pin Mount for Rod End
+				$Temps = `polyCylinder -r ($RodDiam * 0.5) -h ($RodDiam * 0.1) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					move -r 0 ($RodDiam * 0.3) 0 $Temps[0];
+					scale 0.9 1 0.9 ($Temps[0] + ".f[37]");
+			
+				select -r $Temps[0];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[2];
+					
+				$Temp = `polyBoolOp -op 1 -ch 0 $Piston[2] $Temps[0]`;
+				
+				$Temps = `polyCylinder -r ($RodDiam * 0.25) -h ($RodDiam * 1.0) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 2 -worldSpace 0 
+							-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+							-miteringAngle 180 -angleTolerance 180 -ch 0  ($Temps[0] + ".f[37]") ;
+					move -r 0 ($RodDiam * 0.8) 0 $Temps[0];
+				
+				select -r $Temps[0];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[3];
+					
+				$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+				
+					$Piston[2] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_PinMount_RodEnd_" + $e)`;
+					move -r 0 ($RodLen * 1.0 + ($BoreID * 0.625)) 0 $Piston[2];
+			
+				$Pos = `xform -q -ws -t $Piston[2]`;
+				move -r $Pos[0] ($Pos[1] + ($RodDiam * 0.8)) $Pos[2] $PistonGrp[1];
+	
+				parent $Piston[0] $Piston[1] $Piston[2] $PistonGrp[1];
+			}
+		
+		if (`optionMenu -q -sl DVY_Rod1Option` == 4)
+			{// Section to generate Male Clevis for Rod End
+				$Temps = `polyCylinder -r ($RodDiam * 0.5) -h ($RodDiam * 0.1) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					move -r 0 ($RodDiam * 0.3) 0 $Temps[0];
+					scale 0.9 1 0.9 ($Temps[0] + ".f[37]");
+			
+				$Temp = `polyBoolOp -op 1 -ch 0 $Piston[2] $Temps[0]`;
+			
+				$Temps = `polyCube -w ($RodDiam * 1.2) -h ($BoreID * 0.30) -d ($RodDiam * 0.25) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					scale 0.47 1 1 ($Temps[0] + ".f[1]");
+					scale 0.95 1 1 ($Temps[0] + ".f[3]");
+					move -r 0 ($RodDiam * 0.25 + ($BoreID * 0.15)) 0 $Temps[0];
+						
+				$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+
+				$Temps = `polyCylinder -r ($RodDiam * 0.3) -h ($RodDiam * 0.25) -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					rotate -r 90 0 0 $Temps[0];
+					move -r 0 ($RodDiam * 0.25 + ($BoreID * 0.25)) 0 $Temps[0];
+				
+				$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+				
+				$Temps = `polyCylinder -r ($RodDiam * 0.2) -h ($BoreID * 1.0) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					rotate -r 90 0 0 $Temps[0];
+					move -r 0 ($RodDiam * 0.25 + ($BoreID * 0.25)) 0 $Temps[0];
+			
+				$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+				
+				$Piston[2] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_MaleClevis_RodEnd_" + $e)`;
+					
+				select -r $Piston[2];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[2];
+					
+				$Temps = `polyCylinder -r ($RodDiam * 0.2) -h ($BoreID * 0.5) -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 1 -worldSpace 0 
+							-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+							-miteringAngle 180 -angleTolerance 180 -ch 0 ($Temps[0] + ".f[18:19]") ;
+					polySubdivideFacet -dv 1 -m 1 -ch 0 ($Temps[0] + ".f[18:19]") ;
+					rotate -r 90 0 0 $Temps[0];
+					move -r 0 ($RodDiam * 0.25 + ($BoreID * 0.25)) 0 $Temps[0];
+				
+				$Piston[3] = `rename $Temps[0] ($PisName + "Grp_" + $E + "_RodEnd_Pin" + $e)`;
+				
+				select -r $Piston[3];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[3];
+			
+				parent $Piston[3] $Piston[2];
+					move -r 0 ($RodLen * 1.0 + ($BoreID * 0.625)) 0 $Piston[2];
+				
+				$Pos = `xform -q -ws -t $Piston[3]`;
+					move -r $Pos[0] $Pos[1] $Pos[2] $PistonGrp[1];
+	
+				parent $Piston[0] $Piston[1] $Piston[2] $Piston[3] $PistonGrp[1];
+			}
+		
+		if (`optionMenu -q -sl DVY_Rod1Option` == 5)
+			{// Section to generate Female Clevis for Rod End
+				$Temps = `polyCylinder -r ($RodDiam * 0.5) -h ($RodDiam * 0.1) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					move -r 0 ($RodDiam * 0.3) 0 $Temps[0];
+					scale 0.9 1 0.9 ($Temps[0] + ".f[37]");
+			
+				$Temp = `polyBoolOp -op 1 -ch 0 $Piston[2] $Temps[0]`;
+			
+				$Piston[2] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_Clevis_RodEnd_" + $e)`;
+			
+				$Temp = `polyCube -w ($RodDiam * 1.2) -h ($BoreID * 0.30) -d ($RodDiam * 0.25) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					scale 0.47 1 1 ($Temp[0] + ".f[1]");
+					scale 0.95 1 1 ($Temp[0] + ".f[3]");
+					move -r 0 ($RodDiam * 0.25 + ($BoreID * 0.15)) 0 $Temp[0];
+						
+					$Temps = `polyCylinder -r ($RodDiam * 0.3) -h ($RodDiam * 0.25) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+						rotate -r 90 0 0 $Temps[0];
+						move -r 0 ($RodDiam * 0.25 + ($BoreID * 0.25)) 0 $Temps[0];
+					
+					$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+					
+					$Temps = `polyCylinder -r ($RodDiam * 0.2) -h ($BoreID * 1.0) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+						rotate -r 90 0 0 $Temps[0];
+						move -r 0 ($RodDiam * 0.25 + ($BoreID * 0.25)) 0 $Temps[0];
+				
+					$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+						move -r 0 0 ($RodDiam * 0.25) $Temp[0];
+						scale 0.75 1 1 ($Temp[0] + ".e[110]");
+				
+					select $Temp[0];
+						$Temps = `duplicate -rr`;
+						rotate 0 180 0 $Temps[0];
+						move -r 0 0 ($RodDiam * -0.5) $Temps[0];
+						
+					$Temp = `polyBoolOp -op 1 -ch 0 $Piston[2] $Temp[0]`;
+					$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+			
+					$Piston[2] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_MaleClevis_RodEnd_" + $e)`;
+					
+					select -r $Piston[2];
+						hyperShade -assign "initialShadingGroup";
+						hyperShade -assign $Shader[2];
+
+					$Temps = `polyCylinder -r ($RodDiam * 0.2) -h ($BoreID * 0.5) -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+							polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 1 -worldSpace 0 
+								  	-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+								  	-miteringAngle 180 -angleTolerance 180 -ch 0 ($Temps[0] + ".f[18:19]") ;
+							polySubdivideFacet -dv 1 -m 1 -ch 0 ($Temps[0] + ".f[18:19]") ;
+							rotate -r 90 0 0 $Temps[0];
+							move -r 0 ($RodDiam * 0.25 + ($BoreID * 0.25)) 0 $Temps[0];
+				
+				$Piston[3] = `rename $Temps[0] ($PisName + "Grp_" + $E + "_RodEnd_Pin" + $e)`;
+				
+				select -r $Piston[3];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[3];
+
+				parent $Piston[3] $Piston[2];
+					move -r 0 ($RodLen * 1.0 + ($BoreID * 0.625)) 0 $Piston[2];
+					
+					$Pos = `xform -q -ws -t $Piston[3]`;
+					move -r $Pos[0] $Pos[1] $Pos[2] $PistonGrp[1];
+					parent $Piston[0] $Piston[1] $Piston[2] $Piston[3] $PistonGrp[1];
+			}
+			
+// -------------------------------------------------------------------------------- //
+// ******************************************************************************** //	
+// Section to generate Cylinder Barrel.
+		
+			$Pos[0] = $BoreOD - $BoreID;
+			
+				$Temp = `polyPipe -r ($BoreOD * 0.5) -h ($BoreLen * 2.0) -t ($Pos[0] * 0.5) -sa 36 -sh 1 -sc 1 -ch 0`;
+					polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 2 -worldSpace 0 
+							  -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+							  -miteringAngle 180 -angleTolerance 180 -ch 0  ($Temp[0] + ".e[72:143]") ;
+							move -r 0 ($BoreLen * 0.5) 0 $Temp[0];
+			
+				$Piston[4] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_Cylinder_" + $e)`;
+				
+				select -r $Piston[4];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[0];
+				
+			
+// -------------------------------------------------------------------------------- //
+// ******************************************************************************** //	
+// Section to generate Round End Caps.
+				
+	if (`radioButtonGrp -q -sl CylinderType` == 1)
+		{	// Section to generate Cylinder End Cap.
+			$Temp = `polyCylinder -r ($BoreOD * 0.6) -h ($BoreID * 0.5) -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 2 -worldSpace 0 
+							  -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+							  -miteringAngle 180 -angleTolerance 180 -ch 0  ($Temp[0] + ".e[0:71]") ;
+		
+			$Temps = `polyCylinder -r ($BoreOD * 0.5) -h ($BoreID * 0.5) -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move -r 0 ($BoreID * 0.25) 0 $Temps[0];
+					
+			$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+		
+			$Temps = `polyCylinder -r ($RodDiam * 0.5) -h ($BoreID * 0.5) -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move -r 0 ($BoreID * 0.1) 0 $Temps[0];
+		
+			$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+			
+			$Piston[5] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_Cylinder_EndCap_" + $e)`;
+			
+			select -r $Piston[5];
+				hyperShade -assign "initialShadingGroup";
+				hyperShade -assign $Shader[2];
+				
+		}	
+		
+// -------------------------------------------------------------------------------- //
+// ******************************************************************************** //	
+// Section to generate Square End Caps.
+		
+	if (`radioButtonGrp -q -sl CylinderType` == 2)
+		{// Section to generate Cylinder End Square Cap.
+			
+				$Temp = `polyCube -w ($BoreOD * 1.2) -h ($BoreID * 0.5) -d ($BoreOD * 1.2) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					polyBevel -offset 0.3 -offsetAsFraction 1 -autoFit 1 -segments 3 
+							-worldSpace 0 -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 
+							-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180 -ch 0
+							($Temp[0] + ".e[4:5]") ($Temp[0] + ".e[8:9]");
+					
+					$Temps = `polyCylinder -r ($BoreOD * 0.5) -h ($BoreID * 0.5) -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move -r 0 ($BoreID *0.25) 0 $Temps[0];
+							
+					$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+				
+					$Temps = `polyCylinder -r ($RodDiam * 0.5) -h ($BoreID * 0.5) -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move -r 0 ($BoreID * 0.1) 0 $Temps[0];
+				
+					$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+				
+				$Pos[0] = (($BoreOD + $BoreID) * 0.5) * 0.5;
+				
+					$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move -r ($Pos[0]) 0 ($Pos[0]) $Temps[0];
+						$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					
+					$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move -r ($Pos[0]* -1.0) 0 ($Pos[0]) $Temps[0];
+						$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					
+					$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move -r ($Pos[0]) 0 ($Pos[0] * -1.0) $Temps[0];
+						$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					
+					$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move -r ($Pos[0]* -1.0) 0 ($Pos[0] * -1.0) $Temps[0];
+						$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+				
+				$Piston[5] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_Cylinder_EndCap" + $e)`;
+				
+				select -r $Piston[5];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[2];
+				
+		}		
+				
+		if (`optionMenu -q -sl DVY_Cylinder1Option` == 2)
+			{// Section to generate Cylinder End Cap BushMount.
+				
+				$Temp = `polyCube -w ($RodDiam * 0.9) -h ($BoreID * 0.25) -d ($RodDiam * 0.70) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r 0 ($RodDiam * -0.75) 0 $Temp[0];
+				
+				$Temps = `polyCylinder -r ($RodDiam * 0.45) -h ($RodDiam * 0.70) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					rotate 90 0 0 $Temps[0];
+					move -r 0 ($RodDiam * -1.0) 0 $Temps[0];
+		
+				$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+					polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 2 -worldSpace 0 
+							  -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+							  -miteringAngle 180 -angleTolerance 180 -ch 0 
+							  ($Temp[0] + ".e[0:17]") ($Temp[0] + ".e[19:36]") ($Temp[0] + ".e[57]") 
+							  ($Temp[0] + ".e[59:60]") ($Temp[0] + ".e[62]");
+					
+				$Temps = `polyCylinder -r ($RodDiam * 0.2) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					rotate -r 90 0 0 $Temps[0];
+					move -r 0 ($RodDiam * -1.0) 0 $Temps[0];
+					
+				$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					polySoftEdge -a 90 -ch 0 ($Temp[0] + ".f[105:106]");
+				
+				$Temp = `polyBoolOp -op 1 -ch 0 $Piston[5] $Temp[0]`;
+			
+				$Piston[5] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_Cylinder_BushEndCap_" + $e)`;
+				
+				select -r $Piston[5];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[2];
+				
+				$Temps = `polyCylinder -r ($RodDiam * 0.2) -h ($BoreID * 0.75) -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					rotate -r 90 0 0 $Temps[0];
+					polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 1 -worldSpace 0 
+							-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+							-miteringAngle 180 -angleTolerance 180 -ch 0 ($Temps[0] + ".f[18:19]") ;
+					polySubdivideFacet -dv 1 -m 1 -ch 0 ($Temps[0] + ".f[18:19]") ;
+					move -r 0 ($RodDiam * -1.0) 0 $Temps[0];
+				
+				$Piston[6] = `rename $Temps[0] ($PisName + "Grp_" + $E + "_CylinderEnd_Pin" + $e)`;
+				
+				select -r $Piston[6];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[3];
+				
+				$Pos = `xform -q -ws -t $Piston[6]`;
+				move -r $Pos[0] $Pos[1] $Pos[2] $PistonGrp[2];
+				parent $Piston[4] $Piston[5] $Piston[6] $PistonGrp[2];
+			}
+
+		if (`optionMenu -q -sl DVY_Cylinder1Option` == 3)
+			{// Section to generate Cylinder End Cap Pin Mount.
+				$Temps = `polyCylinder -r ($RodDiam * 0.25) -h ($RodDiam * 1.0) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 2 -worldSpace 0 
+							-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+							-miteringAngle 180 -angleTolerance 180 -ch 0  ($Temps[0] + ".f[36]") ;
+						move -r 0 ($RodDiam * -1.0) 0 $Temps[0];
+		
+				select -r $Temps[0];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[3];
+					
+				$Temp = `polyBoolOp -op 1 -ch 0 $Piston[5] $Temps[0]`;
+				
+				$Piston[5] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_Cylinder_PinMount_EndCap_" + $e)`;
+				
+				move -r 0 ($RodDiam * -1.0) 0 $PistonGrp[2];
+				
+				parent $Piston[4] $Piston[5] $PistonGrp[2];
+			}
+					
+		if (`optionMenu -q -sl DVY_Cylinder1Option` == 4)
+			{// Section to generate Cylinder End Cap Male Clevis.
+				$Temp = `polyCube -w ($BoreOD * 1.0) -h ($BoreID * 0.60) -d ($BoreID * 0.25) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					scale 0.475 1 1 ($Temp[0] + ".f[3]");
+						
+				$Temps = `polyCylinder -r ($BoreOD * 0.25) -h ($BoreID * 0.25) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					rotate -r 90 0 0 $Temps[0];
+					move -r 0 ($BoreID * -0.20) 0 $Temps[0];
+				
+				$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+				
+				$Temps = `polyCylinder -r ($RodDiam * 0.2) -h ($BoreID * 1.0) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					rotate -r 90 0 0 $Temps[0];
+					move -r 0 ($BoreID * -0.25) 0 $Temps[0];
+								
+				$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					move -r 0 ($BoreID * -0.55) 0 $Temp[0];
+					
+				$Temp = `polyBoolOp -op 1 -ch 0 $Piston[5] $Temp[0]`;
+					
+				$Piston[5] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_Cylinder_MaleClevis_EndCap_" + $e)`;
+	
+				select -r $Piston[5];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[2];
+				
+				$Temps = `polyCylinder -r ($RodDiam * 0.2) -h ($BoreID * 0.5) -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+						polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 1 -worldSpace 0 
+						  		-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+						  		-miteringAngle 180 -angleTolerance 180 -ch 0 ($Temps[0] + ".f[18:19]") ;
+						polySubdivideFacet -dv 1 -m 1 -ch 0 ($Temps[0] + ".f[18:19]") ;
+						rotate -r 90 0 0 $Temps[0];
+						move -r 0 ($BoreID * -0.80) 0 $Temps[0];
+				
+				$Piston[6] = `rename $Temps[0] ($PisName + "Grp_" + $E + "_CylinderEnd_Pin_" + $e)`;
+				
+				select -r $Piston[6];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[3];
+				
+				parent $Piston[6] $Piston[5];
+					
+					$Pos = `xform -q -ws -t $Piston[6]`;
+					move -r $Pos[0] $Pos[1] $Pos[2] $PistonGrp[2];
+					parent $Piston[6] $Piston[5] $Piston[4] $PistonGrp[2];
+					
+			}	
+			
+		if (`optionMenu -q -sl DVY_Cylinder1Option` == 5)
+			{// Section to generate Cylinder End Cap Female Clevis.
+					
+				$Temp = `polyCube -w ($BoreOD * 1.0) -h ($BoreID * 0.60) -d ($BoreID * 0.25) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					scale 0.475 1 1 ($Temp[0] + ".f[3]");
+						
+				$Temps = `polyCylinder -r ($BoreOD * 0.25) -h ($BoreID * 0.25) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					rotate -r 90 0 0 $Temps[0];
+					move -r 0 ($BoreID * -0.20) 0 $Temps[0];
+					
+				$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+					
+				$Temps = `polyCylinder -r ($RodDiam * 0.2) -h ($BoreID * 0.5) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					rotate -r 90 0 0 $Temps[0];
+					move -r 0 ($BoreID * -0.25) 0 $Temps[0];
+					
+				$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					move -r 0 ($BoreID * -0.55) ($BoreID * 0.25) $Temp[0];
+					scale 0.95 1 1 ($Temp[0] + ".vtx[78:79]") ($Temp[0] + ".vtx[74:75]");
+	
+				$Temp = `polyBoolOp -op 1 -ch 0 $Piston[5] $Temp[0]`;
+				$Piston[5] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_Cylinder_EndCap" + $e)`;
+	
+				$Temp = `polyCube -w ($BoreOD * 1.0) -h ($BoreID * 0.60) -d ($BoreID * 0.25) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					scale 0.475 1 1 ($Temp[0] + ".f[3]");
+						
+				$Temps = `polyCylinder -r ($BoreOD * 0.25) -h ($BoreID * 0.25) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					rotate -r 90 0 0 $Temps[0];
+					move -r 0 ($BoreID * -0.20) 0 $Temps[0];
+					
+				$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+					
+				$Temps = `polyCylinder -r ($RodDiam * 0.2) -h ($BoreID * 0.5) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					rotate -r 90 0 0 $Temps[0];
+					move -r 0 ($BoreID * -0.25) 0 $Temps[0];
+					
+				$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					move -r 0 ($BoreID * -0.55) ($BoreID * -0.25) $Temp[0];
+					scale 0.95 1 1 ($Temp[0] + ".vtx[78:79]") ($Temp[0] + ".vtx[74:75]");
+		
+				$Temp = `polyBoolOp -op 1 -ch 0 $Piston[5] $Temp[0]`;
+						
+				$Piston[5] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_Cylinder_FemaleClevis_EndCap_" + $e)`;
+	
+				select -r $Piston[5];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[2];
+				
+				$Temps = `polyCylinder -r ($RodDiam * 0.2) -h ($BoreID * 0.75) -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+						polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 1 -worldSpace 0 
+						  		-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+						  		-miteringAngle 180 -angleTolerance 180 -ch 0 ($Temps[0] + ".f[18:19]") ;
+						polySubdivideFacet -dv 1 -m 1 -ch 0 ($Temps[0] + ".f[18:19]") ;
+						rotate -r 90 0 0 $Temps[0];
+						move -r 0 ($BoreID * -0.80) 0 $Temps[0];
+				
+				$Piston[6] = `rename $Temps[0] ($PisName + "Grp_" + $E + "_CylinderEnd_Pin_" + $e)`;
+				
+				select -r $Piston[6];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[3];
+				
+				parent $Piston[6] $Piston[5];
+					
+					$Pos = `xform -q -ws -t $Piston[6]`;
+					move -r $Pos[0] $Pos[1] $Pos[2] $PistonGrp[2];
+					parent $Piston[6] $Piston[5] $Piston[4] $PistonGrp[2];
+	
+			}// End of section to generate Cylinder End Cap Female Clevis.
+										
+		if (`optionMenu -q -sl DVY_Cylinder1Option` == 6)
+			{// Section to position and group Barrel for Front Flange Mount.
+				
+				move -r 0 ($BoreLen + ($BoreID * 0.125)) 0 $PistonGrp[2];
+				parent $Piston[5] $Piston[4] $PistonGrp[2];
+			}
+			
+	if (`radioButtonGrp -q -sl CylinderType` == 1)
+		{	// Section to generate Cylinder End Cap.
+			
+		if (`optionMenu -q -sl DVY_Cylinder1Option` == 7)
+			{// Section to generate Cylinder Rear End Cap Flange Mount.
+				
+				$Pos[0] = ($BoreOD - $BoreID);
+				
+					$Temp = `polyCylinder -r ($BoreOD * 1.0) -h ($BoreID * 0.25) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					move -r 0 ($BoreID * -0.25) 0 $Temp[0];
+						polyBevel -offset 0.2 -offsetAsFraction 1 -autoFit 1 -segments 2 -worldSpace 0 
+						  		-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+						  		-miteringAngle 180 -angleTolerance 180 -ch 0 ($Temps[0] + ".f[37]") ;
+						polySubdivideFacet -dv 1 -m 1 -ch 0 ($Temps[0] + ".f[36:37]") ;
+					
+				$Pos[0] = $BoreOD * 0.75;
+				
+					$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move -r ($Pos[0]) 0 0 $Temps[0];
+						$Temp[1] = $Temps[0];
+					
+					$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move -r ($Pos[0] * -1.0) 0 0 $Temps[0];
+						$Temp[2] = $Temps[0];
+						
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temp[1] $Temp[2]`;
+					$Temp[1] = $Temps[0];
+					select -r $Temp[1];
+					$Temps = `duplicate -rr`;
+					rotate 0 90 0 $Temps[0]; 
+				
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temp[1] $Temps[0]`;
+					$Temp[1] = $Temps[0];
+					
+					select -r $Temp[1];
+					$Temps = `duplicate -rr`;
+					rotate 0 45 0 $Temps[0]; 
+				
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temp[1] $Temps[0]`;
+					
+					$Temps = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					
+				$Temp = `polyBoolOp -op 1 -ch 0 $Piston[5] $Temps[0]`;
+					
+				$Piston[5] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_Cylinder_RearFlange_EndCap_" + $e)`;
+					
+				select -r $Piston[5];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[2];
+				
+					move -r 0 ($BoreID * -0.375) 0 $PistonGrp[2];
+					parent  $Piston[5] $Piston[4] $PistonGrp[2];
+			}
+		}	
+			
+	if (`radioButtonGrp -q -sl CylinderType` == 2)
+		{	// Section to generate Cylinder End Cap.
+			
+			if (`optionMenu -q -sl DVY_Cylinder1Option` == 7)
+				{// Section to generate Cylinder Rear End Cap Flange Mount.
+			
+					$Temp = `polyCube -w ($BoreOD * 2.0) -h ($BoreID * 0.5) -d ($BoreOD * 1.3) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						polyBevel -offset 0.3 -offsetAsFraction 1 -autoFit 1 -segments 3 
+								-worldSpace 0 -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 
+								-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180 -ch 0
+								($Temp[0] + ".e[4:5]") ($Temp[0] + ".e[8:9]");
+						
+					$Temps = `polyCube -w ($BoreOD * 1.2) -h ($BoreID * 1.0) -d ($BoreOD * 1.2) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						polyBevel -offset 0.3 -offsetAsFraction 1 -autoFit 1 -segments 3 
+								-worldSpace 0 -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 
+								-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180 -ch 0
+								($Temps[0] + ".e[4:5]") ($Temps[0] + ".e[8:9]");
+						
+					$Temps = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					$Temp = `polyBoolOp -op 1 -ch 0 $Piston[5] $Temps[0]`;
+					
+					$Pos[0] = (($BoreOD + $BoreID) * 0.5) * 0.5;
+				
+					$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move -r ($BoreOD * 0.8) 0 ($Pos[0]) $Temps[0];
+						
+					$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					
+					$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move -r ($BoreOD * -0.8) 0 ($Pos[0]) $Temps[0];
+						
+					$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+				
+					$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move -r ($BoreOD * 0.8) 0 ($Pos[0] * -1.0) $Temps[0];
+						
+					$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					
+					$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move -r ($BoreOD * -0.8) 0 ($Pos[0] * -1.0) $Temps[0];
+						
+					$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					
+					$Piston[5] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_Cylinder_RearFlange_EndCap_" + $e)`;
+						
+					select -r $Piston[5];
+						hyperShade -assign "initialShadingGroup";
+						hyperShade -assign $Shader[2];
+					
+						move -r 0 ($BoreID * -0.375) 0 $PistonGrp[2];
+						parent  $Piston[5] $Piston[4] $PistonGrp[2];
+				}
+		}	
+			
+	if (`optionMenu -q -sl DVY_Cylinder1Option` == 8)
+		{// Section to position and group Barrel for Front Trunnion.
+			
+			move -r 0 ($BoreLen * 1.0) 0 $PistonGrp[2];
+			parent $Piston[5] $Piston[4] $PistonGrp[2];
+		}
+		
+	if (`radioButtonGrp -q -sl CylinderType` == 1)
+		{
+			
+		if ( (`optionMenu -q -sl DVY_Cylinder1Option` == 9)	)
+			{// Section to position and group Barrel and Center Trunnion.
+				$Temp = `polyCylinder -r ($BoreOD * 0.6) -h ($BoreID * 0.5) -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 2 -worldSpace 0 
+							-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+							-miteringAngle 180 -angleTolerance 180 -ch 0  ($Temp[0] + ".e[0:71]") ;
+		
+				$Temps = `polyCylinder -r ($BoreOD * 0.5) -h ($BoreID * 1.0) -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+		
+					
+				$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+	
+				select -r $Temp[0];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[2];
+					
+				$Temps = `polyCylinder -r ($BoreID * 0.2) -h ($BoreID * 0.5) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					rotate -r 90 0 0 $Temps[0];
+					polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 2 -worldSpace 0 
+							-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+							-miteringAngle 180 -angleTolerance 180 -ch 0  ($Temps[0] + ".f[37]") ;
+					move -r 0 0 ($BoreOD * 0.6 + ($BoreID * 0.2)) $Temps[0];
+					
+				select -r $Temps[0];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[3];
+					
+				$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+					
+				$Temps = `polyCylinder -r ($BoreID * 0.2) -h ($BoreID * 0.5) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					rotate -r -90 0 0 $Temps[0];
+					polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 2 -worldSpace 0 
+							 -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+							 -miteringAngle 180 -angleTolerance 180 -ch 0  ($Temps[0] + ".f[37]") ;
+					move -r 0 0 ($BoreOD * -0.6 + ($BoreID * -0.2)) $Temps[0];
+					
+				select -r $Temps[0];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[3];
+					
+				$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+				
+				$Piston[8] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_Cylinder_CenterTrunnion_" + $e)`;
+				
+				parent $Piston[8] $PistonGrp[2];
+							
+				move -r 0 ($BoreLen * 0.5) 0 $PistonGrp[2];
+				parent $Piston[5] $Piston[4] $PistonGrp[2];
+			}
+				
+		}
+		
+	if (`radioButtonGrp -q -sl CylinderType` == 2)
+		{
+			
+		if ( (`optionMenu -q -sl DVY_Cylinder1Option` == 9)	)
+			{// Section to position and group Barrel and Center Trunnion.
+				
+				$Temp = `polyCube -w ($BoreOD * 1.2) -h ($BoreID * 0.5) -d ($BoreOD * 1.2) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					polyBevel -offset 0.3 -offsetAsFraction 1 -autoFit 1 -segments 3 
+							-worldSpace 0 -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 
+							-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180 -ch 0
+							($Temp[0] + ".e[4:5]") ($Temp[0] + ".e[8:9]");
+					
+					$Temps = `polyCylinder -r ($BoreOD * 0.5) -h ($BoreID * 0.5) -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move -r 0 ($BoreID *0.25) 0 $Temps[0];
+							
+					$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+				
+					$Temps = `polyCylinder -r ($RodDiam * 0.5) -h ($BoreID * 0.5) -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move -r 0 ($BoreID * 0.1) 0 $Temps[0];
+				
+					$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+				
+				$Pos[0] = (($BoreOD + $BoreID) * 0.5) * 0.5;
+				
+					$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move -r ($Pos[0]) 0 ($Pos[0]) $Temps[0];
+						$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					
+					$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move -r ($Pos[0]* -1.0) 0 ($Pos[0]) $Temps[0];
+						$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					
+					$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move -r ($Pos[0]) 0 ($Pos[0] * -1.0) $Temps[0];
+						$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					
+					$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move -r ($Pos[0]* -1.0) 0 ($Pos[0] * -1.0) $Temps[0];
+						$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+		
+				$Temps = `polyCylinder -r ($BoreOD * 0.5) -h ($BoreID * 1.0) -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+		
+					
+				$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+	
+				select -r $Temp[0];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[2];
+					
+				$Temps = `polyCylinder -r ($BoreID * 0.2) -h ($BoreID * 0.5) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					rotate -r 90 0 0 $Temps[0];
+					polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 2 -worldSpace 0 
+							-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+							-miteringAngle 180 -angleTolerance 180 -ch 0  ($Temps[0] + ".f[37]") ;
+					move -r 0 0 ($BoreOD * 0.6 + ($BoreID * 0.2)) $Temps[0];
+					
+				select -r $Temps[0];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[3];
+					
+				$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+					
+				$Temps = `polyCylinder -r ($BoreID * 0.2) -h ($BoreID * 0.5) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					rotate -r -90 0 0 $Temps[0];
+					polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 2 -worldSpace 0 
+							 -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+							 -miteringAngle 180 -angleTolerance 180 -ch 0  ($Temps[0] + ".f[37]") ;
+					move -r 0 0 ($BoreOD * -0.6 + ($BoreID * -0.2)) $Temps[0];
+					
+				select -r $Temps[0];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[3];
+					
+				$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+				
+				$Piston[8] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_Cylinder_CenterTrunnion_" + $e)`;
+				
+				parent $Piston[8] $PistonGrp[2];
+							
+				move -r 0 ($BoreLen * 0.5) 0 $PistonGrp[2];
+				parent $Piston[5] $Piston[4] $PistonGrp[2];
+			}
+				
+		}
+			
+		if (`optionMenu -q -sl DVY_Cylinder1Option` == 10)
+			{// Section to generate Cylinder End Cap Trunnions.
+				$Temps = `polyCylinder -r ($BoreID * 0.2) -h ($BoreID * 0.5) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					rotate -r 90 0 0 $Temps[0];
+					polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 2 -worldSpace 0 
+							-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+							 -miteringAngle 180 -angleTolerance 180 -ch 0  ($Temps[0] + ".f[37]") ;
+					move -r 0 0 ($BoreOD * 0.6 + ($BoreID * 0.2)) $Temps[0];
+					
+				select -r $Temps[0];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[3];
+					
+				$Temp = `polyBoolOp -op 1 -ch 0 $Piston[5] $Temps[0]`;
+					
+				$Temps = `polyCylinder -r ($BoreID * 0.2) -h ($BoreID * 0.5) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					rotate -r -90 0 0 $Temps[0];
+					polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 2 -worldSpace 0 
+							-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+							-miteringAngle 180 -angleTolerance 180 -ch 0  ($Temps[0] + ".f[37]") ;
+					move -r 0 0 ($BoreOD * -0.6 + ($BoreID * -0.2)) $Temps[0];
+					
+				select -r $Temps[0];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[3];
+					
+				$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+					
+				$Piston[5] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_Cylinder_RearTrunnion_EndCap_" + $e)`;
+				
+				
+				parent $Piston[5] $Piston[4] $PistonGrp[2];
+			}		
+			
+		if (`optionMenu -q -sl DVY_Cylinder1Option` == 11)
+			{// Section to generate Cylinder End Cap Side Lug Mount.
+			
+				$Temp = `polyCube -w ($BoreOD * 1.8) -h ($BoreID * 0.499) -d ($BoreOD * 0.2) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					
+				if (`radioButtonGrp -q -sl CylinderType` == 1)
+					{	// Section to generate Cylinder End Cap.
+						move -r 0 0 ($BoreOD * -0.55) $Temp[0];
+						$Temps = `polyCylinder -r ($BoreOD * 0.55) -h ($BoreID * 1.0) -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+		
+						$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					}		
+			
+				if (`radioButtonGrp -q -sl CylinderType` == 2)
+					{	// Section to generate Cylinder End Cap.
+						move -r 0 0 ($BoreOD * -0.65) $Temp[0];
+					}
+				
+				$Temp = `polyBoolOp -op 1 -ch 0 $Piston[5] $Temp[0]`;
+					
+				$Pos[0] = $BoreOD * 0.75;
+				
+				$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					rotate 90 0 0 $Temps[0];
+						move -r ($Pos[0]) 0 ($BoreOD * -0.55) $Temps[0];
+						
+				$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+				
+				$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					rotate 90 0 0 $Temps[0];
+						move -r ($Pos[0] * -1.0) 0 ($BoreOD * -0.55) $Temps[0];
+						
+				$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+				
+				$Piston[5] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_Cylinder_RearLugMount_EndCap_" + $e)`;
+				
+				select -r $Piston[5];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[2];
+				
+				parent $Piston[5] $Piston[4] $PistonGrp[2];
+			}
+			
+		if (`optionMenu -q -sl DVY_Cylinder1Option` == 12)
+			{// Section to generate Cylinder End Cap Side Tapped Mount.
+			
+				$Temp = `polyCube -w ($BoreOD * 1.2) -h ($BoreID * 0.499) -d ($BoreOD * 0.8) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r 0 0 ($BoreOD * -0.40) $Temp[0];
+							
+				if (`radioButtonGrp -q -sl CylinderType` == 1)
+					{	// Section to generate Cylinder End Cap.
+						polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 2 -worldSpace 0 
+								-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+								-miteringAngle 180 -angleTolerance 180 -ch 0 ($Temp[0] + ".e[6:7]") ($Temp[0] + ".e[10:11]")  ;
+					}
+					
+				if (`radioButtonGrp -q -sl CylinderType` == 2)
+					{	// Section to generate Cylinder End Cap.
+						
+						$Pos[0] = (($BoreOD + $BoreID) * 0.5) * 0.5;
+					
+						$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+							move -r ($Pos[0]) 0 ($Pos[0] * -1.0) $Temps[0];
+						$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+						
+						$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+							move -r ($Pos[0] * -1.0) 0 ($Pos[0] * -1.0) $Temps[0];
+							
+						$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					}
+				
+				$Temps = `polyCylinder -r ($BoreOD * 0.55) -h ($BoreID * 1.0) -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+
+				$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+			
+				$Temp = `polyBoolOp -op 1 -ch 0 $Piston[5] $Temp[0]`;
+				
+				$Pos[0] = $BoreOD * 0.75;
+				
+				$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 0.5) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					rotate 90 0 0 $Temps[0];
+						move -r ($Pos[0] * 0.5) 0 ($BoreOD * -0.80) $Temps[0];
+						
+				$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+				
+				$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 0.5) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					rotate 90 0 0 $Temps[0];
+						move -r ($Pos[0] * -0.5) 0 ($BoreOD * -0.80) $Temps[0];
+						
+				$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+				
+				$Piston[5] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_Cylinder_RearSideTapped_EndCap_" + $e)`;
+				polyMergeVertex -d 0.1 -ch 0 $Piston[5];
+				select -r $Piston[5];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[2];
+				
+				parent $Piston[5] $Piston[4] $PistonGrp[2];
+			}
+		
+// -------------------------------------------------------------------------------- //
+// ******************************************************************************** //	
+// Section to generate Cylinder Rod End Cap.
+			
+	if (`radioButtonGrp -q -sl CylinderType` == 1)
+		{// Section to generate Cylinder Round End Cap.
+	
+			$Temp = `polyCylinder -r ($BoreOD * 0.6) -h ($BoreID * 0.5) -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 2 -worldSpace 0 
+						-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+						-miteringAngle 180 -angleTolerance 180 -ch 0  ($Temp[0] + ".e[0:71]") ;
+					
+			$Temps = `polyCylinder -r ($BoreOD * 0.5) -h ($BoreID * 0.5) -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move -r 0 ($BoreID * -0.25) 0 $Temps[0];
+					
+			$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+		
+			$Temps = `polyCylinder -r ($RodDiam * 0.5) -h ($BoreID * 1.0) -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move -r 0 ($BoreID * 0.1) 0 $Temps[0];
+		
+			$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+			
+			$Piston[7] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_Cylinder_RodEndCap_" + $e)`;
+			
+			select -r $Piston[7];
+				hyperShade -assign "initialShadingGroup";
+				hyperShade -assign $Shader[2];
+		}
+		
+	if (`radioButtonGrp -q -sl CylinderType` == 2)
+		{// Section to generate Cylinder Rod End Square Cap.
+				$Temp = `polyCube -w ($BoreOD * 1.2) -h ($BoreID * 0.5) -d ($BoreOD * 1.2) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					polyBevel -offset 0.3 -offsetAsFraction 1 -autoFit 1 -segments 3 
+							-worldSpace 0 -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 
+							-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180 -ch 0
+							($Temp[0] + ".e[4:5]") ($Temp[0] + ".e[8:9]");
+					
+				$Temps = `polyCylinder -r ($BoreOD * 0.5) -h ($BoreID * 0.5) -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r 0 ($BoreID * -0.25) 0 $Temps[0];
+					
+				$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+			
+				$Temps = `polyCylinder -r ($RodDiam * 0.5) -h ($BoreID * 1.0) -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				
+				$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+				
+				$Pos[0] = (($BoreOD + $BoreID) * 0.5) * 0.5;
+				
+				$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r ($Pos[0]) 0 ($Pos[0]) $Temps[0];
+					$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+				
+				$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r ($Pos[0]* -1.0) 0 ($Pos[0]) $Temps[0];
+					$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+				
+				
+				$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r ($Pos[0]) 0 ($Pos[0] * -1.0) $Temps[0];
+					$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+				
+				
+				$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r ($Pos[0]* -1.0) 0 ($Pos[0] * -1.0) $Temps[0];
+					$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+			
+				$Piston[7] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_Cylinder_RodEndCap" + $e)`;
+			
+				select -r $Piston[7];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[2];
+		}
+		
+		if ((`optionMenu -q -sl DVY_Cylinder1Option` < 6) || (`optionMenu -q -sl DVY_Cylinder1Option` == 7) ||
+			(`optionMenu -q -sl DVY_Cylinder1Option` == 9) || (`optionMenu -q -sl DVY_Cylinder1Option` == 10))
+			{// Section to Group Plain Cylinder Rod End Cap
+				move -r 0 ($BoreLen) 0 $Piston[7];
+				parent $Piston[7] $PistonGrp[2];
+			}
+			
+	if (`radioButtonGrp -q -sl CylinderType` == 1)
+		{	// Section to generate Cylinder End Cap.
+			
+		if (`optionMenu -q -sl DVY_Cylinder1Option` == 6)
+			{// Section to generate Cylinder Flange  Mount for Rod End Cap.
+				$Pos[0] = ($BoreOD - $BoreID);
+				
+				$Temp = `polyCylinder -r ($BoreOD * 1.0) -h ($BoreID * 0.25) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					move -r 0 ($BoreID * 0.25) 0 $Temp[0];
+					polyBevel -offset 0.2 -offsetAsFraction 1 -autoFit 1 -segments 2 -worldSpace 0 
+					  		-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+					  		-miteringAngle 180 -angleTolerance 180 -ch 0 ($Temps[0] + ".f[37]") ;
+					polySubdivideFacet -dv 1 -m 1 -ch 0 ($Temps[0] + ".f[36:37]") ;
+					
+				$Temps = `polyCylinder -r ($RodDiam * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+		
+				$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					
+				$Pos[0] = $BoreOD * 0.75;
+				
+				$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r ($Pos[0]) 0 0 $Temps[0];
+					$Temp[1] = $Temps[0];
+				
+				$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r ($Pos[0] * -1.0) 0 0 $Temps[0];
+					$Temp[2] = $Temps[0];
+					
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temp[1] $Temp[2]`;
+				$Temp[1] = $Temps[0];
+				select -r $Temp[1];
+				$Temps = `duplicate -rr`;
+				rotate 0 90 0 $Temps[0]; 
+			
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temp[1] $Temps[0]`;
+				$Temp[1] = $Temps[0];
+				
+				select -r $Temp[1];
+				$Temps = `duplicate -rr`;
+				rotate 0 45 0 $Temps[0]; 
+			
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temp[1] $Temps[0]`;
+				
+				$Temps = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					
+				$Temp = `polyBoolOp -op 1 -ch 0 $Piston[7] $Temps[0]`;
+					
+				$Piston[7] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_Cylinder_FrontFlange_EndCap_" + $e)`;
+					move -r 0 ($BoreLen * 1.0) 0 $Piston[7];
+
+				select -r $Piston[7];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[2];
+				
+				parent $Piston[7] $PistonGrp[2];
+			}
+		}
+		
+	if (`radioButtonGrp -q -sl CylinderType` == 2)
+		{	// Section to generate Cylinder End Cap.
+			
+			if (`optionMenu -q -sl DVY_Cylinder1Option` == 6)
+				{// Section to generate Cylinder Rod End Cap Flange Mount.
+			
+					$Temp = `polyCube -w ($BoreOD * 2.0) -h ($BoreID * 0.5) -d ($BoreOD * 1.3) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						polyBevel -offset 0.3 -offsetAsFraction 1 -autoFit 1 -segments 3 
+								-worldSpace 0 -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 
+								-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180 -ch 0
+								($Temp[0] + ".e[4:5]") ($Temp[0] + ".e[8:9]");
+						
+					$Temps = `polyCube -w ($BoreOD * 1.2) -h ($BoreID * 1.0) -d ($BoreOD * 1.2) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						polyBevel -offset 0.3 -offsetAsFraction 1 -autoFit 1 -segments 3 
+								-worldSpace 0 -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 
+								-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180 -ch 0
+								($Temps[0] + ".e[4:5]") ($Temps[0] + ".e[8:9]");
+						
+					$Temps = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					$Temp = `polyBoolOp -op 1 -ch 0 $Piston[7] $Temps[0]`;
+					
+					$Pos[0] = (($BoreOD + $BoreID) * 0.5) * 0.5;
+				
+					$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move -r ($BoreOD * 0.8) 0 ($Pos[0]) $Temps[0];
+						
+					$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					
+					$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move -r ($BoreOD * -0.8) 0 ($Pos[0]) $Temps[0];
+						
+					$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+				
+					$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move -r ($BoreOD * 0.8) 0 ($Pos[0] * -1.0) $Temps[0];
+						
+					$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					
+					$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move -r ($BoreOD * -0.8) 0 ($Pos[0] * -1.0) $Temps[0];
+						
+					$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					
+					$Piston[7] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_Cylinder_FrontFlange_EndCap_" + $e)`;
+						move -r 0 ($BoreLen * 1.0) 0 $Piston[7];
+	
+					select -r $Piston[7];
+						hyperShade -assign "initialShadingGroup";
+						hyperShade -assign $Shader[2];
+					
+					parent $Piston[7] $PistonGrp[2];
+				}
+		}	
+		
+		if (`optionMenu -q -sl DVY_Cylinder1Option` == 8)
+			{// Section to generate Cylinder Trunnion Mount for Rod End Cap.
+				$Temps = `polyCylinder -r ($BoreID * 0.2) -h ($BoreID * 0.5) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					rotate -r 90 0 0 $Temps[0];
+					polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 2 -worldSpace 0 
+							-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+							 -miteringAngle 180 -angleTolerance 180 -ch 0  ($Temps[0] + ".f[37]") ;
+					move -r 0 0 ($BoreOD * 0.6 + ($BoreID * 0.2)) $Temps[0];
+					
+				select -r $Temps[0];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[3];
+					
+				$Temp = `polyBoolOp -op 1 -ch 0 $Piston[7] $Temps[0]`;
+					
+				$Temps = `polyCylinder -r ($BoreID * 0.2) -h ($BoreID * 0.5) -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					rotate -r -90 0 0 $Temps[0];
+					polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 2 -worldSpace 0 
+							-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+							-miteringAngle 180 -angleTolerance 180 -ch 0  ($Temps[0] + ".f[37]") ;
+					move -r 0 0 ($BoreOD * -0.6 + ($BoreID * -0.2)) $Temps[0];
+					
+				select -r $Temps[0];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[3];
+					
+				$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+					move -r 0 ($BoreLen) 0 $Temp[0];
+					
+				$Piston[7] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_CylinderTrunnion_RodEndCap_" + $e)`;
+				
+				parent $Piston[7] $PistonGrp[2];
+			}	
+			
+		if (`optionMenu -q -sl DVY_Cylinder1Option` == 11)
+			{// Section to generate Cylinder End Cap Side Lug Mount.
+				$Temp = `polyCube -w ($BoreOD * 1.8) -h ($BoreID * 0.499) -d ($BoreOD * 0.2) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+		
+				if (`radioButtonGrp -q -sl CylinderType` == 1)
+					{	// Section to generate Cylinder End Cap.
+						move -r 0 0 ($BoreOD * -0.55) $Temp[0];
+						$Temps = `polyCylinder -r ($BoreOD * 0.55) -h ($BoreID * 1.0) -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+		
+						$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					}		
+			
+				if (`radioButtonGrp -q -sl CylinderType` == 2)
+					{	// Section to generate Cylinder End Cap.
+						move -r 0 0 ($BoreOD * -0.65) $Temp[0];
+					}
+			
+				$Temps = `polyCylinder -r ($BoreOD * 0.55) -h ($BoreID * 1.0) -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+
+				$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+				
+				$Temp = `polyBoolOp -op 1 -ch 0 $Piston[7] $Temp[0]`;
+					
+				$Pos[0] = $BoreOD * 0.75;
+				
+				$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					rotate 90 0 0 $Temps[0];
+						move -r ($Pos[0]) 0 ($BoreOD * -0.55) $Temps[0];
+						
+				$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+				
+				$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					rotate 90 0 0 $Temps[0];
+						move -r ($Pos[0] * -1.0) 0 ($BoreOD * -0.55) $Temps[0];
+						
+				$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					move -r 0 ($BoreLen) 0 $Temp[0];
+
+				$Piston[7] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_Cylinder_LugMount_EndCap_" + $e)`;
+				
+				select -r $Piston[7];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[2];
+				parent $Piston[7] $PistonGrp[2];
+			}
+			
+		if (`optionMenu -q -sl DVY_Cylinder1Option` == 12)
+			{// Section to generate Cylinder End Cap Side Tapped Mount.
+			
+				$Temp = `polyCube -w ($BoreOD * 1.2) -h ($BoreID * 0.499) -d ($BoreOD * 0.8) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r 0 0 ($BoreOD * -0.40) $Temp[0];
+							
+				if (`radioButtonGrp -q -sl CylinderType` == 1)
+					{	// Section to generate Cylinder End Cap.
+						polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 2 -worldSpace 0 
+								-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+								-miteringAngle 180 -angleTolerance 180 -ch 0 ($Temp[0] + ".e[6:7]") ($Temp[0] + ".e[10:11]")  ;
+					}
+					
+				if (`radioButtonGrp -q -sl CylinderType` == 2)
+					{	// Section to generate Cylinder End Cap.
+						
+						$Pos[0] = (($BoreOD + $BoreID) * 0.5) * 0.5;
+					
+						$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+							move -r ($Pos[0]) 0 ($Pos[0] * -1.0) $Temps[0];
+						$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+						
+						$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 1.0) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+							move -r ($Pos[0] * -1.0) 0 ($Pos[0] * -1.0) $Temps[0];
+							
+						$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					}
+					
+				$Temps = `polyCylinder -r ($BoreOD * 0.55) -h ($BoreID * 1.0) -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+
+				$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+			
+				$Temp = `polyBoolOp -op 1 -ch 0 $Piston[7] $Temp[0]`;
+				
+				$Pos[0] = $BoreOD * 0.75;
+				
+				$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 0.5) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					rotate 90 0 0 $Temps[0];
+						move -r ($Pos[0] * 0.5) 0 ($BoreOD * -0.80) $Temps[0];
+						
+				$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+				
+				$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h ($BoreID * 0.5) -sx 18 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					rotate 90 0 0 $Temps[0];
+						move -r ($Pos[0] * -0.5) 0 ($BoreOD * -0.80) $Temps[0];
+						
+				$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+					move -r 0 ($BoreLen) 0 $Temp[0];
+				
+				$Piston[7] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_Cylinder_SideTapped_EndCap_" + $e)`;
+				
+				select -r $Piston[7];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[2];
+					
+				parent $Piston[7] $PistonGrp[2];
+			}
+			
+// -------------------------------------------------------------------------------- //
+// ******************************************************************************** //	
+// Section to generate Rod Cover.
+				
+	if (`radioButtonGrp -q -sl CylinderType` == 1)
+		{	// Section to generate Cylinder End Cap.
+		
+		if (`checkBox -q -v RodCoverChkBox` == 1)
+			{
+				$Pos[0] = ($BoreOD * 0.70) - ($RodDiam * 0.6);
+					
+				$Temp = `polyPipe -r ($BoreOD * 0.70) -h ($BoreID * 0.5) -t ($Pos[0]) -sa 36 -sh 1 -sc 1 -ch 0`;
+					polyBevel -offset 0.75 -offsetAsFraction 1 -autoFit 1 -segments 5 -worldSpace 0 
+							  -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+							  -miteringAngle 180 -angleTolerance 180 -ch 1  ($Temp[0] + ".e[72:107]") ;
+					
+				$Temps = `polyPipe -r ($BoreOD * 0.70) -h ($RodLen * 1.8) -t ($BoreOD * 0.05) -sa 36 -sh 1 -sc 1 -ch 0`;
+					move -r 0 ($RodLen * -0.45 + ($BoreID * -0.125)) 0 $Temps[0];
+						
+				$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+					move -r 0 ($RodLen * 1.0 + ($BoreID * 0.45)) 0 $Temp[0];
+							
+				$Piston[9] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_RodCover_" + $e)`;
+				
+				select -r $Piston[9];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[2];
+					
+				parent $Piston[9] $PistonGrp[1];
+				
+			}
+			
+// -------------------------------------------------------------------------------- //
+// ******************************************************************************** //	
+// Section to Generate Coil Spring Supports
+			
+			if (`radioButtonGrp -q -sl PistonSpringType` > 1)
+				{
+					
+					$Pos[0] = ($BoreOD * 0.80) + ($RodDiam * 0.7);
+					$Pos[1] = $Pos[0] - ($RodDiam * 0.6);
+					$Pos[2] = ($BoreOD * 0.05);			
+					
+					$Temp = `polyPipe -r ($Pos[0]) -h ($BoreID * 0.25) -t ($Pos[1]) -sa 36 -sh 1 -sc 1 -ch 0`;
+						polyBevel -offset 0.15 -offsetAsFraction 1 -autoFit 1 -segments 1 -worldSpace 0 
+								  -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+								  -miteringAngle 180 -angleTolerance 180 -ch 1  ($Temp[0] + ".e[72:107]") ;
+								
+					$Temps = `polyPipe -r ($Pos[0]) -h ($BoreID * 0.5) -t ($Pos[2]) -sa 36 -sh 1 -sc 1 -ch 0`;
+						move -r 0 ($BoreID * -0.1875) 0 $Temps[0];
+						
+					$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+					
+					select -r $Temp[0];
+						hyperShade -assign "initialShadingGroup";
+						hyperShade -assign $Shader[2];
+						
+				if (`radioButtonGrp -q -sl PistonSpringType` == 2)
+					{					
+						$Piston[10] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_SpringSupport_RodEnd" + $e)`;
+							move -r 0 ($RodLen * 1.0 + ($BoreID * 0.65)) 0 $Piston[10];
+							parent $Piston[10] $PistonGrp[1];
+					}
+					
+				if (`radioButtonGrp -q -sl PistonSpringType` == 3)
+					{					
+						$Piston[10] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_SpringSupport_CylinderEnd" + $e)`;
+						parent $Piston[10] $PistonGrp[2];
+					}
+						
+				if (`radioButtonGrp -q -sl PistonSpringType` == 4)
+					{					
+						$Piston[10] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_SpringSupport_RodEnd" + $e)`;
+							select -r $Piston[10];
+								$Temp = `duplicate -rr`;
+								rotate 180 0 0 $Temp[0];
+		
+							$Piston[11] = `rename $Temp[0] ($PisName + "Grp_" + $E + "_SpringSupport_CylinderEnd" + $e)`;
+					
+							move -r 0 ($RodLen * 1.0 + ($BoreID * 0.65)) 0 $Piston[10];
+							move -r 0 ($BoreID * -0.0625) 0 $Piston[11];
+						
+							parent $Piston[10] $PistonGrp[1];
+							parent $Piston[11] $PistonGrp[2];
+					}
+					
+					$Pos[0] = (($RodLen * 1.0) + ($BoreID * 0.5875));
+					$Pos[1] = ($BoreOD * 0.80) + ($RodDiam * 0.5);
+					$Pos[2] = floor ($Pos[0] / ($RodDiam * 1.0));
+
+				if (!`attributeExists "SpringSection" $PistonGrp[0]`) 
+					{ addAttr -ln SpringSection -at "float" $PistonGrp[0];}
+				       setAttr -l 1 -k 0 ($PistonGrp[0] + ".SpringSection") ($RodDiam * 0.50);
+				
+				if (!`attributeExists "SpringLength" $PistonGrp[0]`) 
+					{ addAttr -ln SpringLength -at "float" $PistonGrp[0];}
+				       setAttr -l 1 -k 0 ($PistonGrp[0] + ".SpringLength") $Pos[0];
+					   
+				if (!`attributeExists "SpringPCD" $PistonGrp[0]`) 
+					{ addAttr -ln SpringPCD -at "float" $PistonGrp[0];}
+				       setAttr -l 1 -k 0 ($PistonGrp[0] + ".SpringPCD") $Pos[1];
+					   
+				if (!`attributeExists "SpringTurns" $PistonGrp[0]`) 
+					{ addAttr -ln SpringTurns -at "float" $PistonGrp[0];}
+				       setAttr -l 1 -k 0 ($PistonGrp[0] + ".SpringTurns") $Pos[2];
+					   
+				if (!`attributeExists "SpringEndR" $PistonGrp[0]`) 
+					{ addAttr -ln SpringEndR -dt "string" $PistonGrp[0];}
+				       setAttr -l 1 -k 0 -type "string" ($PistonGrp[0] + ".SpringEndR") $Piston[10];
+		
+				if (!`attributeExists "SpringEndC" $PistonGrp[0]`) 
+					{ addAttr -ln SpringEndC -dt "string" $PistonGrp[0];}
+				       setAttr -l 1 -k 0 -type "string" ($PistonGrp[0] + ".SpringEndC") $Piston[11];
+					   
+			}	
+		}
+		
+// -------------------------------------------------------------------------------- //
+// ******************************************************************************** //	
+// Section to Set up Studs for Square End Cap Cylinders.
+		
+	if (`radioButtonGrp -q -sl CylinderType` == 2)
+		{
+			int $a = 1;
+			$Pos[0] = (($BoreOD + $BoreID) * 0.5) * 0.5;
+			$Pos[1] = 	($BoreLen * 1.0) + ($BoreID * 0.8);
+			$Temps = `polyCylinder -r (($BoreOD - $BoreID) * 0.5) -h $Pos[1] -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+					polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 1
+						-worldSpace 0 -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001
+						-smoothingAngle 90 -miteringAngle 180 -angleTolerance 180 -ch 0
+						($Temps[0] + ".f[18:19]");
+			
+			select -r $Temps[0];
+				hyperShade -assign "initialShadingGroup";
+				hyperShade -assign $Shader[3];
+					
+			$Temp = `polyCylinder -r (($BoreOD - $BoreID) * 0.75) -h ($BoreID * 0.1) -sx 6 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move -r 0 (($BoreLen * 0.5) + ($BoreID * 0.30)) 0 $Temp[0];
+				parent $Temp[0] $Temps[0];
+				
+			select -r $Temp[0];
+				hyperShade -assign "initialShadingGroup";
+				hyperShade -assign $Shader[3];
+					
+			rename $Temp[0] ($PisName + "Grp_" + $E + "_Cylinder_Nut_1");
+			
+			$Temp = `polyCylinder -r (($BoreOD - $BoreID) * 0.75) -h ($BoreID * 0.1) -sx 6 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move -r 0 (($BoreLen * -0.5) + ($BoreID * -0.30)) 0 $Temp[0];
+				parent $Temp[0] $Temps[0];
+				
+			select -r $Temp[0];
+				hyperShade -assign "initialShadingGroup";
+				hyperShade -assign $Shader[3];
+					
+			rename $Temp[0] ($PisName + "Grp_" + $E + "_Cylinder_Nut_2");
+				
+			move -r $Pos[0] ($BoreLen * 0.5) $Pos[0] $Temps[0];
+			
+			$Piston[12] = `rename $Temps[0] ($PisName + "Grp_" + $E + "_StudBolt" + ($a++) + "_" + $e)`;
+
+			parent $Piston[12] $PistonGrp[2];
+			
+			select -r $Piston[12];
+			$Temps = `duplicate -rr  -renameChildren -un`;
+				move -r ($Pos[0] * -2) 0 0 $Temps[0];
+				
+				$Piston[13] = `rename $Temps[0] ($PisName + "Grp_" + $E + "_StudBolt" + ($a++) + "_" + $e)`;
+				
+			select -r $Piston[12];
+			$Temps = `duplicate -rr  -renameChildren -un`;
+				move -r ($Pos[0] * -2) 0 ($Pos[0] * -2) $Temps[0];
+				
+				$Piston[14] = `rename $Temps[0] ($PisName + "Grp_" + $E + "_StudBolt" + ($a++) + "_" + $e)`;
+				
+			select -r $Piston[12];
+			$Temps = `duplicate -rr  -renameChildren -un`;
+				move -r 0 0 ($Pos[0] * -2) $Temps[0];
+				
+				$Piston[15] = `rename $Temps[0] ($PisName + "Grp_" + $E + "_StudBolt" + ($a++) + "_" + $e)`;
+		}
+// -------------------------------------------------------------------------------- //
+// ******************************************************************************** //	
+// Section to Set up constraints etc to control Cylinder.
+	
+	$Temp = `spaceLocator -p 0 0 0`;
+		$PistonGrp[3] = `rename $Temp ($PisName + "Grp_" + $E + "_RodEnd_Locator" + $e)`;
+		delete `pointConstraint -offset 0 0 0 -weight 1 $PistonGrp[1] $PistonGrp[3]`;
+	
+	$Temp = `spaceLocator -p 0 0 0`;
+		$PistonGrp[4] = `rename $Temp ($PisName + "Grp_" + $E + "_Cylinder_Locator" + $e)`;
+		delete `pointConstraint -offset 0 0 0 -weight 1 $PistonGrp[2] $PistonGrp[4]`;
+		
+	parent $PistonGrp[3] $PistonGrp[4] $PistonGrp[0];
+		select -r -hi $PistonGrp[0];
+		makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+		
+		select -cl;
+		
+		scale $RodDiam $RodDiam $RodDiam $PistonGrp[3];
+		scale $RodDiam $RodDiam $RodDiam $PistonGrp[4];
+		
+	scale $DVYUnit $DVYUnit $DVYUnit $PistonGrp[0];
+		
+		pointConstraint -offset 0 0 0 -weight 1 $PistonGrp[3] $PistonGrp[1];
+		aimConstraint -mo -weight 1 -aimVector 0 1 0 -upVector 0 1 0 -worldUpType "scene"
+			$PistonGrp[4] $PistonGrp[1];
+		
+		pointConstraint -offset 0 0 0 -weight 1 $PistonGrp[4] $PistonGrp[2];
+		aimConstraint -mo -weight 1 -aimVector 0 1 0 -upVector 0 1 0 -worldUpType "scene"
+			$PistonGrp[3] $PistonGrp[2];
+		
+		if (!`attributeExists "SpringLocR" $PistonGrp[0]`) 
+			{ addAttr -ln SpringLocR -dt "string" $PistonGrp[0];}
+		       setAttr -l 1 -k 0 -type "string" ($PistonGrp[0] + ".SpringLocR") $PistonGrp[3];
+
+		if (!`attributeExists "SpringLocC" $PistonGrp[0]`) 
+			{ addAttr -ln SpringLocC -dt "string" $PistonGrp[0];}
+		       setAttr -l 1 -k 0 -type "string" ($PistonGrp[0] + ".SpringLocC") $PistonGrp[4];
+		
+// -------------------------------------------------------------------------------- //
+// ******************************************************************************** //	
+// Section to Lock Off Transforms etc.		
+		
+	string $AttrA[] = {".tx", ".ty", ".tz", ".rx", ".ry", ".rz", ".sx", ".sy", ".sz"};
+		
+		for ($each in $Piston)
+			{
+				if (`objExists $each`)
+					{
+						for ($Att in $AttrA) {setAttr -l 1 -k 0 ($each + $Att);}
+					}
+			}
+			
+	if (`radioButtonGrp -q -sl CylinderType` == 2)
+		{
+			select -r ($PisName + "Grp_" + $E + "_Cylinder_Nut_*");	
+			string $Sel[] = `ls -tr -sl`;
+				
+			for ($each in $Sel)
+				{
+					if (`objExists $each`)
+						{
+							for ($Att in $AttrA) {setAttr -l 1 -k 0 ($each + $Att);}
+						}
+				}
+		}
+		
+	string $AttrB[] = {".rx", ".ry", ".rz", ".sx", ".sy", ".sz"};
+	
+		for ($each in $AttrB)
+			{ 
+					setAttr -l 1 -k 0 ($PistonGrp[3] + $each);
+					setAttr -l 1 -k 0 ($PistonGrp[4] + $each);
+			}
+			
+	string $AttrC[] = {".sx", ".sy", ".sz"};
+	
+		for ($each in $AttrC)
+			{ 
+					setAttr -l 1 -k 0 ($PistonGrp[0] + $each);
+			}
+				
+}

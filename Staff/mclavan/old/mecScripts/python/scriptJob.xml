@@ -1,0 +1,124 @@
+<scriptJobs>
+<attributes en="1" type="Attribute">
+	<attr>attributeChange<feature sp="">Run the script when the named attribute changes value. The string must identify both the dependency node and the particular attribute. If the dependency node is deleted, this job is killed (even if the deletion is undoable).</feature></attr>
+	<attr>attributeDeleted<feature sp="">Run the script when the named attribute is deleted. The string must identify both the dependency node and the particular attribute. If the dependency node is deleted, this job is killed (even if the deletion is undoable).</feature></attr>
+	<attr>attributeAdded<feature sp="">Run the script when the named attribute is added. The string must identify both the dependency node and the particular attribute. If the dependency node is deleted, this job is killed (even if the deletion is undoable).</feature></attr>
+</attributes>
+<uiDeleted en="0" type="uiDelete">
+	<ui><feature sp="">Run the script when the named piece of UI is deleted.</feature></ui>
+</uiDeleted>
+<nodeNameChanged en="0" type="nodeNameChanged">
+	<nnc><feature sp="">Run the script when the name of the named node changes</feature></nnc>
+</nodeNameChanged>
+<connectionChange en="0" type="Connection Change">
+	<cc><feature sp="">Run the script when the named attribute changes its connectivity. The string must identify both the dependency node and the particular attribute. If the dependency node is deleted, this job is killed (even if the deletion is undoable).</feature></cc>
+</connectionChange>
+<timeChange en="0" type="Time Change">
+	<tc><feature sp="">Run the script whenever the current time changes. The script will not be executed if the time is changed by clicking on the time slider, whereas scripts triggered by the "timeChanged" condition will be executed.</feature></tc>
+</timeChange>
+<Conditions en="1" type="Conditions">
+	<condition>AnimationExists<feature sp="These events are true when the given feature is available.">Animation</feature></condition>
+	<condition>AnimationUIExists<feature sp="These events are true when the given feature is available.">User Interface for Animation</feature></condition>
+	<condition>BaseMayaExists<feature sp="These events are true when the given feature is available.">Any Basic Maya</feature></condition>
+	<condition>BaseMayaExists<feature sp="These events are true when the given feature is available.">Any Interactive Maya</feature></condition>
+	<condition>DatabaseUIExists<feature sp="These events are true when the given feature is available."></feature></condition>
+	<condition>DeformersExists<feature sp="These events are true when the given feature is available.">Deformer Functions</feature></condition>
+	<condition>DeformersUIExists<feature sp="These events are true when the given feature is available.">User Interface for Deformers</feature></condition>
+	<condition>DevicesExists<feature sp="These events are true when the given feature is available.">Device Support</feature></condition>
+	<condition>DimensionsExists<feature sp="These events are true when the given feature is available.">Dimensioning</feature></condition>
+	<condition>DynamicsExists<feature sp="These events are true when the given feature is available.">User Interface for Deformers</feature></condition>
+	<condition>DeformersUIExists<feature sp="These events are true when the given feature is available.">User Interface for Deformers</feature></condition>
+	<condition>ExplorerExists<feature sp="These events are true when the given feature is available.">Explorer</feature></condition>
+	<condition>ImageUIExists<feature sp="These events are true when the given feature is available.">User Interface for Imaging</feature></condition>
+	<condition>KinematicsExists<feature sp="These events are true when the given feature is available.">Kinematics</feature></condition>
+	<condition>KinematicsUIExists<feature sp="These events are true when the given feature is available.">User Interface for Kinematics</feature></condition>
+	<condition>ManipsExists<feature sp="These events are true when the given feature is available.">Manipulators</feature></condition>
+	<condition>ModelExists<feature sp="These events are true when the given feature is available.">Basic Modeling Tools</feature></condition>
+	<condition>ModelUIExists<feature sp="These events are true when the given feature is available.">User Interface for Basic Modeling</feature></condition>
+	<condition>NurbsExists<feature sp="These events are true when the given feature is available.">Nurbs Modeling Tools</feature></condition>
+	<condition>NurbsUIExists<feature sp="These events are true when the given feature is available.">User Interface for Nurbs Modeling</feature></condition>
+	<condition>PolyCoreExists<feature sp="These events are true when the given feature is available.">Basic Polygonal Support</feature></condition>
+	<condition>PolygonsExists<feature sp="These events are true when the given feature is available.">Polygonal Modeling</feature></condition>
+	<condition>PolygonsUIExists<feature sp="These events are true when the given feature is available.">User Interface for Polygonal Modeling</feature></condition>
+	<condition>PolyTextureExists<feature sp="These events are true when the given feature is available.">Polygonal Texturing</feature></condition>
+	<condition>RenderingExists<feature sp="These events are true when the given feature is available.">Built-in Rendering</feature></condition>
+	<condition>RenderingUIExists<feature sp="These events are true when the given feature is available.">User Interface for Rendering</feature></condition>
+	<condition>autoKeyframeState<feature sp="Other Events">true when Maya has autoKeyframing enabled</feature></condition>
+	<condition>busy<feature sp="Other Events">true when Maya is busy.</feature></condition>
+	<condition>deleteAllCondition<feature sp="Other Events">true when in the middle of a delete-all operation</feature></condition>
+	<condition>flushingScene<feature sp="Other Events">true while the scene is being flushed out</feature></condition>
+	<condition>GoButtonEnabled<feature sp="Other Events">true when the Go button in the panel context is enabled. </feature></condition>
+	<condition>hotkeyListChange<feature sp="Other Events">true when the list of hotkey definitions has changed</feature></condition>
+	<condition>playingBack<feature sp="Other Events">true when Maya is playing back animation keyframes.</feature></condition>
+	<condition>playbackIconsCondition<feature sp="Other Events">instance of the playingBack condition used on the time slider</feature></condition>
+	<condition>readingFile<feature sp="Other Events">true when Maya is reading a file.</feature></condition>
+	<condition>RedoAvailable<feature sp="Other Events">true when there are commands available for redo. </feature></condition>
+	<condition>SomethingSelected<feature sp="Other Events">true when some object(s) is selected.</feature></condition>
+	<condition>UndoAvailable<feature sp="Other Events">true when there are commands available for undo.</feature></condition>
+</Conditions>
+<Events en="1" type="Conditions">This causes the command to return a string array containing the names of all existing conditions. Below is the descriptions for all the existing conditions:
+Events Based on Available Maya Features
+	<event>angularToleranceChanged<feature sp="">This causes the command to return a string array containing the names of all existing events. Below is the descriptions for all the existing events:
+
+1. using the MEL command, "tolerance" with the "-angular" flag
+2. changing the pref under Options->GeneralPreferences-> Modeling tab->Tangential Tolerance</feature></event>
+	<event>angularUnitChanged<feature sp=""> when the user changes the angular unit.</feature></event>
+	<event>axisAtOriginChanged<feature sp=""> when the axis changes at the origin.</feature></event>
+	<event>axisInViewChanged<feature sp="">when the axis changes at a particular view. </feature></event>
+	<event>ColorIndexChanged<feature sp=""> when the color index values change. </feature></event>
+	<event>constructionHistoryChanged<feature sp=""> when construction history is turned on or off. </feature></event>
+	<event>currentContainerChanged<feature sp=""> when the user set or unset the current container. </feature></event>
+	<event>currentSoundNodeChanged<feature sp=""> whenever the sound displayed in the time slider changes due to:
+
+1. the sound being removed (or no longer displayed) [RMB in the time slider]
+2. a new sound being displayed [RMB in the time slider]
+3. sound display being toggled [animation options]
+4. sound display mode being changed [animation options]</feature></event>
+	<event>DagObjectCreated<feature sp=""> when a new DAG object is created. </feature></event>
+	<event>deleteAll<feature sp=""> when a file new occurs </feature></event>
+	<event>DisplayColorChanged<feature sp="">when the display color changes. </feature></event>
+	<event>displayLayerChange<feature sp="">when a layer has been created or destroyed. </feature></event>
+	<event>displayLayerManagerChange<feature sp="">when the display layer manager has changed. </feature></event>
+	<event>DisplayRGBColorChanged<feature sp="">when the RGB display color changes. </feature></event>
+	<event>glFrameTrigger<feature sp="">for internal use only. </feature></event>
+	<event>gridDisplayChanged<feature sp="">for internal use only. </feature></event>
+	<event>idle<feature sp="">when Maya is idle and there are no high priority idle tasks </feature></event>
+	<event>idleHigh<feature sp="">when Maya is idle. This is called before low priority idle tasks. You should almost always use "idle" instead. </feature></event>
+	<event>lightLinkingChanged<feature sp=""> when any change occurs which modifies light linking relationships. </feature></event>
+	<event>lightLinkingChangedNonSG<feature sp=""> when any change occurs which modifies light linking relationships, except when the change is a change of shading assignment. </feature></event>
+	<event>linearToleranceChanged<feature sp=""> when the linear tolerance has been changed. This tolerance can be changed by:
+	
+using the MEL command, "tolerance" with the "-linear" flag
+changing the pref under Options->GeneralPreferences-> Modeling tab->Positional Tolerance</feature></event>
+	<event>linearUnitChanged<feature sp=""> when the user changes the linear unit through the Options menu. </feature></event>
+	<event>MenuModeChanged<feature sp=""> when the user changes the menu set for the menu bar in the main Maya window (for example, from "Modeling" to "Animation"). </feature></event>
+	<event>RecentCommandChanged<feature sp=""> for internal use only. </feature></event>
+	<event>NewSceneOpened<feature sp=""> when a new scene has been opened. </feature></event>
+	<event>nurbsToPolygonsPrefsChanged<feature sp=""> when any of the nurbs-to-polygons prefs have changed. These prefs can be changed by:
+
+using the Mel command, "nurbsToPolygonsPref"
+changing the prefs under Polygons->Nurbs To Polygons->Option Box</feature></event>
+	<event>playbackRangeChanged<feature sp=""> when the playback keyframe range changes. </feature></event>
+	<event>playbackRangeSliderChanged<feature sp=""> when the animation start/end range (i.e. the leftmost or rightmost entry cells in the time slider range, the inner ones adjust the playback range) change </feature></event>
+	<event>quitApplication<feature sp=""> when the user has chosen to quit, either through the quit MEL command, or through the Exit menu item. </feature></event>
+	<event>Redo<feature sp=""> when user has selected redo from the menu and there was something to redo. This callback can be used for updating UI or local storage. Do not change the state of the scene or DG during this callback. </feature></event>
+	<event>renderLayerChange<feature sp=""> when creation or deletion of a render layer node has occured. </feature></event>
+	<event>renderLayerManagerChange<feature sp=""> when the current render layer has changed. </feature></event>
+	<event>RebuildUIValues<feature sp=""> for internal use only. </feature></event>
+	<event>SceneOpened<feature sp=""> when a scene has been opened. </feature></event>
+	<event>SelectionChanged<feature sp=""> when a new selection is made. </feature></event>
+	<event>SelectModeChanged<feature sp=""> when the selection mode changes. </feature></event>
+	<event>SelectPreferenceChanged<feature sp=""> for internal use only. </feature></event>
+	<event>SelectPriorityChanged<feature sp=""> when the selection priority changes. </feature></event>
+	<event>SelectTypeChanged<feature sp=""> when the selection type changes. </feature></event>
+	<event>setEditorChanged<feature sp=""> obsolete. No longer used. </feature></event>
+	<event>SetModified<feature sp=""> when the set command is used to modify a set </feature></event>
+	<event>snapModeChanged<feature sp=""> when the snap mode changes. E.g. changes to grid snapping. </feature></event>
+	<event>timeChanged<feature sp=""> when the time changes. </feature></event>
+	<event>timeUnitChanged<feature sp=""> when the user changes the time unit. </feature></event>
+	<event>ToolChanged<feature sp=""> when the user changes the tool/context.</feature></event>
+	<event>PostToolChanged<feature sp=""> after the user changes the tool/context. </feature></event>
+	<event>NameChanged<feature sp=""> when the user changes the name of an object with the rename command. </feature></event>
+	<event>Undo<feature sp=""> when user has selected undo from the menu and there was something to undo. This callback can be used for updating UI or local storage. Do not change the state of the scene or DG during this callback. </feature></event>
+</Events>
+</scriptJobs>

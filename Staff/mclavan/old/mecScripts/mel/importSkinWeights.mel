@@ -1,0 +1,231 @@
+// Copyright (C) 2000-2002 Michael Bazhutkin
+// www.geocites.com/bazhutkin
+// bazhutkin@mail.ru
+//
+//  Export Skin Weights 1.0
+//  Script File
+//  MODIFY THIS AT YOUR OWN RISK
+//
+//	Creation Date:	November 5, 2002
+//	Fix Date:	November 19, 2002
+//
+//  Description:
+//	Import a weights of skinCluster
+//	for each joint or selected joints
+//	that affects the selected polygonal or NURBS object.
+//
+//	Select skin object and any joints for mask
+//	Call importSkinWeights
+
+global proc importSkinWeightsGetFileName ( string $fileName, string $fileType )
+{
+	global string $importSkinWeightsFileName;
+	$importSkinWeightsFileName = $fileName;
+}
+
+global proc int importSkinWeights ( )
+{
+	global string $importSkinWeightsFileName;
+	
+	string $list[] = `ls -sl -et transform`;
+	string $objectName = $list[0];
+
+	if (size($list) < 1) error ("No selected object");
+	if (size($list) > 1) error ("More than one object selected");
+
+	$list = `ls -sl -type skinCluster`;
+
+	if (size($list) < 1)
+	{
+		$list = `listHistory $objectName`;
+		$list = `ls -type skinCluster $list`;
+	}
+
+	string $skinClusterName = $list[0];
+
+	if (size($list) < 1) error ("No skinCluster deformer for selected object");
+	if (size($list) > 1) error ("More than one skinCluster deformer for selected object. Select skinCluster node in Channel Box.");
+		
+	string $history[] = `listHistory $objectName`;
+	string $clustersName[] = `ls -type skinCluster $history`;
+	string $skinClusterSetName[] = `listConnections -type objectSet $skinClusterName`;
+	
+	int $flag;
+	for ($clusterMember in $clustersName)
+		if ($clusterMember == $skinClusterName) $flag++;
+	if ($flag == 0) error ("`" + $skinClusterName + "` is not deformer for `" + $objectName + "`");
+	
+	string $list[] = `ls -sl -type joint`;
+
+	if (size($list) < 1)
+	{
+		$list = `listHistory $skinClusterName`;
+		$list = `ls -type joint $list`;
+	}
+
+	string $jointName[] = $list;
+
+	if (size($list) < 1) error ("No joint connected with skinCluster");
+	
+	int $jointIndex[];
+	int $skinClusterIndex;
+	string $skinClusterConnect[];
+	string $skinClusterConnectPart[];
+	
+	for ($i = 0; $i < size($jointName); $i++)
+	{
+		$skinClusterConnect = `listConnections -type skinCluster -plugs 1 ($jointName[$i] + ".worldMatrix")`;
+
+		$flag = 0;
+		for ($skinClusterIndex = 0; $skinClusterIndex < size($skinClusterConnect); $skinClusterIndex++)
+		{
+			tokenize ($skinClusterConnect[$skinClusterIndex], "[]", $skinClusterConnectPart);
+			if (($skinClusterName + ".matrix") == $skinClusterConnectPart[0])
+			{	$flag = 1;
+				break;
+			}
+		}
+
+		if (!$flag)
+			error("Selected joint `" + $jointName[$i] + "` is not connected with skinCluster `" + $skinClusterName + "`");
+				
+		$jointIndex[$i] = $skinClusterConnectPart[1];
+	}
+	
+	// Get file name
+	
+	$importSkinWeightsFileName = "";
+	fileBrowser ("importSkinWeightsGetFileName", "Import", "", 0);
+
+	if ($importSkinWeightsFileName == "") return 0;
+	
+	string $filePartName[];
+	string $fileName;
+	string $dirName;
+	string $fileExtName = ".weights";
+
+	tokenize $importSkinWeightsFileName "/" $filePartName;
+	$fileName = $filePartName[size($filePartName) - 1];
+
+	tokenize $fileName "\\" $filePartName;
+	$fileName = $filePartName[size($filePartName) - 1];
+
+	$dirName = substring($importSkinWeightsFileName, 1, size($importSkinWeightsFileName) - size($fileName));
+
+	tokenize $fileName "." $filePartName;
+	string $fileName = $filePartName[0];
+	
+	string $weightDir = ($dirName + $fileName);
+
+	$flag = `filetest -r $importSkinWeightsFileName`;
+	if (!$flag) error("Unable to open the file: " + $importSkinWeightsFileName);
+	
+	$fileIdMain = `fopen $importSkinWeightsFileName "r"`;
+	
+	string $nextLine = `fgetline $fileIdMain`;
+		
+	int $line;
+	string $jointList[];
+	
+	while (size($nextLine) > 0)
+	{	
+		$jointList[$line] = $nextLine;
+		$nextLine = `fgetline $fileIdMain`;
+		$line++;
+	}
+	fclose $fileIdMain;
+	
+	if ($jointList[0] != "Exported weight files\n")
+		error ("Incorrect file format.");
+	
+	string $jointLine[];
+	string $jointNameList[];
+	string $jointIndexList[];
+	string $fileNameList[];
+	string $jointCurrent;
+	int $jointIndexCurrent;
+	
+	$line = 0;
+	for ($i = 2; $i < size($jointList); $i++)
+	{
+		tokenize(substring($jointList[$i], 1, size($jointList[$i]) - 1), $jointLine);
+		$jointCurrent = $jointLine[0];
+		
+		$flag = 0;
+		for ($jointIndexCurrent = 0; $jointIndexCurrent < size($jointName); $jointIndexCurrent++)
+			if ($jointCurrent == $jointName[$jointIndexCurrent])
+			{	$flag = 1;
+				$jointNameList[$line] = $jointCurrent;
+				$jointIndexList[$line] = $jointIndex[$jointIndexCurrent];
+				break;
+			}
+		if (!$flag)
+			warning ("Joint `" + $jointCurrent + "` was skipped.");
+		else
+		{	$fileNameList[$line] = $jointLine[1];
+			$line++;
+		}
+	}
+			
+	// Import weights
+	
+	waitCursor -state 1;
+	
+	int $sizeArray = `getAttr -size ($objectName + ".cp")`;
+	
+	int $oldNormWeights = `getAttr ($skinClusterName + ".normalizeWeights")`;
+	setAttr ($skinClusterName + ".normalizeWeights") 0;
+	
+	string $pointsArray[];
+	
+	string $pointLine[];
+	float $pointValue;
+	int $pointNumber;
+	int $sizeArray = `getAttr -size ($objectName + ".cp")`;
+	
+	for ($jointIndexCurrent = 0; $jointIndexCurrent < size($jointIndexList); $jointIndexCurrent++)
+	{
+		$flag = `filetest -r ($weightDir + "/" + $fileNameList[$jointIndexCurrent])`;
+		if (!$flag)
+		{	warning ("Joint `" + $jointNameList[$jointIndexCurrent] + "` was skipped. " +
+				"Unable to open the file: " + ($weightDir + "/" + $fileNameList[$jointIndexCurrent]));
+			break;
+		}
+		
+		$fileId = `fopen ($weightDir + "/" + $fileNameList[$jointIndexCurrent]) "r"`;
+		
+		$nextLine = `fgetline $fileId`;
+		
+		$line = 0;
+		while (size($nextLine) > 0)
+		{	
+			$pointsArray[$line] = $nextLine;
+			$nextLine = `fgetline $fileId`;
+			$line++;
+		}
+		fclose $fileId;
+		
+		if ($pointsArray[0] != "N\tWeights\n")
+		{	warning ("Joint `" + $jointNameList[$jointIndexCurrent] + "` was skipped. " +
+				"Incorrect file format.");
+			break;
+		}
+
+		for ($i = 2; $i < size($pointsArray); $i++)
+		{
+			tokenize(substring($pointsArray[$i], 1, size($pointsArray[$i]) - 1), $pointLine);
+			$pointNumber = $pointLine[0];
+			$pointValue = $pointLine[1];
+			if ($pointNumber < $sizeArray)
+				setAttr ($skinClusterName + ".weightList[" + $pointNumber + "].w[" + $jointIndexList[$jointIndexCurrent] + "]") $pointValue;
+		}
+	}
+	
+	setAttr ($skinClusterName + ".normalizeWeights") $oldNormWeights;
+	
+	skinPercent -normalize true $skinClusterName $objectName;
+	
+	waitCursor -state 0;
+	
+	return 1;
+}

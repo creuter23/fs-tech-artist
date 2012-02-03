@@ -1,0 +1,457 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davvey\'s Chain & Sprocket Generator
+''    Author:  
+''    Last Updated: Jan 15, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4463.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+///////////////////////////////////////////////////////////////////////////////
+/*			
+				
+	Copyright © 2006 DVY_ChainDriver. All rights reserved davvey@ntlworld.com
+
+						- DVY_ChainDriver -
+///////////////////////////////////////////////////////////////////////////////
+						
+//	DVY_ChainDriver;
+//	Description and Usage Section
+
+//	Installation	
+		
+	Script is part of Davvey's Chain Generator script pack.
+	
+	It is called to rig Chain and Sprockets to set up drive for group.
+	It uses Utility Nodes and KeyFraming to generate a Rotation Driver
+	and sets each Sprockets rotation to correct ratio. Also sets up
+	Chain loop at correct speed to match Sprocket_1 RPM.
+	
+	Each Sprockets Tooth engagement can be adjusted to correct any
+	misalignment between chain and individual sprockets. Also Sprocket_1
+	rotation speed can be set and/or reversed using attribute called
+	RotateSpeedon Top Group Node. Also the chain speed can be controlled
+	if any rotational mismatch occurs using an attribute called SpeedAdjust
+	on Top Grouyp Node.
+
+
+*/
+	
+//////////////////////////////////////////////////////////////////////////
+//					DVY_ChainDriver Procedure
+//////////////////////////////////////////////////////////////////////////
+
+global proc DVY_ChainDriver(string $SprocketTopNode, int $t, int $e)
+ {	
+	global float $TargetLength;
+	global float $DVYUnit;
+	
+	global string $Units;
+	global string $Chain[], $ChainGrp[], $SprokGrp[], $SPName, $ISO_No[], $TeethProfiles[], $Type[];
+	global string $CHType[], $DVY_Curve[];
+	
+	global string $Type[], $AllGroups[], $AllSprockets[], $SprocketGrps[], $RotateGroups[], $Sprockets[],
+					$SprocketTeeth[],$SprocketShaft[], $SpinA[], $AddA[];
+	clear $AllGroups $SprocketGrps $Sprockets $SprocketTeeth $SpinA;
+	string $CHName = `optionMenu -q -v DVY_CHType`;
+		
+	string $BlendA[], $SpinA[], $RatioA[], $Drivers[], $Sel[], $each, $sel;
+	float $Pos[], $Angle, $Module, $Pitch, $Ratio, $M, $M1, $M2, $Rr; 
+
+	int $m, $f, $Mod, $AutoKey, $InterLock, $i, $r, $N[];
+	string $SprocketName = $Type[$t];
+	
+		select -cl;
+	
+	//find current frame rate
+	float $FPS = `currentTimeUnitToFPS`;
+	print ("$FPS is " + $FPS + "\n");
+	
+	//set Frame count to give 1 rpm for Sprocket driver.
+	float $FpS = ($FPS * 60)/8;
+	print ("$FpS is " + $FpS + "\n");
+	
+	string $Sprockets[], $SprocketsGrp[], $Sel[], $Selected[], $buffer[];
+	string $Group[];
+	
+		$Sel = `ls -sl`;
+		$Selected[0] = $Sel[0];
+		$numTokens = `tokenize $Sel[0] "_" $buffer`;
+		print $buffer;
+		
+		select -r ("Grp_" + $e + "_" + $CHName + "Sprocket_GrpN_*");
+		$SprocketsGrp = `ls -tr -sl`;
+		
+		print $SprocketsGrp;
+		print $Selected;
+		
+	// Collect Pitch of Chain from  Sprocket Group Node.
+	if(`objExists $SprocketTopNode`)
+		{
+			$Pitch = `getAttr ($SprocketTopNode + ".Pitch")`;
+//			print ("Pitch of the Sprocket Group is " + $Pitch + ".. © Davvey..\n");
+			
+			if (`autoKeyframe -query -state`)
+				{
+					$AutoKey = 1;
+					print "Autokeyframe is On, Switching off to set up Driver."; 
+					print " Will reset state after set up completed. © Davvey..\n";
+					autoKeyframe -state off;
+				}
+				
+	// Set Value of Group Node Name					
+		string	$GName = ("Grp_" + $e + "_" + $CHName );
+//		print $GName;
+	
+		//Loop through and find each of the Sprocket Group Nodes belonging to the relevant Sprockets etc.
+	
+			select ($SprocketTopNode + "|" + $GName + "Sprocket_GrpN*");
+				$AllGroups = `ls -tr -sl`;
+//				print "$\nAllGroups contains Sprocket Groups to be used to set up animation control..\n\n";
+//				print $AllGroups;
+		
+			select ($SprocketTopNode + "|" + $GName + "Sprocket_GrpN*" + "|" + $GName + "SprocketRotate_GrpN*");
+				$RotateGroups = `ls -tr -sl`;
+//				print "$\nRotateGroups contains Sprocket Groups to be used to set up animation control..\n\n";
+//				print $RotateGroups;
+			
+			select ($SprocketTopNode + "|" + $GName + "Sprocket_GrpN*" + "|" + 
+					$GName + "SprocketRotate_GrpN*" + "|" + $GName + 
+					"SprocketShaft_GrpN*" + "|" + $GName + "SprocketShaft*" + "|" + $GName + "_SprocketBody*");
+				$Sprockets = `ls -tr -sl`;
+//				print "\n$Sprockets contains Sprockets to be set up which are.. © Davvey..\n\n";
+//				print $Sprockets;
+			
+			select ($SprocketTopNode + "|" + $GName + "Sprocket_GrpN*" + "|" + 
+					$GName + "SprocketRotate_GrpN*" + "|" + $GName + 
+					"SprocketShaft_GrpN*" + "|" + $GName + "SprocketShaft*");
+				$SprocketShaft = `ls -tr -sl`;
+				print "\n$SprocketShaft contains Sprocket Shaft to be set up which are.. © Davvey..\n\n";
+				print $SprocketShaft;
+				print "\n";
+			
+		$M = 0; $f = 1;
+		
+		// Collect Attribute data for each Sprocket in Group.	
+			for ($m=0; $m<(`size $AllGroups` -1); $m++)
+				{
+					$M1 = `getAttr ($AllGroups[$m] + ".PCD")`;
+					$M2 = `getAttr ($AllGroups[$m + 1] + ".PCD")`;
+					$M = ($M + (($M1 + $M2) * 0.5));
+					$f = ($f * -1);
+				}
+		// Create Rotation Driver and set up keyFrame roation to generate 1 RPM as a base speed. 
+			createNode implicitBox;
+				rename `pickWalk -d up` ("SprocketTrain_Driver_" + $e);
+				$Drivers[0] = ("SprocketTrain_Driver_" + $e);
+				setAttr ($Drivers[0] + ".scale") 1.5 1.5 1.5;
+				setAttr ($Drivers[0] + ".visibility") 1;
+				
+				$Pos = `xform -q -ws -t $SprocketTopNode`;
+//				print "$Pos is \n";
+//				print $Pos;
+				move -r $Pos[0] $Pos[1] $Pos[2] $Drivers[0]; 
+				makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+				parent $Drivers[0] $SprocketTopNode;
+		
+			addAttr -k 1 -ln RotateSpeed -at double -dv 1 $SprocketTopNode;
+			addAttr -k 1 -ln SpeedAdjust -at double -dv 1 -min 0 -max 1 $SprocketTopNode;
+			setAttr ($SprocketTopNode + ".SpeedAdjust") 1.0 ;
+			
+	if (!`attributeExists "ChainJiggle" $SprocketTopNode`)
+		{ addAttr -ln ChainJiggle -at short $SprocketTopNode;}
+		     setAttr -l 0 -k 1 -cb 1 ($SprocketTopNode + ".ChainJiggle") 2;
+			
+			
+				makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+			
+			print ("\nSprocket Driver " + $Drivers[0] + " has been created and parented into Sprocket Group.. © Davvey\n");
+
+			for ($k=0; $k<9; $k++)
+			  {
+				  $r = ($k * -45);
+				  setAttr ($Drivers[0] + ".rotateX") $r;
+				  setKeyframe -attribute "rotateX" -t ($k * $FpS) $Drivers[0];
+				  float $Time = ($k * $FpS);
+				  
+		//		  print ("Current Time is "  + $Time + " and ");
+		//		  print ( "Rotation is " + `getAttr ($Drivers[0] + ".rotateX")` + ".. © Davvey..\n");
+			  }
+				setAttr ($Drivers[0] + "_rotateX.preInfinity") 3;
+				setAttr ($Drivers[0] + "_rotateX.postInfinity") 3;
+				keyTangent -e -itt spline -ott spline ($Drivers[0] + "_rotateX");
+				currentTime -edit 0;
+				setAttr ($Drivers[0] + ".rotateX") 0;
+				setAttr ($Drivers[0] + ".visibility") 0;
+		
+//			print ("Driver " + $Drivers[0] + " has been setup as the driver for the Sprocket Train.. © Davvey\n");
+				
+			createNode implicitSphere;
+				rename `pickWalk -d up` ("ChainJiggle_Driver_" + $e);
+				$Drivers[1] = ("ChainJiggle_Driver_" + $e);
+				setAttr ($Drivers[1] + ".scale") 1.5 1.5 1.5;
+				setAttr ($Drivers[1] + ".visibility") 1;
+				
+				$Pos = `xform -q -ws -t $SprocketTopNode`;
+//				print "$Pos is \n";
+//				print $Pos;
+				move -r $Pos[0] $Pos[1] $Pos[2] $Drivers[1]; 
+				makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+				parent $Drivers[1] $SprocketTopNode;
+				
+				
+			print ("\nChain JiggleDriver " + $Drivers[1] + " has been created and parented into Sprocket Group.. © Davvey\n");
+			$r = 0;
+			for ($k=0; $k<5; $k++)
+			  {
+				  $r = ($r * -1);
+				  setAttr ($Drivers[1] + ".translateZ") $r;
+				  setKeyframe -attribute "translateZ" -t $k $Drivers[1];
+				 if ($k == 0) {$r = 1;}
+				 if ($k == 1) {$r = 0;}
+				 if ($k == 2) {$r = -1;}
+				 if ($k == 3) {$r = 0;}
+				  
+		//		  print ("Current Time is "  + $Time + " and ");
+		//		  print ( "Rotation is " + `getAttr ($Drivers[0] + ".rotateX")` + ".. © Davvey..\n");
+			  }
+			  
+				setAttr ($Drivers[1] + "_translateZ.preInfinity") 3;
+				setAttr ($Drivers[1] + "_translateZ.postInfinity") 3;
+				keyTangent -e -itt spline -ott spline ($Drivers[1] + "_translateZ");
+				currentTime -edit 0;
+				setAttr ($Drivers[1] + ".translateZ") 0;
+				setAttr ($Drivers[1] + ".visibility") 0;
+
+			select -cl;
+//			select -hi $AllGroups[0];
+				
+		// Create Multiplier and Blend Node to connect each Sprocket_1 to Rotation Driver output.
+			
+		for ($i=0; $i<1; $i++)
+			{
+				$SpinA[$i] = `shadingNode -asUtility multiplyDivide -name ($GName + "MultiplyDriverN_" + ($i+1))`;
+				setAttr ($SpinA[$i] + ".operation") 1;
+				
+				connectAttr -f ($SprocketTopNode + ".RotateSpeed") ($SpinA[$i] + ".input1X");
+				connectAttr -f ($Drivers[0] + ".rx") ($SpinA[$i] + ".input2X");
+	
+				$BlendA[$i] = `createNode blendTwoAttr -name ($GName + "BlendDriverN_" + ($i+1))`;
+				setAttr ($BlendA[$i] + ".attributesBlender") 0.5;
+				
+				connectAttr -f ($SpinA[$i] + ".outputX") ($BlendA[$i] + ".input[0]");
+				setAttr -l 0 -k 0 -cb 1 ($SprocketShaft[$i] + ".rx");
+				connectAttr -f ($BlendA[$i] + ".output") ($SprocketShaft[$i] + ".rx");
+			}
+			
+			
+			float $ratio[];
+			
+		// Create Multiplier and Blend Nodes to connect each sprocket to Sprocket_1 roation.
+		for ($i=1; $i<(`size $AllGroups`); $i++)
+			{
+				$ratio[$i] = (`getAttr ($SprocketsGrp[0] + ".Teeth")` * 1.0)/(`getAttr ($SprocketsGrp[$i] + ".Teeth")` * 1.0);
+					print ("$ratio is " + $ratio[$i] +"\n");
+				
+				$SpinA[$i] = `shadingNode -asUtility multiplyDivide -name ($GName + "MultiplyDriverN_" + ($i))`;
+					setAttr ($SpinA[$i] + ".operation") 1;
+					
+					setAttr ($SpinA[$i] + ".input1X") ($ratio[$i] * 2);
+					if ($i == 2) {setAttr ($SpinA[$i] + ".input1X") ($ratio[$i] * -2);}
+					connectAttr -f ($SprocketShaft[0] + ".rx") ($SpinA[$i] + ".input2X");
+				
+				$BlendA[$i] = `createNode blendTwoAttr -name ($GName + "BlendDriverN_" + ($i))`;
+					setAttr ($BlendA[$i] + ".attributesBlender") 0.5;
+					
+					connectAttr -f ($SpinA[$i] + ".outputX") ($BlendA[$i] + ".input[0]");
+					setAttr -l 0 -k 0 -cb 1 ($SprocketShaft[$i] + ".rx");
+					connectAttr -f ($BlendA[$i] + ".output") ($SprocketShaft[$i] + ".rx");
+			}
+				
+		// Calculate Drive chain ratio between Sprocket_1 and Chain motion paths.
+		
+		float $ChainPitches = $TargetLength/$Pitch;
+		$ChainPitches = `getAttr ($CHName + "_Chain_GrpN_" + $e + ".ChainLinks")`;
+		int $SpTeeth = `getAttr ($SprocketsGrp[0] + ".Teeth")`;
+		float $ChPCD = `getAttr ($SprocketsGrp[0] + ".PCD")`;
+		float $SpRatio = $SpTeeth * $ChPCD * $DVYUnit;
+//		$ratio[2] = 0.5 * $ChainPitches/ $SpTeeth;
+		
+		$ratio[2] = $TargetLength /(360 * $ChainPitches/$SpTeeth);
+		
+		
+		
+			print ("Sprocket_1 Teeth count is " + $SpTeeth + "\n");
+			print ("Sprocket_1 PCD is " + $ChPCD + "\n");
+			print ("Sprocket_1 Distance is " + $SpRatio + "\n");
+	
+			print ("Chain Length is " + $TargetLength + "\n");
+			print ("Chain Pitches is " + $ChainPitches + "\n");
+			print ("$ratio for Chain is " + $ratio[2] + "\n");
+		
+		// Create Multiplier node for Chain drive
+		$SpinA[3] = `shadingNode -asUtility multiplyDivide -name ($GName + "MultiplyDriverN_" + (3))`;
+			setAttr ($SpinA[3] + ".operation") 1;
+			setAttr ($SpinA[3] + ".input1X") ($ratio[2] * -1);
+			connectAttr -f ($SprocketShaft[0] + ".rx") ($SpinA[3] + ".input2X");
+
+		// Create Blend Node for Chain Drive connections		
+		$BlendA[3] = `createNode blendTwoAttr -name ($GName + "BlendDriverN_" + (3))`;
+	  		connectAttr -f ($SprocketTopNode + ".SpeedAdjust") ($BlendA[3] + ".attributesBlender");
+			connectAttr -f ($SpinA[3] + ".outputX") ($BlendA[3] + ".input[1]");
+					
+		string $PathA[], $PathB[];
+					
+			select -r ($CHName + "Chain_MotPathA*");
+			$PathA = `ls -sl`;
+//			print $PathA;
+			$A = `size $PathA`/2;
+			print ("$A is " + $A + "\n");
+			
+			for ($i=1; $i< $A+1; $i++)
+				{
+					connectAttr -f ($BlendA[3] + ".output") ($CHName + "Chain_MotPathA" + $i + "_uValue.input");
+					connectAttr -f ($BlendA[3] + ".output") ($CHName + "Chain_MotPathB" + $i + "_uValue.input");
+					
+				}
+			
+			reorder -relative -5 $Drivers[0] ;
+			reorder -relative -5 $Drivers[1] ;
+			
+			print "DVY_Curve is \n";
+			print $DVY_Curve;
+			
+		// Create Multiplier Nodes for Chain Jiggle
+		$AddA[1] = `createNode multDoubleLinear -name ($GName + "JiggleMultiplierN_" + (1))`;
+			connectAttr -f ($Drivers[1] + ".tz") ($AddA[1] + ".input1") ;
+			connectAttr -f ($SprocketTopNode + ".ChainJiggle") ($AddA[1] + ".input2");
+			
+			if (`radioButtonGrp -q -sl IdlerSprocketRadioButton` == 1)
+				{	
+					connectAttr -f ($AddA[1] + ".output") ($CHName + "_Chain_GrpN_" + $e + "_ClusterTZ_GrpN_1.tz") ;
+					connectAttr -f ($AddA[1] + ".output") ($CHName + "_Chain_GrpN_" + $e + "_ClusterTZ_GrpN_2.tz") ;
+				}
+				
+			if (`radioButtonGrp -q -sl IdlerSprocketRadioButton` == 2)
+				{	
+					connectAttr -f ($AddA[1] + ".output") ($CHName + "_Chain_GrpN_" + $e + "_ClusterTZ_GrpN_2.tz") ;
+				}
+				
+			if (`radioButtonGrp -q -sl IdlerSprocketRadioButton` == 3)
+				{	
+					connectAttr -f ($AddA[1] + ".output") ($CHName + "_Chain_GrpN_" + $e + "_ClusterTZ_GrpN_1.tz") ;
+				}
+				
+			string $SetAttrA[] = {"tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz"};
+			string $SetAttrB[] = {"tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz", "v"};
+			string $SetAttrC[] = {"sizeX", "sizeY", "sizeZ"};
+			string $SetAttrD[] = {"sx", "sy", "sz"};
+
+			select -r -hi $Sprockets $AllGroups $SprocketTeeth $SprocketShaft;
+			$AllSprockets = `ls -sl`;
+//				print $AllSprockets;
+	
+			for ($i=1; $i<`size $AllSprockets`; $i++)
+				{
+				 $Sel = `ls -type transform -sl`;
+				  for($sel in $Sel)
+					{ for($each in $SetAttrA) { setAttr -k 0 -l 1 ($sel + "." + $each); } }
+				} 
+				
+				select -r $Drivers[0];
+				for ($each in $SetAttrB)
+					{ setAttr -k 0 -l 1 ($Drivers[0] + "." + $each);}
+					  setAttr -cb 1 ($Drivers[0] + ".rx");
+					
+				select -r ("SprocketTrain_Driver_Shape" + $e);
+				for ($each in $SetAttrC)
+					{ setAttr -k 0 -l 1 (("SprocketTrain_Driver_Shape" + $e) + "." + $each);}
+					
+				select -r ($SprocketTopNode);
+				for ($each in $SetAttrD)
+					{ setAttr -k 0 -l 1 ($SprocketTopNode + "." + $each);}
+						
+							}
+		else {print ("OOps Sprocket Top Node " + $SprocketTopNode + " does not exist.... © Davvey\n");}
+	
+	if ($AutoKey == 1)
+		{
+			print "Autokeyframe is now reset to ON... © Davvey..\n";
+			autoKeyframe -state on;
+		}
+		
+		print ("\n" + $SprocketTopNode + " Drive Train has Been Setup.");
+		print ("\nSee HelpFile for further operating instructions.. © Davvey\n\n");
+
+ }	
+ 
+ 
+ 
+global proc DVY_SprocketConnect()
+{
+	
+	string $TempSel[], $Rotate, $buffer[], $GNode[], $GName, $GNodeName;
+	int $R;
+	
+	$TempSel = `ls -tr -sl`;
+	
+	
+	if (`size $TempSel` >2)
+		{
+			error "OOPs!! please select only 2 Shafts and try again.. © Davvey..\n";
+		}
+
+	if (($TempSel[0] == "") || ($TempSel[1] == ""))
+		{
+			error "OOPs!! please select 2 Shafts and try again.. © Davvey..\n";
+		}
+	
+	
+		print $TempSel;	
+		
+		
+		$numTokens = `tokenize $TempSel[1] "_" $buffer`;
+		
+		print $buffer;
+		
+		$Rotate = `getAttr ($TempSel[1] + ".NameOfSprocketGrp")`;
+		if (($Rotate + ".ry") == 180)
+			{$R = 1;}
+				else {$R = 1;}
+				
+				
+	 	if (!`attributeExists "Rotation" $Rotate`) 
+		  	{
+				addAttr -ln Rotation -at "short" -min -1 -max 1 $Rotate;
+				setAttr -l 0 -k 1 -cb 1  ($Rotate + ".Rotation") 1;
+			}
+
+		
+	$GNodeName =  ("Grp_" + $buffer[1] + "_" + $buffer[2] + "_");
+		
+		$GNode[0] = `shadingNode -asUtility multiplyDivide -name ($GNodeName + "MultiplyDriverN_" + (0))`;
+			setAttr ($GNode[0] + ".operation") 1;
+			connectAttr -f ($Rotate + ".Rotation") ($GNode[0] + ".input1X");	
+			connectAttr -f ($TempSel[0] + ".rotateX") ($GNode[0] + ".input2X");
+					
+		
+		$GName =  ("Grp_" + $buffer[1] + "_" + $buffer[2] + "_BlendDriverN_1");
+			setAttr ($GName + ".attributesBlender") 1;
+			connectAttr -f ($GNode[0] + ".outputX")  ($GName + ".input[1]");
+		
+		
+		print ("$GName is " + $GName + "\n");
+		
+		
+		
+		
+
+	
+}
+	

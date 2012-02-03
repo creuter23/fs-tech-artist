@@ -1,0 +1,562 @@
+import maya.cmds as cmds
+import maya.mel as mel
+
+mel.eval( 'python("import sys")' )
+
+
+class Callback():
+	_callData = None
+	def __init__(self,func,*args,**kwargs):
+		self.func = func
+		self.args = args
+		self.kwargs = kwargs
+	
+	def __call__(self, *args):
+		Callback._callData = (self.func, self.args, self.kwargs)
+		mel.eval('global proc py_%s(){python("sys.modules[\'%s\'].Callback._doCall()");}'%(self.func.__name__, __name__))
+		try:
+			mel.eval('py_%s()'%self.func.__name__)
+		except RuntimeError:
+			pass
+		
+		if isinstance(Callback._callData, Exception):
+			raise Callback._callData
+		return Callback._callData 
+	
+	@staticmethod
+	def _doCall():
+		(func, args, kwargs) = Callback._callData
+		Callback._callData = func(*args, **kwargs)
+		
+
+# I might have to rethink this.  I might want a seperate attribute class.
+class Attr(object):
+	'''
+	Gets and stores the common information for an attribute.
+	'''
+	
+	def __init__(self, attr, check=False):
+		self.obj, self.attr = attr.split(".")
+		self.fullObj = attr
+		self.min = None
+		self.max = None
+		self.defValue = None
+		self.offset = None
+		self.dataType = None
+		# self.enum
+		self._standardAttrs = ['tx', 'translateX', 'ty', 'translateY', 'tz', 'translateZ', 
+					'rx', 'rotateX', 'ry', 'rotateY', 'rz', 'rotateX', 
+					'sx','scaleX', 'sy', 'scaleY', 'sz', 'scaleZ', 'v', 
+					'visibility']
+
+		self.gatherInfo()
+		if(check):
+			print( "Object: %s Attr: %s \n\t\tMin: %s Max: %s DefValue: %s Offset: %s DataType: %s" %(self.obj, self.attr, self.min, self.max, self.defValue, self.offset, self.dataType))
+		
+	
+	def gatherInfo(self):
+		if( self.attr in self._standardAttrs ):  # Attribute is apart of the main translates.
+			# if there is a 
+			attrTemp = cmds.attributeName( self.fullObj, short=True)
+			if( attrTemp == 'v'):
+				self.defValue = cmds.attributeQuery( 'v', node=self.obj, ld=True)[0]
+				self.min = cmds.attributeQuery( 'v', node=self.obj, min=True)[0]
+				self.max = cmds.attributeQuery( 'v', node=self.obj, max=True)[0]
+				self.dataType = "long"
+			else:
+				enabledLimits = eval( "cmds.transformLimits( self.obj, q=True, e%s=True)" %attrTemp)
+				if( enabledLimits[0] ):
+					self.min = eval( "cmds.transformLimits( self.obj, q=True, %s=True)" %attrTemp)[0]
+				if( enabledLimits[1] ):	
+					self.max = eval( "cmds.transformLimits( self.obj, q=True, %s=True)" %attrTemp)[1]
+				
+				if( "s" in self.attr ): # Then we are at scale
+					self.defValue = 1
+				else:
+					self.defValue = 0
+				
+				self.dataType = "double"
+			# current value will be the offset			
+			
+			
+		# What about a enum values?
+		else: # Custom attributes
+			if( cmds.attributeQuery( self.attr, node=self.obj, minExists=True) ):
+				self.min = cmds.attributeQuery( self.attr, node=self.obj, min=True)[0]
+			if( cmds.attributeQuery( self.attr, node=self.obj, maxExists=True) ):
+				self.max = cmds.attributeQuery( self.attr, node=self.obj, max=True)[0]
+			
+			self.defValue = cmds.attributeQuery( self.attr, node=self.obj, listDefault=True)[0] 
+			
+			self.dataType = cmds.addAttr( self.fullObj, q=True, at=True)
+			
+		self.offset = cmds.getAttr( self.fullObj )
+	
+	def getValue( self ):
+		return cmds.getAttr( self.fullObj )
+		
+	def setValue( self, value ):
+		cmds.setAttr( self.fullObj, value )
+		
+	def keyframe( self ):
+		cmds.setKeyframe( self.fullObj )
+	def setOffset(self):
+		self.offset = cmds.getAttr( self.fullObj )
+	def getOffset(self):
+		return self.offset
+	def resetOffset(self):
+		cmds.setAttr( self.fullObj, self.offset )
+		
+	def reset(self):
+		cmds.setAttr( self.fullObj, self.defValue )
+	def getReset(self):
+		return self.defValue
+		
+
+class AttrGUI(object):
+	'''
+	Creates an interface to connect to attributes.
+	Optional button include:
+		keyframming attributes
+		resetting back to default value
+		creating a offset
+		resetting back to offset
+	'''
+
+	# def __init__(self, text, parent=None, attrs=[]):  #, key=True, reset=True, offset=True, resetOffset=True
+	def __init__(self, text, attrs, parent=None):  #, key=True, reset=True, offset=True, resetOffset=True
+		self.attrNames = attrs
+		self.parent = parent
+		self.text = text
+		# self.attrs = [Attr(attr) for attr in attrs ]
+		self.attrs = Attr(self.attrNames)
+	"""
+	def gui(self):
+		
+		self._ctrls = []
+		self.mainLayout = cmds.formLayout()
+		
+		# Determine if it needs a slider or field
+		# One of Multiple fields.
+		
+		'''
+		# Is it going to be a float or intSliderGrp
+		if( attrs[0].dataType == "long"):
+			# self.slider = cmds.intSliderGrp( 
+		elif( attrs[0].dataType == "double"):  # Its a float control
+			# self.slider = cmds.floatSliderGrp( label=self.text
+		# elif( attrs[0].dataType == "enum")
+		cmds.button( label="Reset", 
+			command= Callback( attrs[0].reset ) )
+		cmds.button( label="Offset",
+			command= Callback( attrs[0].setOffset, cmds.getAttr(attrs[0].fullObj) ))
+		cmds.button( label="OffReset",
+			command= Callback( attrs[0].resetOffset() )
+		cmds.connectControl( self.slider, self.attrNames )
+		'''
+	"""
+	# What type of gui component are we to make.
+	
+	
+
+			
+class AttrGroup(object):
+	'''
+	This class groups together attributes using the AttrGUISingle class.
+	By default this group starts out with no attributes but is added as the user wills it.
+	attrs (groups of instances from the AttrGUISingle class)
+	mainLayout (name of the main layout for the gui)
+	layouts (all the layouts being controlled by this class)
+	Arguments:
+		attrNames(string list) contains attr name and its text
+			[ [attrName, attrText],[attrName2, attrText] ]
+			or
+			[attrName1, attrName2, etc...]
+			attrName will be the object.attr
+		parent (string) object to parent this system to.
+		
+	attrs = AttrGroup( ["object.attr", "object.attr", "object.attr", etc...], "layoutName" )
+	or
+	attrs = AttrGroup( [["object.attr", "attrName"],["object.attr", "attrName"], etc...], "layoutName" )
+	'''
+	def __init__(self, parent):  # attrs,
+		self.parent = parent
+		# self.attrs = attrs
+		# list of attribute names ["object.attr"]
+		self.attrs = []
+		# list of AttrGUISingle object
+		self.attrObj = []
+		# self.layouts = []
+		self.mainLayout = cmds.formLayout( parent=self.parent )
+
+	def removeAll( self ):
+		for attr in self.attrObj:
+			attr.remove()
+		
+		self.attrs = []
+		self.attrObj = []
+	
+	# Reset All, Key All, 	
+	
+	def offsetValue( self, value ):
+		for attr in self.attrObj:
+			attr.offsetVal(value)
+
+	def setCurOffset( self ):
+		for attr in self.attrObj:
+			attr.setCurOffset()			
+			
+	def resetAll( self ):
+		for attr in self.attrObj:
+			attr.reset()
+	
+	def keyAll( self ):
+		for attr in self.attrObj:
+			attr.key()
+			
+	def setOffset( self ):
+		for attr in self.attrObj:
+			attr.setOffset()
+	
+	def resetOffset( self ):
+		for attr in self.attrObj:
+			attr.resetOffset()
+			
+	def addAttr(self, attr):
+		'''
+		Adds an attribute to the system
+		'''
+		self.attrs.append( attr )
+		attrObj = AttrGUISingle( attr, attr, self.mainLayout )
+		# Positioning in formLayout
+		if( self.attrObj ):
+			cmds.formLayout( self.mainLayout, edit=1, af=[attrObj.mainLayout, "left", 0],
+				ac=[attrObj.mainLayout, "top", 0, self.attrObj[-1].mainLayout])	
+		else:		
+			cmds.formLayout( self.mainLayout, edit=1, af=[[attrObj.mainLayout, "top", 0],[attrObj.mainLayout, "left", 0]])
+		
+		self.attrObj.append( attrObj )
+		
+	def addAttrs(self, attrs):
+		'''
+		Adds multiple attributes to the system
+		'''
+		self.attrs.extend( attrs )
+		
+		for i, attr in enumerate(attrs):
+			attrObj = AttrGUISingle( attr, attr, self.mainLayout )
+					
+			# Positioning in formLayout
+			if( self.attrObj ):
+				cmds.formLayout( self.mainLayout, edit=1, af=[attrObj.mainLayout, "left", 0],
+					ac=[attrObj.mainLayout, "top", 0, self.attrObj[-1].mainLayout])	
+			else:
+				cmds.formLayout( self.mainLayout, edit=1, af=[[attrObj.mainLayout, "top", 0],[attrObj.mainLayout, "left", 0]])
+			
+			self.attrObj.append( attrObj )
+	
+			
+	def guiInfo(self):
+		radioChoice = cmds.radioButtonGrp( self.rbtn, q=True, sl=True)
+		txt = cmds.textFieldGrp( self.txt, q=True, tx=True)
+		
+		if( radioChoice == 1 ):  # ChannelBox
+			sma = cmds.channelBox("mainChannelBox", q=True, sma=True)
+			ssa = cmds.channelBox("mainChannelBox", q=True, selectedShapeAttributes=True)
+			sha = cmds.channelBox("mainChannelBox", q=True, selectedHistoryAttributes=True)
+			selected = cmds.ls(sl=True)
+			
+			allAttrs = []
+			if( sma ):
+				allAttrs.extend(sma)
+			if( ssa ):
+				allAttrs.extend(ssa)
+			if( sha ):
+				allAttrs.extend(sha)
+
+			curAttrs = []
+			for sel in selected:
+				for attr in allAttrs:
+					curAttrs.append( "%s.%s" %(sel, attr))
+			
+			self.addAttrs( curAttrs )
+		else:
+			self.addAttr( txt )
+			
+			
+			
+	def addAttrGUI(self):
+		cmds.window(title="Add Attribute")
+		# mainCol = cmds.columnLayout(rs=5)
+		mainFrm = cmds.formLayout()
+		# cmds.rowColumnLayout(nc=2, cw=[[1,175],[2,100]])
+		self.rbtn = cmds.radioButtonGrp( nrb=2, labelArray2=["ChannelBox","Custom"],
+			cw=[[1,100],[2,75]], sl=1)
+		self.txt = cmds.textFieldGrp( w=100, text="object.attribute" )
+		btn = cmds.button(label="Apply", w=275,
+			c=Callback( self.guiInfo ))
+		cmds.formLayout( mainFrm, e=1, af=[[self.rbtn, "left", 5],[self.rbtn, "top", 5]] )
+		cmds.formLayout( mainFrm, e=1, af=[self.txt, "top", 3], ac=[self.txt , "left", 0, self.rbtn] )
+		cmds.formLayout( mainFrm, e=1, af=[btn, "left", 5], ac=[btn , "top", 3, self.rbtn] )
+		
+		cmds.showWindow()
+
+		
+'''
+import characterGUI.attr as attr
+reload(attr)
+
+win = cmds.window()
+mainCol = cmds.columnLayout()
+attrGUI = attr.AttrGroup(mainCol)
+cmds.showWindow(win)
+
+
+attrGUI.addAttrGUI()
+attrGUI.offsetValue( 2 )
+attrGUI.removeAll()
+attrGUI.resetAll()
+
+cmds.window()
+cmds.columnLayout()
+slider = cmds.floatSliderGrp( label="Main Offset", field=1,
+	cc=changeVal, dc=changeVal, min=-10, max=10 )
+
+cmds.showWindow()
+
+def changeVal(*args):
+	value = cmds.floatSliderGrp( slider, q=True, value=True)
+	attrGUI.offsetValue( value )
+
+def resetSlider():
+	attrGUI.setCurOffset()
+	cmds.floatSliderGrp( slider, e=True, value=0)
+'''
+		
+'''
+cmds.window()
+mainCol = cmds.columnLayout()
+attrs =  attr.AttrGroup(mainCol )
+cmds.showWindow()
+attrs.addAttr( 'pSphere1.ty' )
+attrs.addAttrs(["blendShape1.pSphere2", "blendShape1.pSphere3", "blendShape1.pSphere4"] )
+'''
+
+
+
+
+class AttrGroupGUI(AttrGroup):
+	'''
+	This class groups together attributes provided by the user.
+	attrs (groups of instances from the AttrGUISingle class)
+	mainLayout (name of the main layout for the gui)
+	layouts (all the layouts being controlled by this class)
+	Arguments:
+		attrNames(string list) contains attr name and its text
+			[ [attrName, attrText],[attrName2, attrText] ]
+			or
+			[attrName1, attrName2, etc...]
+			attrName will be the object.attr
+		parent (string) object to parent this system to.
+		
+	attrs = AttrGroup( ["object.attr", "object.attr", "object.attr", etc...], "layoutName" )
+	or
+	attrs = AttrGroup( [["object.attr", "attrName"],["object.attr", "attrName"], etc...], "layoutName" )
+	'''
+	def __init__(self, attrs, parent):
+		AttrGroup.__init__(self, parent)
+		self.attrs = attrs
+		self.attrGUI()		
+
+	
+	def attrGUI(self):
+		
+		# Create the component and position it in the layout
+		for i, attr in enumerate(self.attrs):
+			attrObj = ""
+			if( type(attr) is list ):
+				attrObj = AttrGUISingle( attr[1], attr[0], self.mainLayout )
+			else:
+				attrObj = AttrGUISingle( attr, attr, self.mainLayout )
+			
+			# Positioning in formLayout
+			if( i == 0 ):
+				cmds.formLayout( self.mainLayout, edit=1, af=[[attrObj.mainLayout, "top", 0],[attrObj.mainLayout, "left", 0]])
+			else:
+				cmds.formLayout( self.mainLayout, edit=1, af=[attrObj.mainLayout, "left", 0],
+					ac=[attrObj.mainLayout, "top", 0, self.attrObj[-1].mainLayout])
+			
+			self.attrObj.append( attrObj )	
+			
+'''
+
+import maya.cmds as cmds
+import characterGUI.attr as attr
+reload( attr )
+
+cmds.window()
+mainCol = cmds.columnLayout()
+attrs = attr.AttrGroupGUI( [["blendShape1.pSphere2",'Smile'], ["blendShape1.pSphere3", 'Frown'], "blendShape1.pSphere4"], mainCol )
+cmds.showWindow()
+
+attrs.addAttr( "polySphere1.subdivisionsAxis" )
+attrs.addAttrGUI()
+
+attrs2 = attr.AttrGroup( ['pSphere1.tx', 'pSphere1.ty'], mainCol )
+
+'''
+
+
+	
+class AttrGUISingle(AttrGUI):
+	def __init__(self, text, attrs, parent=None, offsetValue=0, offsetState=0):
+		'''
+		Inherited from AttrGUI
+		self.attrNames = attrs
+		self.parent = parent
+		self.text = text
+		# self.attrs = [Attr(attr) for attr in attrs ]
+		self.attrs = Attr(self.attrNames)
+		'''
+		
+		AttrGUI.__init__(self, text, attrs, parent )
+		self.offsetValue = offsetValue
+		self.offsetState = offsetState
+		self.gui()
+	
+	
+	def gui(self):
+		'''
+		Generates the interface for the AttrGUISingle object.
+		'''
+				
+		btnWidth = 30
+		btnSep = 2
+		# textWidth = 70
+		# fieldWidth
+		# if( cmds.about( os=True ) == "mac" ):
+			
+		self.mainLayout = cmds.rowColumnLayout(parent=self.parent, nc=7, h=20, 
+			rat=[[1,"both", btnSep ],[2,"both", btnSep ],[3,"both", btnSep ],[4,"both", btnSep ],[5,"both", btnSep ],[6,"both", btnSep ],[7,"both", btnSep ]],
+			cw=[[1,100],[2,70],[3,125],[4, btnWidth ],[5,btnWidth ],[6,btnWidth ],[7,btnWidth ]])
+		cmds.text(label=self.text, w=70, al="center")
+		self.fieldGui = cmds.floatField( w=100, pre=2 )	
+		pop = cmds.popupMenu(parent=self.fieldGui)
+		cmds.menuItem(parent=pop, label="0 - 1", c=Callback( self.setMinMax, 0, 1))
+		cmds.menuItem(parent=pop, label="0 - 10", c=Callback( self.setMinMax, 0, 10))
+		cmds.menuItem(parent=pop, label="-10 - 10", c=Callback( self.setMinMax, -10, 10))		
+		cmds.menuItem(parent=pop, label="Set Min/Max")
+		cmds.menuItem( divider=1)
+		cmds.menuItem(label="Step 1", c=Callback( self.setStep, 1 ))
+		cmds.menuItem(label="Step .1", c=Callback( self.setStep, .1 ))
+		cmds.menuItem(label="Step .01", c=Callback( self.setStep, .01 ))
+
+		
+		self.sliderGui = cmds.floatSlider( w=100, h=20)
+
+		cmds.popupMenu(parent=self.sliderGui)
+		cmds.menuItem(label="0 - 1", c=Callback( self.setMinMax, 0, 1))
+		cmds.menuItem(label="0 - 10", c=Callback( self.setMinMax, 0, 10))
+		cmds.menuItem(label="-10 - 10", c=Callback( self.setMinMax, -10, 10))		
+		cmds.menuItem(label="Set Min/Max")
+		cmds.menuItem( divider=1)
+		cmds.menuItem(label="Step 1", c=Callback( self.setStep, 1 ))
+		cmds.menuItem(label="Step .1", c=Callback( self.setStep, .1 ))
+		cmds.menuItem(label="Step .01", c=Callback( self.setStep, .01 ))
+
+		
+		print("Min Value: " + str(self.attrs.min))
+		print("Max Value: " + str(self.attrs.max))
+		
+		if( self.attrs.min != None ):
+			cmds.floatField( self.fieldGui, e=1, min=self.attrs.min )
+			cmds.floatSlider( self.sliderGui, e=1, min=self.attrs.min )
+		if( self.attrs.max != None ):
+			cmds.floatField( self.fieldGui, e=1, max=self.attrs.max )
+			cmds.floatSlider( self.sliderGui, e=1, max=self.attrs.max )
+			
+		cmds.connectControl( self.fieldGui, self.attrNames )
+		cmds.connectControl( self.sliderGui, self.attrNames )
+		
+		cmds.symbolButton(image='MENUICONKEYS.XPM', h=20,
+			ann="Keyframe",
+			command=Callback(self.key))
+		cmds.symbolButton(image='REDRAWPAINTEFFECTS.XPM', h=20,
+			ann="Reset to Default",
+			command=Callback(self.reset))
+		self.symGUI = cmds.symbolCheckBox( image='ONRADIOBTNICON.XPM', h=20,
+			oni='ONRADIOBTNICON.XPM',
+			ofi='OFFRADIOBTNICON.XPM',
+			ann="Set Offset",
+			onc=Callback(self.setOffset))
+		self.resOffName = cmds.symbolButton(image='AUTOLOAD.XPM', h=20,
+			ann="Reset Offset", 
+			command=Callback( self.resetOffset ) )
+		
+		cmds.setParent(self.parent)
+
+	def remove(self):
+		cmds.deleteUI(self.mainLayout)
+		
+	def setCurOffset(self):
+		self.offsetValue = self.attrs.getValue()
+		
+	def offsetVal(self, value):	
+		self.attrs.setValue( value + self.offsetValue )
+		
+	def reset(self):
+		self.attrs.reset()
+		
+	def key(self):
+		self.attrs.keyframe()
+		
+	def setOffset(self):
+		self.attrs.setOffset()
+		cmds.symbolCheckBox( self.symGUI, e=1, v=1 )
+	
+	def resetOffset(self):
+		self.attrs.resetOffset()
+		
+		
+	def setMin(self, value):
+		cmds.floatField( self.fieldGui, e=1, min=value)
+		cmds.floatSlider( self.sliderGui, e=1, min=value)
+		
+	def setMax(self, value):
+		cmds.floatField( self.fieldGui, e=1, max=value)
+		cmds.floatSlider( self.sliderGui, e=1, max=value)	
+	
+	def setMinMax(self, valueMin, valueMax):
+		self.setMin(valueMin)
+		self.setMax(valueMax)
+	
+	def setStep(self, stepValue):
+		cmds.floatField( self.fieldGui, e=1, step=stepValue)
+		cmds.floatSlider( self.sliderGui, e=1, step=stepValue)			
+		
+	
+			
+'''
+import characterGUI.attr as attr
+reload( attr )
+
+cmds.window()
+mainCol = cmds.columnLayout()
+
+btn1 = attr.AttrGUISingle( "transX", 'pSphere1.tx', mainCol )
+btn1 = attr.AttrGUISingle( "transY", 'pSphere1.ty', mainCol )
+btn1 = attr.AttrGUISingle( "Vis", 'pSphere1.v', mainCol )
+btn1 = attr.AttrGUISingle( "polySphere1.subdivisionsAxis", "polySphere1.subdivisionsAxis", mainCol )
+btn1 = attr.AttrGUISingle( "Vis", "pointLightShape1.intensity", mainCol )
+
+cmds.showWindow()
+'''
+
+
+'''
+cmds.window()
+cmds.columnLayout()
+slider = cmds.floatSliderGrp( label="trans", field=True, v=0 )
+cmds.connectControl( slider, ["joint1.tx", "joint1.ty", "joint1.tz"])
+cmds.showWindow()
+'''

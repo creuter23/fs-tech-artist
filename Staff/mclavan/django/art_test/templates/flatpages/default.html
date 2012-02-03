@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <title>{{ flatpage.title }}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+        <link rel="stylesheet" href="http://refinedcg.com/dev/hsf/style/main.css"/>
+    </head>
+
+	<body>
+		<h1>{{ flatpage.title }}</h1>
+		<P>{{ flatpage.content }}</P>
+		
+		
+		<form method="get" action="/search/">
+			<p><label for="id_q">Search:</label>
+			<input type="text" name="q" id="id_q" />
+			<input type="submit" value="Submit" /></p>
+		</form>
+	</body>
+</html>

@@ -1,0 +1,533 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davvey\'s Window Generator
+''    Author: Davvey 
+''    Last Updated: Feb 26, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/1145.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+
+
+/////////////////////////////////////////////////////////////////////////////			
+/*				
+	Copyright © 2006 DVY_Windows. All rights reserved davvey@ntlworld.com
+
+						- DVY_Windows -
+						
+/////////////////////////////////////////////////////////////////////////////
+						
+	Usage
+
+	Type DVY_Windows in command line or middle mouse drag it to a shelf.
+	There is an IcOn file supplied to use with the Shelf Button.
+	
+	Installation
+	
+	Install all scripts in any Maya Script folder and install all image files
+	in Maya's Icon folder.
+	
+	Description	
+
+	This script is used to build dimesionally accurate Windows.
+	Each cylinder can be built with Round or Sqaure Ends as required.
+	The script calls a GUI where relevant data can be entered.
+	
+	Set Rod Diameter required. Then Select Rod Length required. The GUI will
+	calculate and display nearest English equivalents for Diameter and Length.
+	The Fields are already filled in with some default values to test script.
+	The default values are set using following relationships between dimensions.
+	
+		Cylinder ID = 2 * Rod Diameter. 
+		Cylinder OD is 1.2 * Cylinder ID 
+		Cylinder Length = Rod Length - Bore ID. 
+		
+	For Best results try and use values with these ratios but script will work 
+	with other values. If Round Cylinder End Caps are used then the CheckBox 
+	for a Rod Cover can be selected. Also Spring Supports can be added to allow
+	a spring to fit over the Cylinder.
+	The Rod Cover and Spring Supports should only be selected to use with
+	Clevis Types, Pin and Bush Mounts for Cylinder Ends.
+	
+	After enetering data and type of Rod and Cylinder ends the Script will call
+	DVY_WindowBuiuld to generate the Window.
+	
+	Script also adds hidden attributes to the Window Group Top Node for use
+	with Davvey's Spring Generator to allow building of a Spring to suit size
+	of Cylinder built. These are only added to Round Cap end Cylinders.
+	
+	The individual parts are group as required.
+	The groups are point and aim constrained to give realistic movement of the
+	cylinder IN and OUT.
+	Unused attributes are locked off if not required.
+	
+	Note:- The Scale of the Window will be adjusted to set correct Window size
+	relevant to the correct size for the Users Maya Unit settings 
+	i.e mm, cm, m, in, ft, yd.
+	
+	Matching Spring.
+	
+	If Required After Building the Window please use Davvey's Spring Generator
+	a Spring to match the Window and before moving Window away from default
+	build position.
+
+*/	
+///////////////////////////////////////////////////////////////////////////////
+//					DVY_Windows Procedure
+////////////////////////////////////////////////////////////////////////////////
+
+
+global proc DVY_Windows()
+{
+	 
+	global string $Tabs[];
+	global string $DVYImage[];
+	float $THData[], $Pos[];
+	float $Lead, $Turns, $TurnsEach, $BoltLength;
+	float $XMax, $XMin, $YMax, $YMin;
+	float $P, $h, $TD, $PCD, $RD; 
+	
+	int $a, $b, $c, $e, $i, $j, $k, $N;
+	
+	string $ThreadType[], $Profiles[], $ThreadName[], $Temp[], $Temps[];
+	string $Barrel[], $Bolt[], $Nut[], $Hole[];
+	string $Thread, $Name;
+	
+	int $K = 0; int $S = 0; int $D = 0;
+	
+// ******************************************************************************** //	
+//	Constants and "Static Data"
+	
+	string $PMaterial[] = {"Steel", "Stainless", "Black", "Aluminium", "Brass", "Copper"};
+	
+	//	Check for any "Window History" and delete if it exists.
+	 	if (`windowPref -exists DVY_WindowsWindow`)
+			{ windowPref -edit -topLeftCorner 125 700 -widthHeight 450 640 DVY_WindowsWindow;}
+	
+	//Check for multiple similar windows.
+		if (`window -q -ex DVY_WindowsWindow`) deleteUI DVY_WindowsWindow;
+	//Build window.
+		window -w 450 -h 640 -mnb 1 -mxb 0 -sizeable 1 -title "Davvey's Window Generator ver 1.0" DVY_WindowsWindow;
+	
+	//Build 'Edit' menu.
+	
+	string $menuBarLayout = `menuBarLayout`;
+		menu -label "File"; 
+ 			menuItem -label "Close" -command "deleteUI DVY_WindowsWindow";		
+		menu -label "About"; 
+	 		menuItem -label "About WoodScrew and Self Tapper Generator" -command "DVY_AboutWindowsWin;";		
+
+	// Create Main Layout column
+	string $MainPane = `paneLayout -configuration "horizontal2" -paneSize 1 100 88`;
+	string $MainPanel = `columnLayout -width 440 -adj 1 -cal "center" "Main Panel"`;
+
+	// Title and Info Section for the "Main Column Setup" tab. 
+		
+	string $Title = `columnLayout -width 455 -adj 1 -cal "center" "Title"`;
+		iconTextStaticLabel -w 360 -h 50 -st "iconOnly" -i1 "DavveyLogo.xpm" IMage00 ;		
+
+		text -height 5 -label " " ;	//Spacer
+		separator -height 5 -style "double" ;
+		text -bgc .5 .5 1 -height 20 -align "center" -font "boldLabelFont"
+			-label "Davvey's Window Generator.";
+		separator -height 5 -style "double";
+		text -height 5 -label " " ;	//Spacer
+	
+	setParent $MainPanel;	
+		
+//////////////////////////////////////////////////////////////////////////////////
+//					Window Tab.
+//////////////////////////////////////////////////////////////////////////////////	
+// Tab Layout for Windows
+	
+	string $Tab = `tabLayout -imw 1 -imh 1 "Options"`;
+	
+	$Tabs[0] = `columnLayout -adj 1 "Windows"`;
+				
+	columnLayout -adj 1 -cat "both" 5 -cal "left" "POptionsCol";	
+
+	separator -h 10 -style "double";
+		separator -h 2  -bgc 1 1 0.85 -style "none";
+		text -height 15 -bgc 1 1 0.85  -align "left" -label " Select various sizes as required or use default values to test output. Cill is set to default";
+		text -height 15 -bgc 1 1 0.85  -align "left" -label " size of 150 mm (6\"). The UI will show English equiv. (not all options available yet)";
+		separator -h 2  -bgc 1 1 0.85 -style "none";
+		
+	separator -h 10 -style "double";
+	text -height 2 -label "";
+	
+	rowColumnLayout -enable 1 -nc 3
+					-cw 1 140 -cal 1 "center" -cat 1 "both" 10
+					-cw 2 140 -cal 2 "center" -cat 2 "both" 10
+					-cw 3 140 -cal 3 "center" -cat 3 "both" 10
+				"WindowSizes1Col";
+
+		text -height 15 -align "center" -label "Overall Window Width";
+		text -height 15 -align "center" -label "Overall Window Height";
+		text -height 15 -align "center" -label "Cill Depth mm (ins)";
+	
+	setParent..;
+		
+	rowColumnLayout -enable 1 -nc 5
+					-cw 1 70 -cal 1 "center" -cat 1 "both" 5
+					-cw 2 70 -cal 2 "center" -cat 2 "both" 5
+					-cw 3 70 -cal 3 "center" -cat 3 "both" 5
+					-cw 4 70 -cal 4 "center" -cat 4 "both" 5
+					-cw 5 140 -cal 5 "center" -cat 5 "both" 1
+				"WindowSizes2Col";
+	
+			text -height 20 -align "center" -label " mm";
+			text -height 20 -align "center" -label " inches";
+			text -height 20 -align "center" -label " mm";
+			text -height 20 -align "center" -label " inches";
+			text -height 20 -align "center" -label "  0   100(4\")  150(6\")  200(8\") ";
+
+			floatField -editable true -pre 0 -v 900 -cc "$Val = `floatField -q -v WFloatField_01`; floatField -edit -v ($Val/25.4) WFloatField_02;" WFloatField_01;
+			floatField -editable false -pre 1 -v (900/25.4) WFloatField_02;
+
+			floatField -editable true -pre 0 -v 1000  -cc "$Val = `floatField -q -v WFloatField_03`; floatField -edit -v ($Val/25.4) WFloatField_04;" WFloatField_03;
+			floatField -editable false -pre 1 -v (1000/25.4) WFloatField_04;
+
+		radioButtonGrp -nrb 4 -sl 3 -label " " 
+						-cl5 "right" "left" "left" "left" "left" 
+						-columnWidth5 3 30 35 35 40 
+						-labelArray4 " " " " " " " " 
+					CillRadioButtonGrp;		
+			
+	setParent $Tabs[0];
+	
+		separator -h 10 -style "double";
+		
+		text -height 2 -label " " ;	//Spacer
+		text -height 15 -font "boldLabelFont" -align "center" -label "Standard Window Options" ;	
+		text -height 2 -label " " ;	//Spacer
+		
+	frameLayout -bs "in" -height 250 -width 400 -mh 3 -mw 3 -collapsable false -collapse false
+			-labelVisible false -label "Standard Window Options" StandardWinFrame;
+		
+	rowColumnLayout -enable 1 -nc 2
+					-cw 1 220 -cal 1 "center" -cat 1 "both" 1
+					-cw 2 225 -cal 2 "center" -cat 2 "both" 1
+				CylinderStyle1Col;
+	
+	columnLayout -adj 1 "StandardWindowOptions";
+	
+		separator -h 10 -style "none";
+			optionMenu -width 170 -cc ("DVY_WindowCallback(1)") DVY_FixedWinOption;
+				menuItem -l "Fixed Window Style                                ";
+				menuItem -l "Fixed Window 1Hx1V";
+				menuItem -l "Fixed Window 1Hx2V";
+				menuItem -l "Fixed Window 1Hx3V";
+				menuItem -l "Fixed Window 1Hx2V";
+				menuItem -l "Fixed Window 2Hx1V";
+				menuItem -l "Fixed Window 2Hx2V";
+				menuItem -l "Fixed Window 3Hx1V";
+				menuItem -l "Fixed Window 3Hx2V";
+				menuItem -l "Fixed Window 4Hx1V";
+				menuItem -l "Fixed Window 4Hx2V";
+					
+		separator -h 10 -style "none";
+			optionMenu -width 170 -cc ("DVY_WindowCallback(2)") DVY_SideHungWinOption;
+				menuItem -l "Side Hung Window Style                    ";
+				menuItem -l "Side Hung Window 1Hx1V_Left";
+				menuItem -l "Side Hung Window 1Hx1V_Right";
+				menuItem -l "Side Hung Window 1Hx2V_Left";
+				menuItem -l "Side Hung Window 1Hx2V_Right";
+				menuItem -l "Side Hung Window 1Hx3V_Left";
+				menuItem -l "Side Hung Window 1Hx3V_Right";
+				menuItem -l "Side Hung Window 2Hx1V_Left";
+				menuItem -l "Side Hung Window 2Hx1V_Right";
+				menuItem -l "Side Hung Window 2Hx1V_Both";
+				menuItem -l "Side Hung Window 2Hx2V_Left";
+				menuItem -l "Side Hung Window 2Hx2V_Right";
+				menuItem -l "Side Hung Window 2Hx2V_Both";
+				menuItem -l "Side Hung Window 3Hx1V_CenterLeft";
+				menuItem -l "Side Hung Window 3Hx1V_CenterRight";
+				menuItem -l "Side Hung Window 3Hx1V_Both";
+				menuItem -l "Side Hung Window 3Hx2V_FixedBoth";
+				menuItem -l "Side Hung Window 3Hx2V_BotBoth";
+				menuItem -l "Side Hung Window 3Hx2V_TopBoth";
+				menuItem -l "Side Hung Window 3Hx2V_CenterBoth";
+				menuItem -l "Side Hung Window 4Hx1V_CenterBoth";
+					
+		separator -h 10 -style "none";
+			optionMenu -width 170 -cc ("DVY_WindowCallback(3)") DVY_TopHungWinOption;
+				menuItem -l "Top Hung Window Style                         ";
+				menuItem -l "Top Hung Window 1Hx1V_Top";
+				menuItem -l "Top Hung Window 1Hx2V_Top";
+				menuItem -l "Top Hung Window 1Hx2V_Bot";
+				menuItem -l "Top Hung Window 1Hx2V_Both";
+				menuItem -l "Top Hung Window 1Hx3V_Mid";
+				menuItem -l "Top Hung Window 1Hx3V_Top";
+				menuItem -l "Top Hung Window 2Hx1V_Left";
+				menuItem -l "Top Hung Window 2Hx1V_Right";
+				menuItem -l "Top Hung Window 2Hx1V_Both";
+				menuItem -l "Top Hung Window 2Hx2V_TopLeft";
+				menuItem -l "Top Hung Window 2Hx2V_TopRight";
+				menuItem -l "Top Hung Window 2Hx2V_BothLeft";
+				menuItem -l "Top Hung Window 2Hx2V_BothRight";
+				menuItem -l "Top Hung Window 2Hx2V_Both";
+				menuItem -l "Top Hung Window 2Hx2V_Both";
+				menuItem -l "Top Hung Window 2Hx2V_BotBoth";
+				menuItem -l "Top Hung Window 2Hx2V_All";
+				menuItem -l "Top Hung Window 2Hx2V_TopBoth";
+				menuItem -l "Top Hung Window 2Hx2V_TopBoth";
+				menuItem -l "Top Hung Window 3Hx1V_Center";
+				menuItem -l "Top Hung Window 3Hx1V_Both";
+				menuItem -l "Top Hung Window 3Hx1V_All";
+				menuItem -l "Top Hung Window 3Hx2V_All";
+				menuItem -l "Top Hung Window 3Hx2V_Both";
+				menuItem -l "Top Hung Window 3Hx2V_TopBoth";
+				menuItem -l "Top Hung Window 3Hx2V_TopAll";
+				menuItem -l "Top Hung Window 3Hx2V_TopAll";
+				menuItem -l "Top Hung Window 3Hx2V_TopCenter";
+				menuItem -l "Top Hung Window 3Hx2V_TopCenter";
+				menuItem -l "Top Hung Window 3Hx2V_BothCenter";
+				menuItem -l "Top Hung Window 3Hx2V_BothBoth";
+				menuItem -l "Top Hung Window 3Hx2V_AllBoth";
+				menuItem -l "Top Hung Window 4Hx1V_Both";
+				menuItem -l "Top Hung Window 4Hx2V_BothBoth";
+					
+		separator -h 10 -style "none";
+			optionMenu -width 170 -cc ("DVY_WindowCallback(4)") DVY_CombinedWinOption;
+				menuItem -l "Combined Window Style                         ";
+				menuItem -l "Combined Window 1Hx2V_TopLeft";
+				menuItem -l "Combined Window 1Hx2V_TopRight";
+				menuItem -l "Combined Window 2Hx1V_TopLeft";
+				menuItem -l "Combined Window 2Hx1V_TopRight";
+				menuItem -l "Combined Window 2Hx1V_LeftTop";
+				menuItem -l "Combined Window 2Hx1V_RightTop";
+				menuItem -l "Combined Window 2Hx1V_CenterLeft";
+				menuItem -l "Combined Window 2Hx1V_CenterRight";
+				menuItem -l "Combined Window 2Hx1V_CenterBoth";
+				menuItem -l "Combined Window 2Hx1V_TopLeft";
+				menuItem -l "Combined Window 2Hx1V_TopRight";
+				menuItem -l "Combined Window 2Hx1V_LeftTop";
+				menuItem -l "Combined Window 2Hx1V_RightTop";
+				menuItem -l "Combined Window 2Hx2V_All";
+				menuItem -l "Combined Window 3Hx2V_TopBoth";
+				menuItem -l "Combined Window 3Hx2V_TopBoth";
+				menuItem -l "Combined Window 3Hx2V_BotBoth";
+				menuItem -l "Combined Window 3Hx2V_BothBoth";
+				menuItem -l "Combined Window 3Hx2V_BothBoth";
+				menuItem -l "Combined Window 3Hx2V_AllBoth";
+				menuItem -l "Combined Window 3Hx2V_Left2Top";
+				menuItem -l "Combined Window 3Hx2V_Right2Top";
+				menuItem -l "Combined Window 4Hx2V_TopBoth";
+				menuItem -l "Combined Window 4Hx2V_TopBoth";
+				menuItem -l "Combined Window 4Hx2V_TopBoth";
+				menuItem -l "Combined Window 4Hx2V_BothTop";
+					
+		separator -h 10 -style "none";
+			optionMenu -en 0 -width 170 -cc ("DVY_WindowCallback(5)") DVY_SashWinOption;
+				menuItem -l "Sash Window Style                                 ";
+				menuItem -l "Fixed Window 1Hx1V";
+				menuItem -l "Fixed Window 1Hx2V";
+				menuItem -l "Fixed Window 1Hx3V";
+				menuItem -l "Fixed Window 1Hx2V";
+				menuItem -l "Fixed Window 2Hx1V";
+				menuItem -l "Fixed Window 2Hx2V";
+				menuItem -l "Fixed Window 3Hx1V";
+				menuItem -l "Fixed Window 3Hx2V";
+				menuItem -l "Fixed Window 4Hx1V";
+				menuItem -l "Fixed Window 4Hx2V";
+					
+		separator -h 10 -style "none";
+			optionMenu -en 0 -width 170 -cc ("DVY_WindowCallback(6)") DVY_FrenchWinOption;
+				menuItem -l "French Window Style                              ";
+				menuItem -l "Fixed Window 1Hx1V";
+				menuItem -l "Fixed Window 1Hx2V";
+				menuItem -l "Fixed Window 1Hx3V";
+				menuItem -l "Fixed Window 1Hx2V";
+				menuItem -l "Fixed Window 2Hx1V";
+				menuItem -l "Fixed Window 2Hx2V";
+				menuItem -l "Fixed Window 3Hx1V";
+				menuItem -l "Fixed Window 3Hx2V";
+				menuItem -l "Fixed Window 4Hx1V";
+				menuItem -l "Fixed Window 4Hx2V";
+					
+		separator -h 10 -style "none";
+			optionMenu -en 0 -width 170 -cc ("DVY_WindowCallback(7)") DVY_TiltTurnOption;
+				menuItem -l "Tilt and Turn Window Style                        ";
+				menuItem -l "Fixed Window 1Hx1V";
+				menuItem -l "Fixed Window 1Hx2V";
+				menuItem -l "Fixed Window 1Hx3V";
+				menuItem -l "Fixed Window 1Hx2V";
+				menuItem -l "Fixed Window 2Hx1V";
+				menuItem -l "Fixed Window 2Hx2V";
+				menuItem -l "Fixed Window 3Hx1V";
+				menuItem -l "Fixed Window 3Hx2V";
+				menuItem -l "Fixed Window 4Hx1V";
+				menuItem -l "Fixed Window 4Hx2V";
+					
+		separator -h 10 -style "none";
+
+	setParent..;				
+					
+		$DVYImage[1] = `iconTextStaticLabel -w 180 -h 110 -st "iconOnly" -i1 "DVY_Win_Blank.xpm" IMage01` ;		
+		
+		setParent $Tabs[0];
+	setParent $Tab;
+	
+//////////////////////////////////////////////////////////////////////////////////
+//					Help and Info Tab.
+//////////////////////////////////////////////////////////////////////////////////	
+// Tab Layout for Help and Info Tab
+	
+	$Tabs[1] = `columnLayout -adj 1 "Help and Info "`;
+
+		string $HelpM = `frameLayout -height 400 -labelVisible 0 -label "Help & Info" -bs "in" "Help"`;
+	
+			columnLayout -adj 1 ;
+			
+				text -height 5 -label "";
+				separator -h 10 -style "double";
+				text -bgc 0.7 1 0.7  -height 20 -align "center" -label "Help Section ";
+				
+				separator -h 10 -style "double";
+				text -height 5 -label "";
+		
+				scrollField -height 340 -bgc 1 1 0.85 -wordWrap true -editable false
+				-text "This script calls a GUI where relevant Info can be entered to generate a dimensionally accurate Window. \n\n The Windows are built with nominal frame sizes as follows. \n\n  Frame Width = 50 mm \n  Frame Height = 50 mm \n  Frame Depth = 40 mm \n  Opening Window Frame Width = 30 mm \n  Opening Window Frame Height = 30 mm \n  Opening Window Frame Depth = 40 mm \n  Cill Depths of 0, 100, 150, 200 mm are available and \n  the default is 150 mm. \n\nAfter enetering Overall Window sizes select type of Window Cill required then select type of Window design from the various option menus. As the design is selected the GUI will update the disaply to show a diagram of the style. I have tried to label each style as descriptively as possible. \n\nThe script will currently build `Standard` style Windows with outward opening Hinges. It will build Windows with fixed panes, Left, Right and Top Hung opening Windows. The Script will add simple White Shader for the Frames and Window Frames and a Glass Shader for the Glass Panes. \n\n The GUI has data field for Overall Window Width and Height and a Radio Button Group to set Cill Depth. \n\nAfter building the Window the script will lock off unused attributes and leave the Window Group Hinge postiomn unlocked and keyable. \n\n Note:- The Scale of the Window will be adjusted to set correct size relevant to the correct size for the Users Maya Unit settings i.e mm, cm, m, in, ft, yd.\n\n";
+				
+				text -height 5 -label "";
+	
+		setParent $Tabs[1];
+
+	setParent $MainPane;	
+
+// Build it.
+
+	frameLayout -cll 0 -vis 1 -lv 0 -label "Build" -la "center" -bs "out";
+	
+	columnLayout -enable 1 -adj 1 -cat "left" 1 -cal "center" ;
+		
+		separator -h 5 -style "none";
+
+		button -height 40 -bgc 0.7 0.7 1 -label "Build Window"
+			-command " print \"\\n Building Windows as Required Davvey © 2006..\\n\"; DVY_WindowBuild;"
+				Screw_Builder;	
+
+		separator -h 10 -style "none";
+
+	setParent..;		
+	
+	//Show the DVY_Windows UI Window.
+	
+	showWindow DVY_WindowsWindow;
+
+}
+
+ 
+//-----------------------------------------------------------------
+
+global proc DVY_WindowCallback (int $S)
+{
+	global string $DVYImage[];
+	
+	int $S1 = `optionMenu -q -sl DVY_FixedWinOption`;
+	
+	if (($S == 1) && ($S1 > 1))
+		{
+			optionMenu -edit -sl 1 DVY_SideHungWinOption;
+			optionMenu -edit -sl 1 DVY_TopHungWinOption;
+			optionMenu -edit -sl 1 DVY_CombinedWinOption;
+			
+			$DVYImage[1] = `iconTextStaticLabel -e -i1 ("DVY_Win_Fixed_" + ($S1 - 1) + ".xpm") IMage01`;
+		}
+		
+	int $S2 = `optionMenu -q -sl DVY_SideHungWinOption`;
+		
+	if (($S == 2) && ($S2 > 1))
+		{
+			optionMenu -edit -sl 1 DVY_FixedWinOption;
+			optionMenu -edit -sl 1 DVY_TopHungWinOption;
+			optionMenu -edit -sl 1 DVY_CombinedWinOption;
+			
+			$DVYImage[1] = `iconTextStaticLabel -e -i1 ("DVY_Win_SideHung_" + ($S2 - 1) + ".xpm") IMage01`;
+		}
+		
+	int $S3 = `optionMenu -q -sl DVY_TopHungWinOption`;
+		
+	if (($S == 3) && ($S3 > 1))
+		{
+			optionMenu -edit -sl 1 DVY_FixedWinOption;
+			optionMenu -edit -sl 1 DVY_SideHungWinOption;
+			optionMenu -edit -sl 1 DVY_CombinedWinOption;
+			
+			$DVYImage[1] = `iconTextStaticLabel -e -i1 ("DVY_Win_TopHung_" + ($S3 - 1) + ".xpm") IMage01`;
+		}
+	
+	int $S4 = `optionMenu -q -sl DVY_CombinedWinOption`;
+
+	if (($S == 4) && ($S4 > 1))
+		{
+			optionMenu -edit -sl 1 DVY_FixedWinOption;
+			optionMenu -edit -sl 1 DVY_SideHungWinOption;
+			optionMenu -edit -sl 1 DVY_TopHungWinOption;
+			
+			$DVYImage[1] = `iconTextStaticLabel -e -i1 ("DVY_Win_Combined_" + ($S4 - 1) + ".xpm") IMage01`;
+		}
+		
+	if ((`optionMenu -q -sl DVY_FixedWinOption` == 1) && (`optionMenu -q -sl DVY_SideHungWinOption` == 1) &&
+		(`optionMenu -q -sl DVY_TopHungWinOption` == 1) && (`optionMenu -q -sl DVY_CombinedWinOption` == 1) )
+		{
+			$DVYImage[1] = `iconTextStaticLabel -e -i1 ("DVY_Win_Blank.xpm") IMage01`;
+		}
+
+}// End of DVY_WindowCallback Procedure
+
+
+global proc DVY_AboutWindowsWin()
+ {
+	global float $DVYTol;
+	if ((`window -ex DavveyAboutWindowsWindow`) == true) 
+		{
+			deleteUI DavveyAboutWindowsWindow;
+		}
+		if (`windowPref -ex DavveyAboutWindowsWindow`) windowPref -remove DavveyAboutWindowsWindow;
+		window -t " About:-  Davvey's Window Generator." -width 425 -height 300 -sizeable 0 DavveyAboutWindowsWindow;
+		//Build 'Edit' menu.
+	
+	string $menuBarLayout = `menuBarLayout -height 20`;
+		menu -label "File"; 
+ 			menuItem -label "Close" -command "deleteUI DavveyAboutWindowsWindow";		
+
+
+	setParent;
+	setParent;
+
+		columnLayout -adjustableColumn true -columnAttach "both" 5 -columnWidth 350; 
+	
+		text -height 2 -label " " ;	//Spacer
+		separator -height 10 -style "double" ;
+			text -bgc 0.5 0.5 1 -height 20 -align "center" -fn "boldLabelFont" -l "Davvey's Window Generator..";
+			text -bgc 0.5 0.5 1 -height 20 -align "center" -fn "boldLabelFont" -l "copyright (c) 2006 Dave Lake..";
+		separator -height 8 -style "double" ;
+		text -height 2 -label " " ;	//Spacer
+		
+	frameLayout -cl 0 -label "" -labelAlign "center" -borderStyle "etchedOut";
+		columnLayout -adjustableColumn true -columnAttach "both" 2 -columnWidth 250; 
+		
+		text -bgc 1 1 0.8 -height 5 -align "left" -l " ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -fn "boldLabelFont" -l "  Special Thanks:- ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -fn "plainLabelFont" -l "  Thanks to my wife Jan for her support and patience during the time";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "   its taken to learn Maya and how to write these scripts.";
+		text -bgc 1 1 0.8 -height 10 -align "left" -l " ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "  Also dedicated to Jackie and Joanna (my expensive pride and joys!!)";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "  Finally these Collected works are dedicated to the memory of Darryl.";
+		text -bgc 1 1 0.8 -height 5 -align "left" -l " ";
+		setParent ..;	
+		setParent ..;	
+		text -align "center" -l "email :- Davvey@ntlworld.com";
+		text -align "center" -l "website :- www..............";
+	setParent ..; 
+
+	showWindow DavveyAboutWindowsWindow;
+	
+}// End of DVY_AboutWindowsWin Procedure

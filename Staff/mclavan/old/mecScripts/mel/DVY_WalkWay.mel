@@ -1,0 +1,957 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davveys Escalator Generator
+''    Author:  
+''    Last Updated: Jul 21, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4632.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+///////////////////////////////////////////////////////////////////////////////
+//					DVY_WalkWay Procedure
+///////////////////////////////////////////////////////////////////////////////
+
+proc string DVY_EscHandRail(string $EscHandName, int $N)
+{
+	
+	string $Temp[], $Temps[], $Tmp[];
+	string $EscSide[] = {"_LfHandRail_0", "_RtHandRail_0"};
+	
+		$Temps = `polyCylinder -r 7.5 -h 85 -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			rotate 90 0 0;
+			move 40 0 0;
+			
+		$Temp = `polySphere -r 7.5 -sx 12 -sy 18 -ax 0 1 0 -ch 1`;
+			move 40 0 42.5;
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+			
+		$Temp = `polySphere -r 7.5 -sx 12 -sy 18 -ax 0 1 0 -ch 0`;
+			move 40 0 -42.5;
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+			
+			select -r $Temps[0];
+				$Temp =`duplicate -rr`;
+				rotate 0 180 0;
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+			
+		$Temp = `polyCylinder -r 7.5 -h 80 -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			rotate 90 90 0;
+			move 0 0 42.5;
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+		
+		$Temp = `polyCylinder -r 7.5 -h 80 -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			rotate 90 90 0;
+			move 0 0 -42.5;
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+			
+		$Temp = `polyCube -w 80 -h 15 -d 85 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+		
+		$Temps[0] = `rename $Temps[0] ($EscHandName + $EscSide[$N])`;
+
+	return $Temps[0];
+}
+
+// ******************************************************************************** //	
+
+// ******************************************************************************** //	
+
+proc string DVY_EscStep(float $Sizes[])
+{
+	
+	string $Temp[], $Temps[], $Tmp[], $Tmps[];
+	
+		$Temps = `polyCube -w 4 -h 2 -d 2 -sx 2 -sy 2 -sz 2 -ax 0 1 0 -ch 0`;
+			move 0 0.995 0;
+		
+		$Temp = `polyCylinder -r 1 -h 1 -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			rotate 90 0 0;
+			$Temps = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+
+		$Temp = `polyCube -w 2 -h 4 -d 2 -sx 2 -sy 2 -sz 2 -ax 0 1 0 -ch 0`;
+			move -0.995 0 0;
+			$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Temp[0]`;
+			scale 0.5 2 1;
+			
+		$Temp = `polyCube -w 2.00 -h 2 -d 1 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			move -1 -1  0;
+			
+		$Tmps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+		
+			scale 0.5 0.5 1;
+			move -0.25 0 0;
+			makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+			xform -ws -piv 0 0 0 $Tmps[0];
+			
+			scale 320 $Sizes[10] $Sizes[5];
+			
+		$Temp = `polyCube -w 400 -h 10 -d 20 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			polyBevel -offset 0.5 -offsetAsFraction 1 -autoFit 1 -segments 1
+					-worldSpace 1 -fillNgons 1 -mergeVertices 1
+					-mergeVertexTolerance 0.0001 -smoothingAngle 30
+					-miteringAngle 180 -angleTolerance 180 -ch 0 ($Temp[0] + ".f[1]");
+			move -200 5 ($Sizes[5] * -0.5 + 10);
+			
+			float $Q = ($Sizes[5] / 40);
+			
+			for ($i=1; $i<$Q; $i++)
+				{
+					select -r $Temp[0];
+						$Tmp = `duplicate -rr`;
+							move -r 0 0 ($i * 40);
+							$Temp[$i] = $Tmp[0];
+				}
+				
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temp[1]`;
+			
+			for ($i=2; $i<$Q; $i++)
+				{
+					$Temps = `polyBoolOp -op 1 -ch 0  $Temp[$i] $Temps[0]`;
+				}
+				
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmps[0]`;
+	
+		select -r $Temps[0];
+			move -r 400 0 0 $Temps[0];
+			xform -ws -piv 0 0 0 $Temps[0];
+				makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+	return $Temps[0];
+}
+
+// ******************************************************************************** //	
+
+// ******************************************************************************** //	
+
+proc string DVY_EscCover(float $Sizes[])
+{
+	string $Temp[], $Temps[], $Tmp[];
+
+		$Temps = `polyCube -w 600 -h 10 -d ($Sizes[5] + 10) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 1`;
+			move 55 -19 0;
+				
+		$Temp = `polyCube -w 640 -h 10 -d 20 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			polyBevel -offset 0.5 -offsetAsFraction 1 -autoFit 1 -segments 1
+					-worldSpace 1 -fillNgons 1 -mergeVertices 1
+					-mergeVertexTolerance 0.0001 -smoothingAngle 30
+					-miteringAngle 180 -angleTolerance 180 -ch 0 ($Temp[0] + ".f[1]");
+			move 35 -15 ($Sizes[5] * -0.5 + 30);
+			
+			float $Q = ($Sizes[5] /40);
+			
+			for ($i=1; $i<$Q; $i++)
+				{
+					select -r $Temp[0];
+						$Tmp = `duplicate -rr`;
+							move -r 0 0 ($i * 40);
+							$Temp[$i] = $Tmp[0];
+				}
+				
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+			
+			for ($i=1; $i<$Q; $i++)
+				{
+					$Temps = `polyBoolOp -op 1 -ch 0  $Temp[$i] $Temps[0]`;
+				}
+			
+		select -r $Temps[0];
+
+	return $Temps[0];
+
+}
+
+// ******************************************************************************** //	
+
+// ******************************************************************************** //	
+
+proc string DVY_EscSidePlate(float $Sizes[], int $Opts[])
+{
+	
+	string $Temp[], $Temps[], $Tmp[];
+	
+	float $Width = $Sizes[0];
+	float $Height = $Sizes[1];
+	float $Depth = $Sizes[2];
+	float $Floor = $Sizes[3];
+	float $Length = $Sizes[4] * -1;
+	
+		$Temps = `polyCube -w 1000 -h $Sizes[1] -d $Sizes[2] -sx 2 -sy 2 -sz 1 -ax 0 1 0 -ch 0`;
+			move -499.9 0 0;
+		
+		$Temp = `polyCylinder -r ($Sizes[1] * 0.5) -h $Sizes[2] -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			rotate 90 0 0;
+
+		$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+		
+		select -r $Temps[0];
+			$Temp = `duplicate -rr`;
+			rotate 0 0 180;
+			move -r ($Length) ($Floor) 0;
+			
+		$Tmp = `polyCube -w 100 -h $Sizes[1] -d $Sizes[2] -sx 1 -sy 2 -sz 1 -ax 0 1 0 -ch 0`;
+			move -r (-1000 - 49.9) 0 0;
+			
+			move -r ($Length + 99.8 + 2000) $Floor 0 ($Tmp[0] + ".f[8:9]");
+			
+	
+		$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmp[0]`;
+		$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+
+		polyBevel -offset 0.5 -offsetAsFraction 1 -autoFit 1 -segments 5 -worldSpace 1
+				-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 30
+				-miteringAngle 180 -angleTolerance 180 -ch 0
+				($Temps[0] + ".e[215]") ($Temps[0] + ".e[228]") ($Temps[0] + ".e[296]") ($Temps[0] + ".e[310]");
+			
+		polyMergeVertex -d 1 -ch 0 $Temps[0];
+		
+		move -r 0 0 -50 $Temps[0];
+		select -r $Temps[0];
+			
+	return $Temps[0];
+	
+
+}
+
+// ******************************************************************************** //	
+
+// ******************************************************************************** //	
+
+proc string[] DVY_EscCurve(string $Temps[], float $EscWidth)
+{
+	
+	source bgCreateCurveFromEdges;
+
+	string $Temp[], $Temps[], $Tmp[];
+
+//		constructionHistory -tgl off;
+	
+			select -r ($Temps[0] + ".e[170]");
+			performSelContiguousEdges (0);
+		
+			//	createCrv(int $degree, int $ch, int $fit, int $close, int $revFlip);
+				createCrv(3, 0, 1, 0, 0);
+				closeCurve -ch 0 -ps 1 -rpo 1 -bb 0.5 -bki 1 -p 0.1 edgeCurve;
+					$Temps[1] = `rename edgeCurve ("Escalator_Curve_1")`;
+					select -r ($Temps[1] + ".cv[66]"); delete;
+					reverseCurve -ch 0 -rpo 1 $Temps[1];
+//		constructionHistory -tgl on;
+						
+	return $Temps;
+	
+}
+// ******************************************************************************** //	
+
+// ******************************************************************************** //	
+
+proc string DVY_WWaySidePlate(float $Sizes[], int $Opts[])
+{
+	
+	string $Temp[], $Temps[], $Tmp[];
+	
+	float $Width = $Sizes[0];
+	float $Height = $Sizes[1];
+	float $Depth = $Sizes[2];
+	float $Length = $Sizes[4] * -1;
+	
+		$Temps = `polyCube -w ($Sizes[4] + 0.2) -h $Sizes[1] -d $Sizes[2] -sx 2 -sy 2 -sz 1 -ax 0 1 0 -ch 0`;
+			move ($Sizes[4] * -0.5 + 0.1) 0 0;
+		
+		$Temp = `polyCylinder -r ($Sizes[1] * 0.5) -h $Sizes[2] -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			rotate 90 0 0;
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+		
+			$Temp = `polyCylinder -r ($Sizes[1] * 0.5) -h $Sizes[2] -sx 36 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				rotate 90 0 0;
+				move ($Sizes[4] * -1) 0 0;
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+		
+					polyMergeVertex -d 1 -ch 0 $Temps[0];
+		
+					move -r 0 0 -50 $Temps[0];
+					
+		select -r $Temps[0];
+			
+	return $Temps[0];
+
+}
+
+// ******************************************************************************** //	
+
+// ******************************************************************************** //	
+
+proc string[] DVY_WWayCurve(string $Temps[], float $EscWidth)
+{
+	
+	source bgCreateCurveFromEdges;
+
+	string $Temp[], $Temps[], $Tmp[];
+
+//		constructionHistory -tgl off;
+	
+			select -r ($Temps[0] + ".e[173]");
+			performSelContiguousEdges (0);
+		
+			//	createCrv(int $degree, int $ch, int $fit, int $close, int $revFlip);
+				createCrv(3, 0, 1, 0, 0);
+				closeCurve -ch 0 -ps 1 -rpo 1 -bb 0.5 -bki 1 -p 0.1 edgeCurve;
+					$Temps[1] = `rename edgeCurve ("WalkWay_Curve_1")`;
+					reverseCurve -ch 0 -rpo 1 $Temps[1];
+//		constructionHistory -tgl on;
+						
+	return $Temps;
+	
+}
+
+// ******************************************************************************** //	
+
+// ******************************************************************************** //	
+
+global proc DVY_WalkWay()
+{
+// ******************************************************************************** //	
+//	Global Variables	
+	
+	global string $Units;
+	global float $DVYUnit;
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Local Variables
+	
+	string $Temp[], $Temps[], $Tmp[];
+	string $WlkWayParts[], $WlkWaySteps[], $WlkWayStairs[], $WlkWayStairsGrp[];
+	string $WlkWayCurve[], $WlkWayLfHandRail[], $WlkWayRtHandRail[];
+	string $Loc[];
+
+	float $WlkWayWidth = 100;
+	float $Sizes[];
+	
+	int $Opt[];
+	int $a, $b, $c, $i, $j, $k;
+	int $e, $E;
+	
+	$Sizes[0] = 100;
+	$Sizes[1] = 400; //900;
+	$Sizes[2] = 100;
+//	$Sizes[3] = `floatFieldGrp -q -v1 EscFloatFieldGrp_101`;	//	2300; // Distance between Floors
+	$Sizes[4] = `floatFieldGrp -q -v1 EscFloatFieldGrp_101`;	//  6000; // Length of WalkWay
+	$Sizes[5] = `floatFieldGrp -q -v1 EscFloatFieldGrp_102`;	//  1000; // Escaltor Step Width
+	
+	print $Sizes;
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Set Scaling unit for Global units used.
+		
+	DVY_ScaleSet;
+	print ("Current units are " + $Units + " and Scale Factor $DVYUnit is " + $DVYUnit + "\n");
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Create Shaders for Stair Parts.
+	
+	string $StairMaterial[] = {"Glass", "Stainless"};
+	string $ShName;
+	
+	if(!`objExists "Stainless_SH"`) { $Shader[0] = `DVY_Shaders(37)`; }
+		$Shader[0] = "Stainless_SH";		 
+	
+	int $S = `optionMenu -q -sl DVY_WWayPanelOption` -1;
+		if ($S == 1)
+			{
+				$ShName = ($StairMaterial[$S-1] + "_SH");
+					if(!`objExists $ShName`) { $Shader[1] = `DVY_Shaders(59)`; }
+					$Shader[1] = $ShName;		 
+			}
+		
+		if ($S == 2)
+			{
+				$ShName = ($StairMaterial[$S-1] + "_SH");
+					if(!`objExists $ShName`) { $Shader[1] = `DVY_Shaders(37)`; }
+					$Shader[1] = $ShName;		 
+			}
+	
+	if(!`objExists "Black_SH"`) { $Shader[2] = `DVY_Shaders(34)`; }
+		$Shader[2] = "Black_SH";
+		
+	if(!`objExists "LowRes_SH"`)
+		{ $Shader[3] = `shadingNode -asShader lambert -name "LowRes_SH"`;
+		  setAttr ($Shader[3] + ".color") -type double3 0 0 1 ;}
+		$Shader[3] = "LowRes_SH" ;
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Section to create Hi and Low Res Layers.	
+		
+		string $EscLayers[];
+		
+		if (!`objExists "LowRes_GeomLayer"`)
+			{$EscLayers[0] = `createDisplayLayer -name "LowRes_GeomLayer" -number 1 -empty`;}
+				else {$EscLayers[0] = "LowRes_GeomLayer";}			
+					setAttr ($EscLayers[0] + ".displayType") 2;
+					setAttr ($EscLayers[0] + ".visibility") 1; 
+		
+		if (!`objExists "HiResGeomLayer" `) 
+			{$EscLayers[1] = `createDisplayLayer -name "HiResGeomLayer" -number 2 -empty`;}
+				else {$EscLayers[1] = "GeomLayer";}			
+					setAttr ($EscLayers[1] + ".displayType") 0;
+					setAttr ($EscLayers[1] + ".visibility") 1; 
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Section to create Main WalkWay Groups.	
+	$e = $E = 1;
+	
+	while(`objExists ("WalkWay_Main_GrpN_" + $E)`)
+		{
+			$E++;	// print ("$E is " + $E + "\n");
+		}
+	
+		$WlkWayStairsGrp[0] = `group -em -name ("WalkWay_Main_GrpN_" + $E)`;
+		$e = $E;
+		
+		$WlkWayStairsGrp[1] = `group -em -name ("WalkWay_Steps_GrpN_" + $E)`;
+//			parent $WlkWayStairsGrp[1] $WlkWayStairsGrp[0];
+
+		$WlkWayStairsGrp[2] = `group -em -name ("WalkWay_Curves_GrpN_" + $E)`;
+//			parent $WlkWayStairsGrp[2] $WlkWayStairsGrp[0];
+		
+		$WlkWayStairsGrp[3] = `group -em -name ("WalkWay_Sections_GrpN_" + $E)`;
+			parent $WlkWayStairsGrp[3] $WlkWayStairsGrp[0];
+			
+		$WlkWayStairsGrp[4] = `group -em -name ("WalkWay_LeftHandRail_GrpN_" + $E)`;
+//			parent $WlkWayStairsGrp[4] $WlkWayStairsGrp[0];
+			
+		$WlkWayStairsGrp[5] = `group -em -name ("WalkWay_RightHandRail_GrpN_" + $E)`;
+			parent $WlkWayStairsGrp[5] $WlkWayStairsGrp[0];
+			
+		$WlkWayStairsGrp[6] = `group -em -name ("WalkWay_AnimatedParts_GrpN_" + $E)`;
+			parent $WlkWayStairsGrp[6] $WlkWayStairsGrp[0];
+		
+			parent $WlkWayStairsGrp[1] $WlkWayStairsGrp[4] $WlkWayStairsGrp[5] $WlkWayStairsGrp[6];
+			
+	string $WlkWayName = ("WalkWay_Main_GrpN_" + $E);
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Generate Ecalator Parts	
+	
+// Generate profile for main Steps Curve
+	$Sizes[4] = $Sizes[4] + 200;
+	$Temp[0] = DVY_WWaySidePlate($Sizes, $Opt);
+	
+	select -r $Temp[0];
+	
+		$Temps = DVY_WWayCurve($Temp, $WlkWayWidth);
+			parent $Temps $WlkWayStairsGrp[2];
+			$WlkWayCurve[0] = `rename $Temps[1] ($WlkWayName + "_StepCurve_1")`;
+				move -r 0 -225 0 $WlkWayCurve[0];		
+
+// Delete Main Steps Curve Profile Part				
+	select -r $Temp[0]; delete;
+										
+// -------------------------------------------------------------------------------- //
+// Build WalkWay Handrail Main Sections
+	$Sizes[4] = $Sizes[4] - 200;
+
+	$Sizes[1] = 800;
+	$Temp[0] = DVY_WWaySidePlate($Sizes, $Opt);
+		$WlkWayParts[0] = `rename $Temp[0] ($WlkWayName + "_LfHandRailFrame_1")`;
+		move -r 0 475 ($Sizes[5] * 0.5 + 100) $WlkWayParts[0];
+			select -r $WlkWayParts[0];
+				hyperShade -assign "initialShadingGroup";
+				hyperShade -assign $Shader[1];
+				parent $WlkWayParts[0] $WlkWayStairsGrp[3];
+		
+	$Temp[0] = DVY_WWaySidePlate($Sizes, $Opt);
+		$WlkWayParts[1] = `rename $Temp[0] ($WlkWayName + "_RtHandRailFrame_1")`;
+			move -r 0 475 ($Sizes[5] * -0.5 ) $WlkWayParts[1];
+			select -r $WlkWayParts[1];
+				hyperShade -assign "initialShadingGroup";
+				hyperShade -assign $Shader[1];
+				parent $WlkWayParts[1] $WlkWayStairsGrp[3];
+				
+// End of Build WalkWay Handrail Main Sections
+// -------------------------------------------------------------------------------- //
+// Build WalkWay Handrail Runner Sections
+	
+	$Sizes[1] = 900; $Sizes[2] = 80;
+	$Temp[0] = DVY_WWaySidePlate($Sizes, $Opt);
+		$WlkWayParts[2] = `rename $Temp[0] ($WlkWayName + "_LfHandRailSupport_1")`;
+		move -r 0 475 ($Sizes[5] * 0.5 + 100) $WlkWayParts[2];
+			select -r $WlkWayParts[2];
+				hyperShade -assign "initialShadingGroup";
+				hyperShade -assign $Shader[0];
+				parent $WlkWayParts[2] $WlkWayStairsGrp[3];
+				
+		select -r ($WlkWayParts[2] + ".f[16:88]") ($WlkWayParts[2] + ".f[91:93]") 
+				($WlkWayParts[2] + ".f[96:99]") ($WlkWayParts[2] + ".f[102:173]");
+		delete;
+				
+			polyExtrudeFacet -ch 0 -kft 1 -pvx 0 -pvy 0 -pvz 0
+						-tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1
+						-ran 0 -divisions 1 -twist 0 -taper 1 -off 0 -ws 0
+						-ltz -25 -ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 1 -lsy 1 -lsz 1
+						-ldx 0 -ldy 0 -ldz 1 -w 0 -gx 0 -gy -1 -gz 0 -att 0 -mx 0 -my 0 -mz 0 -sma 30
+					($WlkWayParts[2] + ".f[0:39]");
+			
+			polyExtrudeFacet -ch 0 -kft 1 -pvx 0 -pvy 0 -pvz 0
+						-tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1
+						-ran 0 -divisions 1 -twist 0 -taper 1 -off 0 -ws 0
+						-ltz -25 -ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 1.25 -lsy 1 -lsz 1
+						-ldx 0 -ldy 0 -ldz 1 -w 0 -gx 0 -gy -1 -gz 0 -att 0 -mx 0 -my 0 -mz 0 -sma 30
+					($WlkWayParts[2] + ".f[0:39]");
+			
+			
+		select -r $WlkWayParts[2];
+			$Temp = `duplicate -rr`;
+				$WlkWayParts[3] = `rename $Temp[0] ($WlkWayName + "_RtHandRailSupport_1")`;
+					move -r 0 0 ($Sizes[5] * -1 -100) $WlkWayParts[3];
+				
+// End of Build WalkWay Handrail Runner Sections
+// -------------------------------------------------------------------------------- //
+// Build Curves for HandRail Runners.
+					
+	$Sizes[2] = 100;		
+	$Temp[0] = DVY_WWaySidePlate($Sizes, $Opt);
+	$Temp[0] = `rename $Temp[0] ($WlkWayName + "_CurveProfile_1")`;
+	select -r $Temp[0];
+		$Temps = DVY_WWayCurve($Temp, $WlkWayWidth);
+			$WlkWayCurve[1] = `rename $Temps[1] ($WlkWayName + "_LfHandRailCurve_1")`;
+				move -r 0 475 ($Sizes[5] * 0.5 + 50) $WlkWayCurve[1];
+				parent $WlkWayCurve[1] $WlkWayStairsGrp[2];
+
+	select -r $Temps[0]; delete;
+
+	$Temp[0] = DVY_WWaySidePlate($Sizes, $Opt);
+	$Temp[0] = `rename $Temp[0] ($WlkWayName + "_CurveProfile_1")`;
+	select -r $Temp[0];
+		$Temps = DVY_WWayCurve($Temp, $WlkWayWidth);
+			$WlkWayCurve[2] = `rename $Temps[1] ($WlkWayName + "_RtHandRailCurve_1")`;
+				move -r 0 475 ($Sizes[5] * -0.5 + -50) $WlkWayCurve[2];
+				parent $WlkWayCurve[2] $WlkWayStairsGrp[2];
+
+	select -r $Temps[0]; delete;
+
+// End of Build Curves for HandRail Runners.
+// -------------------------------------------------------------------------------- //
+// Build Single Step	
+	
+	$Sizes[10] = 150;
+	$WlkWaySteps[0] = DVY_EscStep($Sizes);
+		$WlkWaySteps[0] = `rename $WlkWaySteps[0] ($WlkWayName + "_Step_0")`;
+			select -r $WlkWaySteps[0];
+				hyperShade -assign "initialShadingGroup";
+				hyperShade -assign $Shader[0];
+				parent $WlkWaySteps[0] $WlkWayStairsGrp[1];
+			select -r $WlkWaySteps[0]; pickWalk -d down; 
+				editDisplayLayerMembers $EscLayers[1] `ls -selection`;
+			
+	$Temps = `polyCube -w 380 -h 150 -d $Sizes[5] -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`; 
+		$Temps[0] = `rename $Temps[0] ($WlkWayName + "_LowResStep_0")`;
+			move -r 200 -75 0 $Temps[0];
+			xform -ws -piv 0 0 0 $Temps[0];
+			select -r $Temps[0];
+				hyperShade -assign "initialShadingGroup";
+				hyperShade -assign $Shader[3];
+					parent -s $Temps[0] $WlkWaySteps[0] ;
+			pickWalk -d down;
+				editDisplayLayerMembers $EscLayers[0] `ls -selection`;
+		
+// End of Build Single Step 
+//	Temp			
+// Point Constrain First Step to a Locator		
+/*				
+	$Loc = `spaceLocator -p 0 0 0`;
+		pointConstraint -offset 0 0 0 -weight 1 $Loc[0] $WlkWaySteps[0];
+		parent $Loc[0] $WlkWayStairsGrp[1];
+				
+// Step Temporary curve attachment.
+			
+		select -r $Loc[0] $WlkWayCurve[0] ;
+			pathAnimation -fractionMode true -follow true -followAxis x -upAxis y
+				-worldUpType "scene" -inverseUp false -inverseFront false -bank false
+				-startTimeU `playbackOptions -query -minTime`
+				-endTimeU  `playbackOptions -query -maxTime`;
+*/		
+// End of Temp section										
+// -------------------------------------------------------------------------------- //
+// Build a Single Section of Left and Right Hand Rail Runner.	
+		
+	$WlkWayLfHandRail[0] = DVY_EscHandRail($WlkWayName, 0);
+		move -r 0 0 ($Sizes[5] * 0.5 + 50) $WlkWayLfHandRail[0];
+		makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;	
+			select -r $WlkWayLfHandRail[0] ;
+				hyperShade -assign "initialShadingGroup";
+				hyperShade -assign $Shader[2];
+				parent $WlkWayLfHandRail[0] $WlkWayStairsGrp[4];
+			pickWalk -d down;
+				editDisplayLayerMembers $EscLayers[1] `ls -selection`;
+				
+	$Temps = `polyCube -w 80 -h 15 -d 100 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`; 
+		$Temps[0] = `rename $Temps[0] (($WlkWayName + "_LowResLfHandRail_0"))`;
+				hyperShade -assign "initialShadingGroup";
+				hyperShade -assign $Shader[3];
+				delete `pointConstraint -offset 0 0 0 -weight 1 $WlkWayLfHandRail[0] $Temps[0]`;
+					parent -s $Temps[0] $WlkWayLfHandRail[0] ;
+			pickWalk -d down;
+				editDisplayLayerMembers $EscLayers[0] `ls -selection`;
+			
+	$WlkWayRtHandRail[0] = DVY_EscHandRail($WlkWayName, 1);
+		move -r 0 0 ($Sizes[5] * -0.5 - 50) $WlkWayRtHandRail[0];
+		makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;	
+			select -r $WlkWayRtHandRail[0] ;
+				hyperShade -assign "initialShadingGroup";
+				hyperShade -assign $Shader[2];
+				parent $WlkWayRtHandRail[0] $WlkWayStairsGrp[5];
+			pickWalk -d down;
+				editDisplayLayerMembers $EscLayers[1] `ls -selection`;
+				
+	$Temps = `polyCube -w 80 -h 15 -d 100 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`; 
+		$Temps[0] = `rename $Temps[0] (($WlkWayName + "_LowResRtHandRail_0"))`;
+				hyperShade -assign "initialShadingGroup";
+				hyperShade -assign $Shader[3];
+				delete `pointConstraint -offset 0 0 0 -weight 1 $WlkWayRtHandRail[0] $Temps[0]`;
+					parent -s $Temps[0] $WlkWayRtHandRail[0] ;
+			pickWalk -d down;
+				editDisplayLayerMembers $EscLayers[0] `ls -selection`;
+				
+// Build a Single Section of Left and Right Hand Rail Runner.								
+// -------------------------------------------------------------------------------- //
+// Build main WalkWay Framework to hold Steps.			
+				
+		$Temps = `polyCube -w ($Sizes[4] + 1300) -h 10 -d ($Sizes[5] + 10) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 1`;
+			move ($Sizes[4] * -0.5) -600 0;
+					
+			$Temp = `polyCube -w 10 -h 581 -d ($Sizes[5] + 10) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 1`;
+				move 650 -314.5 0;
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+				
+			$Temp = `polyCube -w 10 -h 581 -d ($Sizes[5] + 10) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 1`;
+				move ($Sizes[4] * -1 - 650) -314.5 0;
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+		
+				$Temp = `polyCube -w (655) -h 631 -d 10 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 1`;
+						move (327.5) -289.5 ($Sizes[5] * 0.5);
+						move -r 0 -26 0 ($Temp[0] + ".vtx[3]") ($Temp[0] + ".vtx[5]"); 
+						$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+						
+				$Temp = `polyCube -w (655) -h 631 -d 10 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 1`;
+						move (327.5) -289.5 ($Sizes[5] * -0.5);
+						move -r 0 -26 0 ($Temp[0] + ".vtx[3]") ($Temp[0] + ".vtx[5]"); 
+						$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+								
+				$Temp = `polyCube -w (655) -h 631 -d 10 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 1`;
+						move ($Sizes[4] * -1 - 327.5) -289.5 ($Sizes[5] * 0.5);
+						move -r 0 -26 0 ($Temp[0] + ".vtx[2]") ($Temp[0] + ".vtx[4]"); 
+						$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+						
+				$Temp = `polyCube -w (655) -h 631 -d 10 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 1`;
+						move ($Sizes[4] * -1 - 327.5) -289.5 ($Sizes[5] * -0.5);
+						move -r 0 -26 0 ($Temp[0] + ".vtx[2]") ($Temp[0] + ".vtx[4]"); 
+						$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temps[0]`;
+
+					$Temp = `polyCube -w ($Sizes[4] ) -h 631 -d 10 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 1`;
+							move ($Sizes[4] * -0.5 ) -289.5 ($Sizes[5] * 0.5);
+							$Temps = `polyUnite -ch 0 $Temp[0] $Temps[0]`;
+													
+					$Temp = `polyCube -w ($Sizes[4] ) -h 631 -d 10 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 1`;
+							move ($Sizes[4] * -0.5 ) -289.5 ($Sizes[5] * -0.5);
+							$Temps = `polyUnite -ch 0 $Temp[0] $Temps[0]`;
+								hyperShade -assign "initialShadingGroup";
+								hyperShade -assign $Shader[0];
+									$WlkWayParts[4] = `rename $Temps[0] ($WlkWayName + "_StepsCarrierFrame_1")`;
+										parent $WlkWayParts[4] $WlkWayStairsGrp[3];
+			
+// End of Build main WalkWay Framework.	
+// -------------------------------------------------------------------------------- //
+// Top and Bottom Pedestian entry and exit plates
+				
+	$Temps[0] = DVY_EscCover($Sizes);
+		hyperShade -assign "initialShadingGroup";
+		hyperShade -assign $Shader[0];
+			$WlkWayParts[5] = `rename $Temps[0] ($WlkWayName + "_LowerStepCover_1")`;
+				move -r 300 0 0 ;
+				parent $WlkWayParts[5] $WlkWayStairsGrp[3];
+			
+	$Temps[0] = DVY_EscCover($Sizes);			
+		hyperShade -assign "initialShadingGroup";
+		hyperShade -assign $Shader[0];
+			$WlkWayParts[6] = `rename $Temps[0] ($WlkWayName + "_UpperStepCover_1")`;
+				move -r ($Sizes[4] * -1 -300) ($Sizes[3]) 0;
+				rotate 0 180 0 ;
+					parent $WlkWayParts[6] $WlkWayStairsGrp[3];
+					
+//			select -r $Temp[50];
+					
+// End of Top and Bottom Pedestian entry and exit plates			
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Scale WalkWay to match Users Settings.
+					 
+	select -r $WlkWayStairsGrp[0];
+		makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+
+	scale $DVYUnit $DVYUnit $DVYUnit $WlkWayStairsGrp[0];
+		select -r $WlkWayStairsGrp[0];
+		makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+		
+	scale $DVYUnit $DVYUnit $DVYUnit $WlkWayStairsGrp[2];
+	
+	parent -world $WlkWayStairsGrp[6] ;
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //		
+// Point Constrain First Step to a Locator		
+				
+	$Loc = `spaceLocator -p 0 0 0 -name ($WlkWayName + "_StepLocator_0")`;
+		pointConstraint -offset 0 0 0 -weight 1 $Loc[0] $WlkWaySteps[0];
+		parent $Loc[0] $WlkWayStairsGrp[1];
+		
+// Parent Constrain Curve Group to Main WalkWay Group		
+				
+	parentConstraint -mo -weight 1 $WlkWayStairsGrp[0] $WlkWayStairsGrp[2];
+		
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+	
+	string $TSel[];
+	float $OrgLength, $ArcLen;
+	float $P = 80 * $DVYUnit;
+		$OrgLength = $ArcLen = `arclen -ch 0 $WlkWayCurve[1]`;
+	float $NoOfPitches = $OrgLength /$P;
+		$NoOfPitches = `ceil $NoOfPitches`;
+	float $TargetLength = $P * $NoOfPitches;
+	string $duper[];
+	float $Offset = $P;
+	float $offset;
+		$Number = $NoOfPitches;
+
+// Build Left Hand Rail and add to curve
+	
+		for ($a=0; $a < $Number; $a++)
+			{
+				$offset = ($Offset * $a);
+				$duper = `duplicate -rr -renameChildren -un  $WlkWayLfHandRail[0]`;
+				
+				select -r $duper[0];	select -add $WlkWayCurve[1];
+														
+					pathAnimation -name ($WlkWayName + "HRail_MotPathLf" + ($a+1)) 
+							-fractionMode true -follow true -followAxis x -upAxis y
+							-worldUpType "scene" -inverseUp false
+							-inverseFront false -bank false
+							-startTimeU $offset -endTimeU ($offset + $TargetLength);
+					
+					cycleCheck -e off ($WlkWayName + "HRail_MotPathLf" + ($a+1)) ;
+			}
+			
+// Set all Left HandRail parts to cycle on infinity	
+			
+	select -r -hi ($WlkWayStairsGrp[4]);
+		$TSel = `ls -tr -sl`;
+			DVY_MakeSelectedCycle($TSel) ;
+		
+// Build Right Hand Rail and add to curve
+			
+	clear $duper;
+		for ($a=0; $a < $Number; $a++)
+			{
+				$offset = ($Offset * $a);
+				$duper = `duplicate -rr -renameChildren -un  $WlkWayRtHandRail[0]`;
+				
+				select -r $duper[0];	select -add $WlkWayCurve[2];
+														
+					pathAnimation -name ($WlkWayName + "HRail_MotPathRt" + ($a+1)) 
+							-fractionMode true -follow true -followAxis x -upAxis y
+							-worldUpType "scene" -inverseUp false
+							-inverseFront false -bank false
+							-startTimeU $offset -endTimeU ($offset + $TargetLength);
+					
+					cycleCheck -e off ($WlkWayName + "HRail_MotPathRt" + ($a+1)) ;
+			}
+			
+// Set all Right HandRail parts to cycle on infinity	
+			
+		select -r -hi ($WlkWayStairsGrp[5]);
+			$TSel = `ls -tr -sl`;
+				DVY_MakeSelectedCycle($TSel) ;
+
+// Build Steps and add to curve
+			
+	$P = 400 * $DVYUnit;
+	$OrgLength = $ArcLen = `arclen -ch 0 $WlkWayCurve[0]`;
+	$NoOfPitches = $OrgLength /$P;
+	$NoOfPitches = `ceil $NoOfPitches`;
+	$TargetLength = $P * $NoOfPitches;
+	$Offset = $P;
+	$Number = $NoOfPitches;
+	
+	clear $duper;
+		for ($a=0; $a < $Number; $a++)
+			{
+				$offset = ($Offset * $a);
+				select -r $Loc[0] $WlkWaySteps[0];
+					$duper = `duplicate -rr -renameChildren -un `;
+						$Loc[$a+1] = $duper[0];
+						$WlkWaySteps[$a+1] = $duper[1];
+							pointConstraint -offset 0 0 0 -weight 1 $Loc[$a+1] $WlkWaySteps[$a+1];
+				
+				select -r $Loc[$a+1];	select -add $WlkWayCurve[0];
+														
+					pathAnimation -name ($WlkWayName + "Step_MotPath" + ($a+1)) 
+							-fractionMode true -follow true -followAxis x -upAxis y
+							-worldUpType "scene" -inverseUp false
+							-inverseFront false -bank false
+							-startTimeU $offset -endTimeU ($offset + $TargetLength);
+					
+					cycleCheck -e off ($WlkWayName + "Step_MotPath" + ($a+1)) ;
+			}
+			
+// Set all Steps to cycle on infinity			
+			
+	select -r -hi ($WlkWayStairsGrp[1]);
+		$TSel = `ls -tr -sl`;
+			DVY_MakeSelectedCycle($TSel) ;
+			
+	select -r $WlkWaySteps;pickWalk -d down; pickWalk -d right;
+		hyperShade -assign "initialShadingGroup";
+		hyperShade -assign $Shader[0];
+			editDisplayLayerMembers $EscLayers[1] `ls -selection`;
+		
+
+	select -r $WlkWaySteps;pickWalk -d down; pickWalk -d right; pickWalk -d right;
+		hyperShade -assign "initialShadingGroup";
+		hyperShade -assign $Shader[3];
+			editDisplayLayerMembers $EscLayers[0] `ls -selection`;
+		
+		
+// Delete original parts used to build animated sections.
+			
+	select -r $WlkWayLfHandRail[0]	$WlkWayRtHandRail[0] $Loc[0] $WlkWaySteps[0]; delete;
+			
+// Set up driver connection for HandRail and steps reverse and speed control
+		
+	addAttr -k 1 -ln SpeedAdjust -at double -dv 5 -min -50 -max 50 $WlkWayStairsGrp[0];
+	
+// Build Driver for Rails and Steps.
+	
+	//find current frame rate
+	float $FPS = `currentTimeUnitToFPS`;
+	print ("$FPS is " + $FPS + "\n");
+	
+	//set Frame count to give 1 rpm for Pulley driver.
+	float $FpS = ($FPS * 60)/8;
+	print ("$FpS is " + $FpS + "\n");
+	
+	string $Drivers[];
+	createNode implicitBox;
+				rename `pickWalk -d up` ($WlkWayName + "_Driver_1");
+				$Drivers[0] = ($WlkWayName + "_Driver_1");
+				setAttr ($Drivers[0] + ".scale") 1.5 1.5 1.5;
+				setAttr ($Drivers[0] + ".visibility") 1;
+				
+		parent $Drivers[0] $WlkWayStairsGrp[0];
+
+			for ($k=0; $k<9; $k++)
+			  {
+				  $r = ($k * -45);
+				  setAttr ($Drivers[0] + ".rotateX") $r;
+				  setKeyframe -attribute "rotateX" -t ($k * $FpS) $Drivers[0];
+				  float $Time = ($k * $FpS);
+				  
+			  }
+				setAttr ($Drivers[0] + "_rotateX.preInfinity") 3;
+				setAttr ($Drivers[0] + "_rotateX.postInfinity") 3;
+				keyTangent -e -itt spline -ott spline ($Drivers[0] + "_rotateX");
+				currentTime -edit 0;
+				setAttr ($Drivers[0] + ".rotateX") 0;
+				setAttr ($Drivers[0] + ".visibility") 0;
+
+	string $DVYNodes[];
+	// Create Multiplier node for WalkWay drive
+		$DVYNodes[0] = `shadingNode -asUtility multiplyDivide -name ($WlkWayName + "MultiplyDriverN_1")`;
+			setAttr ($DVYNodes[0] + ".operation") 1;
+			connectAttr -f ($WlkWayStairsGrp[0] + ".SpeedAdjust") ($DVYNodes[0] + ".input1X");
+			connectAttr -f ($Drivers[0] + ".rx") ($DVYNodes[0] + ".input2X");
+					
+		string $PathA[], $PathB[];
+
+			select -r ($WlkWayName + "HRail_MotPathLf*");
+			$PathA = `ls -sl`;
+			$A = `size $PathA`/2;
+			print ("$A is " + $A + "\n");
+			
+			for ($i=1; $i< $A+1; $i++)
+				{
+					connectAttr -f ($DVYNodes[0] + ".outputX") ($WlkWayName + "HRail_MotPathLf" + $i + "_uValue.input");
+				}
+		
+			select -r ($WlkWayName + "HRail_MotPathRt*");
+			$PathA = `ls -sl`;
+			$A = `size $PathA`/2;
+			print ("$A is " + $A + "\n");
+			
+			for ($i=1; $i< $A+1; $i++)
+				{
+					connectAttr -f ($DVYNodes[0] + ".outputX") ($WlkWayName + "HRail_MotPathRt" + $i + "_uValue.input");
+				}
+		
+			select -r ($WlkWayName + "Step_MotPath*");
+			$PathA = `ls -sl`;
+			$A = `size $PathA`/2;
+			print ("$A is " + $A + "\n");
+			
+			for ($i=1; $i< $A+1; $i++)
+				{
+					connectAttr -f ($DVYNodes[0] + ".outputX") ($WlkWayName + "Step_MotPath" + $i + "_uValue.input");
+				}
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Lock off attributes.
+		
+	string $AttrA[] = {".tx", ".ty", ".tz", ".rx", ".ry", ".rz", ".sx", ".sy", ".sz"};
+	string $AttrB[] = {".rx", ".ry", ".rz", ".sx", ".sy", ".sz"};
+	string $AttrR[] = {".rx", ".ry", ".rz"}; 
+	string $AttrS[] = {".sx", ".sy", ".sz"};
+	string $AttrT[] = {".tx", ".ty", ".tz"};
+
+	for ($Att in $AttrS)
+		{ setAttr -l 1 -k 0 ($WlkWayStairsGrp[2] + $Att); }
+	
+	for ($Att in $AttrA)
+		{ setAttr -l 1 -k 0 ($WlkWayStairsGrp[6] + $Att); }
+	
+	select -r -hi $WlkWayStairsGrp[0] $WlkWayStairsGrp[2] $WlkWayStairsGrp[6];
+	string $DSel[] = `ls -tr -sl`;
+	
+	for ($i= 1; $i < size($DSel); $i++)
+		{
+			for ($Att in $AttrA)
+				{ setAttr -l 1 -k 0 ($DSel[$i] + $Att); }
+		}
+			
+		for ($Att in $AttrS)
+			{ setAttr -l 1 -k 0 ($WlkWayStairsGrp[0] + $Att); }
+			
+	select -r $WlkWayStairsGrp[0];
+
+//	print "Completed WalkWay Davvey © 2006..\n";
+	
+	
+}

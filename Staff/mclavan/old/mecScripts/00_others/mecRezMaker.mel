@@ -1,0 +1,245 @@
+
+
+
+/*
+selectCurveCV("all");
+
+This script will create an attribute to toggle between differnt resolutions of the geometry.
+
+*/
+
+global proc mecRezMaker()
+{
+
+     // All the items that are going to be low rez need to be selected.
+     // Most likely this will only be one group object, but there are situation that this may not
+     //      be the case.
+
+     // Gather object
+     string $detailOpt = `radioCollection -q -sl mecRezMRadio`;
+     // mecRezMLow mecRezMHigh are the to values it can return.
+     int $chkSmooth = `checkBox -q -v mecRezMChkBSmooth`;
+     int $divisions = `intFieldGrp -q -v1 mecRezMMax`;
+     string $low[] = `textScrollList -q -ai mecRezMTSLLow`;
+     string $med[] = `textScrollList -q -ai mecRezMTSLMed`;
+     string $smoothName[];
+     string $selCurve[] = `ls -sl`;
+
+     // Smoothing area.
+     //   This area checks to see if an object in the med rez area is allready smoothed.
+     //   If it is then it is bypassed.  If not then it is smoothed with the divisions 
+     //   inputted into the GUI.
+         for($m in $med)
+         {
+               string $hist[] = `listHistory $m`;
+
+               string $smooth[];
+               for($h in $hist)
+               {
+                      if(`gmatch $h "*Smooth*"`)
+                      {
+                                 if(`objectType -i polySmoothFace $h`)
+                                                $smooth[size($smooth)] = $h;
+                                 print ("match!\n ");
+                      }
+               }
+
+               if(`size($smooth)` == 1)
+               {
+                    $smoothName[size($smoothName)] = $smooth[0];
+               }
+               else if(`size($smooth)` == 0)
+               {
+                    string $smoothTemp[] = `polySmooth  -mth 0 -dv $divisions -c 1 -kb 1 -ksb 1 -khe 0 -kt 1 -kmb 1
+                                -suv 1 -sl 1 -dpe 1 -ps 0.1 -ro 1 -ch 1 $m`;
+                    $smoothName[size($smoothName)] = $smoothTemp[0];
+               }
+               else if(`size($smooth)` > 1)
+               {
+                   warning "More than one smooth exists.  Using first polySmooth.";
+                   $smoothName[size($smoothName)] = $smooth[0];
+               }
+
+               clear($smooth);
+         }
+
+
+
+     // Option needed for how many divisions the smooth is going to be. Default is 1.
+
+     // An attribute needs to be created.
+     //    enumerator
+     // An option is given is 2 levels of rez (low/high) or 3 (low/med/high).
+          // mecRezMLow mecRezMHigh are the to values it can return.
+
+     // Does the resolution attribute exists.
+     if(attributeExists ("resolution", $selCurve[0]))
+          deleteAttr ($selCurve[0]+".resolution");
+
+     if( $detailOpt == "mecRezMLow" )
+          addAttr -ln "resolution" -at "enum" -en "Low:High:" $selCurve[0];
+     else
+     {
+          addAttr -ln "resolution" -at "enum" -en "Low:Med:High:" $selCurve[0];
+          
+          // Create ulitity node for divisions.
+          string $divNode = `shadingNode -asUtility condition -n "condResDiv"` ;
+          setAttr ($divNode + ".colorIfTrueR") $divisions;
+          setAttr ($divNode + ".colorIfFalseR") 0;
+          setAttr ($divNode + ".operation") 2; // Greater than.
+          setAttr ($divNode + ".secondTerm") 1;
+          // Loop though all the smooth nodes and connect them.
+          for($sm in $smoothName)
+                  connectAttr -force ($divNode+".outColorR") ($sm+".divisions");
+                  //setAttr "polySmoothFace2.divisions" 0;
+          connectAttr -force ($selCurve[0]+".resolution") ($divNode+".firstTerm");
+// Result: Connected nurbsTorus1.resolution to condResVis.secondTerm // 
+
+//setAttr "condition1.firstTerm" 1;
+
+     }
+     setAttr -e -keyable true ($selCurve[0]+".resolution");
+     // Utlitity nodes need to be created.
+     // Condition
+
+      // Visibility
+      string $visNode = `shadingNode -asUtility condition -n "condResVis"` ;
+      setAttr ($visNode + ".colorIfTrueR") 1;
+      setAttr ($visNode + ".colorIfFalseR") 0;
+
+      // newly created resolution attribute is linked up with vis condition statement.
+      connectAttr -force ($selCurve[0]+".resolution") ($visNode+".firstTerm");
+//connectAttr -force pCone1.resolution condition1.firstTerm;
+
+      for($l in $low)
+             // Low rez
+             connectAttr -force ($visNode+".outColorR") ($l+".v");
+         // High rez
+      for($m in $med)
+             connectAttr -force ($visNode+".outColorG") ($m+".v");
+
+
+
+/*
+// Low rez
+connectAttr -force condition1.outColorR |pCube1.visibility;
+// High rez
+connectAttr -force condition1.outColorG |pSphere1.visibility;
+*/
+/*  Logic for the conditions
+     if ( attribute == 1 )
+        lowRezGeo.vis = 1
+        medRezGeo.vis = 0
+     else
+         lowRezGeo.vis = 0
+         medRezGeo.vis = 1
+
+     if( attribute <= 1 )
+         medRezGeo.division = 0;
+     else
+         medRezGeo.div = 1;
+*/
+     // connection need to be made.
+     
+}
+
+global proc mecRezMakerFill(string $objName)
+{
+       string $sel[] = `ls -sl`;
+       for($s in $sel)
+              textScrollList -e -append $s $objName;
+}
+
+proc mecRezMGUI()
+{
+    // Does the window exists.
+    if(`window -exists mecRezMGUI`)
+    		deleteUI mecRezMGUI;
+    if( `windowPref -exists mecRezMGUI` )
+    		windowPref -r mecRezMGUI;
+    
+    window -w 308 -h 237 -t "Resolution Builder" 
+    		-titleBar 1 -mnb 1 -mxb 1 -mb 1 
+    		-tlb 0 -sizeable 1 mecRezMGUI;
+    
+    // Main ColumnLayout
+    columnLayout mecRezMRLColMain;
+    text -h 5 -l "";
+
+    // Rez level selector
+    radioCollection mecRezMRadio;
+    rowLayout -w 310 -h 200 -nc 3 -columnWidth3 45 100 150 mecRezMRLR;
+    text -l "" -w 15 -p mecRezMRLR;
+    
+    radioButton -w 100 -p mecRezMRLR
+    		 -label "Low/High" 
+    		-cl "mecRezMRadio" -align "center"
+    		mecRezMLow;
+    
+    radioButton -w 100 -p mecRezMRLR 
+    		 -label "Low/Med/High" 
+    		-cl "mecRezMRadio" -align "center"
+    		-sl mecRezMHigh;
+
+    setParent mecRezMRLColMain;
+    text -l "" -h 5;
+    
+    // Does the script smooth the geometry or is it allready smoothed.
+    
+    // Needs to check to see if the object is allready smoothed.
+    
+    rowLayout -w 300 -nc 3 -columnWidth3 45 100 175 mecRezMRLDiv;
+    
+    columnLayout -p mecRezMRLDiv;
+    text -l "" -w 10;
+    
+    
+    columnLayout -p mecRezMRLDiv;
+    checkBox -w 60 -l "Smooth"
+    		-v 1 -align "center" mecRezMChkBSmooth;
+    
+    
+    columnLayout -p mecRezMRLDiv;
+    intFieldGrp -w 150 -l "Max Divisions" -nf 1 -v1 1 
+    		-cw2 75 25 mecRezMMax;
+    
+    
+    
+    setParent mecRezMRLColMain;
+    rowLayout -w 310 -h 200 -nc 3 -columnWidth3 5 150 150 mecRezMRL;
+    
+    columnLayout;
+    text -l "" -w 5;
+    setParent mecRezMRL;
+    
+    columnLayout;
+    text -w 150 -l "Low Res";
+    
+    textScrollList -w 140 -numberOfRows 5 -allowMultiSelection false
+     		-showIndexedItem 1
+     		mecRezMTSLLow;
+    
+    button -w 140 -l "Submit" -c "mecRezMakerFill(\"mecRezMTSLLow\")";
+    button -w 140 -l "Reset" -c "textScrollList -e -ra mecRezMTSLLow";
+    setParent mecRezMRL;
+    
+    
+    columnLayout;
+    // Second Area
+    
+    text -w 140 -l "Medium Res";
+    
+    textScrollList -w 140 -numberOfRows 5 -allowMultiSelection false 
+    		-showIndexedItem 1
+     		mecRezMTSLMed;
+    
+    button -w 140 -l "Submit" -c "mecRezMakerFill(\"mecRezMTSLMed\")";
+    button -w 140 -l "Reset" -c "textScrollList -e -ra mecRezMTSLMed";
+    setParent mecRezMRL;
+    
+    setParent mecRezMRLColMain;
+    text -l "" -h 5;
+    button -l "Apply" -w 300 -c "mecRezMaker()";
+    showWindow mecRezMGUI;
+}
+mecRezMGUI;

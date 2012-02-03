@@ -1,0 +1,760 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davvey\'s Chain & Sprocket Generator
+''    Author:  
+''    Last Updated: Jan 15, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4463.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+///////////////////////////////////////////////////////////////////////////////
+/*			
+				
+	Copyright © 2006 DVY_ChainBuild. All rights reserved davvey@ntlworld.com
+
+						- DVY_ChainBuild -
+///////////////////////////////////////////////////////////////////////////////
+						
+//	DVY_ChainBuild;
+//	Description and Usage Section
+
+//	Installation	
+		
+	Script is part of Davvey's Chain Generator script pack.
+	
+	It is called to build a Single Chain Link. The single Link is a 
+	dimensional accurate Link based on releant ISO Standards. The Script
+	will build a single link based on the settings from the GUI for Pitch
+	and Type e.g. SIMPLEX, DUPLEX etc. One Single link of Inner and OuterLinks
+	plus Pins is built. then script	duplicates links to generate a DUPLEX,
+	TRIPLEX etc. Link Group. 
+	Script then calls DVY_CUrveBuild to build motion Path Curve. The script
+	calculates required no. of Link Groups needed to build a full change around
+	Curve Path. Then build Chain group of links and connects to a Motion Path
+	ready for rigging by DVY_ChainDriver.
+	
+	Each Chain Link Group is built using a HiRes ISO Standard dimensionally
+	accurate Link plus a LowRes Polygon to allow faster animation setup.
+	
+	These scripts will generate a high Poly count due to need for accurate
+	modelling of many chain links.
+
+*/
+	
+//////////////////////////////////////////////////////////////////////////
+//					DVY_ChainBuild Procedure
+//////////////////////////////////////////////////////////////////////////
+
+
+global proc DVY_ChainBuild()
+{
+	
+// ******************************************************************************** //	
+//	Global Variables
+	 
+	global string $Chain[], $ChainGrp[], $LinkGrp[], $ISO_No[], $TeethProfiles[], $Type[];
+	global string $CHType[], $Title[], $TitleN[], $IField[], $FField[], $Option[];
+	
+	global int $Teeth[];
+	global float $Pitch[], $PCDF[];
+	global float $TargetLength;
+	global matrix $ChainDataM[17][10];
+	
+	global string $Units;
+
+	global float $DVYUnit;
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Local Variables
+	 
+	string $Temp[],$Item[], $Sprocket[], $Bush[], $Pin[], $InPlate[], $OutPlate[],$SprocketTeeth[];
+	clear $Sprocket;
+	string $CHName = `optionMenu -q -v DVY_CHType`;
+	
+	float $C, $Cd, $Ct, $D, $H, $P, $Ct, $D, $J, $L, $Lp, $InT, $OuT, $W;
+	float $Angle, $PCD, $OD, $RD, $R, $R1, $R2, $f, $PinL;
+	int $CHTeeth[];
+
+	int $e, $E, $i, $j, $N, $PL, $q;	
+	float $Pi, $m, $A, $GW, $PCD, $BD, $RD, $OD;
+	float $Ad, $Dd, $Pd, $WH, $Angle, $Helix ;
+	float $Pos[], $Profiles[];
+	float $Move, $HubMx, $BoreMx, $Bore, $HubT;
+	float $Ratios[];
+	
+	int $Idx = $CHp = 0;
+	
+	string $Sprockets[], $Sel[], $Selected[], $buffer[];
+	string $Group[];
+	
+		$Sel = `ls -sl`;
+		$Selected[0] = $Sel[0];
+		$numTokens = `tokenize $Sel[0] "_" $buffer`;
+		print $buffer;
+		
+		select -r ("Grp_" + $buffer[3] + "_" + $buffer[0] + "Sprocket_GrpN_*");
+		$Sprockets = `ls -tr -sl`;
+		
+		print $Sprockets;
+		print $Selected;
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Create Display Layer for Hi and Low Res Chain Parts.
+		string $CHLayers[];
+		
+		if (!`objExists "HiRes_Layer"`)
+			{ $CHLayers[0] = `createDisplayLayer -name "HiRes_Layer" -number 1 -empty`;}
+				else {$CHLayers[0] = "HiRes_Layer";} 
+				
+		if (!`objExists "LowRes_Layer"`)
+			{ $CHLayers[1] = `createDisplayLayer -name "LowRes_Layer" -number 1 -empty`;}
+				else {$CHLayers[1] = "LowRes_Layer";} 
+				
+			setAttr ($CHLayers[1] + ".visibility") 0;
+
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Set Scaling unit for Global units used.
+		
+	DVY_ScaleSet;
+	print ("Current units are " + $Units + " and Scale Factor $DVYUnit is " + $DVYUnit + "\n");
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Create Shaders for Gear Parts.
+					
+		if(!`objExists ChainRoller_SH `) { $shader[0] = `DVY_Shaders(14)`; }
+			 $Shader[0] = "ChainRoller_SH";
+		if(!`objExists DriveChain_SH`) { $shader[1] = `DVY_Shaders(13)`; }
+			 $Shader[1] = "DriveChain_SH";	
+		if(!`objExists ChainPin_SH`) { $shader[2] = `DVY_Shaders(15)`; }
+			 $Shader[2] = "ChainPin_SH";	
+			 
+//		print "\nShaders used are..\n";
+//		print $Shader;
+
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+//	Constants and "Static Data"
+	$E = $e = 1;
+	$CHTeeth[0] = 0;
+
+	for ($i=1; $i<3; $i++)
+		{
+			$CHTeeth[$i] = `intField -q -v ("SprocketIntField_" + $i)`;
+			if ($CHTeeth[$i] > 9)
+				{ $q = $q + 1;}
+		}
+		
+		
+
+		$Idx = `optionMenu -q -sl DVY_ISO_No` -2;
+		$PL = `optionMenu -q -sl DVY_CHType`;
+		if ($PL == 8) {$PL = $PL + 2;}
+		if ($PL == 7) {$PL = $PL + 1;}
+		
+		print ("$PL is " + $PL + "\n");
+		print ("$Idx is " + $Idx + "\n");
+		
+		print ("Range of Sprocket Teeth to be set up is \n");
+		print $CHTeeth;
+		print ("Quantity of Gears in Set is " + $q + "\n" );
+
+		
+		$P = $ChainDataM[$Idx][0];			//	Pitch of Chain.
+		$W = $ChainDataM[$Idx][1];			//	Width Between Roller side plates.
+		$R = $ChainDataM[$Idx][2];			//	Roller Outside Diameter
+		
+		$H = $ChainDataM[$Idx][3];			//	Link Plate Height.
+		$InT = $ChainDataM[$Idx][4];		//	Inner Link Plate Thickness.
+		$OuT = $ChainDataM[$Idx][5];		//	Outer Link Plate Thickness;
+		$D = $ChainDataM[$Idx][6];			//	Diameter of Pin.
+		$Lp = $ChainDataM[$Idx][7];			//	Length of Pin.
+		$J = $ChainDataM[$Idx][8];			//	Extra Length of Pin for connector.
+		$Ct = $ChainDataM[$Idx][9];			//	Link Traverse Pitch.
+		$f = $P * 0.7;						//	Depth of Clearance below Tooth Root Diameter
+		$PinL = $Ct * ($PL-2);
+		$PinL = ($W + ($InT * 2) + ($OuT * 2)) * ($PL);
+	
+		print ("\n" + "Data used for Sprocket with a " + $P + "mm Chain Pitch \n");
+		print ("\n" + "Chain Pitch $P is " + $P + "..\n");
+		print ("Roller Outside Diameter $R is " + $R + "..\n");
+		
+		print ("Width between Roller Plates $W is " + $W + "..\n");
+		print ("Link Plate Height $H is " + $H + "..\n");
+		print ("Inner Plate Thickness $InT is " + $InT + "..\n");
+		print ("Outer Plate Thickness $OuT is " + $OuT + "..\n");
+		print ("Roller Pin Diameter $D is " + $D + "..\n");
+		print ("Pin Length $Lp is " + $Lp + "..\n");
+		print ("Pin Length $PinL is " + $PinL + "..\n");
+		
+		print ("Roller Pin Extra Length for Connector $J is " + $J + "..\n");
+		print ("Link Traverse Pich $Ct is " + $Ct + "..\n");
+		
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+//	Section to set up Chain Groups as Required.
+		
+		$Chain[0] = `group -em -name ($CHName + "_Chain_GrpN_" + ($E))`;
+			addAttr -k 0 -ln ChainLinks -at double $Chain[0];
+			addAttr -k 0 -ln ChainLength -at double $Chain[0];
+			addAttr -k 0 -ln ChainPitch -at double $Chain[0];
+		
+		$LinkGrp[0] = `group -em -name ($CHName + "_MainLink_GrpN_" + $E)`;
+			parent $LinkGrp[0] $Chain[0];
+			
+		$LinkGrp[1] = `group -em -name ($CHName + "_InnerLinks_GrpN_" + $E)`;
+		move -r ($P * 0.5) 0 0 ;
+		$LinkGrp[2] = `group -em -name ($CHName + "_OuterLinks_GrpN_" + $E)`;
+		move -r ($P * 1.5) 0 0 ;
+			
+		parent $LinkGrp[2] $LinkGrp[1] $LinkGrp[0];			
+		
+
+		$ChainGrp[0] = `group -em -name ($CHName + "_InnerLink_GrpN_" + $E)`;
+		move -r ($P * -0.5) 0 0 ;
+
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+//	Section to Build Chain Sections Chain Groups as Required.
+		
+		
+		$Temps = `polyPipe -r ($H * 0.5) -h ($InT * 2) -t (($H-$D) * 0.5) -sa 16 -sh 1 -sc 1 -ch 0`;
+			rotate 90 0 0 $Temps[0];
+			move -r ($P * 0.5) 0 0 $Temps[0];
+			$Temp[0] = $Temps[0];
+		
+		$Temps = `polyPipe -r ($H * 0.5) -h ($InT * 2) -t (($H-$D) * 0.5) -sa 16 -sh 1 -sc 1 -ch 0`;
+			rotate 90 0 0 $Temps[0];
+			move -r ($P * -0.5) 0 0 $Temps[0];
+			$Temp[1] = $Temps[0];
+		
+			$Temps = `polyCube -w ($P * 0.64) -h ($H * 0.9) -d ($InT * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			$Temps = `polyBoolOp -op -1 -ch 0 $Temps[0] $Temp[0]`;
+			$Temps = `polyBoolOp -op -1 -ch 0 $Temps[0] $Temp[1]`;
+				move -r 0 0 (($W + $InT) * -0.5) $Temps[0];
+				$ChainGrp[2] = `rename $Temps[0] ($CHName + "_InnerPlateB_" + $e)`;
+				
+			select -r $ChainGrp[2];
+				hyperShade -assign "initialShadingGroup";
+				hyperShade -assign $Shader[1];
+
+				parent $ChainGrp[2] $ChainGrp[0];
+				
+				
+		
+		$Temps = `polyPipe -r ($H * 0.5) -h ($InT * 2) -t (($H-$D) * 0.5) -sa 16 -sh 1 -sc 1 -ch 0`;
+			rotate 90 0 0 $Temps[0];
+			move -r ($P * 0.5) 0 0 $Temps[0];
+			$Temp[0] = $Temps[0];
+		
+		$Temps = `polyPipe -r ($H * 0.5) -h ($InT * 2) -t (($H-$D) * 0.5) -sa 16 -sh 1 -sc 1 -ch 0`;
+			rotate 90 0 0 $Temps[0];
+			move -r ($P * -0.5) 0 0 $Temps[0];
+			$Temp[1] = $Temps[0];
+		
+			$Temps = `polyCube -w ($P * 0.64) -h ($H * 0.9) -d ($InT * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			$Temps = `polyBoolOp -op -1 -ch 0 $Temps[0] $Temp[0]`;
+			$Temps = `polyBoolOp -op -1 -ch 0 $Temps[0] $Temp[1]`;
+				move -r 0 0 (($W + $InT) * 0.5) $Temps[0];
+				$ChainGrp[3] = `rename $Temps[0] ($CHName + "_InnerPlateA_" + $e)`;
+				
+			select -r $ChainGrp[3];
+				hyperShade -assign "initialShadingGroup";
+				hyperShade -assign $Shader[1];
+				
+				parent $ChainGrp[3] $ChainGrp[0];
+				
+				
+		
+		$Temps = `polyPipe -r ($R * 0.5) -h ($W * 2) -t (($R-$D) * 0.5) -sa 16 -sh 1 -sc 1 -ch 0 -name ($CHName + "_RollerA_" + $e)`;
+			rotate 90 0 0 $Temps[0];
+			move -r ($P * 0.5) 0 0 $Temps[0];
+			$ChainGrp[4] = $Temps[0];
+			
+		select -r $ChainGrp[4];
+			hyperShade -assign "initialShadingGroup";
+			hyperShade -assign $Shader[0];
+		
+			parent $ChainGrp[4] $ChainGrp[0];
+			
+			
+		
+		$Temps = `polyPipe -r ($R * 0.5) -h ($W * 2) -t (($R-$D) * 0.5) -sa 16 -sh 1 -sc 1 -ch 0 -name ($CHName + "_RollerB_" + $e)`;
+			rotate 90 0 0 $Temps[0];
+			move -r ($P * -0.5) 0 0 $Temps[0];
+			$ChainGrp[5] = $Temps[0];
+			
+		select -r $ChainGrp[5];
+			hyperShade -assign "initialShadingGroup";
+			hyperShade -assign $Shader[0];
+
+			
+			parent $ChainGrp[5] $ChainGrp[0];
+			
+			
+		
+		$ChainGrp[1] = `group -em -name ($CHName + "_OuterLink_GrpN_" + $E)`;
+		move -r ($P * 0.5) 0 0 ;
+		
+		$Temps = `polyPipe -r ($H * 0.5) -h ($OuT * 2) -t (($H-$D) * 0.5) -sa 16 -sh 1 -sc 1 -ch 0`;
+			rotate 90 0 0 $Temps[0];
+			move -r ($P * 0.5) 0 0 $Temps[0];
+			$Temp[0] = $Temps[0];
+		
+		$Temps = `polyPipe -r ($H * 0.5) -h ($OuT * 2) -t (($H-$D) * 0.5) -sa 16 -sh 1 -sc 1 -ch 0`;
+			rotate 90 0 0 $Temps[0];
+			move -r ($P * -0.5) 0 0 $Temps[0];
+			$Temp[1] = $Temps[0];
+		
+			$Temps = `polyCube -w ($P * 0.64) -h ($H * 0.9) -d ($OuT * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			$Temps = `polyBoolOp -op -1 -ch 0 $Temps[0] $Temp[0]`;
+			$Temps = `polyBoolOp -op -1 -ch 0 $Temps[0] $Temp[1]`;
+				move -r ($P * 1.0) 0 (($W + ($InT*2) + $OuT) * -0.5) $Temps[0];
+				$ChainGrp[6] = `rename $Temps[0] ($CHName + "_OuterPlateB_" + $e)`;
+				
+		select -r $ChainGrp[6];
+			hyperShade -assign "initialShadingGroup";
+			hyperShade -assign $Shader[1];
+
+			parent $ChainGrp[6] $ChainGrp[1];
+			
+		$Temps = `polyPipe -r ($H * 0.5) -h ($OuT * 2) -t (($H-$D) * 0.5) -sa 16 -sh 1 -sc 1 -ch 0`;
+			rotate 90 0 0 $Temps[0];
+			move -r ($P * 0.5) 0 0 $Temps[0];
+			$Temp[0] = $Temps[0];
+		
+		$Temps = `polyPipe -r ($H * 0.5) -h ($OuT * 2) -t (($H-$D) * 0.5) -sa 16 -sh 1 -sc 1 -ch 0`;
+			rotate 90 0 0 $Temps[0];
+			move -r ($P * -0.5) 0 0 $Temps[0];
+			$Temp[1] = $Temps[0];
+		
+			$Temps = `polyCube -w ($P * 0.64) -h ($H * 0.9) -d ($OuT * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			$Temps = `polyBoolOp -op -1 -ch 0 $Temps[0] $Temp[0]`;
+			$Temps = `polyBoolOp -op -1 -ch 0 $Temps[0] $Temp[1]`;
+				move -r ($P * 1.0) 0 (($W + ($InT*2) + $OuT) * 0.5) $Temps[0];
+				$ChainGrp[7] = `rename $Temps[0] ($CHName + "_OuterPlateA_" + $e)`;
+				
+		select -r $ChainGrp[7];
+			hyperShade -assign "initialShadingGroup";
+			hyperShade -assign $Shader[1];
+				
+				parent $ChainGrp[7] $ChainGrp[1];
+
+		
+		$Pos[0] = ($Lp - ($W + ($InT + $OuT) * 2)) * 0.25;
+		$Temps = `polyCylinder -r ($D * 0.5) -h ($PinL ) -sx 12 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+		
+		polyExtrudeFacet -ch 0 -kft 1 -pvx 0 -pvy 0 -pvz 0
+			-tx 0 -ty 0 -tz 0
+			-rx 0 -ry 0 -rz 0
+			-sx 1 -sy 1 -sz 1
+			-ltz ($Pos[0] * 0.1) -ltx 0 -lty 0
+			-lrx 0 -lry 0 -lrz 0
+			-lsx 1.25 -lsy 1.25 -lsz 1
+			-ldx 1 -ldy 0 -ldz 0
+			-ran 0 -divisions 1 -twist 0 -taper 1 -off 0 -ws 0 
+			-w 0 -gx 0 -gy -1 -gz 0 -att 0 -mx 0 -my 0 -mz 0 -sma 30
+		($Temps[0] + ".f[12:13]");
+		
+		polyExtrudeFacet -ch 0 -kft 1 -pvx 0 -pvy 0 -pvz 0
+			-tx 0 -ty 0 -tz 0
+			-rx 0 -ry 0 -rz 0
+			-sx 1 -sy 1 -sz 1
+			-ltz ($Pos[0] * 0.9) -ltx 0 -lty 0
+			-lrx 0 -lry 0 -lrz 0
+			-lsx 1 -lsy 1 -lsz 1
+			-ldx 1 -ldy 0 -ldz 0
+			-ran 0 -divisions 1 -twist 0 -taper 1 -off 0 -ws 0 
+			-w 0 -gx 0 -gy -1 -gz 0 -att 0 -mx 0 -my 0 -mz 0 -sma 30
+		($Temps[0] + ".f[12:13]");
+		
+			rotate 90 0 0 $Temps[0];
+			move -r ($P * 0.5) 0 0 $Temps[0];
+			$ChainGrp[8] = `rename $Temps[0] ($CHName + "_PinA_" + $e)`;
+			
+		select -r $ChainGrp[8];
+			hyperShade -assign "initialShadingGroup";
+			hyperShade -assign $Shader[2];
+			
+			parent $ChainGrp[8] $ChainGrp[1];
+			
+			
+			select -r  $ChainGrp[8];
+			$Temps = `duplicate -rr`;
+			move -r ($P * -1.0) 0 0 $Temps[0];
+			
+			$ChainGrp[9] = `rename $Temps[0] ($CHName + "_PinB_" + $e)`;
+			
+		select -r $ChainGrp[9];
+			hyperShade -assign "initialShadingGroup";
+			hyperShade -assign $Shader[2];
+			
+			
+			parent $ChainGrp[9] $ChainGrp[0];
+			
+			
+	
+			move -r ($P * 0.5) 0 0 $ChainGrp[0] $ChainGrp[1];
+			
+			select -r $ChainGrp[0];
+			CenterPivot;
+			xform -ws -piv ($P * 0.5) ($D * 0.25) 0 $LinkGrp[1];;
+			
+			
+			select -r $ChainGrp[1];
+			CenterPivot;
+			xform -ws -piv ($P * 1.5) ($D * 0.25) 0 $LinkGrp[2];;
+
+			parent $ChainGrp[0] $LinkGrp[1];
+			parent $ChainGrp[1] $LinkGrp[2];
+			
+	select -r $LinkGrp[0];
+		move -r ($P *-1.0) 0 0 ;
+		xform -a -ws -piv 0 0 0 $LinkGrp[0];
+	
+	makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+	
+	
+			select -r $ChainGrp[2] $ChainGrp[3] $ChainGrp[4] $ChainGrp[5]
+					   $ChainGrp[6] $ChainGrp[7] $ChainGrp[8] $ChainGrp[9]; 
+	
+				editDisplayLayerMembers HiRes_Layer `ls -selection`;
+
+	
+	
+	
+	string $Let[] = {"A", "B", "C", "D", "E", "F","G", "H", "I", "J"};
+
+	if (`optionMenu -q -sl DVY_CHType` > 1)
+		{
+			move -r 0 0 ( ($W + ($InT + $OuT) * 2) * (($PL *0.5) -0.5)) $ChainGrp[0];
+			move -r 0 0 ( ($W + ($InT + $OuT) * 2) * (($PL *0.5) -0.5)) $ChainGrp[1];
+			
+			select -r $ChainGrp[0] $ChainGrp[1];
+				$Temps = `duplicate -rr -renameChildren`;
+				
+				move -r 0 0 (($W + ($InT + $OuT) * 2) * -1);
+			
+			for ($i=3; $i<($PL+1); $i++)
+				{
+					$Temps = `duplicate -rr -renameChildren -st`;
+				}
+		}
+		
+	if (`optionMenu -q -sl DVY_CHType` > 1)
+		{
+			for ($i=1; $i<$PL; $i++)
+				{
+					select -r ($CHName + "_OuterPlateA_" + ($i+1)) ($CHName + "_PinA_" + ($i+1))
+							  ($CHName + "_PinB_" + ($i+1));
+						delete;
+					
+					select -r ($CHName + "_OuterPlateB_" + $i);
+						scale 1 1 2 ;
+						move -r 0 0 ($OuT * -0.5) ($CHName + "_OuterPlateB_" + $i);
+				}
+				
+			select -r ($CHName + "_PinA_" + (1)) ($CHName + "_PinB_" + (1));
+				move -ws -a -z 0;
+		}
+		
+		
+		// Generate Low Res Chain Parts
+			$Temps = `polyCylinder -r ($D * 0.5) -h ($PinL ) -sx 12 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+				rotate 90 0 0 $Temps[0];
+				move -r ($P * 0) 0 0 $Temps[0];
+		
+				$ChainGrp[10] = `rename $Temps[0] ($CHName + "_LowResPinA_" + $e)`;
+				
+				select -r $ChainGrp[10];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[2];
+						
+					parent $ChainGrp[10] $ChainGrp[1];
+					
+					
+					
+					
+			
+			$Temps = `polyCylinder -r ($D * 0.5) -h ($PinL ) -sx 12 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+				rotate 90 0 0 $Temps[0];
+			
+				move -r ($P * -1.0) 0 0 $Temps[0];
+				$ChainGrp[11] = `rename $Temps[0] ($CHName + "_LowResPinB_" + $e)`;
+				
+				select -r $ChainGrp[11];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[2];
+					
+					parent $ChainGrp[11] $ChainGrp[0];
+					
+			
+			$Temps = `polyCube -w ($P * 0.9) -h ($H * 0.9) -d ($PinL - $OuT - $OuT) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move -r ($P * -0.5) 0 0 $Temps[0];
+				$ChainGrp[12] = `rename $Temps[0] ($CHName + "_LowResInnerLink_" + $e)`;
+				
+				select -r $ChainGrp[12];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[0];
+				
+				
+				parent $ChainGrp[12] $ChainGrp[0];
+			
+			$Temps = `polyCube -w ($P * 0.9) -h ($H * 0.9) -d ($PinL ) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move -r ($P * 0.5) 0 0  $Temps[0];
+				$ChainGrp[13] = `rename $Temps[0] ($CHName + "_LowResOuterLink_" + $e)`;
+				
+				select -r $ChainGrp[13];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[0];
+					
+					parent $ChainGrp[13] $ChainGrp[1];
+			
+			select -r ($CHName + "_LowRes*"); 
+		
+		editDisplayLayerMembers LowRes_Layer `ls -selection`;
+			
+	
+	select -r $LinkGrp[0];
+		makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+	
+		select -r $Chain[0];
+		rotate 0 90 0;
+		scale $DVYUnit $DVYUnit $DVYUnit;
+		
+		makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+
+		string $DVY_Curve[];
+		
+		$DVY_Curve = `DVY_ChainCurveBuild`;
+		print $DVY_Curve;
+	
+		
+	// Build Chain based on Sprocket Group selected.
+		
+	float $SPVec1[], $SPVec2[], $SPVec3[];
+	float $Pos[], $SpPos[];
+		
+	float $CalcAngle[];
+	float $An[], $PCDS[];
+		
+	int $NT[]; 
+		
+		float $OrgLength = $ArcLen = `arclen -ch 0 $DVY_Curve[0] `;
+		float $NoOfPitches = ($OrgLength / ($P * $DVYUnit));
+		print "\n";
+		print ("Curve Length is " + $OrgLength + "\n");
+		print ("No of Pitches is " + $NoOfPitches + "\n");
+		
+		$NoOfPitches = `ceil $NoOfPitches`;
+		
+		print ("No of Pitches is " + $NoOfPitches + "\n");
+			
+		if (($NoOfPitches % 2) != 0)
+			{
+				$NoOfPitches = $NoOfPitches + 1;
+				print ("No of Pitches is now up to " + $NoOfPitches + "\n");
+			}
+			
+		$TargetLength = $P * $NoOfPitches;
+			
+		print ("Target Curve Length is " + $TargetLength + "\n");
+			
+		string $duper[], $Link[];
+		float $Offset = $P * 2;
+		float $offset;
+		
+		$Number = $NoOfPitches/2;
+		
+		int $Count = 0;
+		float $Percent = 100 * (2.0 * $NoOfPitches - $Count)/(2.0 * $NoOfPitches);
+		int $Remainder = 100;
+
+		//open up progress window
+			progressWindow
+				-title "Building Chain..."
+				-progress $Percent
+				-status "Building Chain and Motion Paths: 0%"
+				-isInterruptable true;
+		
+		for ($a=0; $a < $Number; $a++)
+			{
+				$offset = ($Offset * $a);
+				$duper = `duplicate -rr -renameChildren -un $LinkGrp[1] `;
+				
+				$Link[$a] = $duper[0];
+				
+				select -r $duper[0];
+				select -add $DVY_Curve[0];
+														
+					pathAnimation -name ($CHName  + "Chain_MotPathA" + ($a+1)) -fractionMode true 
+							-follow true -followAxis z -upAxis y -worldUpType "object"
+							-worldUpObject $DVY_Curve[1] -worldUpVector 0 1 0
+							-inverseUp false -inverseFront true -bank false
+							-startTimeU $offset -endTimeU ($offset + $TargetLength);
+					
+					cycleCheck -e off ($CHName  + "Chain_MotPathA" + (1)) ;
+	
+				//Determine Progress Amount
+				$Count++;
+				$Percent = 100 * ($NoOfPitches - $Count)/($NoOfPitches);
+				$Remainder = 100 - $Percent;
+				//update progress window
+				if(`progressWindow -query -isCancelled`)
+					{//warning
+						warning("Chain Not Built! \(user cancelled\)\n");
+						break;
+					}//warning
+				progressWindow
+					-edit
+					-progress $Remainder
+					-status ("Built " + $Remainder + "% of Chain");
+				refresh -cv;
+			}
+			
+			
+		for ($a=0; $a < $Number; $a++)
+			{
+				$offset = ($Offset * $a + $P);
+				$duper = `duplicate -rr -renameChildren -un $LinkGrp[2] `;
+				
+				$Link[$a] = $duper[0];
+				
+				select -r $duper[0];
+				select -add $DVY_Curve[0] ;
+														
+					pathAnimation -name ($CHName  + "Chain_MotPathB" + ($a+1)) -fractionMode true 
+							-follow true -followAxis z -upAxis y -worldUpType "object"
+							-worldUpObject $DVY_Curve[1] -worldUpVector 0 1 0
+							-inverseUp false -inverseFront true -bank false
+							-startTimeU $offset -endTimeU ($offset + $TargetLength);
+					
+					cycleCheck -e off ($CHName  + "Chain_MotPathB" + (1)) ;
+				//Determine Progress Amount
+				$Count++;
+				$Percent = 100 * ($NoOfPitches - $Count)/($NoOfPitches);
+				$Remainder = 100 - $Percent;
+
+				//update progress window
+				if(`progressWindow -query -isCancelled`)
+					{//warning
+						warning("Chain Not Built! \(user cancelled\)\n");
+						break;
+					}//warning
+				progressWindow
+					-edit
+					-progress $Remainder
+					-status ("Built " + $Remainder + "% of Chain");
+				refresh -cv;
+			}
+			$Percent = 100;
+			$Remainder = 100;
+				//update progress window
+				if(`progressWindow -query -isCancelled`)
+					{//warning
+						warning("Chain Built! \(user cancelled and Screen being redrawn\)\n");
+					}//warning
+				progressWindow
+					-edit
+					-progress $Percent
+					-status ("Built " + $Remainder + "% of Chain and redrawing Screen");
+			
+			//close progress window
+			progressWindow -endProgress;
+			
+		select -r $LinkGrp[1] $LinkGrp[2];
+				delete;
+				
+		select -r "*_OuterLinks_GrpN_*";
+		select -add "*_InnerLinks_GrpN_*" ;		
+			$TSel = `ls -tr -sl`;
+				DVY_MakeSelectedCycle($TSel) ;
+				
+		parent $DVY_Curve $Chain[0];
+		parent $DVY_Curve[1] $DVY_Curve[2] $DVY_Curve[3] $DVY_Curve[0];
+				
+			
+	if (`radioButtonGrp -q -sl IdlerSprocketRadioButton` > 1)
+		{
+		 if (`radioButtonGrp -q -sl IdlerSprocketRadioButton` == 2)
+			 {
+				$Pos = `xform -q -ws -rp $DVY_Curve[2]`;
+				print $Pos;
+				if (`radioButtonGrp -q -sl SprocketPosRadioButton` == 1)
+					{
+						$Pos[2] = $Pos[2] + (`getAttr ($Sprockets[2] + ".PCD")` * 0.5 * $DVYUnit) + ($D * 0.5 * $DVYUnit);
+					}
+				if (`radioButtonGrp -q -sl SprocketPosRadioButton` == 2)
+					{
+						$Pos[2] = $Pos[2] + (`getAttr ($Sprockets[2] + ".PCD")` * - 0.5 * $DVYUnit) + ($D * 0 * $DVYUnit);
+					}
+					
+					
+				move -r 0 $Pos[1] $Pos[2] $Sprockets[2];
+				setAttr ($Sprockets[2] + ".visibility") 1;
+			 }
+				
+		 if (`radioButtonGrp -q -sl IdlerSprocketRadioButton` == 3)
+			 {
+				$Pos = `xform -q -ws -rp $DVY_Curve[3]`;
+				print $Pos;
+				if (`radioButtonGrp -q -sl SprocketPosRadioButton` == 1)
+					{
+						$Pos[2] = $Pos[2] + (`getAttr ($Sprockets[2] + ".PCD")` * -0.5 * $DVYUnit) + ($D * -0.5 * $DVYUnit);
+					}
+				if (`radioButtonGrp -q -sl SprocketPosRadioButton` == 2)
+					{
+						$Pos[2] = $Pos[2] + (`getAttr ($Sprockets[2] + ".PCD")` * 0.5 * $DVYUnit) + ($D * 0 * $DVYUnit);
+					}
+				move -r 0 $Pos[1] $Pos[2] $Sprockets[2];
+				setAttr ($Sprockets[2] + ".visibility") 1;
+			 }
+
+		}
+		
+		setAttr -l 1 -k 0 -cb 1 ($Chain[0] + ".ChainLinks") $NoOfPitches;
+		setAttr -l 1 -k 0 -cb 1 ($Chain[0] + ".ChainLength") $TargetLength;
+		setAttr -l 1 -k 0 -cb 1 ($Chain[0] + ".ChainPitch") $P;
+		
+		parentConstraint -mo -weight 1 $Sel[0] $DVY_Curve[0];
+		
+		select -r -hi $Chain[0];
+		$List = `ls -tr -sl`;
+		
+		string $DAttrA[] = {".tx", ".ty", ".tz", ".rx", ".ry", ".rz", ".sx", ".sy", ".sz"};
+		for ($each in $List)
+			{
+				for ($Att in $DAttrA) {setAttr -l 0 -k false ($each + $Att);}
+			}
+			
+			
+		string $DAttrA[] = {".tx", ".ty", ".tz", ".rx", ".ry", ".rz"};
+			for ($Att in $DAttrA) {setAttr -l 0 -k true ($Sel[0] + $Att);}
+
+
+}
+
+
+
+
+
+
+
+

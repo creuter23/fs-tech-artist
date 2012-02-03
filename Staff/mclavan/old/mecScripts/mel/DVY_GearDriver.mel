@@ -1,0 +1,374 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davveys Gear Generator
+''    Author:  
+''    Last Updated: Apr 07, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4442.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+
+//								- Test Data -
+
+/*
+global proc Test()
+
+ {
+	 float $Data[];  int $Q, $i, $InterLock; int $Num[];
+		
+		$Q = 1;										//	Number of gears required
+		$Data[0] = 5;								//	Module
+		$Data[1] = 20;								//	Pressure Angle;
+		$Data[2] = 30;								//	Gear Width
+		$Data[3] = 1;								//	Type of Gear Tooth
+		$Data[4] = 10.0;							//	Shaft Diameter
+		$Data[5] = 1;								//	Set to One if Keyway is required
+
+ 	string $GearType[] = {"Spur", "Helical", "Bevel", "Toothed", "Worm", "Screw", "TankWheel", "Vee", "Flat", "Chain"};
+	int $i = 0; int $e = 2;
+	string $GearTopNode = ($GearType[$i] + "GearTrain_GrpN_" + $e);
+		DVY_GearDriver($GearTopNode, $i, $e);
+*/
+
+global proc DVY_GearDriver(string $GearTopNode, int $t, int $e)
+ {	
+
+	global string $Type[], $AllGroups[], $AllGears[], $GearGrps[], $RotateGroups[], $Gears[], $GearTeeth[],$GearShaft[], $SpinA[];
+	clear $AllGroups $GearGrps $Gears $GearTeeth $SpinA;
+	
+ 	string $GearType[] = {"Gear_","Spur_", "Helix_", "DoubleHelix_", "HerringBoneHelix_", "Bevel_", "Worm_"};
+	//{"Spur", "Helical", "Bevel", "Toothed", "Worm", "Screw", "TankWheel", "Vee", "Flat", "Chain"};
+		
+	string $BlendA[], $SpinA[], $RatioA[], $Drivers[], $Sel[], $each, $sel;
+	float $Pos[], $Angle, $Module, $Pitch, $Ratio, $M, $M1, $M2, $Rr; 
+
+	int $m, $f, $Mod, $AutoKey, $InterLock, $i, $r, $N[];
+	string $GearName = $Type[$t];
+	
+	//	float $Angle = `getAttr ($AllGears[0] + ".ToothPitch")`;
+		select -cl;
+//	float $FpS = 60;
+	
+	//find current frame rate
+	float $FPS = `currentTimeUnitToFPS`;
+	print ("$FPS is " + $FPS + "\n");
+	
+	//set Frame count to give 1 rpm for gear driver.
+	float $FpS = ($FPS * 60)/8;
+	print ("$FpS is " + $FpS + "\n");
+	
+
+	if(`objExists $GearTopNode`)
+		{
+			$Mod = `getAttr ($GearTopNode + ".module")`; 
+			$Pitch = `getAttr ($GearTopNode + ".CircularPitch")`;
+//			print ("Data to be used for these Gears.  © Davvey..\n");
+//			print ("Module of the Gear Group is " + $Mod + ".. © Davvey..\n");
+//			print ("Pitch of the Gear Group is " + $Pitch + ".. © Davvey..\n");
+			
+			if (`autoKeyframe -query -state`)
+				{
+					$AutoKey = 1;
+					print "Autokeyframe is On, Switching off to set up Driver."; 
+					print " Will reset state after set up completed. © Davvey..\n";
+					autoKeyframe -state off;
+				}
+				
+	// Set Value of Group Node Name					
+		string	$GName = ("Grp_" + $e + "_" + $GearType[$t]);
+//		print ("$GName is " + $GName + "\n");
+	
+//Loop through and find each of the Gear Group Nodes belonging to the relevant Gears etc.
+	
+			select ($GearTopNode + "|" + $GName + "Gear_GrpN*");
+				$AllGroups = `ls -tr -sl`;
+//				print "$\nAllGroups contains Gear Groups to be used to set up animation control..\n\n";
+//				print $AllGroups;
+		
+			select ($GearTopNode + "|" + $GName + "Gear_GrpN*" + "|" + $GName + "GearRotate_GrpN*");
+				$RotateGroups = `ls -tr -sl`;
+//				print "$\nRotateGroups contains Gear Groups to be used to set up animation control..\n\n";
+//				print $RotateGroups;
+			
+			select ($GearTopNode + "|" + $GName + "Gear_GrpN*" + "|" + 
+					$GName + "GearRotate_GrpN*" + "|" + $GName + 
+					"Shaft_GrpN*" + "|" + $GName + "GearShaft*" + "|" + $GName + "GearBody*");
+				$Gears = `ls -tr -sl`;
+//				print "\n$Gears contains Gears to be set up which are.. © Davvey..\n\n";
+//				print $Gears;
+			
+			select ($GearTopNode + "|" + $GName + "Gear_GrpN*" + "|" + 
+					$GName + "GearRotate_GrpN*" + "|" + $GName + 
+					"Shaft_GrpN*" + "|" + $GName + "GearShaft*");
+				$GearShaft = `ls -tr -sl`;
+				print "\n$GearShaft contains Gear Shaft to be set up which are.. © Davvey..\n\n";
+				print $GearShaft;
+				print "\n";
+			
+			select ($GearTopNode + "|" + $GName + "Gear_GrpN*" + "|" + 
+					$GName + "GearRotate_GrpN*" + "|" + $GName + 
+					"Shaft_GrpN*" + "|" + $GName + "GearShaft*" + "|" +
+					$GName + "GearBody*" + "|" + $GName +  "GearTeeth*");
+				$GearTeeth = `ls -tr -sl`;
+//				print "\n$GearTeeth contains Gear Teeth to be set up which are.. © Davvey..\n\n";
+//				print $GearTeeth;
+//				print "\n";
+			
+		$M = 0; $f = 1;
+		
+		float $Rev = ((`size $AllGroups`)/2.00) - (trunc ((`size $AllGroups`)/2.00));
+	
+			for ($m=0; $m<(`size $AllGroups` -1); $m++)
+				{
+					$M1 = `getAttr ($AllGroups[$m] + ".PCD")`;
+					$M2 = `getAttr ($AllGroups[$m + 1] + ".PCD")`;
+					$M = ($M + (($M1 + $M2) * 0.5));
+					$Rr = (`getAttr ($AllGroups[$m] + ".ToothAngle")` * 0.5);
+					$f = ($f * -1);
+				}
+
+			createNode implicitBox;
+				rename `pickWalk -d up` ("GearTrain_Driver_" + $e);
+				$Drivers[0] = ("GearTrain_Driver_" + $e);
+				setAttr ($Drivers[0] + ".scale") 1.5 1.5 1.5;
+				setAttr ($Drivers[0] + ".visibility") 1;
+				
+				$Pos = `xform -q -ws -t $GearTopNode`;
+//				print "$Pos is \n";
+//				print $Pos;
+				move -r $Pos[0] $Pos[1] $Pos[2] $Drivers[0]; 
+				makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+				parent $Drivers[0] $GearTopNode;
+		
+			addAttr -k 1 -ln RotateSpeed -at double -dv 1 $GearTopNode;
+			
+			for ($j=2; $j < (`size $AllGroups` + 1); $j++) 
+				if (!`attributeExists  ("RotateGrp_" + $j) $GearTopNode`) 
+					{ addAttr -k 1 -ln ("RotateGrp_" + $j) -at short -min -359 -max 359 -dv 0 $GearTopNode; }
+		
+			//	rotate -r -90 0 0 $GearTopNode;
+				makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+			
+			print ("\nGear Driver " + $Drivers[0] + " has been created and parented into Gear Group.. © Davvey\n");
+
+			for ($k=0; $k<9; $k++)
+			  {
+				  $r = ($k * -45);
+				  setAttr ($Drivers[0] + ".rotateX") $r;
+				  setKeyframe -attribute "rotateX" -t ($k * $FpS) $Drivers[0];
+				  float $Time = ($k * $FpS);
+				  
+		//		  print ("Current Time is "  + $Time + " and ");
+		//		  print ( "Rotation is " + `getAttr ($Drivers[0] + ".rotateX")` + ".. © Davvey..\n");
+			  }
+				setAttr ($Drivers[0] + "_rotateX.preInfinity") 3;
+				setAttr ($Drivers[0] + "_rotateX.postInfinity") 3;
+				keyTangent -e -itt spline -ott spline ($Drivers[0] + "_rotateX");
+				currentTime -edit 0;
+				setAttr ($Drivers[0] + ".rotateX") 0;
+		
+//			print ("Driver " + $Drivers[0] + " has been setup as the driver for the Gear Train.. © Davvey\n");
+
+		for ($i=0; $i< (`size $AllGroups` - 1); $i++)
+			{ 
+				$Pos = `getAttr ($AllGroups[$i] + ".center")`;
+				print $Pos;
+				xform -ws -piv 0 $Pos[1] 0 $AllGroups[$i+1];
+			}
+			
+		for ($i=0; $i< (`size $AllGroups` - 1); $i++)
+			{ 
+				parent $AllGroups[$i+1] $AllGroups[$i];
+			}
+			
+			select -cl;
+				select -hi $AllGroups[0];
+				makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+				
+			
+		for ($i=0; $i<1; $i++)
+			{
+				$SpinA[$i] = `shadingNode -asUtility multiplyDivide -name ($GName + "MultiplyDriverN_" + ($i+1))`;
+				setAttr ($SpinA[$i] + ".operation") 1;
+				
+				connectAttr -f ($GearTopNode + ".RotateSpeed") ($SpinA[$i] + ".input1X");
+				connectAttr -f ($Drivers[0] + ".rx") ($SpinA[$i] + ".input2X");
+	
+				$BlendA[$i] = `createNode blendTwoAttr -name ($GName + "BlendDriverN_" + ($i+1))`;
+				setAttr ($BlendA[$i] + ".attributesBlender") 0.5;
+				
+				connectAttr -f ($SpinA[$i] + ".outputX") ($BlendA[$i] + ".input[0]");
+				connectAttr -f ($BlendA[$i] + ".output") ($GearShaft[$i] + ".rx");
+			}
+			
+			
+			float $ratio[];
+			
+		for ($i=1; $i<(`size $AllGroups`); $i++)
+			{
+				$ratio[$i] = (`getAttr ($GearShaft[$i-1] + ".ToothCount")` * 1.0)/(`getAttr ($GearShaft[$i] + ".ToothCount")` * 1.0);
+			//		print ("$ratio is " + $ratio[$i] +"\n");
+				
+				$SpinA[$i] = `shadingNode -asUtility multiplyDivide -name ($GName + "MultiplyDriverN_" + ($i))`;
+					setAttr ($SpinA[$i] + ".operation") 1;
+					
+					setAttr ($SpinA[$i] + ".input1X") ($ratio[$i] * -2);
+					connectAttr -f ($GearShaft[$i-1] + ".rx") ($SpinA[$i] + ".input2X");
+					
+					setAttr ($SpinA[$i] + ".input1Y") ($ratio[$i] * 2);
+					connectAttr -f ($AllGroups[$i] + ".rx")  ($SpinA[$i] + ".input2Y");				
+				
+				
+				$BlendA[$i] = `createNode blendTwoAttr -name ($GName + "BlendDriverN_" + ($i))`;
+					setAttr ($BlendA[$i] + ".attributesBlender") 0.5;
+					
+					connectAttr -f ($SpinA[$i] + ".outputX") ($BlendA[$i] + ".input[0]");
+					connectAttr -f ($SpinA[$i] + ".outputY") ($BlendA[$i] + ".input[1]");
+					
+					connectAttr -f ($BlendA[$i] + ".output") ($GearShaft[$i] + ".rx");
+					connectAttr -f ($GearTopNode + ".RotateGrp_" + ($i+1)) ($AllGroups[$i] + ".rx");
+			}
+				
+				
+/*	
+		$SpinA[0] = `shadingNode -asUtility multiplyDivide -name GearDriverN_0`;
+			connectAttr -f ($Drivers[0] + ".rx") ($SpinA[0] + ".input1X");
+			connectAttr -f ($GearTopNode + ".RotateSpeed") ($SpinA[0] + ".input2X");
+			connectAttr -f ($GearTopNode + ".RotateGrp_1") ($SpinA[0] + ".input1Y");
+			setAttr ($SpinA[0] + ".input2Y") (`getAttr ($Gears[0] + ".ToothCount")` * -1);
+			
+			connectAttr -f  ($SpinA[0] + ".outputX") ($RotateGroups[0] + ".rx");
+			connectAttr -f  ($SpinA[0] + ".outputY") ($AllGroups[0] + ".rx");
+		
+			for ($i=1; $i<(`size $Gears`); $i++)
+			  {
+				$Ratio = `getAttr ($Gears[$i - 1] + ".ToothCount")`;
+				$Ratio = ($Ratio / (`getAttr ($Gears[($i) ] + ".ToothCount")` ));
+				  
+				$SpinA[$i] = `shadingNode -asUtility multiplyDivide -name ("GearDriverN_" + $i)`;
+					connectAttr -f ($RotateGroups[$i - 1] + ".rx") ($SpinA[$i] + ".input1X");
+					setAttr ($SpinA[$i] + ".input2X") ($Ratio * -1);
+					connectAttr -f ($GearTopNode + ".RotateGrp_" + ($i+1)) ($SpinA[$i] + ".input1Y");
+					setAttr ($SpinA[$i] + ".input2Y") (`getAttr ($GearShaft[$i] + ".ToothCount")` * -1);
+					
+					connectAttr -f  ($SpinA[$i] + ".outputX") ($RotateGroups[$i] + ".rx");
+					connectAttr -f  ($SpinA[$i] + ".outputY") ($AllGroups[$i] + ".rx");
+			  }
+	
+*/			
+		reorder -relative -1 $Drivers[0] ;
+				
+				string $SetAttrA[] = {"tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz"};
+				string $SetAttrB[] = {"tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz", "v"};
+				string $SetAttrC[] = {"sizeX", "sizeY", "sizeZ"};
+				string $SetAttrD[] = {"sx", "sy", "sz"};
+	
+				select -r -hi $Gears $AllGroups $GearTeeth $GearShaft;
+				$AllGears = `ls -sl`;
+//				print $AllGears;
+		
+				for ($i=1; $i<`size $AllGears`; $i++)
+					{
+					 $Sel = `ls -type transform -sl`;
+					  for($sel in $Sel)
+						{ for($each in $SetAttrA) { setAttr -k 0 -l 1 ($sel + "." + $each); } }
+					} 
+					
+					select -r $Drivers[0];
+					for ($each in $SetAttrB)
+						{ setAttr -k 0 -l 1 ($Drivers[0] + "." + $each);}
+						  setAttr -cb 1 ($Drivers[0] + ".rx");
+						
+					select -r ("GearTrain_Driver_Shape" + $e);
+					for ($each in $SetAttrC)
+						{ setAttr -k 0 -l 1 (("GearTrain_Driver_Shape" + $e) + "." + $each);}
+						
+					select -r ($GearTopNode);
+					for ($each in $SetAttrD)
+						{ setAttr -k 0 -l 1 ($GearTopNode + "." + $each);}
+						
+					
+		}
+		else {print ("OOps Gear Top Node " + $GearTopNode + " does not exist.... © Davvey\n");}
+	
+	if ($AutoKey == 1)
+		{
+			print "Autokeyframe is now reset to ON... © Davvey..\n";
+			autoKeyframe -state on;
+		}
+		
+		print ("\n" + $GearTopNode + " Drive Train has Been Setup.");
+		print ("\nSee HelpFile for further operating instructions.. © Davvey\n\n");
+
+ }	
+ 
+ 
+ 
+global proc DVY_GearConnect()
+{
+	
+	string $TempSel[], $Rotate, $buffer[], $GNode[], $GName, $GNodeName;
+	int $R;
+	
+	$TempSel = `ls -tr -sl`;
+	
+	
+	if (`size $TempSel` >2)
+		{
+			error "OOPs!! please select only 2 Shafts and try again.. © Davvey..\n";
+		}
+
+	if (($TempSel[0] == "") || ($TempSel[1] == ""))
+		{
+			error "OOPs!! please select 2 Shafts and try again.. © Davvey..\n";
+		}
+	
+	
+		print $TempSel;	
+		
+		
+		$numTokens = `tokenize $TempSel[1] "_" $buffer`;
+		
+		print $buffer;
+		
+		$Rotate = `getAttr ($TempSel[1] + ".NameOfGearGrp")`;
+		if (($Rotate + ".ry") == 180)
+			{$R = 1;}
+				else {$R = 1;}
+				
+				
+	 	if (!`attributeExists "Rotation" $Rotate`) 
+		  	{
+				addAttr -ln Rotation -at "short" -min -1 -max 1 $Rotate;
+				setAttr -l 0 -k 1 -cb 1  ($Rotate + ".Rotation") 1;
+			}
+
+		
+	$GNodeName =  ("Grp_" + $buffer[1] + "_" + $buffer[2] + "_");
+		
+		$GNode[0] = `shadingNode -asUtility multiplyDivide -name ($GNodeName + "MultiplyDriverN_" + (0))`;
+			setAttr ($GNode[0] + ".operation") 1;
+			connectAttr -f ($Rotate + ".Rotation") ($GNode[0] + ".input1X");	
+			connectAttr -f ($TempSel[0] + ".rotateX") ($GNode[0] + ".input2X");
+					
+		
+		$GName =  ("Grp_" + $buffer[1] + "_" + $buffer[2] + "_BlendDriverN_1");
+			setAttr ($GName + ".attributesBlender") 1;
+			connectAttr -f ($GNode[0] + ".outputX")  ($GName + ".input[1]");
+		
+		
+		print ("$GName is " + $GName + "\n");
+		
+		
+		
+		
+
+	
+}
+	

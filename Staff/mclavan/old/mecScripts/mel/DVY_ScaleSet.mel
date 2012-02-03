@@ -1,0 +1,108 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davveys Lego Generator
+''    Author:  
+''    Last Updated: Jun 30, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4782.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+//	DVY_ScaleSet;
+/*
+/////////////////////////////////////////////////////////////////////////////			
+				
+	Copyright © 2006 DVY_ScaleSet. All rights reserved davvey@ntlworld.com
+
+						- DVY_ScaleSet -
+///////////////////////////////////////////////////////////////////////////////
+
+	This script is used to set a global float called $DVYUnit.
+	This variable is set to a multiplier value to adjust the scale of any 
+	object after or during construction.
+		It is based on 1 mm = A Scale Factor of 1.0
+	
+		e.g. Current Unit of cm or centimeters will set multiplier to 0.1 
+		to run enter DVY_ScaleSet in command line and script editor will
+		print ot multiplier value.
+	 
+	The Global Procedure can be called from any script and if the global 
+	variables are declared then the multiplier will be set ready for use.
+	
+	
+///////////////////////////////////////////////////////////////////////////////
+//					DVY_ScaleSet Procedure
+////////////////////////////////////////////////////////////////////////////////
+*/
+
+global proc DVY_ScaleSet()
+{
+	
+	
+	// What is the current linear unit?
+	// mm, millimeter, cm, centimeter, m, meter, km, kilometer
+	// in, inch, ft, foot, yd, yard, mi, mile 
+ 	global string $Units;
+	global float $DVYUnit = 1.00;
+	
+ 	$Units = `currentUnit -query -linear`;
+	
+	switch ($Units)
+		{
+			case "mm":
+			case "millimeter":
+				$DVYUnit = 1.00;
+				print ("Current units are millimeters and Scale Factor $DVYUnit is " + $DVYUnit + "\n");
+			break;
+				
+			case "cm":
+			case "centimeter":
+				$DVYUnit = 1.0 / 10;
+				print ("Current units are centimeters and Scale Factor $DVYUnit is " + $DVYUnit + "\n");
+			break;
+					
+			case "m":
+			case "meter":
+				$DVYUnit = 1.0 /1000;
+				print ("Current units are meters and Scale Factor $DVYUnit is " + $DVYUnit + "\n");
+			break;
+				
+			case "km":
+			case "kilometer":
+				$DVYUnit = 1.0/1000000;
+				print ("Current units are kilometers and Scale Factor $DVYUnit is " + $DVYUnit + "\n");
+					
+			break;
+			case "in":
+			case "inch":
+				$DVYUnit = 0.03937;
+				print ("Current units are inches and Scale Factor $DVYUnit is " + $DVYUnit + "\n");
+			break;
+					
+			case "ft":
+			case "foot":
+				$DVYUnit = 0.03937/12;
+				print ("Current units are feet and Scale Factor $DVYUnit is " + $DVYUnit + "\n");
+			break;
+					
+			case "yd":
+			case "yard":
+				$DVYUnit = 0.03937/(12*3);
+				print ("Current units are yards and Scale Factor $DVYUnit is " + $DVYUnit + "\n");
+			break;
+					
+			case "mi":
+			case "mile":
+				$DVYUnit = 0.03937/(12*3*1760);
+				print ("Current units are miles and Scale Factor $DVYUnit is " + $DVYUnit + "\n");
+			break;
+					
+		}
+
+
+}

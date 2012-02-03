@@ -1,0 +1,175 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davveys Steel Section Generator
+''    Author:  
+''    Last Updated: Apr 03, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4592.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+
+
+global proc DVY_SteelBuild()
+{
+	
+// ******************************************************************************** //	
+//	Global Variables
+	
+	global string $Units;
+
+	global float $DVYUnit;
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Source Steel Sections Script
+	
+	source DVY_SteelSections;
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Local Variables
+	
+	string $Temp[], $Temps[], $Tmps[];
+	string $Section;
+	
+	int $a, $b, $c, $i, $j, $k, $T;
+	
+	float $Length = ` floatField -q -v StFloatField_01`;
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Error Checking
+	
+	if ($Length == 0)
+		{
+			error "Oops!! Please set Steel Section Length and try again. © Davvey..";
+		}
+	
+	if ((`optionMenu -q -sl DVY_JoistsOption` == 1) && (`optionMenu -q -sl DVY_TaperTeeBarOption` == 1) 
+		 && (`optionMenu -q -sl DVY_TaperChannelOption` == 1) && (`optionMenu -q -sl DVY_TeeBarOption` == 1)
+		 && (`optionMenu -q -sl DVY_EqualAngleOption` == 1) && (`optionMenu -q -sl DVY_UnEqualAngleOption` == 1)
+		 && (`optionMenu -q -sl DVY_UniBeamOption` == 1) && (`optionMenu -q -sl DVY_UniColumnOption` == 1)
+		 && (`optionMenu -q -sl DVY_HSquareOption` == 1) && (`optionMenu -q -sl DVY_HRectangleOption` == 1))
+		{
+			error "Oops!! Please select a Steel Section and try again. © Davvey..";
+		}
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Set Scaling unit for Global units used.
+		
+	DVY_ScaleSet;
+	print ("Current units are " + $Units + " and Scale Factor $DVYUnit is " + $DVYUnit + "\n");
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Build Steel Section.
+
+// Tapered Flange Joist
+	if (`optionMenu -q -sl DVY_JoistsOption` > 1)
+		{
+			$T = `optionMenu -q -sl DVY_JoistsOption` - 2;
+			$Section = DVY_Joists($T, $Length);
+		}
+	
+// Tapered Flange Tee-Bar		
+	if (`optionMenu -q -sl DVY_TaperTeeBarOption` > 1)
+		{
+			$T = `optionMenu -q -sl DVY_TaperTeeBarOption` - 2;
+			$Section = DVY_TaperTeeBar($T, $Length);
+		}
+		
+// Tapered Flange Channel
+		
+	if (`optionMenu -q -sl DVY_TaperChannelOption` > 1)
+		{
+			$T = `optionMenu -q -sl DVY_TaperChannelOption` - 2;
+			$Section = DVY_TaperChannel($T, $Length);
+		}
+		
+// Tee-Bar from Universal Beam
+		
+	if (`optionMenu -q -sl DVY_TeeBarOption` > 1)
+		{
+			$T = `optionMenu -q -sl DVY_TeeBarOption` - 2;
+			$Section = DVY_TeeBar($T, $Length);
+		}
+
+// Equal Angle
+		
+	if (`optionMenu -q -sl DVY_EqualAngleOption` > 1)
+		{
+			$T = `optionMenu -q -sl DVY_EqualAngleOption` - 2;
+			$Section = DVY_EqualAngle ($T, $Length);
+		}
+		
+// UnEqual Angle
+		
+	if (`optionMenu -q -sl DVY_UnEqualAngleOption` > 1)
+		{
+			$T = `optionMenu -q -sl DVY_UnEqualAngleOption` - 2;
+			$Section = DVY_UnEqualAngle ($T, $Length);
+		}
+		
+		
+// Universal Beam
+		
+	if (`optionMenu -q -sl DVY_UniBeamOption` > 1)
+		{
+			$T = `optionMenu -q -sl DVY_UniBeamOption` - 2;
+			$Section = DVY_UniBeam($T, $Length);
+		}
+
+// Universal Column
+		
+	if (`optionMenu -q -sl DVY_UniColumnOption` > 1)
+		{
+			$T = `optionMenu -q -sl DVY_UniColumnOption` - 2;
+			$Section = DVY_UniColumn($T, $Length);
+		}
+		
+// Hollow Square Section
+		
+	if (`optionMenu -q -sl DVY_HSquareOption` > 1)
+		{
+			$T = `optionMenu -q -sl DVY_HSquareOption` - 2;
+			$Section = DVY_HollowSquare($T, $Length);
+		}
+
+// Hollow Rectangle
+		
+	if (`optionMenu -q -sl DVY_HRectangleOption` > 1)
+		{
+			$T = `optionMenu -q -sl DVY_HRectangleOption` - 2;
+			$Section = DVY_HollowRectangle($T, $Length);
+		}
+		
+	print ("Steel Section built is " + $Section + "\n");
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Scale finished unit.
+
+	scale $DVYUnit $DVYUnit $DVYUnit $Section;
+		select -r $Section;
+		makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+
+		
+		
+}

@@ -1,0 +1,165 @@
+// Copyright (C) 2000-2002 Michael Bazhutkin
+// www.geocites.com/bazhutkin
+// bazhutkin@mail.ru
+//
+//  Export Skin Weights 1.0
+//  Script File
+//  MODIFY THIS AT YOUR OWN RISK
+//
+//	Creation Date:	November 5, 2002
+//	Fix Date:	November 19, 2002
+//
+//  Description:
+//	Export a weights of skinCluster
+//	for each joint or selected joints
+//	that affects the selected polygonal or NURBS object.
+//
+//	Select skin object and any joints for mask
+//	Call exportSkinWeights
+
+global proc exportSkinWeightsGetFileName ( string $fileName, string $fileType )
+{
+	global string $exportSkinWeightsFileName;
+	$exportSkinWeightsFileName = $fileName;
+}
+
+global proc int exportSkinWeights ( )
+{
+	global string $exportSkinWeightsFileName;
+	
+	string $list[] = `ls -sl -et transform`;
+	string $objectName = $list[0];
+
+	if (size($list) < 1) error ("No selected object");
+	if (size($list) > 1) error ("More than one object selected");
+
+	$list = `ls -sl -type skinCluster`;
+
+	if (size($list) < 1)
+	{
+		$list = `listHistory $objectName`;
+		$list = `ls -type skinCluster $list`;
+	}
+
+	string $skinClusterName = $list[0];
+
+	if (size($list) < 1) error ("No skinCluster deformer for selected object");
+	if (size($list) > 1) error ("More than one skinCluster deformer for selected object. Select skinCluster node in Channel Box.");
+		
+	string $history[] = `listHistory $objectName`;
+	string $clustersName[] = `ls -type skinCluster $history`;
+	string $skinClusterSetName[] = `listConnections -type objectSet $skinClusterName`;
+	
+	int $flag;
+	for ($clusterMember in $clustersName)
+		if ($clusterMember == $skinClusterName) $flag++;
+	if ($flag == 0) error ("`" + $skinClusterName + "` is not deformer for `" + $objectName + "`");
+	
+	string $list[] = `ls -sl -type joint`;
+
+	if (size($list) < 1)
+	{
+		$list = `listHistory $skinClusterName`;
+		$list = `ls -type joint $list`;
+	}
+
+	string $jointName[] = $list;
+
+	if (size($list) < 1) error ("No joint connected with skinCluster");
+	
+	int $jointIndex[];
+	int $skinClusterIndex;
+	string $skinClusterConnect[];
+	string $skinClusterConnectPart[];
+	
+	for ($i = 0; $i < size($jointName); $i++)
+	{
+		$skinClusterConnect = `listConnections -type skinCluster -plugs 1 ($jointName[$i] + ".worldMatrix")`;
+		
+		$flag = 0;
+		for ($skinClusterIndex = 0; $skinClusterIndex < size($skinClusterConnect); $skinClusterIndex++)
+		{
+			tokenize ($skinClusterConnect[$skinClusterIndex], "[]", $skinClusterConnectPart);
+			if (($skinClusterName + ".matrix") == $skinClusterConnectPart[0])
+			{	$flag = 1;
+				break;
+			}
+		}
+		
+		if (!$flag)
+			error("Selected joint `" + $jointName[$i] + "` is not connected with skinCluster `" + $skinClusterName + "`");
+		
+		$jointIndex[$i] = $skinClusterConnectPart[1];
+	}	
+	
+	// Get file name
+	
+	$exportSkinWeightsFileName = "";
+	fileBrowser ("exportSkinWeightsGetFileName", "Export", "", 1);
+
+	if ($exportSkinWeightsFileName == "") return 0;
+	
+	string $filePartName[];
+	string $fileName;
+	string $dirName;
+	string $fileExtName = ".weights";
+	
+	tokenize $exportSkinWeightsFileName "/" $filePartName;
+	$fileName = $filePartName[size($filePartName) - 1];
+	
+	tokenize $fileName "\\" $filePartName;
+	$fileName = $filePartName[size($filePartName) - 1];
+	
+	$dirName = substring($exportSkinWeightsFileName, 1, size($exportSkinWeightsFileName) - size($fileName));
+		
+	tokenize $fileName "." $filePartName;
+	string $fileName = $filePartName[0];
+	
+	$fileIdMain = `fopen ($dirName + $fileName + ".weightList") "w"`;
+	
+	if ($fileIdMain == 0)
+		error("Unable to open the file: " + $exportSkinWeightsFileName);
+	
+	fprint $fileIdMain "Exported weight files\r\n\r\n";
+		
+	// Make directory
+	
+	string $weightDir = ($dirName + $fileName);
+	if (!`file -q -exists $weightDir`)
+		workspace -cr $weightDir;
+	
+	// Export weights
+	
+	waitCursor -state 1;
+	
+	float $pointValue[];
+	
+	int $sizeArray = `getAttr -size ($objectName + ".cp")`;
+	
+	for ($jointIndexCurrent = 0; $jointIndexCurrent < size($jointIndex); $jointIndexCurrent++)
+	{
+		$pointValue = `getAttr ($skinClusterName + ".weightList[0:" + ($sizeArray - 1) + "].w[" + $jointIndex[$jointIndexCurrent] + "]")`;
+		
+		fprint $fileIdMain ($jointName[$jointIndexCurrent] + "\t" + $fileName + "_" + $jointName[$jointIndexCurrent] + $fileExtName + "\r\n");
+
+		$fileId = `fopen ($weightDir + "/" + $fileName + "_" + $jointName[$jointIndexCurrent] + $fileExtName) "w"`;
+		if ($fileId == 0)
+		{	waitCursor -state 0;
+			error("Unable to open the file: " + $fileName);
+		}
+
+		fprint $fileId "N\tWeights\r\n\r\n";
+	
+		for ($i = 0; $i < $sizeArray; $i++)
+			if (`sets -im $skinClusterSetName[0] ($objectName + ".cp[" + $i + "]")`)
+				fprint $fileId ($i + "	" + $pointValue[$i] + "\r\n");
+	
+		fclose $fileId;
+	}
+	
+	fclose $fileIdMain;
+	
+	waitCursor -state 0;
+	
+	return 1;
+}

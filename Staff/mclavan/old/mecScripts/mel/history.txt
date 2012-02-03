@@ -1,0 +1,36 @@
+
+v1.7 -----------------------------------------------------------------
+
+1)  All icons moved inside one folder called kk_icons.
+
+v1.6 -----------------------------------------------------------------
+
+1)  if you have something selected in scene the controller's shape 
+    will snap to that.
+
+
+v1.5 -----------------------------------------------------------------
+
+1)  mirror section added.
+
+v1.4 -----------------------------------------------------------------
+
+1) Some adjustments for running inside Mac by andrew.
+2) Get from selected and Apply to selected buttons added.
+3) Few adjustments in lock and hide section.
+
+v1.3 -----------------------------------------------------------------
+
+1) Slider maker added.
+2) Combine shapes added.
+
+V1.2 ------------------------------------------------------------------
+
+1) Adding some more controllers.
+2) The color slider is now interactive and it can be use on any object.
+3) The lock and hide orders are interactive too. 
+
+V1.1 -------------------------------------------------------------------
+
+1) Freeze transformations button added.
+ 

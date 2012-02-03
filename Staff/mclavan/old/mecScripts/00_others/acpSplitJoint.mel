@@ -1,0 +1,1012 @@
+//============================================================================
+// SCRIPT:		acpSplitJoint.mel
+//			Version 1.1
+//			03/09/2006
+//
+// AUTHOR:		Anthony Paladino
+//			(anthony@dnup.net)
+//
+// DESCRIPTION:		Allows the user to split a single joint span any
+//			number of times he/she desires. Each joint retains the
+//			orientation and rotation order of the starting joint.
+//			The user can also create a new joint chain between two
+//			unrelated joints by simply choosing one as the start
+//			and the other as the end.
+//
+//			This script is useful for creating splits in character
+//			skeletons so that more joints will be available for
+//			binding puposes. Can be quite effective in forearms or
+//			any area that might twist, as well as for tentacles,
+//			tails, spines, or any joint chain that needs a lot of
+//			joints with the same rotation orders and orientations
+//			to get a nice bend.
+//
+// HOW TO USE:		Source the script (or place within your script path)
+//			and run "acpSplitJoint" from the command line.
+//
+//			Choose a start and end joint and enter the number of
+//			splits requested. Click "Place Splits" to show
+//			locators that can be manipulated via the sliders and
+//			their splitLocation channel in order to precisely
+//			place desired splits. Enter a string into the Split
+//			Joint Name field and select either to append that
+//			string to the Start Joint's name or replace it for
+//			every split joint. Click "OK" or "Apply" to finalize
+//                      all splits.
+//
+// REQUIRES:		Maya 5.0
+//				- May work with previous versions, but is
+//				  untested. Use at your own risk.
+//
+// RETURNS:		NONE
+//
+// UPDATES:		Version 1.1 (03/09/2006)
+//                              - Changed GUI to use formLayout for more
+//                                predictable results and to keep the
+//                                frameLayout from resizing in certain
+//                                situations.
+//                              - Placing splits before finalizing them is now
+//                                an optional step.
+//                              - Slider range changed from 0 to 10 to 0 to 1
+//                                to mimic Maya standards for percentages.
+//                                Hence, 25% now equals 0.250 instead of 2.500
+//                              - Error checking added to make sure that user
+//                                inputs are valid before starting to place
+//                                or finalize splits.
+//                              - Slightly changed Append behavior so that
+//                                a "_" precedes the trailing number in the
+//                                name.
+//                              - Added Cancel, Apply, and OK buttons to mimic
+//                                standard Maya tool dialog interfaces.
+//                              - General code clean-up.
+//                      Version 1.0 (10/16/2004)
+//				- Added ability to rename split joints. Also
+//				  added option to append the rename string to
+//				  the start joint's name, or rename the split
+//				  joints entirely.
+//				- Added button to clear out user input.
+//				- Fixed problem with Split Positions frame
+//				  resizing on GUI reset and clear.
+//			Version 0.91 (10/15/2004)
+//				- Tool does not close once splits are made,
+//				  but resets all fields and is ready to be
+//				  used again.
+//				- Added a warning if the user chooses two
+//				  joints that are not directly related.
+//			Version 0.9 (10/14/2004)
+//				- First functional version for testing puposes
+//
+// NOTES:		Script originally written with tab characters set to
+//			8 spaces.
+//============================================================================
+
+
+
+//============================================================================
+//	GLOBAL VARIABLES
+//============================================================================
+global int $acp_DEBUG = 0;	// boolean flag that allows print statements
+				// to be output to the script editor for
+				// tracking purposes
+
+
+
+//============================================================================
+//	PROCEDURE:	acpCleanUp (global)
+//	ARGUEMENTS:	$strLocatorGroup (string)
+//				- name of the group that split locators are
+//				  parented to
+//	RETURNS:	NONE
+//	DESCRIPTION:	Deletes the locator group and all nodes inside.
+//============================================================================
+global proc acpCleanUp(string $strLocatorGroup)
+{
+	global int $acp_DEBUG;
+	
+	if ($acp_DEBUG)
+		print "Started acpCleanUp...\n";
+
+	if (`objExists $strLocatorGroup`)
+		delete $strLocatorGroup;
+}; // global proc acpCleanUp
+
+
+
+//============================================================================
+//	PROCEDURE:	acpCreateLocatorGroup (global)
+//	ARGUEMENTS:	$strLocatorGroup (string)
+//				- name requested for the group that locators
+//                                will be contained in
+//	RETURNS:	$strLocatorGroup (string)
+//                              - name of the group created
+//	DESCRIPTION:	Deletes the locator group and all nodes inside.
+//============================================================================
+global proc string acpCreateLocatorGroup (string $strLocatorGroup)
+{
+        global int $acp_DEBUG;
+	
+	if ($acp_DEBUG)
+		print "Started acpCreateLocatorGroup...\n";
+
+	// LOCAL VARIABLES
+	string $strGroupArray[] = {""};        // array of contents of the group
+	
+	// Check to see if the locator group exists. If so, empty it. If not, create it.
+	if (`objExists $strLocatorGroup`)
+	{
+		// Get the contents of the group
+                $strGroupArray = `listRelatives -children $strLocatorGroup`;
+		// Run through the list of contents and delete them
+                for ($intCounter = 0; $intCounter < `size($strGroupArray)`; $intCounter++)
+		{
+			delete $strGroupArray[$intCounter];
+		}
+                // Clear out the name of the vector position locator
+                setAttr ($strLocatorGroup + ".positionLocator") -type "string" "";
+	}
+	else
+	{
+		// Create the locator group and lock and hide the attributes
+                $strLocatorGroup = `group -empty -name $strLocatorGroup`;
+                addAttr -longName "positionLocator" -dataType "string" $strLocatorGroup;
+                setAttr ($strLocatorGroup + ".positionLocator") - type "string" "";
+		setAttr -lock true ($strLocatorGroup + ".tx");
+		setAttr -lock true ($strLocatorGroup + ".ty");
+		setAttr -lock true ($strLocatorGroup + ".tz");
+		setAttr -lock true ($strLocatorGroup + ".rx");
+		setAttr -lock true ($strLocatorGroup + ".ry");
+		setAttr -lock true ($strLocatorGroup + ".rz");
+		setAttr -lock true ($strLocatorGroup + ".sx");
+		setAttr -lock true ($strLocatorGroup + ".sy");
+		setAttr -lock true ($strLocatorGroup + ".sz");
+		setAttr -lock true ($strLocatorGroup + ".sz");
+		setAttr -lock true ($strLocatorGroup + ".v");
+		setAttr -keyable false ($strLocatorGroup + ".tx");
+		setAttr -keyable false ($strLocatorGroup + ".ty");
+		setAttr -keyable false ($strLocatorGroup + ".tz");
+		setAttr -keyable false ($strLocatorGroup + ".rx");
+		setAttr -keyable false ($strLocatorGroup + ".ry");
+		setAttr -keyable false ($strLocatorGroup + ".rz");
+		setAttr -keyable false ($strLocatorGroup + ".sx");
+		setAttr -keyable false ($strLocatorGroup + ".sy");
+		setAttr -keyable false ($strLocatorGroup + ".sz");
+		setAttr -keyable false ($strLocatorGroup + ".v");
+	}
+        return $strLocatorGroup;
+}; // gloabal proc string acpCreateLocatorGroup
+
+
+
+//============================================================================
+//	PROCEDURE:	acpClearUI (local)
+//	ARGUEMENTS:	$strStartJointField (string)
+//				- name of the start joint field
+//			$strEndJointField (string)
+//				- name of the end joint field
+//			$strNumSplitsField (string)
+//				- name of the number of splits field
+//	RETURNS:	NONE
+//	DESCRIPTION:	Clears out any data entered by the user from the
+//			fields in the UI.
+//============================================================================
+proc acpClearUI(string $strStartJointField, string $strEndJointField, string $strNumSplitsField)
+{
+	global int $acp_DEBUG;
+	
+	if ($acp_DEBUG)
+		print "Started acpClearUI...\n";
+
+	textFieldButtonGrp -e -text "" $strStartJointField;
+	textFieldButtonGrp -e -text "" $strEndJointField;
+	intFieldGrp -e -value1 1 $strNumSplitsField;
+}; // proc acpClearUI
+
+
+
+//============================================================================
+//	PROCEDURE:	acpResetUI (global)
+//	ARGUEMENTS:	$strStartJointField (string)
+//				- name of the start joint field
+//			$strEndJointField (string)
+//				- name of the end joint field
+//			$strNumSplitsField (string)
+//				- name of the number of splits field
+//			$strLocatorGroup (string)
+//				- name of the group that split locators are
+//				  parented to
+//			$strTargetLayout (string)
+//				- name of the layout in which sliders reside
+//	RETURNS:	NONE
+//	DESCRIPTION:	Checks to see if the locator group exists. If so,
+//			empties it. If not, recreates it with the same name.
+//			Also clears out the GUI of any associated sliders and
+//			unlocks the input fields.
+//============================================================================
+global proc acpResetUI(string $strStartJointField, string $strEndJointField, string $strNumSplitsField, string $strLocatorGroup, string $strTargetLayout)
+{
+	global int $acp_DEBUG;
+	
+	if ($acp_DEBUG)
+		print "Started acpJointSelection...\n";
+
+	// LOCAL VARIABLES
+	string $strSliderArray[] = {""};	// array of slider control names
+
+	// Check to see if the locator group exists. If so, empty it. If not, recreate it.
+        $strLocatorGroup = acpCreateLocatorGroup($strLocatorGroup);
+
+	// Query the target layout for its children to get the names of the sliders
+	$strSliderArray = `formLayout -q -childArray $strTargetLayout`;
+	
+	// Delete all the sliders
+	for ($intCounter = 0; $intCounter < `size($strSliderArray)`; $intCounter++)
+	{
+		deleteUI $strSliderArray[$intCounter];
+	}
+
+	// Unlock fields so that the values can be changed
+	textFieldButtonGrp -e -enable 1 $strStartJointField;
+	textFieldButtonGrp -e -enable 1 $strEndJointField;
+	intFieldGrp -e -enable 1 $strNumSplitsField;
+}; // global proc ResetUI
+
+
+
+//============================================================================
+//	PROCEDURE:	acpResetAndClear (global)
+//	ARGUEMENTS:	$strStartJointField (string)
+//				- name of the start joint field
+//			$strEndJointField (string)
+//				- name of the end joint field
+//			$strNumSplitsField (string)
+//				- name of the number of splits field
+//			$strLocatorGroup (string)
+//				- name of the group that split locators are
+//				  parented to
+//			$strTargetLayout (string)
+//				- name of the layout in which sliders reside
+//	RETURNS:	NONE
+//	DESCRIPTION:	Runs procedures to reset and clear the GUI.
+//============================================================================
+global proc acpResetAndClear (string $strStartJointField, string $strEndJointField, string $strNumSplitsField, string $strLocatorGroup, string $strTargetLayout)
+{
+	global int $acp_DEBUG;
+	
+	if ($acp_DEBUG)
+		print "Started acpResetAndClear...\n";
+
+	acpResetUI($strStartJointField, $strEndJointField, $strNumSplitsField, $strLocatorGroup, $strTargetLayout);
+	acpClearUI($strStartJointField, $strEndJointField, $strNumSplitsField);
+} // global proc acpResetAndClear
+
+
+
+//============================================================================
+//	PROCEDURE:	acpJointSelection (local)
+//	ARGUEMENTS:	$strField (string)
+//				- name of the field to send the selection
+//	RETURNS:	NONE
+//	DESCRIPTION:	Checks to see if a selected item is a single joint.
+//			If so, sets the text of the field to the name of the
+//			joint.
+//============================================================================
+proc acpJointSelection (string $strField)
+{
+	global int $acp_DEBUG;
+
+	if ($acp_DEBUG)
+		print "Started acpJointSelection...\n";
+
+	// LOCAL VARIABLES
+	string $strSelection[] = `ls -sl`;	// array of the currently selected nodes
+
+	// Check to see if only one node is selected
+	if (`size $strSelection` != 1)
+		error ("Please select only one object and try again.");
+
+	// Check to see if the node selected is a joint
+	if (`nodeType $strSelection[0]` != "joint")
+		error ($strSelection[0] + " is not a joint node. Select a joint and try again.");
+
+	// Fill in the appropriate field with the selection
+	textFieldButtonGrp -e -text $strSelection[0] $strField;
+}; // global proc acpJointSelection
+
+
+
+//============================================================================
+//	PROCEDURE:	acpFillPartnerField (local)
+//	ARGUEMENTS:	$strCallingField (string)
+//				- name of the calling field
+//			$strPartnerField (string)
+//				- name of the companion of the calling field
+//			$strCallingFieldRelation (string)
+//				- how the calling field is related to the
+//				  partner field
+//	RETURNS:	NONE
+//	DESCRIPTION:	Fills in the partner field to the calling field with
+//			the name of a joint if a valid joint can be found.
+//============================================================================
+proc acpFillPartnerField (string $strCallingField, string $strPartnerField, string $strCallingFieldRelation)
+{
+	global int $acp_DEBUG;
+
+	if ($acp_DEBUG)
+		print "Started acpFillPartnerField...\n";
+
+	// LOCAL VARIABLES
+	string $strJoint = `textFieldButtonGrp -q -text $strCallingField`;	// name of the joint from the calling field
+	string $strParent[] = `listRelatives -parent $strJoint`;		// list of parents of the joint
+	string $strChild[] = `listRelatives -children $strJoint`;		// list of children of the joint
+
+	// Check to see if the calling field is the parent or child joint
+	if ($strCallingFieldRelation == "parent")
+	{
+		// Check to see if there is only one child joint and if the partner field is empty
+		if ((`size($strChild)` == 1) && (`nodeType $strChild[0]` == "joint") && (`textFieldButtonGrp -q -text $strPartnerField` == ""))
+			// Fill in the partner field with the name of the child joint
+			textFieldButtonGrp -e -text $strChild[0] $strPartnerField;
+	}
+	else if ($strCallingFieldRelation == "child")
+	{
+		// Check to see if there is only one parent joint and if the partner field is empty
+		if ((`size($strParent)` == 1) && (`nodeType $strParent[0]` == "joint") && (`textFieldButtonGrp -q -text $strPartnerField` == ""))
+			// Fill in the partner field with the name of the parent joint
+			textFieldButtonGrp -e -text $strParent[0] $strPartnerField;
+	}
+	else
+		error ("\"" + $strCallingFieldRelation + "\" is an unexpected value for the $strCallingFieldRelation parameter of acpFillPartnerField. Only \"parent\" and \"child\" are valid parameters. Check source code.");
+}; // proc acpFillPartnerField
+
+
+
+//============================================================================
+//	PROCEDURE:	acpCheckRelation (local)
+//	ARGUEMENTS:	$strCallingField (string)
+//				- name of the calling field
+//			$strPartnerField (string)
+//				- name of the companion of the calling field
+//			$strCallingFieldRelation (string)
+//				- how the calling field is related to the
+//				  partner field
+//	RETURNS:	NONE
+//	DESCRIPTION:	Checks to see if the joints listed in the fields are
+//			directly related to each other. If not, throw a
+//			warning.
+//============================================================================
+proc acpCheckRelation(string $strCallingField, string $strPartnerField, string $strCallingFieldRelation)
+{
+	global int $acp_DEBUG;
+
+	if ($acp_DEBUG)
+		print "Started acpCheckRelation...\n";
+
+        string $strJoint1 = "";         // name of the first joint
+	string $strJoint2 = "";         // name of the second joint
+	int $intJoint2IsChild = 0;      // flag that states if the second joint is a child to the first
+	string $strCurrent = "";
+
+        // If the CallingField is supposed to be the parent joint, set Joint1 to its contents and Joint2 to the PartnerField contents
+	if ($strCallingFieldRelation == "parent")
+	{
+		$strJoint1 = `textFieldButtonGrp -q -text $strCallingField`;
+		$strJoint2 = `textFieldButtonGrp -q -text $strPartnerField`;
+	}
+        // If the CallingField is supposed to be the child joint, set Joint1 to its contents and Joint2 to the PartnerField contents
+	else if ($strCallingFieldRelation == "child")
+	{
+		$strJoint2 = `textFieldButtonGrp -q -text $strCallingField`;
+		$strJoint1 = `textFieldButtonGrp -q -text $strPartnerField`;
+	}
+        // This error should never be thrown unless the command of the Select buttons in the GUI have been changed improperly (acpSplitJoint)
+	else
+		error ("\"" + $strCallingFieldRelation + "\" is an unexpected value for the $strCallingFieldRelation parameter of acpFillCheckRelation. Only \"parent\" and \"child\" are valid parameters. Check source code.");
+	
+        // If the joint fields were not empty, chek the relations
+	if (($strJoint1 != "") && ($strJoint2 != ""))
+	{
+		// Get the children of Joint1
+                string $strChildren[] = `listRelatives -children $strJoint1`;
+                // Get the parents of Joint1
+		string $strParent[] = `listRelatives -parent $strJoint1`;
+                // Loop through the children to see if Joint2 is a child of Joint1
+		for ($strCurrent in $strChildren)
+		{
+			if ($strCurrent == $strJoint2)
+				$intJoint2IsChild = 1;
+		}
+                // If Joint2 is not a child of Joint1 and not a parent of Joint1, throw a warning
+      		if ((!$intJoint2IsChild) && ($strJoint2 != $strParent[0]))
+			warning ($strJoint1 + " and " + $strJoint2 + " are not directly related. New chain will be built between " + $strJoint1 + " and " + $strJoint2 + ". Make sure this is the desired result before continuing.");
+	}
+}; // proc acpCheckRelation
+
+
+
+//============================================================================
+//	PROCEDURE:	acpGetUserSelections (global)
+//	ARGUEMENTS:	$strCallingField (string)
+//				- name of the calling field
+//			$strPartnerField (string)
+//				- name of the companion of the calling field
+//			$strCallingFieldRelation (string)
+//				- how the calling field is related to the
+//				  partner field
+//	RETURNS:	NONE
+//	DESCRIPTION:	Run procedures to get user input.
+//============================================================================
+global proc acpGetUserSelections (string $strCallingField, string $strPartnerField, string $strCallingFieldRelation)
+{
+	global int $acp_DEBUG;
+
+	if ($acp_DEBUG)
+		print "Started acpGetUserSelections...\n";
+
+        acpJointSelection ($strCallingField);
+	acpFillPartnerField ($strCallingField, $strPartnerField, $strCallingFieldRelation);
+	acpCheckRelation($strCallingField, $strPartnerField, $strCallingFieldRelation);
+}; // global proc acpGetUserSelections
+
+
+
+//============================================================================
+//	PROCEDURE:	acpCreateSplitLocators (local)
+//	ARGUEMENTS:	$strStartJoint (string)
+//				- name of the start joint
+//			$strEndJoint (string)
+//				- name of the end joint
+//			$intNumSplits (int)
+//				- number of splits requested
+//			$strLocatorGroup (string)
+//				- name of the group holding the locators
+//			$strTargetLayout (string)
+//				- name of the target layout
+//	RETURNS:	NONE
+//	DESCRIPTION:	Creates locators that define where joint splits will
+//			occur. Also creates UI sliders that can interactively
+//			control the position of the locators.
+//============================================================================
+proc acpCreateSplitLocators(string $strStartJoint, string $strEndJoint, int $intNumSplits, string $strLocatorGroup, string $strTargetLayout)
+{
+	global int $acp_DEBUG;
+
+	if ($acp_DEBUG)
+		print "Started acpCreateSplitLocators...\n";
+
+	// LOCAL VARIABLES
+	string $strSliderBaseName = "sliderSplit";		// base name for the sliders
+	string $strLocatorName = "";				// name of the current locator
+	string $strLocatorBaseName = "acpSplitLocator";		// base name for the locators
+	string $strWeightAttr0 = ($strStartJoint + "W0");	// name of the first constraint weight attribute
+	string $strWeightAttr1 = ($strEndJoint + "W1");		// name of the second constraint weight attribute
+	string $strConstraintName[];				// name of the constraint
+	string $strCurrentControl = "";                         // name of the current control
+	string $strPreviousControl = "";                        // name of the previous slider control
+
+	// Set the parent layout
+	setParent $strTargetLayout;
+
+	// Create locators and sliders
+	for ($intCounter = 1; $intCounter <= $intNumSplits; $intCounter++)
+	{
+		// Create locator
+		$strLocatorName = eval("rename `spaceLocator -p 0 0 0` " + ($strLocatorBaseName + $intCounter));
+		addAttr	-ln splitPosition -at double -min 0 -max 1 -dv 0 -keyable 1 $strLocatorName;
+		setAttr ($strLocatorName + ".splitPosition") (float($intCounter) / ($intNumSplits + 1));
+
+		// Add the locator to the locator group
+		parent $strLocatorName $strLocatorGroup;
+
+		// Constrain the locator to the start and end joints
+		$strConstraintName = `pointConstraint -o 0 0 0 $strStartJoint $strEndJoint $strLocatorName`;
+		orientConstraint $strStartJoint $strLocatorName;
+
+		// Lock & hide locator attributes
+		setAttr -lock true ($strLocatorName + ".rx");
+		setAttr -lock true ($strLocatorName + ".ry");
+		setAttr -lock true ($strLocatorName + ".rz");
+		setAttr -keyable false ($strLocatorName + ".tx");
+		setAttr -keyable false ($strLocatorName + ".ty");
+		setAttr -keyable false ($strLocatorName + ".tz");
+		setAttr -keyable false ($strLocatorName + ".rx");
+		setAttr -keyable false ($strLocatorName + ".ry");
+		setAttr -keyable false ($strLocatorName + ".rz");
+
+		// Set expressions to drive the weigting based on the splitPosition attribute of the locator
+		expression -o $strConstraintName[0] -s ($strWeightAttr1 + " = (" + $strLocatorName + ".splitPosition * (" + $intNumSplits + " + 1))") -ae 1 -uc all;
+		expression -o $strConstraintName[0] -s ($strWeightAttr0 + " = (" + $intNumSplits + " + 1) - " + $strWeightAttr1) -ae 1 -uc all;
+
+		// Create slider
+		$strCurrentControl = `attrFieldSliderGrp
+			-attribute ($strLocatorName + ".splitPosition")
+			-label ("Split " + $intCounter)
+			-minValue 0
+			-maxValue 1
+			-fieldMinValue 0
+			-fieldMaxValue 1
+			-precision 3
+			-columnWidth 1 50
+			-columnWidth 2 50
+			-columnWidth 3 150
+			-adjustableColumn 3
+			($strSliderBaseName + $intCounter)`;
+
+                // If this is the first control, attach this control to the form
+		if ($strPreviousControl == "")
+		{
+                        formLayout -edit
+                                -attachForm $strCurrentControl "top" 5
+                                -attachNone $strCurrentControl "bottom"
+                                -attachForm $strCurrentControl "left" 5
+                                -attachForm $strCurrentControl "right" 5
+                                $strTargetLayout;
+                }
+                // If the control is not the first, attach it to the previous control
+                else
+                {
+                        formLayout -edit
+                                -attachControl $strCurrentControl "top" 5 $strPreviousControl
+                                -attachNone $strCurrentControl "bottom"
+                                -attachForm $strCurrentControl "left" 5
+                                -attachForm $strCurrentControl "right" 5
+                                $strTargetLayout;
+                }
+                
+                // Set the current control to be the previous control for the next loop
+                $strPreviousControl = $strCurrentControl;
+	}
+}; // proc acpCreateSplitLocators
+
+
+
+//============================================================================
+//	PROCEDURE:	acpProcessInput (global)
+//	ARGUEMENTS:	$strStartJointField (string)
+//				- name of the start joint field
+//			$strEndJointField (string)
+//				- name of the end joint field
+//			$strNumSplitsField (string)
+//				- name of the number of splits field
+//			$strLocatorGroup (string)
+//				- name of the group containing split locators
+//			$strTargetLayout (string)
+//				- name of the layout to ccontaining sliders
+//			$strFrameLayout (string)
+//				- name of the split positions frame layout
+//	RETURNS:	NONE
+//	DESCRIPTION:	Checks the user input to make sure it is valid before
+//			passing off to the next procedure.
+//============================================================================
+global proc acpProcessInput(string $strStartJointField, string $strEndJointField, string $strNumSplitsField, string $strLocatorGroup, string $strTargetLayout)
+{
+	global int $acp_DEBUG;
+
+	if ($acp_DEBUG)
+		print "Started acpProcessInput...\n";
+
+	// LOCAL VARIABLES
+	string $strStartJoint = `textFieldButtonGrp -q -text $strStartJointField`;	// name of the start joint
+	string $strEndJoint = `textFieldButtonGrp -q -text $strEndJointField`;		// name of the end joint
+	int $intNumSplits = `intFieldGrp -q -value1 $strNumSplitsField`;		// number of splits requested
+
+        // If the joint fields are empty, throw an error
+        if ($strStartJoint == "" || $strEndJoint == "")
+                error("One or more required fields are empty. Please make appropriate selections and try again.");
+        // If the start joint doesn't exist, throw an error
+        else if (!`objExists $strStartJoint`)
+	        error($strStartJoint + " does not exist. Make a new selection and try again.");
+        // If the end joint doesn't exist, throw an error
+        else if (!`objExists $strEndJoint`)
+	        error($strEndJoint + " does not exist. Make a new selection and try again.");
+
+	// Check to see if the items in the fields are joints
+	if (`nodeType $strStartJoint` != "joint")
+		error ($strStartJoint + " is not a joint node. Select a joint and try again.");
+	if (`nodeType $strEndJoint` != "joint")
+		error ($strEndJoint + " is not a joint node. Select a joint and try again.");
+
+	// Check to make sure 1 or more splits have been requested
+	if ($intNumSplits < 1)
+		error ("Number of splits requested must be an integer greater than zero.");
+
+	// Clean out old locators and sliders
+	acpResetUI($strStartJointField, $strEndJointField, $strNumSplitsField, $strLocatorGroup, $strTargetLayout);
+
+	// Lock fields so that the values can't be changed
+	textFieldButtonGrp -e -enable 0 $strStartJointField;
+	textFieldButtonGrp -e -enable 0 $strEndJointField;
+	intFieldGrp -e -enable 0 $strNumSplitsField;
+
+	acpCreateSplitLocators($strStartJoint, $strEndJoint, $intNumSplits, $strLocatorGroup, $strTargetLayout);
+}; // global proc acpProcessInput
+
+
+
+//============================================================================
+//	PROCEDURE:	acpCreateSplitJointChain (local)
+//	ARGUEMENTS:	$strStartJointField (string)
+//				- name of the start joint field
+//			$strEndJointField (string)
+//				- name of the end joint field
+//			$strNumSplitsField (string)
+//				- name of the number of splits field
+//			$strLocatorGroup (string)
+//				- name of the group containing split locators
+//			$strRenameFlagCtrl (string)
+//				- name of the control that sets the rename
+//				  flag
+//			$strRenameStringField (string)
+//				-name of the rename string field
+//	RETURNS:	NONE
+//	DESCRIPTION:	Duplicates the start joint and places a copy at each
+//			split locator, creating a new joint chain.
+//============================================================================
+proc acpCreateSplitJointChain(string $strStartJointField, string $strEndJointField, string $strNumSplitsField, string $strLocatorGroup, string $strRenameFlagCtrl, string $strRenameStringField)
+{
+	global int $acp_DEBUG;
+
+	if ($acp_DEBUG)
+		print "Started acpCreateSplitJointChain...\n";
+
+	// LOCAL VARIABLES
+	string $strStartJoint = `textFieldButtonGrp -q -text $strStartJointField`;	// name of the start joint
+	string $strEndJoint = `textFieldButtonGrp -q -text $strEndJointField`;		// name of the end joint
+	int $intNumSplits = `intFieldGrp -q -value1 $strNumSplitsField`;		// number of splits requested
+	int $intRenameFlag = `radioButtonGrp -q -select $strRenameFlagCtrl`;		// value of the rename flag
+	string $strRename = `textFieldGrp -q -text $strRenameStringField`;		// joint rename string
+	string $strLocatorNameArray[] = `listRelatives -children $strLocatorGroup`;	// array of all split locators
+	string $strJointToBeCopied[1] = {""};						// joint to be copied
+	string $strChildren[] = {""};							// children of the copied joint to be deleted
+	string $strConstraintName[1] = {""};						// name of the constraint
+	string $strPreviousJoint = $strStartJoint;					// last joint created
+	string $strCurrentJoint[1] = {""};						// current joint being manipulated
+	string $strJointNameBase = "";							// split joint name base
+
+	// Check to see if the number of sliders matches the number of splits
+	if ($intNumSplits != `size($strLocatorNameArray)`)
+		error("One or more split locators have been deleted. Please recreate them by pressing 'Place Splits.'");
+
+        // Check to make sure joints exist
+        if (!`objExists $strStartJoint`)
+                error($strStartJoint + " has been deleted or renamed. Please reset and make appropriate selections.");
+        if (!`objExists $strEndJoint`)
+                error($strEndJoint + " has been deleted or renamed. Please reset and make appropriate selections.");
+
+	// Copy the start joint
+	$strJointToBeCopied = `duplicate -rc -n "acpJointToBeCopied" $strStartJoint`;
+	$strChildren = `listRelatives -c $strJointToBeCopied[0]`;
+	
+	// Delete the copied joint's children so only the copied joint remains
+	for ($intCounter = 0; $intCounter < `size $strChildren`; $intCounter++)
+	{
+		if (`objExists $strChildren[$intCounter]`)
+			delete $strChildren[$intCounter];
+	}
+	// Add the joint to the locator group to get it out of the way
+	parent $strJointToBeCopied[0] $strLocatorGroup;
+
+	// Determine what the new split joints should be named
+	if ($intRenameFlag == 1)
+		// Append rename string to start joint's name
+		$strJointNameBase = ($strStartJoint + $strRename);
+	else if ($intRenameFlag == 2)
+		// Rename the joint
+		$strJointNameBase = $strRename;
+	else
+		error("Unexpected value (" + $intRenameFlag + ") obtained from " + $strRenameFlagCtrl + ". Check source code.");
+
+	// Create the new split chain
+	for ($intCounter = 0; $intCounter < $intNumSplits; $intCounter++)
+	{
+		// Duplicate the joint to be copied
+		$strCurrentJoint = `duplicate -rc -n  ($strJointNameBase + "_" + ($intCounter + 1)) $strJointToBeCopied[0]`;
+
+		// Point constrain the copied joint to the split locator
+		$strConstraintName = `pointConstraint -o 0 0 0 $strLocatorNameArray[$intCounter] $strCurrentJoint`;
+
+		// Delete the constraint
+		delete $strConstraintName[0];
+
+		// Parent the new joint to the previous one
+		parent $strCurrentJoint[0] $strPreviousJoint;
+
+		// Set the previous joint to the current one
+		$strPreviousJoint = $strCurrentJoint[0];
+	}
+	// Parent the end joint to the last new joint of the chain
+	parent $strEndJoint $strPreviousJoint;
+}; // global proc CreateSplitJointChain
+
+
+
+//============================================================================
+//	PROCEDURE:	acpFinalizeSplits (global)
+//	ARGUEMENTS:	$strStartJointField (string)
+//				- name of the start joint field
+//			$strEndJointField (string)
+//				- name of the end joint field
+//			$strNumSplitsField (string)
+//				- name of the number of splits field
+//			$strLocatorGroup (string)
+//				- name of the group containing split locators
+//			$strTargetLayout (string)
+//				- name of the layout holding sliders
+//			$strRenameFlagCtrl (string)
+//				- name of the control that sets the rename
+//				  flag
+//			$strRenameStringField (string)
+//				-name of the rename string field
+//	RETURNS:	NONE
+//	DESCRIPTION:	Preforms all functions neccessary to make joint splits
+//============================================================================
+global proc acpFinalizeSplits(string $strStartJointField, string $strEndJointField, string $strNumSplitsField, string $strLocatorGroup, string $strTargetLayout, string $strRenameFlagCtrl, string $strRenameStringField)
+{
+      	global int $acp_DEBUG;
+
+	if ($acp_DEBUG)
+		print "Started acpFinalizeSplits...\n";
+
+        // LOCAL VARAIBLES
+        string $strSliderArray[];
+
+        // Check to see if the locator group has been created yet. If not, create it.
+        if (!`objExists $strLocatorGroup`)
+                $strLocatorGroup = acpCreateLocatorGroup($strLocatorGroup);
+
+        // Get the contents of the target layout
+        $strSliderArray = `formLayout -q -childArray $strTargetLayout`;
+
+        // If the target layout is empty, then start the process to place splits
+        if (`size $strSliderArray` == 0)
+                acpProcessInput($strStartJointField, $strEndJointField, $strNumSplitsField, $strLocatorGroup, $strTargetLayout);
+
+        // Create the split joints
+	acpCreateSplitJointChain($strStartJointField, $strEndJointField, $strNumSplitsField, $strLocatorGroup, $strRenameFlagCtrl, $strRenameStringField);
+
+	// Set up tool so that it can be used again
+	acpResetAndClear($strStartJointField, $strEndJointField, $strNumSplitsField, $strLocatorGroup, $strTargetLayout);
+}; // global proc acpFinalizeSplits
+
+
+
+//============================================================================
+//	PROCEDURE:	acpSplitJoint (global)
+//	ARGUEMENTS:	NONE
+//	RETURNS:	NONE
+//	DESCRIPTION:	Main procedure. Sets up and starts the GUI.
+//============================================================================
+global proc acpSplitJoint()
+{
+        global int $acp_DEBUG;
+
+	if ($acp_DEBUG)
+		print "Started acpSplitJoint...\n";
+
+	// Check to see if the window exists and delete it
+	if(`window -exists acpSplitJoint_UI`)
+		deleteUI acpSplitJoint_UI;
+	
+	// LOCAL VARIABLES
+	string $strStartJointField = "";               // name of the start joint field
+	string $strEndJointField ="";                  // name of the end joint field
+	string $strTargetLayout = "";                  // name of the target layout
+	string $strNumSplitsField = "";                // name of the number of splits field
+        string $strLocatorGroup = "acpSplitJointGrp";  // name of the group holding split locators
+	string $strRenameStringField = "";             // name of the joint rename string field
+	string $strRenameFlagCtrl = "";                // name of the control that contains the rename flag
+	string $strFormLayout = "";                    // name of the main form layout
+	string $strFrameLayout = "";                   // name of the frame layout
+
+	// Create locator group
+	$strLocatorGroup = acpCreateLocatorGroup($strLocatorGroup);
+
+        // Create GUI
+	window
+		-title "acpSplitJoint v1.1"
+		-widthHeight 300 445
+		-maximizeButton 0
+		-sizeable 0
+		acpSplitJoint_UI;
+	$strFormLayout = `formLayout
+		-numberOfDivisions 100
+		formMainLayout`;
+	$strStartJointField = `textFieldButtonGrp
+                -width 300
+		-columnWidth3 55 185 50
+		-columnAttach3 "both" "both" "both"
+		-columnOffset3 3 3 3
+		-columnAlign3 "right" "left" "center"
+		-adjustableColumn 2
+		-label "Start Joint:"
+		-buttonLabel "Select"
+		-buttonCommand ""
+		-enable 1
+		tfbgStartJoint`;
+	$strEndJointField = `textFieldButtonGrp
+                -width 300
+		-columnWidth3 55 185 50
+		-columnAttach3 "both" "both" "both"
+		-columnOffset3 3 3 3
+		-columnAlign3 "right" "left" "center"
+		-adjustableColumn 2
+		-label "End Joint:"
+		-buttonLabel "Select"
+		-buttonCommand ""
+		-enable 1
+		tfbgEndJoint`;
+	$strNumSplitsField = `intFieldGrp
+                -width 300
+		-columnWidth2 85 146
+		-columnAttach2 "both" "both"
+		-columnOffset2 3 0
+		-columnAlign2 "right" "left"
+		-label "Number of Splits:"
+		-numberOfFields 1
+		-value1 1
+		-enable1 1
+		ifgNumSplits`;
+	$strResetButton = `button
+                -width 75
+		-label "Reset"
+		-align "center"
+		-command ""
+		-enable 1
+		buttonReset`;
+	$strClearButton = `button
+                -width 75
+		-label "Clear"
+		-align "center"
+		-command ""
+		-enable 1
+		buttonClear`;
+	$strPlaceSplitsButton = `button
+                -width 150
+		-label "Place Splits"
+		-align "center"
+		-command ""
+		-enable 1
+		buttonCreateLocators`;
+	$strFrameLayout = `frameLayout
+                -width 300
+		-height 220
+		-borderVisible 1
+		-borderStyle "in"
+		-collapsable 1
+		-collapse 0
+		-label "Split Positions"
+		-marginHeight 0
+		-marginWidth 0
+		-collapseCommand "window -e -widthHeight 300 245 acpSplitJoint_UI"
+		-preExpandCommand "window -e -widthHeight 300 445 acpSplitJoint_UI"
+		frameSplitPositions`;
+		$strScrollLayout = `scrollLayout
+			-width 300
+			-height 200
+			-horizontalScrollBarThickness 0
+			-minChildWidth 300
+			scrollSplitPositions`;
+			$strTargetLayout = `formLayout
+				-numberOfDivisions 100
+				formPositionSliders`;
+			setParent..;
+		setParent..;
+	setParent..;
+	$strRenameStringField = `textFieldGrp
+		-width 300
+		-columnWidth2 90 210
+		-columnAttach2 "both" "both"
+		-columnOffset2 6 0
+		-columnAlign2 "right" "left"
+		-adjustableColumn 2
+		-label "Split Joint Name:"
+		-text "Split"
+		-enable 1
+		tfgRenameString`;
+	$strRenameFlagCtrl = `radioButtonGrp
+		-width 200
+		-columnWidth2 100 100
+		-columnAttach2 "both" "both"
+		-columnOffset2 5 5
+		-columnAlign2 "left" "left"
+		-numberOfRadioButtons 2
+		-select 1
+		-label1 "Append"
+		-label2 "Rename"
+		-enable 1
+		radioRenameOptions`;
+        $strCancelButton = `button
+		-width 100
+		-label "Cancel"
+		-align "center"
+		-command "deleteUI acpSplitJoint_UI"
+		-enable 1
+		buttonCancel`;
+        $strApplyButton = `button
+		-width 100
+		-label "Apply"
+		-align "center"
+		-command ""
+		-enable 1
+		buttonApply`;
+	$strOKButton = `button
+		-width 100
+		-label "OK"
+		-align "center"
+		-command ""
+		-enable 1
+		buttonOK`;
+		
+	// Attach and position controls in the form
+	formLayout -edit
+		-attachForm $strStartJointField "top" 5
+		-attachNone $strStartJointField "bottom"
+		-attachForm $strStartJointField "left" 5
+		-attachForm $strStartJointField "right" 5
+		-attachControl $strEndJointField "top" 5 $strStartJointField
+		-attachNone $strEndJointField "bottom"
+		-attachForm $strEndJointField "left" 5
+		-attachForm $strEndJointField "right" 5
+                -attachControl $strNumSplitsField "top" 5 $strEndJointField
+		-attachNone $strNumSplitsField "bottom"
+		-attachForm $strNumSplitsField "left" 5
+		-attachForm $strNumSplitsField "right" 5
+		-attachControl $strResetButton "top" 5 $strNumSplitsField
+		-attachNone $strResetButton "bottom"
+		-attachForm $strResetButton "left" 5
+		-attachPosition $strResetButton "right" 0 25
+		-attachControl $strClearButton "top" 5 $strNumSplitsField
+		-attachNone $strClearButton "bottom"
+		-attachPosition $strClearButton "left" 3 25
+		-attachPosition $strClearButton "right" 0 50
+		-attachControl $strPlaceSplitsButton "top" 5 $strNumSplitsField
+		-attachNone $strPlaceSplitsButton "bottom"
+		-attachPosition $strPlaceSplitsButton "left" 3 50
+		-attachForm $strPlaceSplitsButton "right" 5
+		-attachControl $strFrameLayout "top" 5 $strPlaceSplitsButton
+		-attachControl $strFrameLayout "bottom" 5 $strRenameStringField
+		-attachForm $strFrameLayout "left" 5
+		-attachForm $strFrameLayout "right" 5
+		-attachNone $strRenameStringField "top"
+		-attachControl $strRenameStringField "bottom" 5 $strRenameFlagCtrl
+		-attachForm $strRenameStringField "left" 5
+		-attachForm $strRenameStringField "right" 5
+		-attachNone $strRenameFlagCtrl "top"
+		-attachControl $strRenameFlagCtrl "bottom" 5 $strOKButton
+		-attachForm $strRenameFlagCtrl "left" 100
+		-attachForm $strRenameFlagCtrl "right" 5
+                -attachNone $strCancelButton "top"
+		-attachForm $strCancelButton "bottom" 5
+		-attachForm $strCancelButton "left" 5
+		-attachPosition $strCancelButton "right" 3 33
+                -attachNone $strApplyButton "top"
+		-attachForm $strApplyButton "bottom" 5
+		-attachPosition $strApplyButton "left" 0 33
+		-attachPosition $strApplyButton "right" 3 66
+		-attachNone $strOKButton "top"
+		-attachForm $strOKButton "bottom" 5
+		-attachPosition $strOKButton "left" 0 66
+		-attachForm $strOKButton "right" 5
+                $strFormLayout;
+
+	// Now that all the GUI elements and variables are set, edit in the proper commands for the elements
+	textFieldButtonGrp -e -buttonCommand ("acpGetUserSelections (\"" + $strStartJointField + "\", \"" + $strEndJointField + "\", \"parent\")") $strStartJointField;
+	textFieldButtonGrp -e -buttonCommand ("acpGetUserSelections (\"" + $strEndJointField + "\", \"" + $strStartJointField + "\", \"child\")") $strEndJointField;
+	button -e -command ("acpResetUI(\"" + $strStartJointField + "\", \"" + $strEndJointField + "\", \"" + $strNumSplitsField + "\", \"" + $strLocatorGroup + "\", \"" + $strTargetLayout + "\")") buttonReset;
+	button -e -command ("acpResetAndClear(\"" + $strStartJointField + "\", \"" + $strEndJointField + "\", \"" + $strNumSplitsField + "\", \"" + $strLocatorGroup + "\", \"" + $strTargetLayout + "\")") buttonClear;
+	button -e -command ("acpProcessInput(\"" + $strStartJointField + "\", \"" + $strEndJointField + "\", \"" + $strNumSplitsField + "\", \"" + $strLocatorGroup + "\", \"" + $strTargetLayout + "\")") buttonCreateLocators;
+        button -e -command ("acpFinalizeSplits(\"" + $strStartJointField + "\", \"" + $strEndJointField + "\", \"" + $strNumSplitsField + "\", \"" + $strLocatorGroup + "\", \"" + $strTargetLayout + "\", \"" + $strRenameFlagCtrl + "\", \"" + $strRenameStringField + "\")") buttonApply;
+        button -e -command ("acpFinalizeSplits(\"" + $strStartJointField + "\", \"" + $strEndJointField + "\", \"" + $strNumSplitsField + "\", \"" + $strLocatorGroup + "\", \"" + $strTargetLayout + "\", \"" + $strRenameFlagCtrl + "\", \"" + $strRenameStringField + "\"); deleteUI acpSplitJoint_UI;") buttonOK;
+
+        // Start a script job to see if the window is deleted
+	int $sjWindowDelete = `scriptJob -uid "acpSplitJoint_UI" ("acpCleanUp(\"" + $strLocatorGroup + "\")")`;
+        
+        // Define the size of the window because Maya doesn't always pay attention to the creation size
+	window -edit
+		-widthHeight 300 445
+		acpSplitJoint_UI;
+
+	// Show the completed GUI
+	showWindow acpSplitJoint_UI;
+}; // global proc acpSplitJoint
+
+// EOF

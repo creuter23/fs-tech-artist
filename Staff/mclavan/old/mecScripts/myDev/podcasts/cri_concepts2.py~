@@ -1,0 +1,70 @@
+'''
+Breaking down the Concept
+concept2.py
+
+Description:
+
+How to Run:
+
+'''
+
+'''
+Refinement
+- Create a pad above the control icon.
+'''
+
+# Do it in the interface
+
+# 1) User selected joint then icon
+# 	- That means I'm going to have to get selected.
+# 2) Create a group
+# 	- Name it based on the control icon, include "_grp" added as a suffix.
+# 3) Group and Control Icon is point and orient constraint to joint
+#	- To match orientations.
+# 3) Constraints are deleted
+#	- Because they were only used to match orientations.
+# 4) Control icon is parent to group to pad the control icon.
+
+
+'''
+Groups
+cmds.group( name="groupName" )
+- Flags
+-empty  ( Nothing included in the group. )
+-world  ( Group will be placed in the root. )
+'''
+
+'''
+Returning Values
+- Group returns the name of the group it created.
+grp = cmds.group( name="grpName", world=True, empty=True )
+- Constraints return the names of the constraint nodes it creates.
+pc = cmds.pointConstraint( offset=[0,0,0], weight=1 )
+oc = cmds.orientConstraint( offset=[0,0,0], weight=1 )
+
+Using object names
+selected = cmds.ls(sl=True)
+grp = cmds.group( name="grpName", world=True, empty=True )
+
+pc = cmds.pointConstraint(selected[0], grp, offset=[0,0,0], weight=1 )
+oc = cmds.orientConstraint(selected[0], grp, offset=[0,0,0], weight=1 )
+
+'''
+
+
+'''
+Parenting
+cmds.parent( "obj1", "obj2", "parentObj" )
+'''
+
+
+
+'''
+Constraint Option
+- Give the user the option if they wish to constrain the control icon to the joint.
+'''
+
+'''
+Function
+Argument & Return Statement
+'''

@@ -1,0 +1,732 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davvey\'s Chain & Sprocket Generator
+''    Author:  
+''    Last Updated: Jan 15, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4463.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+
+//	DVY_SprocketBuild;
+
+global proc DVY_SprocketBuild()
+{
+	
+// ******************************************************************************** //	
+//	Global Variables
+	 
+	global string $Chain[], $ChainGrp[], $SprokGrp[], $SPName, $ISO_No[], $TeethProfiles[], $Type[];
+	global string $CHType[], $Title[], $TitleN[], $IField[], $FField[], $Option[];
+	
+	global int $Teeth[];
+	global float $Pitch[], $PCDF[];
+	
+	global matrix $ChainDataM[17][10];
+	
+	global string $Units;
+
+	global float $DVYUnit;
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Local Variables
+	 
+	string $Temp[],$Item[], $Sprocket[], $Bush[], $Pin[], $InPlate[], $OutPlate[],$SprocketTeeth[];
+	clear $Sprocket;
+	
+	float $C, $Cd, $Ct, $D, $H, $P, $Ct, $D, $J, $L, $Lp, $InT, $OuT, $W;
+	float $Angle, $PCD, $OD, $RD, $R, $R1, $R2, $f, $PinL;
+	int $CHTeeth[];
+
+	int $e, $E, $fT, $i, $j, $N, $nT, $PL, $q;	
+	float $Pi, $m, $A, $GW, $PCD, $BD, $RD, $OD;
+	float $Ad, $Dd, $Pd, $WH, $Angle, $Helix ;
+	float $Pos[], $Profiles[];
+	float $Move, $HubMx, $BoreMx, $Bore, $HubT;
+	float $Ratios[];
+	
+	int $Idx = $CHp = 0;
+	int $ID = `optionMenu -q -sl DVY_CHType` -1;
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Constants and "Static Data"
+	$e = $E = 1;
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Set Scaling unit for Global units used.
+		
+	DVY_ScaleSet;
+	print ("Current units are " + $Units + " and Scale Factor $DVYUnit is " + $DVYUnit + "\n");
+	
+	
+//	Constants and "Static Data"
+	$CHTeeth[0] = 0;
+
+	if (`intField -q -v SprocketIntField_1` == 0)
+		{
+			error "OOps! please use a Number greater than 8 for no. of Teeth for both Sprockets. © Davvey..\n";
+		}
+		
+	if (`intField -q -v SprocketIntField_2` == 0)
+		{
+			error "OOps! please use a Number greater than 8 for no. of Teeth for both Sprockets. © Davvey..\n";
+		}
+		
+		
+	if ((`radioButtonGrp -q -sl IdlerSprocketRadioButton` > 1) && (`intField -q -v SprocketIntField_3` == 0))
+		{
+			error "OOps! please use a Number greater than 8 for no. of Teeth for Idler Sprocket. © Davvey..\n";
+		}
+		
+		for ($i=1; $i<4; $i++)
+			{
+				$CHTeeth[$i] = `intField -q -v ("SprocketIntField_" + $i)`;
+				if (($CHTeeth[$i] < 9) && ($CHTeeth[$i] != 0))
+					{
+						error "OOps! please a Number greater than 8 for no. of Teeth on each Sprocket. © Davvey..\n";
+					}
+
+				if ($CHTeeth[$i] >= 9)
+					{ $q = $q + 1;}
+			}
+		
+
+			$Idx = `optionMenu -q -sl DVY_ISO_No` -2;
+			$PL = `optionMenu -q -sl DVY_CHType`;
+			if ($PL == 8) {$PL = $PL + 2;}
+			if ($PL == 7) {$PL = $PL + 1;}
+			
+			print ("$PL is " + $PL + "\n");
+			print ("$Idx is " + $Idx + "\n");
+			
+			print ("Range of Sprocket Teeth to be set up is \n");
+			print $CHTeeth;
+			print ("Quantity of Gears in Set is " + $q + "\n" );
+	
+			
+			$P = $ChainDataM[$Idx][0];			//	Pitch of Chain.
+			$W = $ChainDataM[$Idx][1];			//	Width Between Roller side plates.
+			$R = $ChainDataM[$Idx][2];			//	Roller Outside Diameter
+			
+			$H = $ChainDataM[$Idx][3];			//	Link Plate Height.
+			$InT = $ChainDataM[$Idx][4];		//	Inner Link Plate Thickness.
+			$OuT = $ChainDataM[$Idx][5];		//	Outer Link Plate Thickness;
+			$D = $ChainDataM[$Idx][6];			//	Diameter of Pin.
+			$Lp = $ChainDataM[$Idx][7];			//	Length of Pin.
+			$J = $ChainDataM[$Idx][8];			//	Extra Length of Pin for connector.
+			$Ct = $ChainDataM[$Idx][9];			//	Link Traverse Pitch.
+			$f = $P * 0.7;						//	Depth of Clearance below Tooth Root Diameter
+			$PinL = $Ct * ($PL-2);
+			$PinL = ($W + ($InT * 2) + ($OuT * 2)) * ($PL);
+	
+/*			print ("\n" + "Data used for Sprocket with a " + $P + "mm Chain Pitch \n");
+			print ("\n" + "Chain Pitch $P is " + $P + "..\n");
+			print ("Roller Outside Diameter $R is " + $R + "..\n");
+			
+			print ("Width between Roller Plates $W is " + $W + "..\n");
+			print ("Link Plate Height $H is " + $H + "..\n");
+			print ("Inner Plate Thickness $InT is " + $InT + "..\n");
+			print ("Outer Plate Thickness $OuT is " + $OuT + "..\n");
+			print ("Roller Pin Diameter $D is " + $D + "..\n");
+			print ("Pin Length $Lp is " + $Lp + "..\n");
+			print ("Pin Length $PinL is " + $PinL + "..\n");
+			
+			print ("Roller Pin Extra Length for Connector $J is " + $J + "..\n");
+			print ("Link Traverse Pich $Ct is " + $Ct + "..\n");
+*/
+			print ("$f is " + $f + "..\n");
+
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+//	Create Shaders for Gear Parts.
+					
+		if(!`objExists Teeth_SH `) { $shader[0] = `DVY_Shaders(0)`; }
+			 $Shader[0] = "Teeth_SH";
+		if(!`objExists Shaft_SH`) { $shader[1] = `DVY_Shaders(9)`; }
+			 $Shader[1] = "Shaft_SH";
+		if(!`objExists Sprocket_SH`) { $shader[2] = `DVY_Shaders(3)`; }
+			 $Shader[2] = "Sprocket_SH";	
+		if(!`objExists SprocketHub_SH`) { $shader[3] = `DVY_Shaders(4)`; }
+			 $Shader[3] = "SprocketHub_SH";
+			 
+//		print "\nShaders used are..\n";
+//		print $Shader;
+
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+//	Section to set up Gear Groups as Required.
+
+//	if (`radioButtonGrp -q -sl SprocketGrpRadioButton` == 1)
+//		{
+			// Generate and Use new Group Node
+				 while(`objExists ($CHType[$ID] + "_Main_GrpN_" + $E)`)
+					  {
+						 $E++;	print ("$E is " + $E + "\n");
+					  }
+						$SprokGrp[0] = `group -em -name ($CHType[$ID] + "_Main_GrpN_" + $E)`;
+						print ("Group is called " + $SprokGrp[0] + "\n");
+						
+						$SPName = ("Grp_" + $E + "_" + $CHType[$ID]);
+						print ("$SPName is " + $SPName + "\n");
+						
+//		}// End of Generate and Use new Group Node
+/*
+	if (`radioButtonGrp -q -sl SprocketGrpRadioButton` == 4)
+		{// Existing Group Node
+			if (`textField -q -text CHSelectGrp01` == "")
+				{
+					error "OOps! please Select group Top Node. © Davvey..\n";
+				}
+					$SprokGrp[0] = `textField -q -text CHSelectGrp01`;
+					print ("Group is called " + $SprokGrp[0] + "\n");
+					
+					string $buffer[];
+					$numTokens = `tokenize $SprokGrp[0] "_" $buffer`;
+					$E = $buffer[3];
+						print ("$E is now " + $E + "\n");
+						
+						$SPName = ("Grp_" + $E + "_" + $CHType[$ID]);
+						print ("$SPName is " + $SPName + "\n");
+		}// End of Use existing Group Node.
+*/
+
+	 	if (!`attributeExists "NameOfGearGrp" $SprokGrp[0]`) 
+			{ addAttr -ln NameOfGearGrp -dt "string" $SprokGrp[0];}
+		       setAttr -l 1 -k 0 -type "string" ($SprokGrp[0] + ".NameOfGearGrp") $SprokGrp[0];
+
+		if (!`attributeExists "Type" $SprokGrp[0]`) 
+			{ addAttr -ln Type -dt "string" $SprokGrp[0];}
+		       setAttr -l 1 -k 0 -type "string" ($SprokGrp[0] + ".Type") $CHType[$ID];
+
+		if (!`attributeExists "Pitch" $SprokGrp[0]`) 
+			{ addAttr -ln Pitch -at double $SprokGrp[0];}
+		       setAttr -l 1 -k 0 ($SprokGrp[0] + ".Pitch") $P;
+
+		if (!`attributeExists "Grp_No_" $SprokGrp[0]`)
+			{ addAttr -ln Grp_No_ -at short $SprokGrp[0];}
+		      setAttr -l 1 -k 0 ($SprokGrp[0] + ".Grp_No_") $E;
+			  			  
+			  
+		if (!`attributeExists "Sprocket_No1_Rotate" $SprokGrp[0]`)
+			{ addAttr -ln Sprocket_No1_Rotate -at double $SprokGrp[0];}
+		      setAttr -l 0 -k 0 -cb 1 ($SprokGrp[0] + ".Sprocket_No1_Rotate") 0;
+		  
+			  
+		if (!`attributeExists "Sprocket_No2_Rotate" $SprokGrp[0]`)
+			{ addAttr -ln Sprocket_No2_Rotate -at double $SprokGrp[0];}
+		      setAttr -l 0 -k 0 -cb 1 ($SprokGrp[0] + ".Sprocket_No2_Rotate") 0;
+
+	if (`radioButtonGrp -q -sl IdlerSprocketRadioButton` > 1)
+		{
+			if (!`attributeExists "Sprocket_No3_Rotate" $SprokGrp[0]`)
+				{ addAttr -ln Sprocket_No3_Rotate -at double $SprokGrp[0];}
+			      setAttr -l 0 -k 0 -cb 1 ($SprokGrp[0] + ".Sprocket_No3_Rotate") 0;
+		}
+		
+					
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+			
+	//	Generate each Tooth based on above data.
+		int $Q ;								//	Number of Sprockets required 
+			
+		$i = 1;
+		
+		for ($a=0; $a<$q; $a++)
+		 {
+			 clear $Item;
+			 
+			 $nT = $CHTeeth[$a+1];
+			 print ("$nT is " + $nT + "\n");
+			 
+			if ($nT <= 24)	{$fT = 24;}
+			if ($nT > 24) 	{$fT = $nT;}
+			 print ("$fT is " + $fT + "\n");
+		
+		//	Generate Data required for building Teeth profiles and and sprocket Body.
+			 
+			$Angle = (360 / ($nT * 1.00));
+			$R1 = ($R * 0.505);	
+			$R2 = (0.12 * $R * ($nT + 2)) + (0.008 * $R) * (($nT * $nT) + 180);
+			$R2 = $R2 * 0.5;
+			$PCD = ($P * $PCDF[$nT]);
+			$OD = ($PCD + ($R * 0.5));
+			$RD = ($PCD - $R1);
+			$R = ($ChainDataM[$Idx][2]);		//	Diameter of Chain Roller.
+	
+				print ("Angle of Tooth profile rotation for Sprocket Number " + $q + " is " + $Angle + " ..\n");
+				print ("Chain Roller Diameter $R is " + $R + "..\n");
+				print ("Tooth segment Angle is " + $Angle + "..\n");
+				print ("Sprocket Roller Tooth Radius is " + $R1 + "..\n"); 
+				print ("Sprocket Tooth Top Radius is " + $R2 + "..\n"); 
+				print ("\n No. of Teeth is " + $nT + "..\n");
+				print ("\n" + "The PCDF for sprocket with " + $nT + " Teeth and Chain Pitch " + $P + " is " + $PCDF[$nT] + "..\n");
+				print ("PCD for sprocket with " + $nT + " Teeth and Chain Pitch " + $P + " is " + $PCD + "..\n");
+				print ("OD for sprocket with " + $nT + " Teeth and Chain Pitch " + $P + " is " + $OD + "..\n");
+				print ("RD for sprocket with " + $nT + " Teeth and Chain Pitch " + $P + " is " + $RD + "..\n");
+	
+								
+			while (`objExists ($SPName + "Sprocket_GrpN_" + $e)`)
+				{
+					$e++;
+				//	print ("$e is " + $e + "\n");
+				}
+				
+				$SprokGrp[1] = `group -em -name ($SPName + "Sprocket_GrpN_" + $e)`;
+		
+				$SprokGrp[2] = `group -em -name ($SPName + "SprocketRotate_GrpN_" + $e)`;
+				$SprokGrp[3] = `group -em -name ($SPName + "SprocketShaft_GrpN_" + $e)`;
+				
+				parent $SprokGrp[3] $SprokGrp[2];
+				parent $SprokGrp[2] $SprokGrp[1];
+				parent $SprokGrp[1] $SprokGrp[0];
+		
+					
+		if ((`radioButtonGrp -q -sl SprocketTypeRadioButton` == 1) ||
+			((`radioButtonGrp -q -sl SprocketTypeRadioButton` == 3) && ($nT < 20)))
+
+			{//	PolyCylinder to use for Disc for Main Sprocket Wheel to hold Teeth.
+					
+				$Temp = `polyCylinder -r (($OD * 0.505) - $f) -h ($PinL * 1.1) -sa ($fT) -sh 1 -sc 0 -ch 0 -name ($SPName + "_SprocketBodyA_" + $e)`;
+					polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1
+						-segments 1 -worldSpace 0 -fillNgons 1 -mergeVertices 1
+						-mergeVertexTolerance 0.0001 -smoothingAngle 30 -miteringAngle 180
+						-angleTolerance 180 -ch 0 ($Temp[0] + ".f[" + $fT + ":" + ($fT+1) + "]");
+						polySubdivideFacet -dv 1 -m 0 -ch 0 ($Temp[0] + ".f[" + $fT + ":" + ($fT+1) + "]");
+
+				$Sprocket[$i] = $Temp[0];
+					setAttr ($Sprocket[$i] + ".rz") 90;
+					setAttr ($Sprocket[$i] + ".ry") ($Angle * 0.5);
+					
+			}
+					
+		if (`radioButtonGrp -q -sl SprocketTypeRadioButton` == 2)
+			{//	PolyCylinder to use for Disc for Main Sprocket Wheel to hold Teeth.
+					
+				$Temp = `polyCylinder -r (($OD * 0.505) - $f) -h ($PinL * 1.1) -sa $fT -sh 1 -sc 0 -ch 0 -name ($SPName + "_SprocketBody_" + $e)`;
+					polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1
+						-segments 1 -worldSpace 0 -fillNgons 1 -mergeVertices 1
+						-mergeVertexTolerance 0.0001 -smoothingAngle 30 -miteringAngle 180
+						-angleTolerance 180 -ch 0 ($Temp[0] + ".f[" + $fT + ":" + ($fT+1) + "]");
+						polySubdivideFacet -dv 1 -m 0 -ch 0 ($Temp[0] + ".f[" + $fT + ":" + ($fT+1) + "]");
+			
+				$Sprocket[$i] = $Temp[0];
+					setAttr ($Sprocket[$i] + ".rz") 90;
+					setAttr ($Sprocket[$i] + ".ry") ($Angle * 0.5);
+							
+			//	PolyCylinder to use for Hub of Sprocket Body.
+					$Pos[0] =  (($PCD *0.25) - $f);
+					if ($nT < 25) {	$Pos[0] = `getAttr ($Sprocket[$i] + ".boundingBoxMaxY")` * 0.44;}
+					
+					$Pos[1] = `getAttr ($Sprocket[$i] + ".boundingBoxMaxX")` * 2.5;
+					if ($ID > 2) {$Pos[1] = $Pos[1] * 0.75;}
+					if ($ID > 4) {$Pos[1] = $Pos[1] * 0.9;}
+					if ($ID > 6) {$Pos[1] = $Pos[1] * 0.9;}
+
+				$Temp = `polyCylinder -r $Pos[0] -h $Pos[1] -sa $fT -sh 1 -sc 0 -ch 0 -name ($SPName + "_SprocketHubA_" + $e)`;
+					polyBevel -offset 0.05 -offsetAsFraction 1 -autoFit 1
+						-segments 1 -worldSpace 0 -fillNgons 1 -mergeVertices 1
+						-mergeVertexTolerance 0.0001 -smoothingAngle 30 -miteringAngle 180
+						-angleTolerance 180 -ch 0 ($Temp[0] + ".f[" + $fT + "]");
+					polySubdivideFacet -dv 1 -m 0 -ch 0 ($Temp[0] + ".f[" + $fT + "]");
+				
+					$Sprocket[$i + 1] = $Temp[0];
+						setAttr ($Sprocket[$i + 1] + ".rz") 90;
+						setAttr ($Sprocket[$i + 1] + ".ry") ($Angle * 0.5);
+						setAttr ($Sprocket[$i + 1] + ".tx") ($Pos[1] * 0.9) ;
+						
+					$Temp = `polyBoolOp -op 1 -ch 0 $Sprocket[$i] $Sprocket[$i+1]`;	
+					
+					$Sprocket[$i] = `rename $Temp[0] ($SPName + "_SprocketBody_" + $e)`;
+				
+			}
+					
+					
+		if ((`radioButtonGrp -q -sl SprocketTypeRadioButton` == 3) && ($nT >= 20))
+			{//	PolyPipe to use for Outer Ring for Main Sprocket Wheel to hold Teeth.
+					
+				$Temp = `polyPipe -r (($OD * 0.505) - $f) -h ($PinL * 2.2) -t $f -sa $fT 
+						-sh 1 -sc 0 -ch 1 -name ($SPName + "_SprocketBodyA_" + $e)`;
+				
+				$Sprocket[$i] = $Temp[0];
+					setAttr ($Sprocket[$i] + ".rz") 90;
+					setAttr ($Sprocket[$i] + ".ry") ($Angle * 0.5);
+					
+				$Pos[0] = (($OD * 0.505) - $f) - (($PCD * 0.25) - $f);
+				$Pos[1] = (`getAttr ($Sprocket[$i] + ".boundingBoxMaxY")` - $f) * 1.0;
+				$Pos[2] = ($Pos[1] - (($PCD * 0.25) - $f)) * 0.85;
+//				$Pos[2] = ($RD * 0.32);
+				print "$Pos is \n";
+				print $Pos;
+					
+				$Temp = `polyCube -w ($PinL * 1) -h $Pos[1] -d ($W * 1.5) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`; 	
+					scale 0.5 1 0.75 ($Temp[0] + ".f[1]");
+					polyBevel -offset 0.4 -offsetAsFraction 1 -autoFit 1
+						-segments 2 -worldSpace 0 -fillNgons 1 -mergeVertices 1
+						-mergeVertexTolerance 0.0001 -smoothingAngle 30 -miteringAngle 180
+						-angleTolerance 180 -ch 0 ($Temp[0] + ".f[0]") ($Temp[0] + ".f[2]") ($Temp[0] + ".f[4:5]");
+					
+					
+					$Sprocket[$i+1] = $Temp[0];
+					$Pos[0] = `getAttr ($Sprocket[$i+1] + ".boundingBoxMinY")`;
+					move -r 0  ($Pos[0] * -1) 0 $Sprocket[$i+1];
+					
+//					move -r 0 ((($RD * 0.195) ) * 0.85) 0 $Sprocket[$i+1];
+					xform -a -ws -piv 0 0 0 $Sprocket[$i+1];
+					
+					select -r $Sprocket[$i+1];
+					$Temp = `duplicate -rr`;
+					rotate 180 0 0 $Temp[0];
+					
+					$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Sprocket[$i+1]`;	
+					$Sprocket[$i+1] = $Temp[0];
+	
+					select -r $Sprocket[$i+1];
+					$Temp = `duplicate -rr`;
+					rotate 60 0 0 $Temp[0];
+					$Sprocket[$i+2] = $Temp[0];
+					
+					select -r $Sprocket[$i+1];
+					$Temp = `duplicate -rr`;
+					rotate 120 0 0 $Temp[0];
+				
+					$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Sprocket[$i+1]`;
+					$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Sprocket[$i+2]`;
+					
+					$Sprocket[$i+1] = $Temp[0];
+				
+			//	PolyCylinder to use for Hub of Sprocket Body.
+					$Pos[0] =  (($PCD *0.25) - $f);
+
+					if ($nT < 25) {	$Pos[0] = `getAttr ($Sprocket[$i+1] + ".boundingBoxMaxY")` * 0.45;}
+					
+					$Pos[1] = `getAttr ($Sprocket[$i+1] + ".boundingBoxMaxX")` * 4.2;
+					if ($ID > 1) {$Pos[1] = $Pos[1] * 0.75;}
+					if ($ID > 4) {$Pos[1] = $Pos[1] * 0.9;}
+					if ($ID > 6) {$Pos[1] = $Pos[1] * 0.9;}
+						
+				$Temp = `polyCylinder -r $Pos[0] -h $Pos[1] -sa $fT 
+						-sh 1 -sc 0 -ch 0 -name ($SPName + "_SprocketHub_" + $e)`;
+
+					polyBevel -offset 0.05 -offsetAsFraction 1 -autoFit 1
+						-segments 1 -worldSpace 0 -fillNgons 1 -mergeVertices 1
+						-mergeVertexTolerance 0.0001 -smoothingAngle 30 -miteringAngle 180
+						-angleTolerance 180 -ch 0 ($Temp[0] + ".f[" + $fT + ":" + ($fT+1) + "]");
+					polySubdivideFacet -dv 1 -m 0 -ch 0 ($Temp[0] + ".f[" + $fT + ":" + ($fT+1) + "]");
+				
+					$Sprocket[$i + 2] = $Temp[0];
+						setAttr ($Sprocket[$i + 2] + ".rz") 90;
+						setAttr ($Sprocket[$i + 2] + ".ry") ($Angle * 0.5);
+						
+					$Temp = `polyBoolOp -op 1 -ch 0 $Sprocket[$i+1] $Sprocket[$i+2]`;	
+
+						$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Sprocket[$i]`;	
+						$Sprocket[$i] = `rename $Temp[0] ($SPName + "_SprocketBody_" + $e)`;
+						
+					rotate 	30 0 0 $Sprocket[$i];	
+			}
+	
+
+		if ($nT > 110)  { scale 1 0.995 0.995 $Sprocket[$i];}
+			
+			float $HubT = 0;
+			int $Bool;
+			
+			$HubMx = $RD * 0.4;
+			print ("$HubMx is " + $HubMx + "\n"); 
+			$BoreMx = ($HubMx * 0.5);
+				
+			if (`radioButtonGrp -q -sl SprocketTypeRadioButton` == 2)
+				{
+					$HubT = $Pos[1];
+				}
+				
+			if ((`radioButtonGrp -q -sl SprocketTypeRadioButton` == 1) || 
+				(`radioButtonGrp -q -sl SprocketTypeRadioButton` == 2))
+				{
+					$Temp = DVY_ShaftDesign ($BoreMx, (($PinL * 1.1) + $HubT), $fT, ($HubMx * 0.1), $SPName, $Bool, $e);
+				}
+				
+			if ((`radioButtonGrp -q -sl SprocketTypeRadioButton` == 3) && ($nT < 20))
+				{
+					$Temp = DVY_ShaftDesign ($BoreMx, (($PinL * 1.1) + $HubT), $fT, ($HubMx * 0.1), $SPName, $Bool, $e);
+				}
+			
+			if ((`radioButtonGrp -q -sl SprocketTypeRadioButton` == 3) && ($nT >= 20))
+				{
+					$Temp = DVY_ShaftDesign ($BoreMx, (($Pos[1] * 1.0) + $HubT), $fT, ($HubMx * 0.1), $SPName, $Bool, $e);
+				}
+		
+				$ShaftGrp = $Temp;
+				
+				move -r ($HubT * 0.5) 0 0 $ShaftGrp[0];
+				
+				xform -ws -piv 0 0 0  $ShaftGrp[0];
+				makeIdentity -apply true -t 1 -r 1 -s 1 -n 0 ;
+			
+	
+			if ((`radioButtonGrp -q -sl SprocketTypeRadioButton` == 2) || 	
+				(`radioButtonGrp -q -sl SprocketTypeRadioButton` == 3))
+				{
+				
+					select -r $ShaftGrp[3] $ShaftGrp[4]; parent -w;
+					if (`radioButtonGrp -q -sl SprocketTypeRadioButton` == 2)
+						{
+							move -r (($PinL * 0.55) + ($HubT * 0.0)) 0 0 $ShaftGrp[2] $ShaftGrp[4]; 
+						}
+					$Temp = `polyBoolOp -op 2 -ch 0 $Sprocket[$i] $ShaftGrp[4]`;	//("BoolScrew_" + $e)`;
+					$Sprocket[$i] = `rename $Temp[0] ($SPName + "_SprocketBody_" + $e)`;
+				}
+			
+			if (`radioButtonGrp -q -sl SprocketTypeRadioButton` == 1)
+				{
+				
+					select -r $ShaftGrp[3] $ShaftGrp[4]; parent -w;
+					select -r $ShaftGrp[2] $ShaftGrp[4];
+					delete;
+				}
+			
+				
+				$Temp = `polyBoolOp -op 2 -ch 0 $Sprocket[$i] $ShaftGrp[3]`;	//("BoolShaft_" + $e)`;
+				$Sprocket[$i] = `rename $Temp[0] ($SPName + "_SprocketBody_" + $e)`;
+			
+			for ($j=0; $j < `size $ShaftGrp`; $j++)
+				{
+					if (`objExists $ShaftGrp[$j]`)
+						{
+							
+							$ShaftGrp[$j] = `rename $ShaftGrp[$j] ($SPName + "Sprocket" + $ShaftGrp[$j])`;
+						}
+					}	
+					
+				$ShaftGrp[0] = `rename $ShaftGrp[0] ($SPName + "SprocketShaft_" + $e)`;
+					print $ShaftGrp;
+					
+				select -r $Sprocket[$i];
+				hyperShade -assign "initialShadingGroup";
+				hyperShade -assign $Shader[2];
+					
+			parent $Sprocket[$i] $ShaftGrp[0];
+			parent $ShaftGrp[0] $SprokGrp[3]; 
+		
+				
+		//	PolyPipe to use to build Sprocket Teeth.
+		
+		$Temp = `polyPipe -r ($OD * 0.5) -h ($W * 0.9) -t $f -sa $nT
+							-sh 1 -sc 1 -ch 0 -name ($SPName + "_SprocketA_" + $e)`;
+			$Bush[$q] = $Temp[0];						 
+				setAttr ($Bush[$q] + ".rz") 90;
+				setAttr ($Bush[$q] + ".ry") ($Angle * 0.5);
+	
+				int $F =  $nT;
+				int $F1 = ($F * 2);
+				int $F2 = $F1 +($F-1);
+				
+				polyBevel -offset 0.75 -offsetAsFraction 1 -autoFit 1
+					-segments 2 -worldSpace 0 -fillNgons 1 -mergeVertices 1
+					-mergeVertexTolerance 0.0001 -smoothingAngle 30 -miteringAngle 180
+					-angleTolerance 180 -ch 1 ($Bush[$q] + ".f[" + $F1 + ":" + $F2 + "]");
+				
+
+	//	Poly Cylinder for intial tooth profile.
+		
+		$Temp = `polyCylinder -r ($R1) -h ($W) -sa 16 -sh 1 -sc 1 -tx 1 -ch 0 -name ($SPName + "_SpToothA_" + 1)`;
+			$Item[0] = $Temp[0];
+				setAttr ($Item[0] + ".rz") 90;
+				setAttr ($Item[0] + ".ty") ($PCD * 0.5);
+					
+	// Section to move vertices to build tooth profile.
+							
+		select -cl  ;
+			select -r ($Item[0] + ".vtx[11]") ($Item[0] + ".vtx[27]");
+			select -tgl ($Item[0] + ".vtx[3]")($Item[0] + ".vtx[19]");
+			scale -r  1 1 1.15;
+			select -r ($Item[0] + ".vtx[2]") ($Item[0] + ".vtx[12]") ($Item[0] + ".vtx[18]") ($Item[0] + ".vtx[28]") ;
+			scale -r  1 1 1.55;
+			select -r ($Item[0] + ".vtx[1]") ($Item[0] + ".vtx[13]") ($Item[0] + ".vtx[17]") ($Item[0] + ".vtx[29]") ;
+			scale -r  1 1 2.2;
+			select -r ($Item[0] + ".vtx[0]") ($Item[0] + ".vtx[14]") ($Item[0] + ".vtx[16]") ($Item[0] + ".vtx[30]") ;
+			scale -r  1 1 2.8;
+			
+	//	Set Tooth profile to 0 0 0 axis ready for copying
+	
+		select -r $Item[0];
+		xform -a -ws -piv 0 0 0 $Item[0];
+			
+	// Temporary group Node for Sprocket Teeth.
+		
+		$Temp[0] = `group -em -name Sprocket_TeethGrpN_1`;
+			parent $Item[0] $Temp[0];
+				
+	// Duplicate tooth profile and rotate as required.
+				
+		for ($j=1; $j <$nT; $j++)
+		 { select -r $Item[0];
+			$Temp = `duplicate -rr -renameChildren`;
+				rotate -r ($j * $Angle) 0 0;
+				$Item[$j] = $Temp[0];
+		 }
+		
+	// Combine all teeth profiles into one Polygon unit.
+
+		$Temp = `polyUnite -name SprocketTeeth -ch 0 $Item`;
+			$SprocketTeeth[0] = $Temp[0];
+				
+	// Poly Boolean operation to subtract tooth profile from origal polyPipe.
+				
+		$Temp = `polyBoolOp -op 2 -name ($SPName + "_SprocketTeethA_" + $e) -ch 0 $Bush[$q] $SprocketTeeth[0]`;
+			$Sprocket[$i + 1] = $Temp[0];
+			makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+			
+		select -r $Sprocket[$i + 1];
+		hyperShade -assign "initialShadingGroup";
+		hyperShade -assign $Shader[0];
+
+			
+		parent $Sprocket[$i + 1] $Sprocket[$i];
+				
+	string $Let[] = {"A", "B", "C", "D", "E", "F","G", "H", "I", "J"};
+
+	if (`optionMenu -q -sl DVY_CHType` > 1)
+		{
+			select -r $Sprocket[$i + 1];;
+			move -r ( ($W + ($InT + $OuT) * 2) * (($PL *0.5) -0.5)) 0 0;
+	//		parent $Sprocket[$i+1] $Sprocket[$i+1];
+			
+			select -r $Sprocket[$i + 1];
+				$Temps = `duplicate -rr -renameChildren`;
+				$Sprocket[$i + 2] = `rename $Temps[0] ($SPName + "_SprocketTeethB_" + $e)`;
+				
+				move -r (($W + ($InT + $OuT) * 2) * -1) 0 0 ;
+			
+			for ($j=3; $j<($PL+1); $j++)
+				{
+					$Temps = `duplicate -rr -renameChildren -st`;
+					$Sprocket[$j+2] = `rename $Temps[0] ($SPName + "_SprocketTeeth" + $Let[$j-1] + "_" + $e)`;
+				}
+		}
+		
+		
+		
+	 	if (!`attributeExists "NameOfGearGrp" $SprokGrp[1]`) 
+			{ addAttr -ln NameOfGearGrp -dt "string" $SprokGrp[1];}
+		       setAttr -l 1 -k 0 -type "string" ($SprokGrp[1] + ".NameOfGearGrp") $SprokGrp[0];
+
+		if (!`attributeExists "Teeth" $SprokGrp[1]`) 
+			{ addAttr -ln Teeth -at short $SprokGrp[1];}
+		       setAttr -l 1 -k 0 -cb 1 ($SprokGrp[1] + ".Teeth") $nT;
+
+		if (!`attributeExists "Type" $SprokGrp[1]`) 
+			{ addAttr -ln Type -dt "string" $SprokGrp[1];}
+		       setAttr -l 1 -k 0 -type "string" ($SprokGrp[1] + ".Type") $CHType[$ID];
+
+		if (!`attributeExists "Pitch" $SprokGrp[1]`) 
+			{ addAttr -ln Pitch -at double $SprokGrp[1];}
+		       setAttr -l 1 -k 0 ($SprokGrp[1] + ".Pitch") $P;
+			   
+		if (!`attributeExists "PCD" $SprokGrp[1]`) 
+			{ addAttr -ln PCD -at double $SprokGrp[1];}
+		       setAttr -l 1 -k 0 ($SprokGrp[1] + ".PCD") $PCD;
+
+		if (!`attributeExists "Sprocket_No_" $SprokGrp[1]`)
+			{ addAttr -ln Sprocket_No_ -at short $SprokGrp[1];}
+		      setAttr -l 1 -k 0 ($SprokGrp[1] + ".Sprocket_No_") $e;
+
+		if (!`attributeExists "Grp_No_" $SprokGrp[1]`)
+			{ addAttr -ln Grp_No_ -at short $SprokGrp[1];}
+		      setAttr -l 1 -k 0 ($SprokGrp[1] + ".Grp_No_") $E;
+
+		float $C = `floatField -q -v SprocketFloatField_22`;
+		float $Pi = (22.0 /7.0);
+		
+		int $NT1, $NT2;
+		
+		$NT1 = $CHTeeth[$a]; 
+		$NT2 = $CHTeeth[$a+1]; 
+		
+		print ("Target Center Distance is " + $C + "\n");
+		print ("$NT1 is " + $NT1 + "\n");
+		print ("$NT2 is " + $NT2 + "\n");
+		print ("$Pi is " + $Pi + "\n");
+	   
+		if ($a == 1)
+			{
+				float $Length =  (($NT1 + $NT2) / 2.0) + (2 * $C/$P) + (($P/$C) * `pow (($NT2 - $NT1)/($Pi*2)) 2`);
+				float $NoOfPitches = `ceil $Length`;
+				print ( "Chain Length in pitches is " + $Length + "\n");
+				print ("No of Pitches is set to " + $NoOfPitches + "\n");
+			
+				if (($NoOfPitches % 2) != 0)
+					{
+						$NoOfPitches = $NoOfPitches + 1;
+						print ("No of Pitches is now set to " + $NoOfPitches + "\n");
+					}
+
+				float $A = (2 * $NoOfPitches) - $NT1 - $NT2;
+				float $B = sqrt ((` pow ((2 * $NoOfPitches) - $NT1 - $NT2) 2`) - (($Pi/3.88) * `pow ($NT1 - $NT2) 2`));
+				float $Cd = ($P/8) * ($A + $B);
+				
+					$Cd = `trunc($Cd * 100)` * 0.01;
+					print ("Exact Center Distance is " + $Cd + "\n");
+					
+					move -r 0 $Cd 0 $SprokGrp[1];
+	
+					if (!`attributeExists "ChainLength" $SprokGrp[0]`)
+						{ addAttr -ln ChainLength -at double $SprokGrp[0];}
+					      setAttr -l 1 -k 0 ($SprokGrp[0] + ".ChainLength") $NoOfPitches;
+
+					if (!`attributeExists "CenterDistance" $SprokGrp[0]`)
+						{ addAttr -ln CenterDistance -at double $SprokGrp[0];}
+					      setAttr -l 1 -k 0 ($SprokGrp[0] + ".CenterDistance") $Cd;
+					
+			}
+			
+		if ($a == 2)
+			{
+				setAttr ($SprokGrp[1] + ".visibility") 0;
+			}
+			
+			
+			connectAttr -f ($SprokGrp[0] + ".Sprocket_No" + ($a+1) + "_Rotate") ($SprokGrp[2] + ".rx") ;
+			
+	}	
+	
+		select -r -hi $SprokGrp[0];
+		$List = `ls -tr -sl`;
+	
+		 select -r $SprokGrp[0];
+			scale $DVYUnit $DVYUnit $DVYUnit;
+			
+		string $DAttrA[] = {".tx", ".ty", ".tz", ".rx", ".ry", ".rz", ".sx", ".sy", ".sz"};
+			for ($each in $List)
+				{
+					for ($Att in $DAttrA) {setAttr -l true -k false ($each + $Att);}
+				}
+				
+				setAttr -l 0 -cb 1 ($SPName + "Sprocket_GrpN_2.ty");
+				
+		if (`radioButtonGrp -q -sl IdlerSprocketRadioButton` > 1)
+			{
+				setAttr -l 0 -cb 1 ($SPName + "Sprocket_GrpN_3.ty");
+				setAttr -l 0 -cb 1 ($SPName + "Sprocket_GrpN_3.tz");
+			}
+			
+			
+//			makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+			
+}
