@@ -65,6 +65,9 @@ class Category(models.Model):
 from django import forms
 from django.contrib.auth.models import User
 
+@models.permalink
+def get_absolute_url(self):
+    return ('mainsignup', [str(self.id)])
 
 
 class ContactForms(forms.Form):

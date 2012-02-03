@@ -33,7 +33,6 @@ def signup(request):
 
 
 
-
 def gateway(request):
     # Opens up the main web page.
     t = get_template(r'login.html')

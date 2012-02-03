@@ -5,6 +5,7 @@
         <title>Finals Department - Art Test</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
         <link rel="stylesheet" href="http://refinedcg.com/dev/hsf/style/main.css"/>
+        {% load url from future %}
     </head>
 
 
@@ -22,12 +23,15 @@
 					<P id="hsfields">Password: <input name="password" type="password" size="20" maxlength="50" required="required" /></P>
 				</fieldset>
 				<p><input name="submit" type="submit" /> </p>
+				<INPUT TYPE="button" VALUE="Sign Up" onClick="{% url mainsignup %}">
 			</form>
-            <form action="/signup/" method='post'>
-            	<input name="new_user" type="submit" onClick="/signup/" value="SIGN UP">
-            </form>
+
 	</div>
 <!--
+	            <form action="/signup/" method='post'>
+            	<input name="new_user" type="submit" onClick="/signup/" value="SIGN UP">
+            </form>
+	
 Discipline: <input name="disc" type="text" size="20" maxlength="50" /><br />
 Current Class: <input name="classID" type="text" size="20" maxlength="50" /><br />
 <input name="classID" type="text" size="20" maxlength="50" /><br />

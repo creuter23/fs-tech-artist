@@ -1,16 +1,22 @@
 from django.conf.urls.defaults import patterns, include, url
 import art_test.views as views
+from django.core.urlresolvers import reverse
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
 admin.autodiscover()
+@models.permalink
+def get_absolute_url(self):
+    return ('mainsignup', [str(self.id)])
 
 urlpatterns = patterns('',
     (r'^$', views.gateway),
     (r'^bad_gateway/$', views.bad_gateway),
     (r'^user_access/$', views.login),
     (r'^apply/$', views.apply),   
-    (r'^signup/$', views.signup),
+    #(r'^signup/$', views.signup),
+    #url(r'^signup/', views.signup, name="usersignup"),
+    url(r"^signup/$", views.signup, name='mainsignup'),
     (r'^user_check/$', views.user_check),
     # Examples:
     # url(r'^$', 'art_test.views.home', name='home'),
