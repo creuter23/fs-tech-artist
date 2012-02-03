@@ -51,18 +51,18 @@ cmds.connectDynamic(part, f=radial_drop[0])
 #Create Partilce Mist from the Particle Tool
 mist_part_1 = cmds.particle(n='mist', c=0)
 mist_part_2 = cmds.particle(n='mist1', c=0)
-cmds.select('mist')
+cmds.select(mist_part_1[0])
 cmds.connectDynamic(mist_part_1[0], em=emit[0])
-cmds.select('mist1')
-cmds.connectDynamic('mist1', em=emit[0])
+cmds.select(mist_part_2[0])
+cmds.connectDynamic(mist_part_2[0], em=emit[0])
 
 #Add gravityField1 and radialField1 to mist and mist1 through dynamicRelationship editor
-cmds.select('mist')
-cmds.connectDynamic('mist', f='gravityField1')
-cmds.connectDynamic('mist', f='radialField1')
-cmds.select('mist1')
-cmds.connectDynamic('mist1', f='gravityField1')
-cmds.connectDynamic('mist1', f='radialField1')
+cmds.select(mist_part_1[0])
+cmds.connectDynamic(mist_part_1[0], f='gravityField1')
+cmds.connectDynamic(mist_part_1[0], f='radialField1')
+cmds.select(mist_part_2[0])
+cmds.connectDynamic(mist_part_2[0], f='gravityField1')
+cmds.connectDynamic(mist_part_2[0], f='radialField1')
 
 #Add color (rgbPP) to the particles.
 cmds.select(part)
@@ -78,3 +78,52 @@ part_rgbPO_attrs = {'colorRed':True, 'colorGreen':True, 'colorBlue':True, 'parti
 
 for attr, value in part_rgbPO_attrs.items():
     cmds.setAttr('%s.%s' %(part[1], attr), value)
+
+#Change the color to blue with the rgbPO attr
+part_rgbPO_attrs = {'colorRed':0.2, 'colorGreen':0.5, 'colorBlue':1.0, 'particleRenderType':0,}
+
+for attr, value in part_rgbPO_attrs.items():
+    cmds.setAttr('%s.%s' %(part[1], attr), value)
+    
+#Add and change the rgbPO color of the mist particles
+cmds.select(mist_part_1)
+
+cmds.addAttr(mist_part_1[1], internalSet=True, ln="colorRed", dv=0.0, at="double", keyable=True )
+
+cmds.addAttr(mist_part_1[1], internalSet=True, ln="colorGreen", dv=0.0, at="double", keyable=True )
+
+cmds.addAttr(mist_part_1[1], internalSet=True, ln="colorBlue", dv=0.0, at="double", keyable=True )
+
+
+part_rgbPO_attrs = {'colorRed':True, 'colorGreen':True, 'colorBlue':True, 'particleRenderType':0,}
+
+for attr, value in part_rgbPO_attrs.items():
+    cmds.setAttr('%s.%s' %(mist_part_1[1], attr), value)
+
+#Change the color to blue with the rgbPO attr
+part_rgbPO_attrs = {'colorRed':0.2, 'colorGreen':0.5, 'colorBlue':1.0, 'particleRenderType':0,}
+
+for attr, value in part_rgbPO_attrs.items():
+    cmds.setAttr('%s.%s' %(mist_part_1[1], attr), value)
+    
+#Add and change the rgbPO color of the mist1 particles
+cmds.select(mist_part_2)
+
+cmds.addAttr(mist_part_2[1], internalSet=True, ln="colorRed", dv=0.0, at="double", keyable=True )
+
+cmds.addAttr(mist_part_2[1], internalSet=True, ln="colorGreen", dv=0.0, at="double", keyable=True )
+
+cmds.addAttr(mist_part_2[1], internalSet=True, ln="colorBlue", dv=0.0, at="double", keyable=True )
+
+
+part_rgbPO_attrs = {'colorRed':True, 'colorGreen':True, 'colorBlue':True, 'particleRenderType':0,}
+
+for attr, value in part_rgbPO_attrs.items():
+    cmds.setAttr('%s.%s' %(mist_part_2[1], attr), value)
+
+#Change the color to blue with the rgbPO attr
+part_rgbPO_attrs = {'colorRed':0.2, 'colorGreen':0.5, 'colorBlue':1.0, 'particleRenderType':0,}
+
+for attr, value in part_rgbPO_attrs.items():
+    cmds.setAttr('%s.%s' %(mist_part_2[1], attr), value)
+    
