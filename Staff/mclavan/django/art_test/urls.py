@@ -5,9 +5,6 @@ from django.core.urlresolvers import reverse
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
 admin.autodiscover()
-@models.permalink
-def get_absolute_url(self):
-    return ('mainsignup', [str(self.id)])
 
 urlpatterns = patterns('',
     (r'^$', views.gateway),
