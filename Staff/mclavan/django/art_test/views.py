@@ -146,10 +146,7 @@ def user_check(request):
         if not class_frm:
             errors.append('Missing class ID.')            
     # Check for student number in the database
-
-
-        
-        
+      
     if not errors:
         # Add user to the database
         new_student = Student(name=name_frm ,username=username_form ,password=password_frm ,email=email_frm ,
@@ -161,15 +158,7 @@ def user_check(request):
         for error in errors:
             error_line += '%s<br>' % error 
         return HttpResponse(error_line)
-    
-    
-    
-    
-    
-    
-    
-    
-    
+        
 def index(request):
     return render_to_response('index.html', {
         'categories': Category.objects.all(),
@@ -188,3 +177,13 @@ def view_category(request, slug):
         'posts': Blog.objects.filter(category=category)[:5]
     })
 
+from django.core.mail import send_mail
+
+
+
+def art_test(request):
+    
+    send_mail('Subject here', 'Here is the message.', 'from@example.com',
+        ['mclavan@fullsail.com'], fail_silently=False)
+    return HttpResponse('Email Sent.')
+    

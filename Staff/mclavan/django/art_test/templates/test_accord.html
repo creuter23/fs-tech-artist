@@ -1,0 +1,51 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:spry="http://ns.adobe.com/spry">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>Untitled Document</title>
+<script src="SpryAssets/SpryTabbedPanels.js" type="text/javascript"></script>
+<script src="SpryAssets/SpryCollapsiblePanel.js" type="text/javascript"></script>
+<script src="SpryAssets/SpryData.js" type="text/javascript"></script>
+<script src="SpryAssets/SpryHTMLDataSet.js" type="text/javascript"></script>
+<link href="SpryAssets/SpryTabbedPanels.css" rel="stylesheet" type="text/css" />
+<link href="SpryAssets/SpryCollapsiblePanel.css" rel="stylesheet" type="text/css" />
+<link href="SpryAssets/SpryStackedContainers.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript">
+var ds1 = new Spry.Data.HTMLDataSet("https://docs.google.com/document/pub?id=1B795yODauVJIh-la1rxlXr2wjuxJ5cGnocpUVJkdxoE", "contents", {sortOnLoad: "column0", sortOrderOnLoad: "ascending"});
+</script>
+</head>
+
+<body>
+<div id="TabbedPanels1" class="TabbedPanels">
+  <ul class="TabbedPanelsTabGroup">
+    <li class="TabbedPanelsTab" tabindex="0">Tab 1</li>
+    <li class="TabbedPanelsTab" tabindex="0">Tab 2</li>
+  </ul>
+  <div class="TabbedPanelsContentGroup">
+    <div class="TabbedPanelsContent">Content 1
+    	<div id="CollapsiblePanel1" class="CollapsiblePanel">
+    	  <div class="CollapsiblePanelTab" tabindex="0">Tab</div>
+    	  <div class="CollapsiblePanelContent">Content</div>
+  	  </div>
+      <div id="CollapsiblePanel2" class="CollapsiblePanel">
+          <div class="CollapsiblePanelTab" tabindex="0">Tab</div>
+          <div class="CollapsiblePanelContent">Content</div>
+      </div>
+    </div>
+    <div class="TabbedPanelsContent">Content 2</div>
+  </div>
+</div>
+<div id='testData' class='testDataCss'>
+  <div spry:region="ds1" class="StackedContainers">
+    <div spry:repeat="ds1" class="RowContainer">
+      <div class="RowColumn">{column0}</div>
+    </div>
+  </div>
+</div>
+<script type="text/javascript">
+var TabbedPanels1 = new Spry.Widget.TabbedPanels("TabbedPanels1");
+var CollapsiblePanel1 = new Spry.Widget.CollapsiblePanel("CollapsiblePanel1");
+var CollapsiblePanel2 = new Spry.Widget.CollapsiblePanel("CollapsiblePanel2", {contentIsOpen:false});
+</script>
+</body>
+</html>

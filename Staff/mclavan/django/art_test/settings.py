@@ -141,6 +141,14 @@ INSTALLED_APPS = (
     'django.contrib.admindocs',
 )
 
+# Email System
+EMAIL_HOST = 'smtp.webfaction.com'
+EMAIL_HOST_USER = 'mclavan'
+EMAIL_HOST_PASSWORD = 'ttgg913' # my mailbox password
+DEFAULT_FROM_EMAIL = 'support@fs-tag.com'
+SERVER_EMAIL = 'support@fs-tag.com'
+# EMAIL_PORT = 587
+
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
 # the site admins on every HTTP 500 error.
