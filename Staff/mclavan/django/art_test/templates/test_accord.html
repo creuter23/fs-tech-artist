@@ -1,0 +1,144 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>Untitled Document</title>
+<script src="SpryAssets/SpryTabbedPanels.js" type="text/javascript"></script>
+<script src="SpryAssets/SpryCollapsiblePanel.js" type="text/javascript"></script>
+<link href="SpryAssets/SpryTabbedPanels.css" rel="stylesheet" type="text/css" />
+<link href="SpryAssets/SpryCollapsiblePanel.css" rel="stylesheet" type="text/css" />
+<style type="text/css">
+#CollapsiblePanel1 .CollapsiblePanelTab strong {
+	font-size: .7;
+}
+.CollapsiblePanelTabSub {
+	background-color: #999;
+}
+.FinalsHeader {
+	font-family: Verdana, Geneva, sans-serif;
+	background-color: #333;
+	color: #FFF;
+	border-color: #333;
+}
+</style>
+</head>
+
+<body>
+<table width="100%" border="0">
+  <tr bgcolor="#333333">
+    <td width="52%" class="FinalsHeader">Finals Department</td>
+    <td width="12%" class="FinalsHeader">Student</td>
+    <td width="36%" class="FinalsHeader">Michael Clavan</td>
+  </tr>
+</table>
+<div id="CollapsiblePanel1" class="CollapsiblePanel">
+  <div class="CollapsiblePanelTab" tabindex="0">Art Test Application</div>
+<div class="CollapsiblePanelContent">
+<div id="TabbedPanels1" class="TabbedPanels">
+          <ul class="TabbedPanelsTabGroup">
+            <li class="TabbedPanelsTab" tabindex="0">Animation</li>
+            <li class="TabbedPanelsTab" tabindex="0">Character Modeling</li>
+              <li class="TabbedPanelsTab" tabindex="0">Compositing</li>
+              <li class="TabbedPanelsTab" tabindex="0">Enviroments</li>
+                    <li class="TabbedPanelsTab" tabindex="0">Vehicles</li>
+                    <li class="TabbedPanelsTab" tabindex="0">Setup</li>
+                    <li class="TabbedPanelsTab" tabindex="0">Shading and Lighting</li>    
+                    <li class="TabbedPanelsTab" tabindex="0">Visual FX</li>                    
+          </ul>
+              <div class="TabbedPanelsContentGroup">
+                    <div class="TabbedPanelsContent">Animation <br />
+                    <form action="/user_access/" method="post">
+                        <input type="submit" value="Apply">
+                  </form>
+            
+                </div>
+                <div class="TabbedPanelsContent">
+                  <p>Character Modeling </p>
+                  <p>Summary:<br />
+                  </p>
+                  <p>&nbsp;</p>
+                  <form action="/user_access/" method="post">
+                      <input type="submit" value="Apply">
+                  </form>
+                </div>
+                <div class="TabbedPanelsContent">Compositing <br />
+                  <form action="/user_access/" method="post">
+                  		<!-- Hidden Fields maybe able to be placed here for Studio Arts. -->
+                        <input type="submit" value="Apply">
+                  </form>    	
+                </div>
+                <div class="TabbedPanelsContent">Enviroments</div>
+                <div class="TabbedPanelsContent">Vehicles</div>
+                <div class="TabbedPanelsContent">Setup</div>
+                <div class="TabbedPanelsContent">Shading and Lighting</div>
+                <div class="TabbedPanelsContent">Visual FX</div>    
+            
+        </div>
+	</div>
+</div>
+
+<div id="CollapsiblePanel2" class="CollapsiblePanel">
+  <div class="CollapsiblePanelTab" tabindex="0">Current Art Tests</div>
+  <!-- 
+  {% for current in current_tests %}
+      <div id={{ current.id }} class="CollapsiblePanel">
+        <div class="CollapsiblePanelTab" tabindex="0">{{ current.dis }} - Attempt #{{ current.attempt }}1 - {{ current.date }} Session</div>
+      <div class="CollapsiblePanelContent"Notes <br />Attempt #{{ current.attempt }} - {{ current.date }} Session</div>
+      </div>  
+  {% end loop %}
+  -->
+      <div id="CollapsiblePanelSubA" class="CollapsiblePanel">
+        <div class="CollapsiblePanelTab" tabindex="0">Enviroments - Attempt #1 - Janurary Session</div>
+      <div class="CollapsiblePanelContent>"Notes <br />Attempt #1 - Janurary Session</div>
+  </div>
+      
+  <div class="CollapsiblePanelContent"></div>
+</div>
+<div id="CollapsiblePanel3" class="CollapsiblePanel">
+  <div class="CollapsiblePanelTab" tabindex="0">Previous Art Test</div>
+  <div class="CollapsiblePanelContent">
+      <div id="CollapsiblePanelSubB" class="CollapsiblePanel">
+        <div class="CollapsiblePanelTab" tabindex="0">Character Modeling - Attempt #1 - November Session</div>
+      <div class="CollapsiblePanelContent">Notes <br />
+        Attempt #1 - November Session</div>
+      </div>
+      
+<div id="CollapsiblePanelSubC" class="CollapsiblePanel">
+        <div class="CollapsiblePanelTab" tabindex="0">Character Modeling - Attempt #2 - December Session</div>
+      <div class="CollapsiblePanelContent">Notes <br />Attempt #2 - December Session</div>
+      </div>        
+  </div>
+</div>
+
+<!--
+    <div id="CollapsiblePanel1" class="CollapsiblePanel">
+    <h2>Michael Clavan's - Art Test History </h2>
+    <div class="CollapsiblePanelTab" tabindex="0"> <strong>Current Art Test</strong>    </div>
+      <div class="CollapsiblePanelContent"></div>
+    </div>
+    <div class="CollapsiblePanelTabSub" tabindex="0">Character Modeling - 1st Attempt - Janurary</div>
+      <div class="CollapsiblePanelContent">Break down, Information when they signed up and how much time they have to turn-in their art test project.  Also this could be a part where they upload there final turn-in,  Maybe they can track critiques and progression here as well.</div>
+    </div>
+  <div id="CollapsiblePanel2" class="CollapsiblePanel">
+      <div class="CollapsiblePanelTab" tabindex="0">Prior Test</div>
+      <div class="CollapsiblePanelContent">Content</div>
+  </div>
+ -->
+ 
+<script type="text/javascript">
+// Tabs
+var TabbedPanels1 = new Spry.Widget.TabbedPanels("TabbedPanels1");
+// Cat Collapsible
+var CollapsiblePanel1 = new Spry.Widget.CollapsiblePanel("CollapsiblePanel1");
+// Current Art Test
+var CollapsiblePanel2 = new Spry.Widget.CollapsiblePanel("CollapsiblePanel2", {contentIsOpen:false});
+// Privious Art Test
+var CollapsiblePanel3 = new Spry.Widget.CollapsiblePanel("CollapsiblePanel3", {contentIsOpen:false});
+var CollapsiblePanelCurA = new Spry.Widget.CollapsiblePanel("CollapsiblePanelSubA");
+var CollapsiblePanelCubB = new Spry.Widget.CollapsiblePanel("CollapsiblePanelSubB");
+var CollapsiblePanelCubC = new Spry.Widget.CollapsiblePanel("CollapsiblePanelSubC");
+
+
+</script>
+</body>
+</html>

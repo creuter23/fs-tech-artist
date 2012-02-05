@@ -23,6 +23,7 @@ urlpatterns = patterns('',
     url(r"^signup/$", views.signup, name='mainsignup'),
     (r'^user_check/$', views.user_check),
     # Examples:
+    (r'^art_test/$', views.art_test),
     # url(r'^$', 'art_test.views.home', name='home'),
     # url(r'^art_test/', include('art_test.foo.urls')),
     (r'^$', 'views.index'),
