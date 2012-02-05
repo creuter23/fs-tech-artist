@@ -13,6 +13,7 @@ from django.template import Template, Context
 
 # Form based
 from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
 
 # Database access
 from users.models import Student, Disc, Category
@@ -182,8 +183,93 @@ from django.core.mail import send_mail
 
 
 def art_test(request):
+    student_name = 'Michael Clavan'
+    student_id = 12341234
+    student_email = 'mclavan@fullsail.com'
+    student_class = 'RBA'
+    test_type = 'Modeling'
+    art_director = 'hseewald@fullsail.com'
+    course_director = 'hseewald@fullsail.com'
+    message1 = '''%s has signed up for the %s art test.\n
+    Here is his other vitals:
+    Student Name: \tNew Art%s\n
+    Student Number:\t%s\n
+    Student Email:\t%s\n
+    Current Class:\t%s\n''' % (student_name, test_type, student_name, student_id, student_email, student_class)
     
-    send_mail('Subject here', 'Here is the message.', 'from@example.com',
-        ['mclavan@fullsail.com'], fail_silently=False)
-    return HttpResponse('Email Sent.')
+    message2 = '''<h1>New Art Test Submittion. </h1>
+    <h3>%s has signed up for the %s art test.\n
+  Here is there other vitals:
+
+</h3>
+<table width="324" border="1">
+  <tr>
+    <td width="121">Student Name:</td>
+    <td width="187" align="left">%s</td>
+  </tr>
+  <tr>
+    <td>Student Number:</td>
+    <td align="left">%s</td>
+  </tr>
+  <tr>
+    <td>Student Email:</td>
+    <td align="left">%s</td>
+  </tr>
+  <tr>
+    <td>Current Class:</td>
+    <td align="left">%s</td>
+  </tr>  
+</table>''' % (student_name, test_type, student_name, student_id, student_email, student_class)
+    
+    message3 = '''<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>Untitled Document</title>
+</head>
+
+<body>
+<h1>New Art Test Submittion. </h1>
+<h3>%s has signed up for the %s art test.\n
+  Here is there other vitals:
+
+</h3>
+<table width="324" border="1">
+  <tr>
+    <td width="121">Student Name:</td>
+    <td width="187" align="left">%s</td>
+  </tr>
+  <tr>
+    <td>Student Number:</td>
+    <td align="left">%s</td>
+  </tr>
+  <tr>
+    <td>Student Email:</td>
+    <td align="left">%s</td>
+  </tr>
+  <tr>
+    <td>Current Class:</td>
+    <td align="left">%s</td>
+  </tr>  
+</table>
+    
+   
+</body>
+</html>''' % (student_name, test_type, student_name, student_id, student_email, student_class)   
+    '''
+    send_mail('%s Art Test - Sign Up' % test_type, message, student_email,
+        [art_director], fail_silently=False)
+    
+    '''
+    
+    
+    subject, from_email, to = '%s Art Test - Sign Up' % test_type, student_email, art_director
+    text_content = message1
+    html_content = message2
+    msg = EmailMultiAlternatives(subject, text_content, from_email, [to])
+    msg.attach_alternative(html_content, "text/html")
+    msg.send()
+    
+    return HttpResponse('Email Sent.\nBase Info\n%s' % message2)
+    
     

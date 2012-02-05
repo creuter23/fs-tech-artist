@@ -42,6 +42,7 @@
 	cursor: pointer;
 	-moz-user-select: none;
 	-khtml-user-select: none;
+	font-size: 2em;
 }
 
 /* This is the selector for a CollapsiblePanel's Content area. It's important to note that
@@ -82,7 +83,7 @@
  */
 
 .CollapsiblePanelClosed .CollapsiblePanelTab {
- /* background-color: #EFEFEF */
+	font-size: 1.5em; /* background-color: #EFEFEF */
 }
 
 /* This is an example of how to change the appearance of the panel tab as the

@@ -143,10 +143,10 @@ INSTALLED_APPS = (
 
 # Email System
 EMAIL_HOST = 'smtp.webfaction.com'
-EMAIL_HOST_USER = 'mclavan'
+EMAIL_HOST_USER = 'fs_tag'
 EMAIL_HOST_PASSWORD = 'ttgg913' # my mailbox password
-DEFAULT_FROM_EMAIL = 'support@fs-tag.com'
-SERVER_EMAIL = 'support@fs-tag.com'
+DEFAULT_FROM_EMAIL = 'art_test@fs-tag.com'
+SERVER_EMAIL = 'art_test@fs-tag.com'
 # EMAIL_PORT = 587
 
 # A sample logging configuration. The only tangible logging
