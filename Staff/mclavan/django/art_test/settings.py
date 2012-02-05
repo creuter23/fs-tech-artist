@@ -3,7 +3,7 @@
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
-AUTH_PROFILE_MODULE = "account.UserProfile"
+AUTH_PROFILE_MODULE = "users.Student"
 
 ADMINS = (
     # ('Your Name', 'your_email@example.com'),

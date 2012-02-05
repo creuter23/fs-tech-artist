@@ -17,7 +17,7 @@ from django.core.mail import send_mail
 # Database access
 from users.models import Student, Disc, Category
 # 
-
+from django.contrib import auth
 # Import form from form.py
 from form import SignupForm
 
@@ -26,12 +26,33 @@ def signup(request):
         form = SignupForm(data=request.POST)
         if form.is_valid():
             new_user = form.save()
-            return HttpResponseRedirect("/vfx/")
+            return HttpResponseRedirect("/accounts/profile/")
     else:
         form = SignupForm()
     return render_to_response('signup.html', { 'form': form })
+# Load Registration stuff
+from django import forms as forms
+from django.http import HttpResponseRedirect
+from django.shortcuts import render_to_response
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.decorators import login_required
+from django.template import loader, Context
+from django.contrib.auth.models import User
 
 
+def register(request):
+    form = UserCreationForm()
+    if request.method == 'POST':
+        data = request.POST.copy()
+        errors = form.get_validation_errors(data)
+        if not errors:
+            new_user = form.save(data)
+            return HttpResponseRedirect("/art_test/")
+    else:
+        data, errors = {}, {}
+    return render_to_response("registration/register.html", {
+        'form' : forms.FormWrapper(form, data, errors)
+    })
 
 def gateway(request):
     # Opens up the main web page.
@@ -46,9 +67,33 @@ def bad_gateway(request):
     html = t.render(Context({"valid_login": True}))
     return HttpResponse(html)
    
+
+#from django.views.decorators.csrf import csrf_protect
+#from django.utils.functional import allow_lazy
+#from django.template import resolve_variable
+@login_required
+def profile(request):
+    ''' default after login '''
+    #user = resolve_variable('user', user.username)
+    userdata = {'username':request.user, 'is':request.user.is_authenticated(), 'email':request.user.email, 'profile':request.user.get_profile()}
+    print request.user, request.user.is_authenticated()
+    print type(request)
+    if request.user.is_authenticated():
+        t = get_template(r'registration/profile.html')
+        #t = Template("/registration/profile.html")
+        c = Context({'userdata':userdata, 'all_data':userdata})
+        html =  t.render(c)
+        return HttpResponse(html)
+        #return render_to_response('registration/profile.html', { 'user.username': 'user.username'})
+
+    else:
+        #print('not auth')
+        return HttpResponseRedirect("/login/")
+
+'''
 def login(request):
     
-    '''
+
     if request.method != 'POST':
         raise Http404('Only POSTs are allowed')
     try:
@@ -58,7 +103,7 @@ def login(request):
             return HttpResponseRedirect('/you-are-logged-in/')
     except Member.DoesNotExist:
         return HttpResponse("Your username and password didn't match.")
-    '''
+
     # c = {}
     # c.update(csrf(request))
     if request.method != 'POST':
@@ -89,14 +134,36 @@ def login(request):
         # return redirect(bad_gateway)
     # return render_to_response("Your username and password didn't match.", c)
     
-
+'''
 def apply(request):
     # Opens up the main web page.
     t = get_template(r'apply.html')
     html = t.render(Context())
     return HttpResponse(html)
 
+def login(request):
+    username = request.POST['username']
+    password = request.POST['password']
+    user = auth.authenticate(username=username, password=password)
+    if user is not None and user.is_active:
+        # Correct password, and the user is marked "active"
+        auth.login(request, user)
+        m = Member.objects.get(username__exact=request.POST['username'])
+        request.session['member_id'] = m.id
+        # Redirect to a success page.
+        return HttpResponseRedirect("/registration/profile/", user)
+    else:
+        # Show an error page
+        return HttpResponseRedirect("/bad_gateway/")
 
+
+
+
+
+def logout(request):
+    auth.logout(request)
+    # Redirect to a success page.
+    return HttpResponseRedirect("/account/loggedout/")
 ''' 
 def signup(request):
     if request.method != 'POST':

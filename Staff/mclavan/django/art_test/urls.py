@@ -1,7 +1,9 @@
 from django.conf.urls.defaults import patterns, include, url
 import art_test.views as views
 from django.core.urlresolvers import reverse
-
+from django.contrib.auth.views import login, logout
+from django.contrib.auth.models import User
+from users.models import Student, Disc, Category
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
 admin.autodiscover()
@@ -10,7 +12,12 @@ urlpatterns = patterns('',
     (r'^$', views.gateway),
     (r'^bad_gateway/$', views.bad_gateway),
     (r'^user_access/$', views.login),
-    (r'^apply/$', views.apply),   
+    (r'^apply/$', views.apply),
+    #(r'^accounts/', include('users.accounts.urls')),
+    (r'^login/$', login),
+    (r'^accounts/login/$', login),
+    (r'^accounts/logout/$', logout),
+    (r'^accounts/profile/$', views.profile),
     #(r'^signup/$', views.signup),
     #url(r'^signup/', views.signup, name="usersignup"),
     url(r"^signup/$", views.signup, name='mainsignup'),

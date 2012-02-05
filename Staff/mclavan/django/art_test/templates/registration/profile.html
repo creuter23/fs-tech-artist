@@ -1,0 +1,13 @@
+{% if userdata.is %}
+<p>Welcome, {{ userdata.username }}. Thanks for logging in.</p>
+Thanks for logging in!
+User data: {{ userdata.username }}<br>
+<ul>
+{% for i, item in all_data.items %}
+	<li>{{ i}}: {{ item }}</li>
+{% endfor %}
+</ul>
+{% else %}
+Please log in.
+<p>Welcome, {{ userdata.username }}. Thanks for logging in.</p>
+{% endif %}

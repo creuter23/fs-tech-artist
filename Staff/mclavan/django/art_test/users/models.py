@@ -5,10 +5,6 @@ from django.db.models import permalink
 # Create your models here.
 class Student(models.Model):
     user = models.ForeignKey(User, unique=True)
-    name = models.CharField(max_length=50)
-    user_name = models.CharField(max_length=25)
-    password = models.CharField(max_length=25)
-    email = models.EmailField(max_length=100)
     disc = models.CharField(null=True, max_length=18)
     classid = models.CharField(max_length=4)
     student_id = models.IntegerField(10)
@@ -17,6 +13,27 @@ class Student(models.Model):
     def __unicode__(self):
         return '%s: %s %s' %(self.name, self.user_name, self.email)
  
+
+
+
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        Student.objects.create(user=instance)
+
+'''
+#Not used yet...
+class UserProfile(models.Model):
+    # This field is required.
+    user = models.OneToOneField(User)
+    disc = models.CharField(null=True, max_length=18)
+    classid = models.CharField(max_length=4)
+    student_id = models.IntegerField(10)
+    comments = models.CharField(null=True, max_length=255)
+    
+    
+'''
+    
+    
 # Username: mclavan_hsdb dbPassword = FS!@#$% student table
 class Art_Test(models.Model):
     # Setting up enum type
