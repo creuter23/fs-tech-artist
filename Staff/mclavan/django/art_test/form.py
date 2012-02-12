@@ -13,10 +13,13 @@ class ContactForms(forms.Form):
 class SignupForm(forms.Form):
     username = forms.CharField(max_length=30)
     email = forms.EmailField()
+    first_name = forms.CharField(max_length=30)
+    last_name = forms.CharField(max_length=30)
     password1 = forms.CharField(max_length=30,
     widget=forms.PasswordInput(render_value=False))
     password2 = forms.CharField(max_length=30,
     widget=forms.PasswordInput(render_value=False))
+    
     
     def clean_username(self):
         try:
@@ -24,6 +27,8 @@ class SignupForm(forms.Form):
         except User.DoesNotExist:
             return self.cleaned_data['username']
         raise forms.ValidationError("This username is already in use. lease choose another.")
+    
+
     
     def clean(self):
         if 'password1' in self.cleaned_data and 'password2' in self.cleaned_data:

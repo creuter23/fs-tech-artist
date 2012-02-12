@@ -5,13 +5,15 @@ from django.db.models import permalink
 # Create your models here.
 class Student(models.Model):
     user = models.ForeignKey(User, unique=True)
+    alt_email = models.EmailField(null=True,max_length=100)
     disc = models.CharField(null=True, max_length=18)
-    classid = models.CharField(max_length=4)
+    class_id = models.CharField(max_length=4)
     student_id = models.IntegerField(10)
     comments = models.CharField(null=True, max_length=255)
+    
 
     def __unicode__(self):
-        return '%s: %s %s' %(self.name, self.user_name, self.email)
+        return 'User Name:%s %s Email:%s' %(self.user.first_name, self.user.last_name, self.user.email)
  
 
 
@@ -20,19 +22,7 @@ def create_user_profile(sender, instance, created, **kwargs):
     if created:
         Student.objects.create(user=instance)
 
-'''
-#Not used yet...
-class UserProfile(models.Model):
-    # This field is required.
-    user = models.OneToOneField(User)
-    disc = models.CharField(null=True, max_length=18)
-    classid = models.CharField(max_length=4)
-    student_id = models.IntegerField(10)
-    comments = models.CharField(null=True, max_length=255)
-    
-    
-'''
-    
+
     
 # Username: mclavan_hsdb dbPassword = FS!@#$% student table
 class Art_Test(models.Model):

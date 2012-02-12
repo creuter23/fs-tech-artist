@@ -28,6 +28,14 @@
 					{{ form.email.errors|join:", " }}
 						</span>
 					{% endif %}</p>
+					<label for="id_first_name">First Name:</label> {{ form.first_name }}
+					{% if form.password1.errors %}
+					{{ form.password1.html_error_list }}
+					{% endif %}
+					<label for="id_last_name">Last Name:</label> {{ form.last_name }}
+					{% if form.password1.errors %}
+					{{ form.password1.html_error_list }}
+					{% endif %}
 						<p><label for="id_name">Your e-mail address:</label>
 					{{ form.email }}</p>
 						<p>{% if form.password1.errors %}

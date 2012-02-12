@@ -25,11 +25,15 @@ from form import SignupForm
 def signup(request):
     if request.method == 'POST':
         form = SignupForm(data=request.POST)
+        print request.POST
         if form.is_valid():
             new_user = form.save()
             return HttpResponseRedirect("/accounts/profile/")
+        else:
+            print'NOT RIGHT'
     else:
         form = SignupForm()
+        print 'BAD ATTEMPT'
     return render_to_response('signup.html', { 'form': form })
 # Load Registration stuff
 from django import forms as forms
@@ -45,6 +49,7 @@ def register(request):
     form = UserCreationForm()
     if request.method == 'POST':
         data = request.POST.copy()
+        print data, 'what up'
         errors = form.get_validation_errors(data)
         if not errors:
             new_user = form.save(data)
@@ -76,7 +81,8 @@ def bad_gateway(request):
 def profile(request):
     ''' default after login '''
     #user = resolve_variable('user', user.username)
-    userdata = {'username':request.user, 'is':request.user.is_authenticated(), 'email':request.user.email, 'profile':request.user.get_profile()}
+    userdata = {'username':request.user, 'is':request.user.is_authenticated(), 'email':request.user.email}
+    #userdata = {'username':request.user}
     print request.user, request.user.is_authenticated()
     print type(request)
     if request.user.is_authenticated():
