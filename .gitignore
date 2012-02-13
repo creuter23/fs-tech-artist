@@ -4,3 +4,14 @@
 ehthumbs.db
 Icon?
 Thumbs.db
+*.pyc
+Staff/mclavan/django/art_test/__init__.pyc
+Staff/mclavan/django/art_test/form.pyc
+Staff/mclavan/django/art_test/search/__init__.pyc
+Staff/mclavan/django/art_test/search/admin.pyc
+Staff/mclavan/django/art_test/search/models.pyc
+Staff/mclavan/django/art_test/settings.pyc
+Staff/mclavan/django/art_test/urls.pyc
+Staff/mclavan/django/art_test/users/__init__.pyc
+Staff/mclavan/django/art_test/users/models.pyc
+Staff/mclavan/django/art_test/views.pyc
