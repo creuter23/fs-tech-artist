@@ -1,3 +1,6 @@
+#===============================================================================
+#  Imports
+#===============================================================================
 # art_test_login.html
 from django.template.loader import get_template
 from django.http import HttpResponse, HttpResponseRedirect, Http404
@@ -7,32 +10,87 @@ from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.core.context_processors import csrf
 from django.shortcuts import render_to_response, redirect
 
-
 # Accessing data from a Template
 from django.template import Template, Context
 
 # Form based
 from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
 
 # Database access
-from users.models import Student, Disc, Category
+from accounts.models import Student, Disc, Category, Art_Test, Art_Director
 # 
-
+from django.contrib import auth
 # Import form from form.py
 from form import SignupForm
 
+
+
+#===============================================================================
+#  Functions to handle main login/profile 
+#===============================================================================
+
+
+#--------------------SIGNUP----------------------------------------- 
 def signup(request):
     if request.method == 'POST':
         form = SignupForm(data=request.POST)
+        print request.POST
         if form.is_valid():
             new_user = form.save()
-            return HttpResponseRedirect("/vfx/")
+            return HttpResponseRedirect("/accounts/profile/")
+        else:
+            print'NOT RIGHT'
     else:
         form = SignupForm()
+        print 'BAD ATTEMPT'
     return render_to_response('signup.html', { 'form': form })
+#--------------------SIGNUP END--------------------------------------
 
 
 
+
+#--------------------LOGIN----------------------------------------- 
+def login(request):
+    if request.method != 'POST':
+        raise Http404('Only POSTs are allowed')
+    try:
+        m = request.POST['user_name']
+        m = Student.objects.get(username=request.POST['user_name'])
+        result = m.password == request.POST['password']
+        print m.password, request.POST['password'], result
+        if m.password == request.POST['password']:
+                request.session['student_id'] = m.student_id
+                return HttpResponseRedirect('/apply/')
+        login_correct = False
+        return HttpResponseRedirect('/bad_gateway/')
+    except:
+        login_correct = False
+        return HttpResponseRedirect('/bad_gateway/')
+        return HttpResponseRedirect('<script>')
+#--------------------LOGIN END--------------------------------------
+
+
+
+
+
+#===============================================================================
+#  ART TEST RELATED
+#===============================================================================
+
+#--------------------APPLY----------------------------------------- 
+def apply(request):
+    # Opens up the main web page.
+    t = get_template(r'apply.html')
+    html = t.render(Context())
+    return HttpResponse(html)
+
+
+
+
+#===============================================================================
+#  General Functions
+#===============================================================================
 def gateway(request):
     # Opens up the main web page.
     t = get_template(r'login.html')
@@ -45,9 +103,22 @@ def bad_gateway(request):
     t = get_template(r'login.html')
     html = t.render(Context({"valid_login": True}))
     return HttpResponse(html)
-   
-def login(request):
-    
+
+
+
+
+
+
+
+#///////////////////////////////////////////////////////////////////////////////
+#===============================================================================
+#  UNUSED -----> Delete before production
+#===============================================================================
+#\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+
+##########UNUSED###########
+    #From signup
     '''
     if request.method != 'POST':
         raise Http404('Only POSTs are allowed')
@@ -61,52 +132,11 @@ def login(request):
     '''
     # c = {}
     # c.update(csrf(request))
-    if request.method != 'POST':
-        raise Http404('Only POSTs are allowed')
-    try:
-        m = request.POST['user_name']
-        
-        
-        m = Student.objects.get(username=request.POST['user_name'])
-        
-        result = m.password == request.POST['password']
-        print m.password, request.POST['password'], result
-        if m.password == request.POST['password']:
-                request.session['student_id'] = m.student_id
-                return HttpResponseRedirect('/apply/')
-        
-        login_correct = False
-        return HttpResponseRedirect('/bad_gateway/')
-        # return redirect(bad_gateway)
-        # return HttpResponse("Please returnYour response is %s" %m)
-        
-    except:
-        login_correct = False
-        return HttpResponseRedirect('/bad_gateway/')
-        return HttpResponseRedirect('<script>')
-
-
-        # return redirect(bad_gateway)
-    # return render_to_response("Your username and password didn't match.", c)
     
-
-def apply(request):
-    # Opens up the main web page.
-    t = get_template(r'apply.html')
-    html = t.render(Context())
-    return HttpResponse(html)
-
-
-''' 
-def signup(request):
-    if request.method != 'POST':
-        raise Http404('Only POSTs are allowed')
-    t = get_template(r'signup.html')
-    html = t.render(Context())
-    return HttpResponse(html)    
+    
+    
+    
 '''
-
-
 def user_check(request):
     errors = []
     if request.method != 'POST':
@@ -163,13 +193,11 @@ def user_check(request):
         return HttpResponse(error_line)
     
     
+'''
     
     
     
-    
-    
-    
-    
+'''
 def index(request):
     return render_to_response('index.html', {
         'categories': Category.objects.all(),
@@ -188,3 +216,4 @@ def view_category(request, slug):
         'posts': Blog.objects.filter(category=category)[:5]
     })
 
+'''

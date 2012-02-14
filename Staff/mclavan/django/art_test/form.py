@@ -2,22 +2,9 @@ from django import forms
 from django.contrib.auth.models import User
 from django.forms.widgets import Input
 
-
-'''
-class ContactForms(forms.Form):
-    name = forms.CharField(max_length=50)
-    username = forms.CharField(max_length=50)
-    password = forms.CharField(widget=forms.PasswordInput)
-    email = forms.EmailField()
-<<<<<<< HEAD
-
-
-
-
-=======
-    
-'''
-
+#===============================================================================
+# Form Classes used to generate a profile linked to a user
+#===============================================================================
 class SignupForm(forms.Form):
     username = forms.CharField(max_length=30)
     email = forms.EmailField()
@@ -28,7 +15,7 @@ class SignupForm(forms.Form):
     password2 = forms.CharField(max_length=30,
     widget=forms.PasswordInput(render_value=False))
     
-    
+    #---------------------------CLEANS INPUT DATA FOR----------------------
     def clean_username(self):
         try:
             User.objects.get(username=self.cleaned_data['username'])
@@ -49,3 +36,34 @@ class SignupForm(forms.Form):
                                             email=self.cleaned_data['email'],
                                             password=self.cleaned_data['password1'])
         return new_user
+    
+    
+
+
+
+
+
+#===============================================================================
+#  Panel Review Form
+#===============================================================================
+#class Panel_Review(forms.Form):
+
+
+
+
+
+
+
+
+
+#===============================================================================
+# UNUSED ---> Delete before production
+#===============================================================================
+
+'''
+class ContactForms(forms.Form):
+    name = forms.CharField(max_length=50)
+    username = forms.CharField(max_length=50)
+    password = forms.CharField(widget=forms.PasswordInput)
+    email = forms.EmailField()
+'''

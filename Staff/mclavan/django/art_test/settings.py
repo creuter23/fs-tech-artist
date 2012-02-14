@@ -3,7 +3,7 @@
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
-AUTH_PROFILE_MODULE = "account.UserProfile"
+AUTH_PROFILE_MODULE = "accounts.UserProfile"
 
 ADMINS = (
     # ('Your Name', 'your_email@example.com'),
@@ -132,7 +132,7 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'art_test.users',
+    'art_test.accounts',
     # Uncomment the next line to enable the admin:
     'django.contrib.admin',
     'django.contrib.flatpages',
