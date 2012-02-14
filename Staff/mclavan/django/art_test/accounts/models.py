@@ -18,7 +18,7 @@ def create_user_profile(sender, instance, created, **kwargs):
 #===============================================================================
 
 
-#-----------------------STUDENT----------------------------------------- 
+#-----------------------STUDENT----yX6Ec3jN4vK6------------------------------------- 
 class Student(models.Model):
     user = models.ForeignKey(User, unique=True)  #access the built in user manager
     alt_email = models.EmailField(null=True,max_length=100) #non-fullsail.edu domain
