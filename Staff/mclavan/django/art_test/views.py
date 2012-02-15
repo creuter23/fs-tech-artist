@@ -18,13 +18,21 @@ from django.core.mail import send_mail
 from django.core.mail import EmailMultiAlternatives
 
 # Database access
-from accounts.models import Student, Disc, Category, Art_Test, Art_Director
+from accounts.models import UserProfile, Disc, Category, Art_Test
 # 
 from django.contrib import auth
 # Import form from form.py
 from form import SignupForm
 
-
+# Registration Stuff....
+# Load Registration stuff
+from django import forms as forms
+from django.http import HttpResponseRedirect
+from django.shortcuts import render_to_response
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.decorators import login_required
+from django.template import loader, Context
+from django.contrib.auth.models import User
 
 #===============================================================================
 #  Functions to handle main login/profile 
@@ -35,15 +43,20 @@ from form import SignupForm
 def signup(request):
     if request.method == 'POST':
         form = SignupForm(data=request.POST)
-        print request.POST
+        #print request.POST
         if form.is_valid():
             new_user = form.save()
+#            new_user.first_name = form.data['first_name']
+#            new_user.last_name = form.data['last_name']
+#            new_user.save()
             return HttpResponseRedirect("/accounts/profile/")
         else:
-            print'NOT RIGHT'
+            print'Form Not Valid'
+            #print(form.data['last_name'])
+            #print(dir(form))
     else:
         form = SignupForm()
-        print 'BAD ATTEMPT'
+        print 'BAD ATTEMPT, MUST BE POST'
     return render_to_response('signup.html', { 'form': form })
 #--------------------SIGNUP END--------------------------------------
 
@@ -56,7 +69,7 @@ def login(request):
         raise Http404('Only POSTs are allowed')
     try:
         m = request.POST['user_name']
-        m = Student.objects.get(username=request.POST['user_name'])
+        m = UserProfile.objects.get(username=request.POST['user_name'])
         result = m.password == request.POST['password']
         print m.password, request.POST['password'], result
         if m.password == request.POST['password']:
@@ -71,6 +84,31 @@ def login(request):
 #--------------------LOGIN END--------------------------------------
 
 
+
+#--------------------PROFILE----------------------------------------
+@login_required
+def profile(request):
+    ''' default after login '''
+    userdata = {'username':request.user, 'is':request.user.is_authenticated(), 'email':request.user.email}
+    print request.user, request.user.is_authenticated()
+    print type(request)
+    if request.user.is_authenticated():
+        t = get_template(r'registration/profile.html')
+        c = Context({'userdata':userdata, 'all_data':userdata})
+        html =  t.render(c)
+        return HttpResponse(html)
+    else:
+        return HttpResponseRedirect("/login/")
+#--------------------PROFILE END------------------------------------
+
+
+#--------------------EDIT PROFILE------------------------------------
+
+@login_required
+def edit_profile(request):
+    ''' default after login '''
+    print('DO SOMETHING WITH THIS>>>><<<')
+#--------------------EDIT PROFILE----------------------------------------
 
 
 
@@ -107,9 +145,6 @@ def bad_gateway(request):
 
 
 
-
-
-
 #///////////////////////////////////////////////////////////////////////////////
 #===============================================================================
 #  UNUSED -----> Delete before production
@@ -123,7 +158,7 @@ def bad_gateway(request):
     if request.method != 'POST':
         raise Http404('Only POSTs are allowed')
     try:
-        m = Student.objects.get(username=request.POST['username'])
+        m = UserProfile.objects.get(username=request.POST['username'])
         if m.password == request.POST['password']:
             request.session['member_id'] = m.id
             return HttpResponseRedirect('/you-are-logged-in/')
@@ -152,10 +187,10 @@ def user_check(request):
     studentID_frm = ''
     try:
         # Getting data from form.    
-        username_frm = Student.objects.get(username=username_form)
-        studentID_frm = Student.objects.get(username=studentID_form)
-    except Student.DoesNotExist:
-        print "Student doesn't current exists.  Adding student to system."
+        username_frm = UserProfile.objects.get(username=username_form)
+        studentID_frm = UserProfile.objects.get(username=studentID_form)
+    except UserProfile.DoesNotExist:
+        print "UserProfile doesn't current exists.  Adding student to system."
         
     if username_frm or studentID_frm:
         # User profile already exists.
@@ -182,7 +217,7 @@ def user_check(request):
         
     if not errors:
         # Add user to the database
-        new_student = Student(name=name_frm ,username=username_form ,password=password_frm ,email=email_frm ,
+        new_student = UserProfile(name=name_frm ,username=username_form ,password=password_frm ,email=email_frm ,
                 classid=class_frm ,student_id=studentID_form, disc='', comments='')
         new_student.save()
         return HttpResponseRedirect('/apply/')

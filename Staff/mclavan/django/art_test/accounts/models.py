@@ -1,35 +1,41 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models import permalink
-
-
-#==============================================================================
-# Runtime commands
-#==============================================================================
-#-----------------------Create User Profile-----------------------------------
-def create_user_profile(sender, instance, created, **kwargs):
-    if created:
-        Student.objects.create(user=instance)
-#-----------------------Create User Profile END--------------------------------
-
-
+from django.db.models.signals import post_save
+from django.db.models import signals
+from art_test.accounts.signals import create_profile
 #===============================================================================
 # Model classes to define database connections
 #===============================================================================
 
 
 #-----------------------STUDENT----yX6Ec3jN4vK6------------------------------------- 
-class Student(models.Model):
+class UserProfile(models.Model):
     user = models.ForeignKey(User, unique=True)  #access the built in user manager
-    alt_email = models.EmailField(null=True,max_length=100) #non-fullsail.edu domain
-    disc = models.CharField(null=True, max_length=18) #Prob need this to be a foreign key
+    alt_email = models.EmailField(null=True, blank=True, max_length=100) #non-fullsail.edu domain
+    disc = models.ForeignKey('accounts.Disc', null=True, blank=True,) #Prob need this to be a foreign key
     class_id = models.CharField(max_length=4) # The 3 letter course id such as DRC or PCC2
-    student_id = models.IntegerField(10) #The student id given from the school
-    comments = models.CharField(null=True, max_length=255) # short comment field
+    student_id = models.IntegerField(max_length=10) #The student id given from the school
+    user_level_choice = ((u's', u'Student'), (u'i', u'Instructor'), (u'a', u'Admin')) # Choice Vars for user_level
+    user_level = models.CharField(max_length=15, choices=user_level_choice) # User_Level Field
+    #picture = models.ImageField(('Picture/Avatar'), upload_to='profile_photo', blank=True) # pictures!
+    comments = models.CharField(null=True, blank=True, max_length=255) # short comment field
+    
 
     def __unicode__(self):
-        return '%s %s %s' %(self.user.first_name, self.user.last_name, self.user.email) #return first, last, email
+        return '%s %s' %(self.user.first_name, self.user.last_name) #return first, last, email
+    
+#run lambda function to create or update profile from object    
+#User.profile = property(lambda u: UserProfile.objects.get_or_create(user=u)[0])
 #-----------------------STUDENT END--------------------------------------
+
+#-----------------------Create User Profile------------------------------
+#def create_user_profile(sender, instance, created, **kwargs):
+#    if created:
+#        UserProfile.objects.create(user=instance)
+#        
+#post_save.connect(create_profile, sender=User)
+#-----------------------Create User Profile END--------------------------
 
 
 
@@ -37,62 +43,51 @@ class Student(models.Model):
 #-----------------------ART TEST----------------------------------------- 
 class Art_Test(models.Model):
     # Setting up enum type
-    student = models.ForeignKey(Student)
+    student = models.ForeignKey(UserProfile)
     ###### VARS ######
-    disc_choices = ((u'0', u'Animation'), (u'1', u'Shading and Lighting'), (u'2', u'Visual FX'), 
-             (u'3', u'Vehicle Modeling'), (u'4', u'Architectural Modeling'),
-             (u'5', u'Character Modeling'),(u'6', u'Rigging'), (u'7', u'Compositing'))
+
     status_types = ((u'p', u'passed'), (u'1', u'1'), (u'2', u'2'), (u'3', u'3'), (u'e', u'except'))
     asset_types = ((u'y', u'yes'), (u'n', u'no'))
     asses_types = ((0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5))
     #### FIELDS #####
-    disc_name = models.CharField(max_length=25, choices=disc_choices)
+    disc_name = models.ForeignKey('accounts.Disc')
     AT_status = models.CharField(max_length=5, choices=status_types)
-    asset_status = models.CharField(max_length=2, choices=asset_types)
-    assesment = models.CharField(max_length=6, choices=asses_types)
+    asset_status = models.CharField(max_length=4, choices=asset_types)
+    assesment = models.IntegerField(max_length=6, choices=asses_types)
     #art_director = models.CharField(max_length=50)
-    art_director = models.ForeignKey('accounts.Art_Director')
+    art_director = models.ForeignKey(User)
     AD_Email = models.EmailField(max_length=100)
     
     ###### OUTPUT #####
     def __unicode__(self):
-        return '%s %s:  %s' %(self.student.first_name, self.student.last_name, self.disc_name)
+        return '%s %s:  %s' %(self.student.user.first_name, self.student.user.last_name, self.disc_name)
 #-----------------------ART TEST END---------------------------------------
 
     
-
-#-----------------------ART DIRECTOR----------------------------------------- 
-class Art_Director(models.Model):
-    user = models.ForeignKey(User, unique=True)
-    discipline = models.ForeignKey('accounts.Disc')
-
-    def __unicode__(self):
-        return '%s %s' %(self.user.first_name, self.user.last_name)
-#-----------------------ART DIRECTOR END--------------------------------------
 
 
 
 #-----------------------DISCIPLINE----------------------------------------- 
 class Disc(models.Model):
-    disc_names = ((u'0', u'Animation'), (u'1', u'Shading and Lighting'), (u'2', u'Visual FX'), 
-                 (u'3', u'Vehicle Modeling'), (u'4', u'Architectural Modeling'),
-                 (u'5', u'Character Modeling'),(u'6', u'Rigging'), (u'7', u'Compositing'))
+    disc_names = ((u'Animation', u'Animation'), (u'Shading And Lighting', u'Shading and Lighting'), (u'VFX', u'Visual FX'), 
+             (u'Vehicle Modeling', u'Vehicle Modeling'), (u'Architectural Modeling', u'Architectural Modeling'),
+             (u'Character Modeling', u'Character Modeling'),(u'Rigging', u'Rigging'), (u'Compositing', u'Compositing'))
     name = models.CharField(max_length=25, choices=disc_names)
-    #conceptshare_url = models.SlugField(max_length=100, unique=True)
-    notes = models.TextField()
+    conceptshare_url = models.URLField(max_length=200)
+    #notes = models.TextField()
     updated = models.DateTimeField(db_index=True, auto_now_add=True)
-    category_choice = ((u'0', u'Fine Arts'), (u'1', u'Animation'), (u'2', u'Tech Arts'), 
-             (u'3', u'Modeling'), (u'4', u'Finals Department'),
-             (u'5', u'Character Modeling'))
-    category = models.CharField(max_length=25, choices=category_choice)
+    #    category_choice = ((u'0', u'Fine Arts'), (u'1', u'Animation'), (u'2', u'Tech Arts'), 
+    #             (u'3', u'Modeling'), (u'4', u'Finals Department'),
+    #             (u'5', u'Character Modeling'))
+    #    category = models.CharField(max_length=25, choices=category_choice)
     #category = models.ForeignKey('accounts.Category')
-    disc_director = models.ForeignKey('accounts.Art_Director')
+    #disc_director = models.ForeignKey('accounts.Art_Director')
     def __unicode__(self):
         return '%s' % self.name
 
-    @permalink
-    def get_absolute_url(self):
-        return ('view_blog_post', None, { 'slug': self.name })
+#    @permalink
+#    def get_absolute_url(self):
+#        return ('view_blog_post', None, { 'slug': self.name })
 #-----------------------DISCIPLINE END----------------------------------------
 
 
@@ -120,6 +115,29 @@ class Category(models.Model):
 #===============================================================================
 
 '''
+
+
+
+#-----------------------ART DIRECTOR----------------------------------------- 
+class Art_Director(models.Model):
+    user = models.ForeignKey(User, unique=True)
+    discipline = models.ForeignKey('accounts.Disc')
+
+    def __unicode__(self):
+        return '%s %s' %(self.user.first_name, self.user.last_name)
+#-----------------------ART DIRECTOR END--------------------------------------
+
+
+
+
+
+
+    disc_choices = ((u'ANI', u'Animation'), (u'SAL', u'Shading and Lighting'), (u'VFX', u'Visual FX'), 
+             (u'VEH', u'Vehicle Modeling'), (u'ARCH', u'Architectural Modeling'),
+             (u'CHM', u'Character Modeling'),(u'RIG', u'Rigging'), (u'COMP', u'Compositing'))
+
+
+
 from django import forms
 from django.contrib.auth.models import User
 

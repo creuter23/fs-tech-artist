@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}Edit Profile - {{ block.super }}{% endblock %}
+
+{{ block.super }}
+
+{% block maincontent %}
+
+Edit Profile for {{ user }}
+
+{% csrf_token %}
+{{ form.full_name.errors }}
+Full name:{{ form.full_name }}
+{{ form.full_address.errors }}
+Billing address:{{ profile.full_address }}
+{{ form.phone.errors }}
+Phone:{{ form.phone }}
+{{ form.email.errors }}
+Email address:
+
+{% endblock maincontent %}
