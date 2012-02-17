@@ -1,5 +1,4 @@
 <!doctype html>
-
 <html>
 	<head>
 		<title>Sign up for an account</title>
@@ -7,90 +6,77 @@
 	</head>
 	<body>
 		<h1>Sign up for an account</h1>
-		
 		<div class="key" id="mainform">
 			<form method="post" action="" id="hsfields">
-				<p id="hsfieldhead">Register for your new account</p>
+				<p id="hsfieldhead">
+					Register for your new account
+				</p>
 				<fieldset id=mainfs>
-					<legend id="hsleg">all fields are required.</legend>
-				{% if form.non_field_errors %}
-					<p><span class="error">
-				{{ form.non_field_errors|join:", " }}
-					</span></p>
-				{% endif %}
-					<p>{% if form.username.errors %}
-						<span class="error">{{ form.username.errors|join:", " }}</span>
-				{% endif %}</p>
-					<p><label for="id_username">Username:</label>
-					{{ form.username }}</p>
-						<p>{% if form.email.errors %}
-						<span class="error">
-					{{ form.email.errors|join:", " }}
-						</span>
-					{% endif %}</p>
-						<p><label for="id_name">Your e-mail address:</label>
-					{{ form.email }}</p>
-						<p>{% if form.password1.errors %}
-							<span class="error">
-				{{ form.passsword1.errors|join:", " }}
-					</span>
-				{% endif %}</p>
-					<p><label for="id_password1">Password:</label>
-				{{ form.password1 }}</p>
-					<p>{% if form.password2.errors %}
-					<span class="error">
-				{{ form.passsword2.errors|join:", " }}
-					</span>
-				{% endif %}</p>
-					<p><label for="id_password2">Password (again, to catch
-				typos): </label>
-				{{ form.password2 }}</p>
-					<p><input type="submit" value="Submit"></p>
+					<legend id="hsleg">
+						all fields are required.
+					</legend>
+					{% if form.non_field_errors %}
+					<p>
+						<span class="error"> {{ form.non_field_errors|join:", " }} </span>
+					</p>
+					{% endif %}
+					<p>
+						{% if form.username.errors %} <span class="error">{{ form.username.errors|join:", " }}</span>
+						{% endif %}
+					</p>
+					<p>
+						<label for="id_username">Username:</label>
+						{{ form.username }}
+					</p>
+					<p>
+						{% if form.username.errors %} <span class="error">{{ form.username.errors|join:", " }}</span>
+						{% endif %}
+					</p>
+					<p>
+						<label for="id_first_name">First Name:</label>
+						{{ form.first_name }}
+					</p>
+					<p>
+						{% if form.first_name.errors %} <span class="error">{{ form.first_name.errors|join:", " }}</span>
+						{% endif %}
+					</p>
+					<p>
+						<label for="id_last_name">Last Name:</label>
+						{{ form.last_name }}
+					</p>
+					<p>
+						{% if form.last_name.errors %} <span class="error">{{ form.last_name.errors|join:", " }}</span>
+						{% endif %}
+					</p>
+					<p>
+						{% if form.email.errors %} <span class="error"> {{ form.email.errors|join:", " }} </span>
+						{% endif %}
+					</p>
+					<p>
+						<label for="id_name">Your e-mail address:</label>
+						{{ form.email }}
+					</p>
+					<p>
+						{% if form.password1.errors %} <span class="error"> {{ form.passsword1.errors|join:", " }} </span>
+						{% endif %}
+					</p>
+					<p>
+						<label for="id_password1">Password:</label>
+						{{ form.password1 }}
+					</p>
+					<p>
+						{% if form.password2.errors %} <span class="error"> {{ form.passsword2.errors|join:", " }} </span>
+						{% endif %}
+					</p>
+					<p>
+						<label for="id_password2">Password (again, to catchtypos): </label>
+						{{ form.password2 }}
+					</p>
+					<p>
+						<input type="submit" value="Submit">
+					</p>
 				</fieldset>
 			</form>
 		</div>
 	</body>
 </html>
-
-
-<!--  OLD STUFF.... Remove Me
-<html>
-    <head>
-        <meta charset="utf-8"/>
-        <title>Finals Department - Art Test</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-        <link rel="stylesheet" href="http://refinedcg.com/dev/hsf/style/main.css"/>
-    </head>
-
-
-<body>
-	<div class="key" id="mainform">
-		<h1>Setup Account</h1>
-			<form action="/user_access/" method="post">
-				<fieldset id=mainfs>
-					<legend id="hsleg"> User Login Information</legend>
-					<form action="/user_check/" method="post"><P id="hsfields">
-					Name: <input name="name" type="text" size="20" maxlength="50" /><br />
-					UserName: <input name="username" type="text" size="20" maxlength="50" /><br />
-					Password: <input name="password" type="password" size="20" maxlength="50" /><br />
-					Confirm Password: <input name="password_check" type="password" size="20" maxlength="50" /><br />
-					Student ID:  <input name="studentID" type="text" size="20" maxlength="50" /><br />
-					Email: <input name="email" type="text" size="20" maxlength="50" /><br />
-					Current Class: <input name="classID" type="select"  /><br />
-					</P>
-				</fieldset>
-				<p><input name="submit" type="submit" /> </p>
-			</form>
-
-	</div>
-
-Discipline: <input name="disc" type="text" size="20" maxlength="50" /><br />
-Current Class: <input name="classID" type="text" size="20" maxlength="50" /><br />
-<input name="classID" type="text" size="20" maxlength="50" /><br />
-Comments: <br /> <textarea name="comment" cols="50" rows="4"></textarea>
-
-
-</p>
-</body>
-</html>
--->

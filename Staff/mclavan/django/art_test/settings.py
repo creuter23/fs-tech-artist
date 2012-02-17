@@ -3,7 +3,7 @@
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
-AUTH_PROFILE_MODULE = "users.Student"
+AUTH_PROFILE_MODULE = "accounts.UserProfile"
 
 ADMINS = (
     # ('Your Name', 'your_email@example.com'),
@@ -132,7 +132,7 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'art_test.users',
+    'art_test.accounts',
     # Uncomment the next line to enable the admin:
     'django.contrib.admin',
     'django.contrib.flatpages',
@@ -140,14 +140,6 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable admin documentation:
     'django.contrib.admindocs',
 )
-
-# Email System
-EMAIL_HOST = 'smtp.webfaction.com'
-EMAIL_HOST_USER = 'fs_tag'
-EMAIL_HOST_PASSWORD = 'ttgg913' # my mailbox password
-DEFAULT_FROM_EMAIL = 'art_test@fs-tag.com'
-SERVER_EMAIL = 'art_test@fs-tag.com'
-# EMAIL_PORT = 587
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
