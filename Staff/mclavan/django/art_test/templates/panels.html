@@ -1,0 +1,48 @@
+<html>
+    <head>
+        <title>{% block head_title %}Finals Department{% endblock %}</title>
+        <link rel="stylesheet" href="http://refinedcg.com/dev/style/main.css"/>
+    </head>
+    <body>
+        <h1>{% block title %} {{ title }} {% endblock %}</h1>
+       
+       
+
+
+        {% for stud in students %}
+			    <table class='panelTable'>
+			    	<th>Name</th>
+					<th>Discipline</th>
+					<th>Course</th>
+			    	<tr>
+			    		<td{% if students.is_important %} style="font-weight: bold;"{% endif %}>{{ stud.name }} </td>
+			    		<td>{{ stud.disc }}</td>
+			        	<td>{{ stud.courseid }}</td>
+			   		</tr>
+		        </table>
+
+        {% endfor %}
+
+
+
+        {% block content %}
+		
+
+			<h1>{{ poll.question }}</h1>
+			
+			{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+			
+			<form action="/polls/{{ poll.id }}/vote/" method="post">
+			{% csrf_token %}
+			{% for choice in poll.choice_set.all %}
+			    <input type="radio" name="choice" id="choice{{ forloop.counter }}" value="{{ choice.id }}" />
+			    <label for="choice{{ forloop.counter }}">{{ choice.choice }}</label><br />
+			{% endfor %}
+			<input type="submit" value="Vote" />
+			</form>
+
+
+
+        {% endblock %}
+    </body>
+</html>

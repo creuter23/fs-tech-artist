@@ -9,6 +9,8 @@ from art_test.accounts.signals import create_profile
 #===============================================================================
 
 
+
+
 #-----------------------STUDENT----yX6Ec3jN4vK6------------------------------------- 
 class UserProfile(models.Model):
     user = models.ForeignKey(User, unique=True)  #access the built in user manager
@@ -63,7 +65,7 @@ class Art_Test(models.Model):
         return '%s %s:  %s' %(self.student.user.first_name, self.student.user.last_name, self.disc_name)
 #-----------------------ART TEST END---------------------------------------
 
-    
+
 
 
 
@@ -114,9 +116,23 @@ class Category(models.Model):
 # Unused Code... Delete before production ready
 #===============================================================================
 
+
+
+
+
+#===============================================================================
+# Panel Review... This needs to be moved to its own app
+#===============================================================================
+
+
+
+
 '''
 
-
+from django.db import models
+class Page(models.Model):   
+    title = models.CharField(maxlength=200, core=True)
+    content = models.TextField(null=True, blank=True)
 
 #-----------------------ART DIRECTOR----------------------------------------- 
 class Art_Director(models.Model):

@@ -27,7 +27,10 @@ urlpatterns = patterns('',
     
     # Apply to an art test
     (r'^apply/$', views.apply),   
-
+    
+    #Panel Review Pages...
+    (r'^panels/$', views.panels),
+    (r'^panel/$', views.panel),
     # signup page ---> inital site registration
     url(r"^signup/$", views.signup, name='mainsignup'),
     

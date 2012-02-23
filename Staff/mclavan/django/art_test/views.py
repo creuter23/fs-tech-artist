@@ -34,6 +34,10 @@ from django.contrib.auth.decorators import login_required
 from django.template import loader, Context
 from django.contrib.auth.models import User
 
+#Handles the email...
+from django.core.mail import send_mail
+
+
 #===============================================================================
 #  Functions to handle main login/profile 
 #===============================================================================
@@ -46,9 +50,13 @@ def signup(request):
         #print request.POST
         if form.is_valid():
             new_user = form.save()
-#            new_user.first_name = form.data['first_name']
-#            new_user.last_name = form.data['last_name']
-#            new_user.save()
+            
+            subject = 'User Registration'
+            message = 'Thank you for registering. \nYour username is: %s\nYour Password is %s' %(form.data['username'],form.data['password'])
+            from_email = 'fspccdocs@gmail.com'
+            to_email = [form.data['email']]
+            
+            send_mail(subject, message, from_email, to_email, fail_silently=False)
             return HttpResponseRedirect("/accounts/profile/")
         else:
             print'Form Not Valid'
@@ -144,6 +152,54 @@ def bad_gateway(request):
 
 
 
+#===============================================================================
+# Panel Review Functions
+#===============================================================================
+####This should be its own app... 
+
+
+STUDENTS = [
+{'name': 'Django Reinhardt', 'disc': 'VFX',    'courseid': 'ANP' },
+{'name': 'Jimi Hendrix',     'disc': 'SAL',    'courseid': 'ANP' },
+{'name': 'Louis Armstrong',  'disc': 'VFX',    'courseid': 'PCC' },
+{'name': 'Pete Townsend',    'disc': 'SAL',    'courseid': 'PCC' },
+{'name': 'Yanni',            'disc': 'ANI',    'courseid': 'ANP' },
+{'name': 'Wesley Willis',    'disc': 'ANI',    'courseid': 'ANP' },
+{'name': 'John Lennon',      'disc': 'SAL',    'courseid': 'PCC' },
+{'name': 'Bono',             'disc': 'SAL',    'courseid': 'ANP' },
+{'name': 'Garth Brooks',     'disc': 'ANI',    'courseid': 'ANP' },
+{'name': 'Duke Ellington',   'disc': 'VFX',    'courseid': 'PCC' },
+{'name': 'William Shatner',  'disc': 'COMP',   'courseid': 'ANP' },
+{'name': 'Madonna',          'disc': 'COMP',   'courseid': 'ANP' }
+]
+
+def panel(request):
+    students = []
+    for s in STUDENTS:
+        students.append({
+                         'name': s['name'],
+                         'disc': s['disc'],
+                         'courseid': s['courseid'],
+                         'is_important': s['name'] in ('disc')
+                         })
+        
+    return render_to_response('panels.html', {'students': STUDENTS})
+
+
+testStudInfo = (['joe','user','sal','anp','monday'], ['tom','someguy','vfx','pcc','thursday'])
+
+
+def panels(request):
+    t = get_template(r'panels.html')
+    html = t.render(Context({"title": "Panel Review 2.1", "studentList": testStudInfo }))
+    return HttpResponse(html)
+
+
+
+
+
+
+#'is_important': s[disc] in ('VFX', 'SAL'),
 
 #///////////////////////////////////////////////////////////////////////////////
 #===============================================================================
