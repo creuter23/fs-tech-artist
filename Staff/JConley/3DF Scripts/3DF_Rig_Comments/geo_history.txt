@@ -1,0 +1,6 @@
+A
+Construction history was deleted on all of your geometry.
+F - Few
+One or a few pieces of your geometry had construction history.
+F - Many
+Many or all of your geometry of your geometry had construction history.

@@ -1,0 +1,6 @@
+A
+All of your geometry had frozen transforms.
+F - Few
+One or a few pieces of your geometry had transform values.
+F - Many
+Many or all of your geometry had transform values.

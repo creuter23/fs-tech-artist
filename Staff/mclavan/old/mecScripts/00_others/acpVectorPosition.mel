@@ -1,0 +1,614 @@
+//============================================================================
+// SCRIPT:		acpVectorPosition.mel
+//			Version 1.0
+//			03/06/2006
+//
+// AUTHOR:		Anthony Paladino
+//			anthony@dnup.net
+//			http://www.dnup.net
+//
+// DESCRIPTION:		Allows the user to position a locator or other object
+//			in 3D space on a vector which lies on a plane as
+//			defined by three points.
+//
+//			This script is useful for placing control objects that
+//			will be used as pole vector controls for IK handles.
+//			By selecting the IK chain's start joint and end joint
+//			as the plane points and the knee/elbow/flex joint as
+//			the vector point, the control object or locator will
+//			be placed precisely on the rotation plane on a vector
+//			that passes through point 3 (the vector point) and is
+//			perpendicular to the line that runs through point 1
+//			and point 2 (the plane points). When the IK handle is
+//			then constrained to the object, it will not "pop" to a
+//			new position.
+//			
+//			This is the primary function for which the script is
+//			designed, but it is not limited to this. This script
+//			can be used to place any object along a vector that
+//			exists on a plane as defined by three points.
+//
+// HOW TO USE:		Source the script (or place within your script path)
+//			and run "acpVectorPosition" from the command line.
+//
+//			Select objects to be used as Point 1, Point 2, and the
+//			Vector Point by selecting them in the panes
+//			and pressing the Select button by each field. Then,
+//			specify an offset by entering a value into the Vector
+//			Offset field or using the slider. This will offset the
+//			final position locator/icon a number of world units
+//			away from the Vector Point along the vector that
+//			passes through it. You can optionally specify a custom
+//			icon that will be positioned instead of a locator.
+//
+//			Press the Reset button to clear inputs and return the
+//			script to its defaults. Press Place Locators to
+//			interactively move the positioning locator using the
+//			GUI slider. Press Apply to finalize the positions of
+//			the locators, then reset the script for another use.
+//			Press OK to finalize positions and close the script.
+//
+// REQUIRES:		Maya 7.0
+//				- May work with previous versions, but is
+//				  untested. Use at your own risk. 
+//
+// RETURNS:		NONE
+//
+// UPDATES:		Version 1.0 (03/06/2006)
+//				- Initial version
+//
+// NOTES:		Script originally written with tab characters set to
+//			8 spaces.
+//============================================================================
+
+
+
+//============================================================================
+//	GLOBAL VARIABLES
+//============================================================================
+global int $acp_DEBUG = 0;	// boolean flag that allows print statements
+				// to be output to the script editor for
+				// tracking purposes
+
+
+
+//============================================================================
+//	PROCEDURE:	acpCreateLocatorGroup (local)
+//	ARGUEMENTS:	$strLocatorGroup (string)
+//				- requested name of the group that positioning
+//				  locators are to be contained in
+//	RETURNS:	NONE
+//	DESCRIPTION:	Creates the locator group and locks the attributes.
+//			Checks to see if it exists first. If so, empties it.
+//============================================================================
+proc acpCreateLocatorGroup(string $strLocatorGroup)
+{
+	global int $acp_DEBUG;
+	
+	if ($acp_DEBUG)
+		print "Started acpCreateLocatorGroup...\n";
+
+	// LOCAL VARIABLES
+	string $strGroupArray[] = {""};        // array of contents of the group
+	
+	// Check to see if the locator group exists. If so, empty it. If not, create it.
+	if (`objExists $strLocatorGroup`)
+	{
+		// Get the contents of the group
+                $strGroupArray = `listRelatives -children $strLocatorGroup`;
+		// Run through the list of contents and delete them
+                for ($intCounter = 0; $intCounter < `size($strGroupArray)`; $intCounter++)
+		{
+			delete $strGroupArray[$intCounter];
+		}
+                // Clear out the name of the vector position locator
+                setAttr ($strLocatorGroup + ".positionLocator") -type "string" "";
+	}
+	else
+	{
+		// Create the locator group and lock and hide the attributes
+                $strLocatorGroup = `group -empty -name $strLocatorGroup`;
+                addAttr -longName "positionLocator" -dataType "string" $strLocatorGroup;
+                setAttr ($strLocatorGroup + ".positionLocator") - type "string" "";
+		setAttr -lock true ($strLocatorGroup + ".tx");
+		setAttr -lock true ($strLocatorGroup + ".ty");
+		setAttr -lock true ($strLocatorGroup + ".tz");
+		setAttr -lock true ($strLocatorGroup + ".rx");
+		setAttr -lock true ($strLocatorGroup + ".ry");
+		setAttr -lock true ($strLocatorGroup + ".rz");
+		setAttr -lock true ($strLocatorGroup + ".sx");
+		setAttr -lock true ($strLocatorGroup + ".sy");
+		setAttr -lock true ($strLocatorGroup + ".sz");
+		setAttr -lock true ($strLocatorGroup + ".sz");
+		setAttr -lock true ($strLocatorGroup + ".v");
+		setAttr -keyable false ($strLocatorGroup + ".tx");
+		setAttr -keyable false ($strLocatorGroup + ".ty");
+		setAttr -keyable false ($strLocatorGroup + ".tz");
+		setAttr -keyable false ($strLocatorGroup + ".rx");
+		setAttr -keyable false ($strLocatorGroup + ".ry");
+		setAttr -keyable false ($strLocatorGroup + ".rz");
+		setAttr -keyable false ($strLocatorGroup + ".sx");
+		setAttr -keyable false ($strLocatorGroup + ".sy");
+		setAttr -keyable false ($strLocatorGroup + ".sz");
+		setAttr -keyable false ($strLocatorGroup + ".v");
+	}
+}; // proc acpCreateLocatorGroup
+
+
+
+//============================================================================
+//	PROCEDURE:	acpCleanUp (global)
+//	ARGUEMENTS:	$strLocatorGroup (string)
+//				- name of the group that positioning locators
+//				  are contained in
+//	RETURNS:	NONE
+//	DESCRIPTION:	Deletes the locator group and all nodes inside.
+//============================================================================
+global proc acpCleanUp(string $strLocatorGroup)
+{
+	global int $acp_DEBUG;
+	
+	if ($acp_DEBUG)
+		print "Started acpCleanUp...\n";
+
+	if (`objExists $strLocatorGroup`)
+		delete $strLocatorGroup;
+}; // global proc acpCleanUp
+
+
+
+//============================================================================
+//	PROCEDURE:	acpReset (global)
+//	ARGUEMENTS:     $strPoint1Field (string)
+//                              - name of the Point 1 field
+//                      $strPoint2Field (string)
+//                              - name of the Point 2 field
+//                      $strVectorPointField (string)
+//                              - name of the Vector Point field
+//                      $strCustomIconField (string)
+//                              - name of the Custom Icon field
+//                      $strVectorOffsetSlider (string)
+//                              - name of the Vector Offset slider
+//                      $strLocatorGroup (string)
+//                              - name of the group that positioning locators
+//				  are contained in
+//	RETURNS:	NONE
+//	DESCRIPTION:	Resets the GUI and the locator group to defaults.
+//                      Moves custom icon back to <0,0,0> if it exists.
+//============================================================================
+global proc acpReset(string $strPoint1Field, string $strPoint2Field, string $strVectorPointField, string $strCustomIconField, string $strVectorOffsetSlider, string $strLocatorGroup)
+{
+	global int $acp_DEBUG;
+	
+	if ($acp_DEBUG)
+		print "Started acpReset...\n";	
+
+	// LOCAL VARIABLES
+        string $strCustomIcon = `textFieldButtonGrp -q -text $strCustomIconField`;	// name of the custom icon
+
+	// Clear out all GUI fields, reset and disconnect the slider, recreate the locator group
+	textFieldButtonGrp -edit -text "" $strPoint1Field;
+	textFieldButtonGrp -edit -text "" $strPoint2Field;
+	textFieldButtonGrp -edit -text "" $strVectorPointField;
+	textFieldButtonGrp -edit -text "" $strCustomIconField;
+	floatSliderGrp -edit -minValue -10 -maxValue 10 -value 0 $strVectorOffsetSlider;
+	connectControl $strVectorOffsetSlider "";
+	acpCreateLocatorGroup($strLocatorGroup);
+	
+	// If a custom icon exists, return it to <0,0,0>
+	if ($strCustomIcon != "" && `objExists $strCustomIcon`)
+	{
+                setAttr ($strCustomIcon + ".tx") 0;
+                setAttr ($strCustomIcon + ".ty") 0;
+                setAttr ($strCustomIcon + ".tz") 0;
+        }
+}; // global proc acpReset
+
+
+
+//============================================================================
+//	PROCEDURE:	acpGetUserSelection (global)
+//	ARGUEMENTS:	$strField (string)
+//				- name of the field to send the selection
+//	RETURNS:	NONE
+//	DESCRIPTION:	Checks to see if the user has selected more than one
+//			node and throws a warning if this is the case. Sends
+//			the name of the first node selected to the specified
+//			field.
+//============================================================================
+global proc acpGetUserSelection (string $strField)
+{
+	global int $acp_DEBUG;
+
+	if ($acp_DEBUG)
+		print "Started acpGetUserSelection...\n";
+
+	// LOCAL VARIABLES
+	string $strSelection[] = `ls -sl`;	// array of the currently selected nodes
+
+	// Check to see if only one node is selected
+	if (`size $strSelection` > 1)
+		warning ("More than one node selected! Will use first node.");
+
+	// Fill in the appropriate field with the selection
+	textFieldButtonGrp -e -text $strSelection[0] $strField;
+}; // global proc acpGetUserSelection
+
+
+
+//============================================================================
+//	PROCEDURE:	acpValidateUserInput (local)
+//	ARGUEMENTS:	$arrayUserSelections[] (string)
+//                              - array of user selected objects
+//	RETURNS:	NONE
+//	DESCRIPTION:    Checks to see if user selections are valid, that is to
+//                      say that all required fields in the GUI are filled and
+//                      the objects specified exist. Throws an error if data
+//                      is invalid, halting script processing.
+//============================================================================
+proc acpValidateUserInput(string $arrayUserSelections[])
+{
+	global int $acp_DEBUG;
+	
+	if ($acp_DEBUG)
+		print "Started acpValidateUserInput...\n";
+
+	// LOCAL VARIABLES
+	int $intCounter;                                       // loop counter
+	int $intArraySize = `size $arrayUserSelections`;       // number of user selected objects
+
+        // Run through the array and check the elements
+	for ($intCounter = 0; $intCounter < $intArraySize; $intCounter++)
+	{
+		// If the field is non-blank and the object doesn't exist, throw an error
+                if ($arrayUserSelections[$intCounter] != "" && !`objExists $arrayUserSelections[$intCounter]`)
+			error($arrayUserSelections[$intCounter] + " does not exist. Make a new selection and try again.");
+		// If the field is blank, and isn't the last field (Custom Icon, which is optional), throw an error
+		else if ($arrayUserSelections[$intCounter] == "" && $intCounter != 3)
+			error("One or more required fields are empty. Please make appropriate selections and try again.");
+	}
+}; // proc acpValidateUserInput
+
+
+
+//============================================================================
+//	PROCEDURE:	acpPlaceLocators (global)
+//	ARGUEMENTS:	$strPoint1Field (string)
+//                              - name of the Point 1 field
+//                      $strPoint2Field (string)
+//                              - name of the Point 2 field
+//                      $strVectorPointField (string)
+//                              - name of the Vector Point field
+//                      $strCustomIconField (string)
+//                              - name of the Custom Icon field
+//                      $strVectorOffsetSlider (string)
+//                              - name of the Vector Offset slider
+//                      $strLocatorGroup (string)
+//                              - name of the group that positioning locators
+//				  are contained in
+//	RETURNS:	NONE
+//	DESCRIPTION:	Places locators (and custom icon, if it exists) into
+//                      the place specified by the user's selections. Connects
+//                      Vector Offset slider to the positioning locator so
+//                      that user can interactively move the position locator.
+//============================================================================
+global proc acpPlaceLocators(string $strPoint1Field, string $strPoint2Field, string $strVectorPointField, string $strCustomIconField, string $strVectorOffsetSlider, string $strLocatorGroup)
+{
+	global int $acp_DEBUG;
+	
+	if ($acp_DEBUG)
+		print "Started acpPlaceLocators...\n";
+
+	// LOCAL VARIABLES
+	string $strVectorOriginBaseName = "VectorOrigin";                                              // base name for the vector origin objects
+	string $strVectorPositionBaseName = "VectorPosition";                                          // base name for the vector position objects
+	string $strLocatorPrefix = "loc";                                                              // prefix for locator objects
+	string $strGroupPrefix = "grp";                                                                // prefix for group objects
+	string $strVectorOriginLocator = "";                                                           // name of the vector origin locator
+	string $strVectorPositionLocator = "";                                                         // name of the vector position locator
+	string $strPoint1 = `textFieldButtonGrp -q -text $strPoint1Field`;                             // name of the Point 1 object
+	string $strPoint2 = `textFieldButtonGrp -q -text $strPoint2Field`;                             // name of the Point 2 object
+	string $strVectorPoint = `textFieldButtonGrp -q -text $strVectorPointField`;                   // name of the Vector Point object
+	string $strCustomIcon = `textFieldButtonGrp -q -text $strCustomIconField`;                     // name of the Custom Icon object
+	float $fltVectorOffset = `floatSliderGrp -q -value $strVectorOffsetSlider`;                    // amount of offset for the vector placement
+	string $arrayUserSelections[] = {$strPoint1, $strPoint2, $strVectorPoint, $strCustomIcon};     // array of objects selected by the user
+
+	// Validate user selections
+	acpValidateUserInput($arrayUserSelections);
+
+	// Create the main locator group
+	acpCreateLocatorGroup($strLocatorGroup);
+
+	// Create locators for positioning
+	$strVectorOriginLocator = eval("rename `spaceLocator -p 0 0 0` " + ($strLocatorPrefix + $strVectorOriginBaseName));
+	$strVectorPositionLocator = eval("rename `spaceLocator -p 0 0 0` " + ($strLocatorPrefix + $strVectorPositionBaseName));
+        setAttr ($strLocatorGroup + ".positionLocator") - type "string" $strVectorPositionLocator;
+
+	// Group the locators
+	$strVectorOriginGroup = `group -n ($strGroupPrefix + $strVectorOriginBaseName) $strVectorOriginLocator`;
+	$strVectorPositionGroup = `group -n ($strGroupPrefix + $strVectorPositionBaseName) $strVectorPositionLocator`;	
+
+	// Add the grouped locators to the main locator group
+	parent $strVectorOriginGroup $strLocatorGroup;
+	parent $strVectorPositionGroup $strLocatorGroup;
+
+	// Place the vector origin locator in the proper position
+	pointConstraint $strPoint1 $strPoint2 $strVectorOriginGroup;
+	aimConstraint -aimVector 0 1 0 $strPoint1 $strVectorOriginGroup;
+	pointConstraint -skip x -skip z $strVectorPoint $strVectorOriginLocator;
+
+	// Place the vector position locator in the proper position
+	pointConstraint $strVectorPoint $strVectorPositionGroup;
+	aimConstraint -aimVector 0 -1 0 $strVectorOriginLocator $strVectorPositionGroup;
+
+	// Offset vector position locator and connect GUI slider
+	setAttr ($strVectorPositionLocator + ".ty") $fltVectorOffset;
+	connectControl $strVectorOffsetSlider ($strVectorPositionLocator + ".ty");
+	
+	// Place custom icon, if it exists
+	if ($strCustomIcon != "")
+                pointConstraint $strVectorPositionLocator $strCustomIcon;
+}; // global proc acpPlaceLocators
+
+
+
+//============================================================================
+//	PROCEDURE:	acpFinalizePosition (global)
+//	ARGUEMENTS:	$strPoint1Field (string)
+//                              - name of the Point 1 field
+//                      $strPoint2Field (string)
+//                              - name of the Point 2 field
+//                      $strVectorPointField (string)
+//                              - name of the Vector Point field
+//                      $strCustomIconField (string)
+//                              - name of the Custom Icon field
+//                      $strVectorOffsetSlider (string)
+//                              - name of the Vector Offset slider
+//                      $strLocatorGroup (string)
+//                              - name of the group that positioning locators
+//				  are contained in
+//	RETURNS:	NONE
+//	DESCRIPTION:	Places the locators and custom icon in the positions
+//			specified by the user, then removes the constraints
+//			and freezes transformations on the custom icon.
+//============================================================================
+global proc acpFinalizePosition(string $strPoint1Field, string $strPoint2Field, string $strVectorPointField, string $strCustomIconField, string $strVectorOffsetSlider, string $strLocatorGroup)
+{
+	global int $acp_DEBUG;
+	
+	if ($acp_DEBUG)
+		print "Started acpFinalizePosition...\n";
+
+        // LOCAL VARIABLES
+        string $strCustomIcon = `textFieldButtonGrp -q -text $strCustomIconField`;  	// name of the custom icon
+	string $strPositionLocator = "";						// name of the vector position locator
+
+        // Place the locators
+        acpPlaceLocators($strPoint1Field, $strPoint2Field, $strVectorPointField, $strCustomIconField, $strVectorOffsetSlider, $strLocatorGroup);
+
+        // If there is no custom icon defined by the user, use the position locator instead
+        if ($strCustomIcon == "")
+        {
+		$strPositionLocator = `getAttr ($strLocatorGroup + ".positionLocator")`;
+		string $arrayDuplicatedItems[] = `duplicate -rr $strPositionLocator`;
+		$strCustomIcon = $arrayDuplicatedItems[0];
+		parent -w $strCustomIcon;
+        }
+
+        // Remove all constraints from the icon
+        delete -constraints $strCustomIcon;
+
+        // Freeze transforms on the icon
+        makeIdentity -apply true -translate 1 -rotate 1 -scale 1 $strCustomIcon;
+}; // global proc acpFinalizePosition
+
+
+
+//============================================================================
+//	PROCEDURE:	acpVectorPosition (global)
+//	ARGUEMENTS:	NONE
+//	RETURNS:	NONE
+//	DESCRIPTION:	Main procedure. Sets up and starts the GUI.
+//============================================================================
+global proc acpVectorPosition()
+{
+	global int $acp_DEBUG;
+	
+	if ($acp_DEBUG)
+		print "Started acpVectorPosition...\n";
+
+	// Check to see if the window exists and delete it
+	if(`window -exists acpVectorPosition_UI`)
+		deleteUI acpVectorPosition_UI;
+
+	// LOCAL VARIABLES
+	string $strFormLayout = "";
+	string $strPoint1Field = "";
+	string $strPoint2Field = "";
+	string $strVectorPointField = "";
+	string $strCustomIconField = "";
+	string $strVectorOffsetSlider = "";
+	string $strResetButton = "";
+	string $strPlaceLocatorsButton = "";
+	string $strCancelButton = "";
+	string $strApplyButton = "";
+	string $strOKButton = "";
+	string $strLocatorGroup = "acpVectorPositionGrp";
+
+        // Create GUI
+	window
+		-title "acpVectorPosition v1.0"
+		-maximizeButton 0
+		-sizeable 0
+		acpVectorPosition_UI;
+	$strFormLayout = `formLayout
+		-numberOfDivisions 100
+		formMainLayout`;
+	$strPoint1Field = `textFieldButtonGrp
+			-width 300
+			-columnWidth3 70 170 50
+			-columnAttach3 "both" "both" "both"
+			-columnOffset3 3 3 3
+			-columnAlign3 "right" "left" "center"
+			-adjustableColumn 2
+			-label "Point 1:"
+			-buttonLabel "Select"
+			-buttonCommand ""
+			-enable 1
+			tfbgPoint1`;
+	$strPoint2Field = `textFieldButtonGrp
+			-width 300
+			-columnWidth3 70 170 50
+			-columnAttach3 "both" "both" "both"
+			-columnOffset3 3 3 3
+			-columnAlign3 "right" "left" "center"
+			-adjustableColumn 2
+			-label "Point 2:"
+			-buttonLabel "Select"
+			-buttonCommand ""
+			-enable 1
+			tfbgPoint2`;
+	$strVectorPointField = `textFieldButtonGrp
+			-width 300
+			-columnWidth3 70 170 50
+			-columnAttach3 "both" "both" "both"
+			-columnOffset3 3 3 3
+			-columnAlign3 "right" "left" "center"
+			-adjustableColumn 2
+			-label "Vector Point:"
+			-buttonLabel "Select"
+			-buttonCommand ""
+			-enable 1
+			tfbgVectorPoint`;
+	$strCustomIconField = `textFieldButtonGrp
+			-width 300
+			-columnWidth3 70 170 50
+			-columnAttach3 "both" "both" "both"
+			-columnOffset3 3 3 3
+			-columnAlign3 "right" "left" "center"
+			-adjustableColumn 2
+			-label "Custom Icon:"
+			-buttonLabel "Select"
+			-buttonCommand ""
+			-enable 1
+			tfbgCustomIcon`;
+	$strVectorOffsetSlider = `floatSliderGrp
+			-field 1
+			-width 300
+			-columnAttach3 "both" "both" "both"
+			-columnWidth3 75 50 165
+			-columnOffset3 3 3 3
+			-columnAlign3 "right" "right" "center"
+			-adjustableColumn 3
+			-label "Vector Offset:"
+			-minValue -10
+			-maxValue 10
+			-fieldMinValue -100
+			-fieldMaxValue 100
+			-value 0
+			-sliderStep 1
+			-enable 1
+			fsgVectorOffset`;
+	$strResetButton = `button
+			-width 100
+			-label "Reset"
+			-align "center"
+			-command ""
+			-enable 1
+			buttonReset`;
+	$strPlaceLocatorsButton = `button
+			-width 200
+			-label "Place Locators"
+			-align "center"
+			-command ""
+			-enable 1
+			buttonPlaceLocators`;
+	$strCancelButton = `button
+			-width 90
+			-label "Cancel"
+			-align "center"
+			-command "deleteUI acpVectorPosition_UI"
+			-enable 1
+			buttonCancel`;
+	$strApplyButton = `button
+			-width 90
+			-label "Apply"
+			-align "center"
+			-command ""
+			-enable 1
+			buttonApply`;
+	$strOKButton = `button
+			-width 90
+			-label "OK"
+			-align "center"
+			-command ""
+			-enable 1
+			buttonOK`;
+
+	// Attach and position controls in the form
+	formLayout -edit
+		-attachForm $strPoint1Field "top" 5
+		-attachNone $strPoint1Field "bottom"
+		-attachForm $strPoint1Field "left" 5
+		-attachForm $strPoint1Field "right" 5
+		-attachControl $strPoint2Field "top" 5 $strPoint1Field
+		-attachNone $strPoint2Field "bottom"
+		-attachForm $strPoint2Field "left" 5
+		-attachForm $strPoint2Field "right" 5
+		-attachControl $strVectorPointField "top" 5 $strPoint2Field
+		-attachNone $strVectorPointField "bottom"
+		-attachForm $strVectorPointField "left" 5
+		-attachForm $strVectorPointField "right" 5
+		-attachControl $strCustomIconField "top" 5 $strVectorPointField
+		-attachNone $strCustomIconField "bottom"
+		-attachForm $strCustomIconField "left" 5
+		-attachForm $strCustomIconField "right" 5
+		-attachControl $strVectorOffsetSlider "top" 5 $strCustomIconField
+		-attachNone $strVectorOffsetSlider "bottom"
+		-attachForm $strVectorOffsetSlider "left" 5
+		-attachForm $strVectorOffsetSlider "right" 5
+		-attachControl $strResetButton "top" 5 $strVectorOffsetSlider
+		-attachNone $strResetButton "bottom"
+		-attachForm $strResetButton "left" 5
+		-attachPosition $strResetButton "right" 5 33
+		-attachControl $strPlaceLocatorsButton "top" 5 $strVectorOffsetSlider
+		-attachNone $strPlaceLocatorsButton "bottom"
+		-attachPosition $strPlaceLocatorsButton "left" 0 33
+		-attachForm $strPlaceLocatorsButton "right" 5
+		-attachNone $strCancelButton "top"
+		-attachForm $strCancelButton "bottom" 5
+		-attachForm $strCancelButton "left" 5
+		-attachPosition $strCancelButton "right" 5 33
+		-attachNone $strApplyButton "top"
+		-attachForm $strApplyButton "bottom" 5
+		-attachPosition $strApplyButton "left" 0 33
+		-attachPosition $strApplyButton "right" 0 66
+		-attachNone $strOKButton "top"
+		-attachForm $strOKButton "bottom" 5
+		-attachPosition $strOKButton "left" 5 66
+		-attachForm $strOKButton "right" 5
+		$strFormLayout;
+
+	// Now that all the GUI elements and variables are set, edit in the proper commands for the elements
+	textFieldButtonGrp -e -buttonCommand ("acpGetUserSelection(\"" + $strPoint1Field + "\")") $strPoint1Field;
+	textFieldButtonGrp -e -buttonCommand ("acpGetUserSelection(\"" + $strPoint2Field + "\")") $strPoint2Field;
+	textFieldButtonGrp -e -buttonCommand ("acpGetUserSelection(\"" + $strVectorPointField + "\")") $strVectorPointField;
+	textFieldButtonGrp -e -buttonCommand ("acpGetUserSelection(\"" + $strCustomIconField + "\")") $strCustomIconField;
+	button -e -command ("acpReset(\"" + $strPoint1Field + "\", \"" + $strPoint2Field + "\", \"" + $strVectorPointField + "\", \"" + $strCustomIconField + "\", \"" + $strVectorOffsetSlider + "\", \"" + $strLocatorGroup + "\")") $strResetButton;
+	button -e -command ("acpPlaceLocators(\"" + $strPoint1Field + "\", \"" + $strPoint2Field + "\", \"" + $strVectorPointField + "\", \"" + $strCustomIconField + "\", \"" + $strVectorOffsetSlider + "\", \"" + $strLocatorGroup + "\")") $strPlaceLocatorsButton;
+	button -e -command ("acpFinalizePosition(\"" + $strPoint1Field + "\", \"" + $strPoint2Field + "\", \"" + $strVectorPointField + "\", \"" + $strCustomIconField + "\", \"" + $strVectorOffsetSlider + "\", \"" + $strLocatorGroup + "\"); acpReset(\"" + $strPoint1Field + "\", \"" + $strPoint2Field + "\", \"" + $strVectorPointField + "\", \"" + $strCustomIconField + "\", \"" + $strVectorOffsetSlider + "\", \"" + $strLocatorGroup + "\");") $strApplyButton;
+	button -e -command ("acpFinalizePosition(\"" + $strPoint1Field + "\", \"" + $strPoint2Field + "\", \"" + $strVectorPointField + "\", \"" + $strCustomIconField + "\", \"" + $strVectorOffsetSlider + "\", \"" + $strLocatorGroup + "\"); deleteUI acpVectorPosition_UI;") $strOKButton;
+
+	// Start a script job to see if the window is deleted
+	int $sjWindowDelete = `scriptJob -uid "acpVectorPosition_UI" ("acpCleanUp(\"" + $strLocatorGroup + "\")")`;
+	
+	// Define the size of the window because Maya doesn't always pay attention to the creation size
+	window -edit
+		-widthHeight 300 227
+		acpVectorPosition_UI;
+
+	// Show the completed GUI
+	showWindow acpVectorPosition_UI;
+} // global proc acpVectorPosition
+
+// EOF

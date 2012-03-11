@@ -1,0 +1,491 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davvey\'s Piston Generator
+''    Author:  
+''    Last Updated: Feb 17, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4528.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+
+
+/////////////////////////////////////////////////////////////////////////////			
+/*				
+	Copyright © 2006 DVY_Pistons. All rights reserved davvey@ntlworld.com
+
+						- DVY_Pistons -
+///////////////////////////////////////////////////////////////////////////////
+						
+	Usage
+
+	Type DVY_Pistons in command line or middle mouse drag it to a shelf.
+	There is an IcOn file supplied to use with the Shelf Button.
+	
+	Installation
+	
+	Install all scripts in any Maya Script folder and install all image files
+	in Maya's Icon folder.
+	
+	Description	
+
+	This script is used to build dimesionally accurate Cylinders or Pistons.
+	Each cylinder can be built with Round or Sqaure Ends as required.
+	The script calls a GUI where relevant data can be entered.
+	
+	Set Rod Diameter required. Then Select Rod Length required. The GUI will
+	calculate and display nearest English equivalents for Diameter and Length.
+	The Fields are already filled in with some default values to test script.
+	The default values are set using following relationships between dimensions.
+	
+		Cylinder ID = 2 * Rod Diameter. 
+		Cylinder OD is 1.2 * Cylinder ID 
+		Cylinder Length = Rod Length - Bore ID. 
+		
+	For Best results try and use values with these ratios but script will work 
+	with other values. If Round Cylinder End Caps are used then the CheckBox 
+	for a Rod Cover can be selected. Also Spring Supports can be added to allow
+	a spring to fit over the Cylinder.
+	The Rod Cover and Spring Supports should only be selected to use with
+	Clevis Types, Pin and Bush Mounts for Cylinder Ends.
+	
+	After enetering data and type of Rod and Cylinder ends the Script will call
+	DVY_PistonBuiuld to generate the Piston.
+	
+	Script also adds hidden attributes to the Piston Group Top Node for use
+	with Davvey's Spring Generator to allow building of a Spring to suit size
+	of Cylinder built. These are only added to Round Cap end Cylinders.
+	
+	The individual parts are group as required.
+	The groups are point and aim constrained to give realistic movement of the
+	cylinder IN and OUT.
+	Unused attributes are locked off if not required.
+	
+	Note:- The Scale of the Piston will be adjusted to set correct Piston size
+	relevant to the correct size for the Users Maya Unit settings 
+	i.e mm, cm, m, in, ft, yd.
+	
+	Matching Spring.
+	
+	If Required After Building the Piston please use Davvey's Spring Generator
+	a Spring to match the Piston and before moving Piston away from default
+	build position.
+
+*/	
+///////////////////////////////////////////////////////////////////////////////
+//					DVY_Pistons Procedure
+////////////////////////////////////////////////////////////////////////////////
+
+
+global proc DVY_Pistons()
+{
+	 
+	global string $Tabs[];
+	global string $DVYImage[];
+	float $THData[], $Pos[];
+	float $Lead, $Turns, $TurnsEach, $BoltLength;
+	float $XMax, $XMin, $YMax, $YMin;
+	float $P, $h, $TD, $PCD, $RD; 
+	
+	int $a, $b, $c, $e, $i, $j, $k, $N;
+	
+	string $ThreadType[], $Profiles[], $ThreadName[], $Temp[], $Temps[];
+	string $Barrel[], $Bolt[], $Nut[], $Hole[];
+	string $Thread, $Name;
+	
+	int $K = 0; int $S = 0; int $D = 0;
+	
+// ******************************************************************************** //	
+//	Constants and "Static Data"
+	
+	string $PMaterial[] = {"Steel", "Stainless", "Black", "Aluminium", "Brass", "Copper"};
+	
+	//	Check for any "Window History" and delete if it exists.
+	 	if (`windowPref -exists DVY_PistonsWindow`)
+			{ windowPref -edit -topLeftCorner 125 700 -widthHeight 490 720 DVY_PistonsWindow;}
+	
+	//Check for multiple similar windows.
+		if (`window -q -ex DVY_PistonsWindow`) deleteUI DVY_PistonsWindow;
+	//Build window.
+		window -w 490 -h 720 -mnb 1 -mxb 0 -sizeable 1 -title "Davvey's Piston Generator ver 1.0" DVY_PistonsWindow;
+	
+	//Build 'Edit' menu.
+	
+	string $menuBarLayout = `menuBarLayout`;
+		menu -label "File"; 
+ 			menuItem -label "Close" -command "deleteUI DVY_PistonsWindow";		
+		menu -label "About"; 
+	 		menuItem -label "About WoodScrew and Self Tapper Generator" -command "DVY_AboutPistonsWin;";		
+
+	// Create Main Layout column
+	string $MainPanel = `columnLayout -width 468 -adj 1 -cal "center" "Main Panel"`;
+
+	// Title and Info Section for the "Main Column Setup" tab. 
+		
+	string $Title = `columnLayout -width 466 -adj 1 -cal "center" "Title"`;
+	
+		text -height 5 -label " " ;	//Spacer
+		separator -height 5 -style "double" ;
+		text -bgc .5 .5 1 -height 20 -align "center" -font "boldLabelFont"
+			-label "Davvey's Piston Generator.";
+		separator -height 5 -style "double";
+		text -height 5 -label " " ;	//Spacer
+	
+	setParent $MainPanel;	
+		
+//////////////////////////////////////////////////////////////////////////////////
+//					Piston Tab.
+//////////////////////////////////////////////////////////////////////////////////	
+// Tab Layout for Pistons
+	
+
+	string $Tab = `tabLayout -imw 1 -imh 1 "Options"`;
+	
+	$Tabs[0] = `columnLayout -adj 1 "Piston Options"`;
+				
+	//Create WoodScrew Options Tab
+	
+	string $PSOptions = `frameLayout -height 545 -labelVisible 0 -label "POptions" -la "center" -bs "in" " WS Set Up "`;
+	
+	string $PSOptionsCol =  `columnLayout -enable 1 -adj 1 -cat "left" 5 -cal "left" "POptionsCol"`;	
+
+		separator -h 2  -bgc 1 1 0.85 -style "none";
+		text -height 15 -bgc 1 1 0.85  -align "left" -label " Select various sizes as required or use default values to test output.";
+		text -height 15 -bgc 1 1 0.85  -align "left" -label " TheUI will show English equiv.";
+		separator -h 2  -bgc 1 1 0.85 -style "none";
+		
+	separator -h 10 -style "double";
+	text -height 2 -label "";
+	
+		radioButtonGrp -nrb 2 -sl 1 -label " Cylinder End Caps :-" 
+						-cl3 "right" "left" "left" 
+						-columnWidth3 120 100 100 
+						-labelArray2 "Round Ends" "Square Ends" 
+				
+					-onCommand1 "checkBox -edit -enable true RodCoverChkBox;\ radioButtonGrp -edit -enable true SpringType;"
+					-onCommand2 "checkBox -edit -enable false RodCoverChkBox;\ radioButtonGrp -edit -enable false -sl 1 SpringType;\ checkBox -edit -enable false SpringChkBox"
+
+				CylinderType;
+	
+	rowColumnLayout -enable 1 -nc 3
+					-cw 1 140 -cal 1 "center" -cat 1 "both" 10
+					-cw 2 140 -cal 2 "center" -cat 2 "both" 10
+					-cw 3 140 -cal 3 "center" -cat 3 "both" 10
+				"PistonTitles1Col";
+
+		text -height 15 -align "center" -label "Rod Diameter";
+		text -height 15 -align "center" -label "Rod Length";
+		text -height 15 -align "center" -label " ";
+	
+	setParent..;
+		
+	rowColumnLayout -enable 1 -nc 6
+					-cw 1 70 -cal 1 "center" -cat 1 "both" 5
+					-cw 2 70 -cal 2 "center" -cat 2 "both" 5
+					-cw 3 70 -cal 3 "center" -cat 3 "both" 5
+					-cw 4 70 -cal 4 "center" -cat 4 "both" 5
+					-cw 5 70 -cal 5 "center" -cat 5 "both" 5
+					-cw 6 70 -cal 6 "center" -cat 6 "both" 5
+				"PistonTitles1aCol";
+	
+			text -height 20 -align "center" -label " mm";
+			text -height 20 -align "center" -label " inches";
+			text -height 20 -align "center" -label " mm";
+			text -height 20 -align "center" -label " inches";
+			text -height 20 -align "center" -label " ";
+			text -height 20 -align "center" -label " ";
+
+	
+			floatField -editable true -pre 2 -v 25 -cc "$Val = `floatField -q -v PFloatField_01`;\ floatField -edit -v ($Val/25.4) PFloatField_02;\ floatField -edit -v ($Val * 2) PFloatField_05;\ floatField -edit -v ($Val * 2/25.4) PFloatField_06;\ floatField -edit -v ($Val * 2.4) PFloatField_07;\ floatField -edit -v ($Val * 2.4/25.4) PFloatField_08;" PFloatField_01;
+			floatField -editable false -pre 3 -v (25/25.4) PFloatField_02;
+
+			floatField -editable true -pre 2 -v 500  -cc "$Val = `floatField -q -v PFloatField_03`;\ floatField -edit -v ($Val/25.4) PFloatField_04;" PFloatField_03;
+			floatField -editable false -pre 3 -v (500/25.4) PFloatField_04;
+	
+
+	setParent..;
+
+	separator -h 10 -style "single";
+	
+	rowColumnLayout -enable 1 -nc 3
+					-cw 1 140 -cal 1 "center" -cat 1 "both" 10
+					-cw 2 140 -cal 2 "center" -cat 2 "both" 10
+					-cw 3 140 -cal 3 "center" -cat 3 "both" 10
+				"PistonTitles2Col";
+	
+		text -height 15 -align "center" -label "Cylinder I/Diameter";
+		text -height 15 -align "center" -label "Cylinder O/Diameter";
+		text -height 15 -align "center" -label "Cylinder Length";
+	
+	setParent..;
+	
+		
+	rowColumnLayout -enable 1 -nc 6
+					-cw 1 70 -cal 1 "center" -cat 1 "both" 5
+					-cw 2 70 -cal 2 "center" -cat 2 "both" 5
+					-cw 3 70 -cal 3 "center" -cat 3 "both" 5
+					-cw 4 70 -cal 4 "center" -cat 4 "both" 5
+					-cw 5 70 -cal 5 "center" -cat 5 "both" 5
+					-cw 6 70 -cal 6 "center" -cat 6 "both" 5
+				"PistonTitles2aCol";
+	
+			text -height 20 -align "center" -label " mm";
+			text -height 20 -align "center" -label " inches";
+			text -height 20 -align "center" -label " mm";
+			text -height 20 -align "center" -label " inches";
+			text -height 20 -align "center" -label " mm";
+			text -height 20 -align "center" -label " inches";
+	
+	
+			floatField -editable true -pre 2 -v 50 -cc "$Val = `floatField -q -v PFloatField_05`;\ floatField -edit -v ($Val/25.4) PFloatField_06;" PFloatField_05;
+			floatField -editable false -pre 3 -v (50/25.4) PFloatField_06;
+			
+			floatField -editable true -pre 2 -v 60 -cc "$Val = `floatField -q -v PFloatField_07`;\ floatField -edit -v ($Val/25.4) PFloatField_8;" PFloatField_07;
+			floatField -editable false -pre 3 -v (60/25.4) PFloatField_08;
+
+			floatField -editable true -pre 2 -v 450 -cc "$Val = `floatField -q -v PFloatField_09`;\ floatField -edit -v ($Val/25.4) PFloatField_10;" PFloatField_09;
+			floatField -editable false -pre 3 -v (450/25.4) PFloatField_10;
+	
+
+	setParent..;
+	
+		separator -h 10 -style "single";
+		
+	rowColumnLayout -enable 1 -nc 2
+					-cw 1 150 -cal 1 "center" -cat 1 "both" 1
+					-cw 2 300 -cal 2 "center" -cat 2 "both" 1
+				CylinderStyle1Col;
+	
+	
+			optionMenu -width 140 -cc ("DVY_PistonCallback(1)") DVY_Cylinder1Option;
+					menuItem -l "Cylinder End Style";
+		    			menuItem -l "Bush_Mount";
+		    			menuItem -l "Pin_Mount";
+		    			menuItem -l "Male_Clevis";
+		    			menuItem -l "Female_Clevis";
+		    			menuItem -l "Front_Flange";
+		    			menuItem -l "Rear_Flange";
+		    			menuItem -l "Front_Trunnion";
+		    			menuItem -l "Center_Trunnion";
+		    			menuItem -l "Rear_Trunnion";
+		    			menuItem -l "Side_Lug_Mount";
+		    			menuItem -l "Side_Tapped";
+						
+	$DVYImage[1] = `iconTextStaticLabel -w 180 -h 110 -st "iconOnly" -i1 "DVY_Blank1.xpm" IMage01` ;		
+		
+	setParent..;
+
+		separator -h 10 -style "single";
+		
+	rowColumnLayout -enable 1 -nc 2
+					-cw 1 150 -cal 1 "center" -cat 1 "both" 1
+					-cw 2 300 -cal 2 "center" -cat 2 "both" 1
+				CylinderStyle2Col;
+		
+			optionMenu -width 140 -cc ("DVY_PistonCallback(2)") DVY_Rod1Option;
+					menuItem -l "Rod End Style";
+		    			menuItem -l "Rod_Bush_Mount";
+		    			menuItem -l "Rod_Pin_Mount";
+		    			menuItem -l "Rod_Male_Clevis";
+		    			menuItem -l "Rod_Female_Clevis";
+						
+	$DVYImage[2] = `iconTextStaticLabel -w 180 -h 110 -st "iconOnly" -i1 "DVY_Blank1.xpm" IMage02`;		
+						
+	setParent..;
+	
+		separator -h 10 -style "double";
+
+		text -height 2  -bgc 1 1 0.85 -align "left" -label " ";
+		text -height 15 -bgc 1 1 0.85 -align "left" -label " Select CheckBox if Cover is required for Cylinder Rod. i.e. To produce Vehicle style Damper.";
+		text -height 15 -bgc 1 1 0.85 -align "left" -label " Select RadioButton for style of spring Support if required. i.e Spring over Shock or Damper.";
+		text -height 15 -bgc 1 1 0.85 -align "left" -label " These Options only available with Round Style Cylinders.";
+		text -height 2  -bgc 1 1 0.85 -align "left" -label " ";
+
+		separator -h 10 -style "single";
+		
+			radioButtonGrp -nrb 4 -sl 1 -label "Spring Support"
+							-cl5 "right" "left" "left" "left" "left" 
+							-columnWidth5 80 50 65 90 130
+							-labelArray4 "None" "Rod End" "Cylinder Base" "Both Rod and Cylinder" 
+						
+						-onCommand1 "checkBox -edit -enable false SpringChkBox"
+						-onCommand2 ""		//"checkBox -edit -enable true SpringChkBox"
+						-onCommand3 "" 	//"checkBox -edit -enable true SpringChkBox"
+						-onCommand4 ""	//"checkBox -edit -enable true SpringChkBox"
+					PistonSpringType;
+			
+		
+	rowColumnLayout -enable 1 -nc 2
+					-cw 1 150 -cal 1 "center" -cat 1 "both" 1
+					-cw 2 150 -cal 2 "center" -cat 2 "both" 1
+				SpringCol;
+			
+			checkBox -height 20 -enable true -label " Rod Cover" RodCoverChkBox;
+			checkBox -height 20 -enable false -label " Coil Spring" SpringChkBox;
+			
+			
+		setParent $Tabs[0];
+	setParent $Tab;
+	
+//////////////////////////////////////////////////////////////////////////////////
+//					Help and Info Tab.
+//////////////////////////////////////////////////////////////////////////////////	
+// Tab Layout for Help and Info Tab
+	
+	$Tabs[1] = `columnLayout -adj 1 "Help and Info "`;
+
+		string $HelpM = `frameLayout -height 545 -labelVisible 0 -label "Help & Info" -bs "in" "Help"`;
+	
+			columnLayout -adj 1 ;
+			
+				text -height 5-label "";
+				separator -h 10 -style "double";
+				text -bgc 0.7 1 0.7  -height 20 -align "center" -label "Help Section ";
+				
+				separator -h 10 -style "double";
+				text -height 5-label "";
+		
+				scrollField -height 520 -bgc 1 1 0.85 -wordWrap true -editable false
+				-text " To use this these scripts. \n\nSet Rod Diameter required. Then Select Rod Length required. \nThe GUI will calculate and display nearest English equivalents for Diameter and Length. The Fields are already filled in with some default values to test script. The default values are set using following relationships between dimensions. \n\n   Cylinder ID = 2 * Rod Diameter. \n   Cylinder OD is 1.2 * Cylinder ID \n   Cylinder Length = Rod Length - Bore ID. \n\nFor Best results try and use values with these ratios but script will work with other values. If Round Cylinder End Caps are used then the CheckBox for a Rod Cover can be selected. Also Spring Supports can be added to allow a spring to fit over the Cylinder. \n\nThe Rod Cover and Spring Supports should only be selected to use with Clevis Types, Pin and Bush Mounts for Cylinder Ends. \n\nThe Group Top Node has some addtibutes added to it (if spring Options selected) which list some recommended dimensions for Spring Coil Diameter and the Radius of Section of Coil Spring, also Spring Length to match distance between Supports \n\nI am also currently developing a script to generate Springs which will use these dimensions to build a Spring to suit.";
+				
+				text -height 5-label "";
+	
+		setParent $Tabs[1];
+
+	setParent $MainPanel;	
+
+// Build it.
+
+	frameLayout -cll 0 -vis 1 -lv 0 -label "Build" -la "center" -bs "out";
+	
+	columnLayout -enable 1 -adj 1 -cat "left" 1 -cal "center" ;
+		
+		separator -h 5 -style "none";
+
+		button -height 40 -bgc 0.7 0.7 1 -label "Build Piston"
+			-command " print \"\\n Building Pistons as Required Davvey © 2006..\\n\"; DVY_PistonBuild;"
+				Screw_Builder;	
+
+		separator -h 10 -style "none";
+
+	setParent..;		
+	
+	//Show the DVY_Pistons UI Window.
+	
+	showWindow DVY_PistonsWindow;
+
+}
+
+ 
+//-----------------------------------------------------------------
+
+global proc DVY_PistonCallback (int $S)
+{
+	global string $DVYImage[];
+	
+	int $T = `radioButtonGrp -q -sl CylinderType`;
+	
+	string $Images1[] = {" ", "Blank", "BushMount", "RearPin", 
+						"MaleClevis", "FemaleClevis", "FrontFlange", "RearFlange",
+						"FrontTrunnion", "CenterTrunnion", "RearTrunnion",
+						"SideLugMount", "SideTapped"};
+	
+	string $Images2[] = {" ", "RodBlank", "RodBush", "RodPin", 
+						"RodMaleClevis", "RodFemaleClevis"};
+	
+	
+	int $S1 = `optionMenu -q -sl DVY_Cylinder1Option`;
+		if ($S == 1)
+			{
+				setParent CylinderStyle1Col;
+				$DVYImage[1] = `iconTextStaticLabel -e -i1 ("DVY_" + $Images1[$S1] + $T + ".xpm") IMage01`;
+			}
+		
+	int $S2 = `optionMenu -q -sl DVY_Rod1Option`;
+		
+		if ($S == 2)
+			{
+				setParent CylinderStyle2Col;
+				$DVYImage[2] = `iconTextStaticLabel -e -i1 ("DVY_" + $Images2[$S2] + $T + ".xpm") IMage02`;
+			}
+		
+}// End of DVY_PistonCallback Procedure
+
+
+global proc string DVY_Spiral( float $ht, float $radius, float $numRounds )
+//
+//	Description:
+//		This proc creates a spiral centred about the origin, with a specific
+//		height, radius and number of rounds/turns/cycles.
+//
+//		This is done by creating a cylinder of the correct size, then
+//		creating a curve-on-surface on the cylinder (which is in
+//		the form of a spiral), then duplicating the curve-on-surface
+//		to get a 3D spiral.
+//
+{
+	string $cylinder[] = `cylinder -ch off -ax 0 1 0 -p 0 0 0 -r 1.0 -hr 1.0`;
+	scale $radius $ht $radius $cylinder[0];
+	string $cos = `curveOnSurface -d 1 -uv 0.0 0.0 -uv 1.0 ($numRounds*8.0) $cylinder[0]`;
+	string $duplicatedCrv[] = `duplicateCurve -ch off $cos`;
+
+	delete $cos;
+	delete $cylinder[0];
+
+	return $duplicatedCrv[0];
+	
+}// End of DVY_Spiral procedure
+
+global proc DVY_AboutPistonsWin()
+ {
+	global float $DVYTol;
+	if ((`window -ex DavveyAboutPistonsWindow`) == true) 
+		{
+			deleteUI DavveyAboutPistonsWindow;
+		}
+		if (`windowPref -ex DavveyAboutPistonsWindow`) windowPref -remove DavveyAboutPistonsWindow;
+		window -t " About:-  Davvey's Piston Generator." -width 425 -height 300 -sizeable 0 DavveyAboutPistonsWindow;
+		//Build 'Edit' menu.
+	
+	string $menuBarLayout = `menuBarLayout -height 20`;
+		menu -label "File"; 
+ 			menuItem -label "Close" -command "deleteUI DavveyAboutPistonsWindow";		
+
+
+	setParent;
+	setParent;
+
+		columnLayout -adjustableColumn true -columnAttach "both" 5 -columnWidth 350; 
+	
+		text -height 2 -label " " ;	//Spacer
+		separator -height 10 -style "double" ;
+			text -bgc 0.5 0.5 1 -height 20 -align "center" -fn "boldLabelFont" -l "Davvey's Piston Generator..";
+			text -bgc 0.5 0.5 1 -height 20 -align "center" -fn "boldLabelFont" -l "copyright (c) 2006 Dave Lake..";
+		separator -height 8 -style "double" ;
+		text -height 2 -label " " ;	//Spacer
+		
+	frameLayout -cl 0 -label "" -labelAlign "center" -borderStyle "etchedOut";
+		columnLayout -adjustableColumn true -columnAttach "both" 2 -columnWidth 250; 
+		
+		text -bgc 1 1 0.8 -height 5 -align "left" -l " ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -fn "boldLabelFont" -l "  Special Thanks:- ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -fn "plainLabelFont" -l "  Thanks to my wife Jan for her support and patience during the time";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "   its taken to learn Maya and how to write these scripts.";
+		text -bgc 1 1 0.8 -height 10 -align "left" -l " ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "  Also dedicated to Jackie and Joanna (my expensive pride and joys!!)";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "  Finally these Collected works are dedicated to the memory of Darryl.";
+		text -bgc 1 1 0.8 -height 5 -align "left" -l " ";
+		setParent ..;	
+		setParent ..;	
+		text -align "center" -l "email :- Davvey@ntlworld.com";
+		text -align "center" -l "website :- www..............";
+	setParent ..; 
+
+	showWindow DavveyAboutPistonsWindow;
+	
+}// End of DVY_AboutPistonsWin Procedure

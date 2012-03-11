@@ -1,0 +1,54 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davveys Lego Generator
+''    Author:  
+''    Last Updated: Jun 30, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4782.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+
+
+//	This returns the animcurve node driving the input of a transform
+
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////
+ 
+global proc string DVY_GetAnimCurve (string $xform)
+{
+
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+//	Local variables.
+	
+	string $buffer;
+	string $bufferArray[];
+	string $attributeToCheck = ($xform +".rotateOrder");
+
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+//	Only perform operation if $attributeToCheck is connected.
+
+		if (`connectionInfo -id $attributeToCheck`)
+			{
+				//	Returns name of input to $attributeToCheck.
+				$buffer = `connectionInfo -sfd $attributeToCheck`;
+			}
+			
+		tokenize $buffer "." $bufferArray;
+	return $bufferArray[0];
+}
+

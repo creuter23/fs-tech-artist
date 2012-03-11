@@ -1,0 +1,144 @@
+proc mecLHWin()
+{
+
+	if(`window -exists mecLHWin`)
+			deleteUI mecLHWin;
+	if( `windowPref -exists mecLHWin` )
+			windowPref -r mecLHWin;
+	
+	window -w 217 -h 199 -t "Lock/Hide Script" 
+			-titleBar 1 -mnb 1 -mxb 1 -mb 1 
+			-tlb 0 -sizeable 1 mecLHWin;
+	
+	columnLayout mecLHColMain;
+	text -h 10 -l "";
+	rowLayout -nc 4 -columnWidth4 20 60 60 60 ;
+	text -l "";
+	
+	radioCollection mecLHRadio;
+	radioButton -w 60 
+			 -label "Lock" 
+			-cl "mecLHRadio" -align "center"
+			mecLHLock;
+	radioButton -w 60 
+			 -label "Hide" 
+			-cl "mecLHRadio" -align "center"
+			mecLHHide;
+	radioButton -w 60 
+			 -label "Both" 
+			-cl "mecLHRadio" -align "center"
+			-sl
+			mecLHBoth;
+	
+	setParent mecLHColMain;
+	
+	
+	// Axis Checkbox Row
+	text -l "" -h 5;
+	rowLayout -nc 4 -columnWidth4 40 40 40 40 ;
+	text -l "";
+	checkBox -w 40 -l "X"
+			-v 1 -align "center" mecLHChkX;
+	checkBox -w 40 -l "Y"
+			-v 1 -align "center" mecLHChkY;
+	checkBox -w 40 -l "Z"
+			-v 1 -align "center" mecLHChkZ;
+	
+	setParent mecLHColMain;
+	
+	// Translate Row
+	text -h 8 -l "";
+	rowLayout -nc 5 -columnWidth5 20 75 35 5 45 ;
+	text -l "";
+	text -l "Translate";
+	button -l "Hide" -w 35 -h 20 -align "center" 
+		 -c "mecLHWork(\"t\", 1)";
+	text -l "";
+	button -l "Return" -w 45 -h 20 -align "center" 
+		 -c "mecLHWork(\"t\", 0)";
+	setParent mecLHColMain;
+	
+	// Rotate Row
+	text -h 5 -l "";
+	rowLayout -nc 5 -columnWidth5 20 75 35 5 45 ;
+	text -l "";
+	text -l "Rotate";
+	button -l "Hide" -w 35 -h 20 -align "center" 
+		 -c "mecLHWork(\"r\", 1)";
+	text -l "";
+	button -l "Return" -w 45 -h 20 -align "center" 
+		 -c "mecLHWork(\"r\", 0)";
+	setParent mecLHColMain;
+	
+	// Scale Row
+	text -h 5 -l "";
+	rowLayout -nc 5 -columnWidth5 20 75 35 5 45 ;
+	text -l "";
+	text -l "Scale";
+	button -l "Hide" -w 35 -h 20 -align "center" 
+		 -c "mecLHWork(\"s\", 1)";
+	text -l "";
+	button -l "Return" -w 45 -h 20 -align "center" 
+		 -c "mecLHWork(\"s\", 0)";
+	setParent mecLHColMain;
+	
+	// Visibility Row
+	text -h 5 -l "";
+	rowLayout -nc 5 -columnWidth5 20 75 35 5 45 ;
+	text -l "";
+	text -l "Visibility";
+	button -l "Hide" -w 35 -h 20 -align "center" 
+		 -c "mecLHWork(\"v\", 1)";
+	text -l "";
+	button -l "Return" -w 45 -h 20 -align "center" 
+		 -c "mecLHWork(\"v\", 0)";
+	setParent mecLHColMain;
+		
+	showWindow mecLHWin;
+
+}
+
+global proc mecLHWork(string $attr, int $state)
+{
+	// Three states Lock only, Hide only, and both.
+
+	string $radio = `radioCollection -q -sl mecLHRadio`;
+	string $LockHide; 
+	string $stateK;  
+	string $sel[] = `ls -sl`;
+
+	// Keyframe state is opposite from the locking values need to flip it.
+	if($state == 1)
+		$stateK = 0;
+	else
+		$stateK = 1;
+	
+	
+	if ($radio == "mecLHLock")
+		$LockHide = "setAttr -l " + $state;
+	else if ($radio == "mecLHHide")
+		$LockHide = "setAttr -k " + $stateK;
+	else
+		$LockHide = "setAttr -l " + $state + " -k " + $stateK;
+	
+	
+	for( $s in $sel)
+	{
+		// visibility
+		if( $attr == "v")
+			eval( $LockHide + " " + $s + "." + $attr + ";");
+		else
+		{
+			if(`checkBox -q -v mecLHChkX`)
+				eval( $LockHide + " " + $s + "." + $attr + "x" + ";");
+			
+			if(`checkBox -q -v mecLHChkY`)
+				eval( $LockHide + " " + $s + "." + $attr + "y" +";");
+
+			if(`checkBox -q -v mecLHChkZ`)
+				eval( $LockHide + " " + $s + "." + $attr + "z" + ";");	
+		}
+	}// end of loop
+}
+	
+mecLHWin;

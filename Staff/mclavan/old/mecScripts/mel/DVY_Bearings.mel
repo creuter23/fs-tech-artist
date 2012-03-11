@@ -1,0 +1,899 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name:  Davvey\'s Bearing Generator
+''    Author: Davvey 
+''    Last Updated: Jan 15, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/1027.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+///////////////////////////////////////////////////////////////////////////////
+/*			
+				
+	Copyright © 2006 DVY_Bearings. All rights reserved davvey@ntlworld.com
+
+						- DVY_Bearings -
+///////////////////////////////////////////////////////////////////////////////
+						
+//	DVY_Bearings;
+//	Description and Usage Section
+
+//	Installation	
+
+	Just install scripts in any Maya script path and install
+	Icon in May\\Prefs\Icons directory (to use with any Shelf button)
+
+
+//	Description Section
+
+	These Scripts will build Dimensional accurate Metric Bearings using the
+	relevant ISO Standards and the GUI will show the English Equivalent
+	during the setting up of the vrious options. The Metric Bearings
+	manufactured to the following standards are covered by
+
+	–  	metric radial rolling bearings in standard ISO 15:1998,
+		except taper roller bearings
+
+	– 	metric radial taper roller bearings in standard ISO 355:1977
+
+	– 	metric thrust rolling bearings in standard ISO 104:2002.
+	
+	Bearings are made in a wide variety of types and sizes. Single-row 
+	radial bearings are made in four series, extra light (100), light (200),
+	medium (300), and heavy (400), for each bore. 
+	Most, but not all, manufacturers use a numbering system so devised that
+	if the last two digits are multiplied by 5, the result will be the bore
+	in millimeters. The digit in the third place from the right indicates
+	the series number. Thus, bearing 307 signifies a medium-series bearing
+	of 35-mm bore.
+	
+
+	The GUI will call the relevant script to build the required Bearings.
+	The Bushes can be produced in default Lambert or a choice of various 
+	basic materials. The Ball and Roller Bearing will be shader in simple
+	steel and Brass Shaders as required.
+		
+	After construction of the various parts the Inner and Outer rotations
+	are connected to the Roller and Cage rotations. Inside and Outside can
+	be rotated in Y Axis independantly.
+	
+	Self aligning Bearings can also be rotated in X and Y and Roller and
+	Cages will also rotate  as required.
+	
+	All Bearings are produced to Metric Bearing Standards and the Size/Scale is
+	correctly set to suit Maya's user preferences settings.
+
+
+// Usage Section
+
+	These scripts build Metric Bearings but the UI will show the english 
+	equivalent sizes during setup.
+		
+	Many catalogues display a more comprehensive range than this but many
+	sizes will not be readily available 'off-the-shelf'. 
+	
+
+*/
+	
+//////////////////////////////////////////////////////////////////////////
+//					DVY_Bearings Procedure
+//////////////////////////////////////////////////////////////////////////
+
+	
+//============================================================================
+//	GLOBAL VARIABLES
+//============================================================================
+	global int $DVYDebug;
+
+// Integer Flag that allows print statements to be output to
+// message field for tracking purposes.
+		
+//============================================================================
+
+global proc DVY_Bearings()
+{
+	global string $Type[];
+	
+	global string $Title[], $TitleN[], $IField[], $FField[], $Option[];
+
+	global string $Series[], $BBType[], $BRType[];
+	global float $BrID[], $BrOD1[], $BrOD2[], $BrOD3[], $BrOD4[],
+						 $BrROD1[], $BrROD2[], $BrROD3[], $BrROD4[],
+				 $NoBalls1[], $NoBalls2[], $NoBalls3[], $NoBalls4[],
+				 $BallD1[], $BallD2[], $BallD3[], $BallD4[],
+				 $BrWidth1[], $BrWidth2[], $BrWidth3[],  $BrWidth4[],
+				 $BrRWidth1[], $BrRWidth2[], $BrRWidth3[], $BrRWidth4[],
+				 $BrNOD[], $BrNWidth[], $NeedleD[];
+				 
+	$Series = {"Extra_Light", "Light", "Medium", "Heavy"};
+	$BBType = {"Standard", "Deep_Groove", "Angular_Contact", "Self_Align", "External_Self_Align", 
+			  "Double_Row", "Thrust", "Self_Align_Thrust"};
+	
+	$BRType = {"Plain", "Self_Align_Spherical", "Needle", 
+			   "Double_Row", "Tapered", "Double_Row_Tapered", "Taper_Thrust", "Spherical_Taper_Thrust"};
+	
+	$BrID =  	{5,  10, 12, 15, 17, 20, 25, 30, 35, 40, 45,  50,  55,  60,  65,  70,  75,  80,  85,  90,  95,  100};
+	$BrOD1 = 	{11, 21, 24, 32, 35, 42, 47, 55, 62, 68, 75,  80,  90,  95,  100, 110, 120, 135, 142, 150, 155, 160};
+	$BrOD2 = 	{12, 22, 28, 35, 40, 47, 52, 62, 72, 80, 85,  90,  100, 110, 120, 125, 135, 160, 165, 170, 175, 180};
+	$BrOD3 = 	{13, 26, 32, 42, 47, 52, 62, 72, 80, 90, 100, 110, 120, 130, 140, 150, 160, 180, 190, 200, 210, 220};
+	
+	$BrWidth1 = {7,  8,  8,  9, 10,  12, 12, 13, 14, 15, 16,  16,  18,  18,  18,  20,  20,  22,  23,   24,  25,  25};
+	$BrWidth2 = {8,  9,  10, 11, 12, 14, 15, 16, 17, 18, 19,  20,  21,  22,  23,  24,  25,  26,  27,   28,  29,  30};
+	$BrWidth3 = {8,  9,  10, 13, 14, 15, 17, 19, 21, 23, 25,  27,  29,  31,  33,  35,  37,  39,  41,   43,  45,  47};
+	$BrWidth4 = {11, 12, 14, 15, 17, 19, 21, 23, 25, 27, 29,  31,  33,  35,  37,  42,  45,  48,  52,   54,  56,  58};
+	
+	$NoBalls1 = {8,  8,  8,  9,  10,  9, 10, 11, 11, 13, 13,  14,  13,  14,  15,  14,  15,  15,  16,   16,  17,  17};
+	$NoBalls2 = {7,  7,  7,  7,  7,   8,  9,  9,  9,  9,  9,  10,  10,  10,  10,  10,  10,  10,  11,   11,  12,  12};
+	$NoBalls3 = {6,  6,  6,  8,  6,   7,  8,  8,  8,  8,  8,   8,   8,   8,   8,   8,   8,   8,   8,    8,   9,   9};
+	$NoBalls4 = {6,  6,  6,  8,  6,   7,  8,  8,  8,  8,  8,   8,   8,   8,   8,   8,   8,   8,   8,    8,   9,   9};
+	
+	$BallD1	=	{2.0, 2.5, 3, 5,  5,  6,  6,  7,  8,  8,  9,   9,  10,  10,  10,  11,  11,  12,  12,   13,  13,  14};
+	$BallD2	=	{2.5, 3,  5,  6,  7,  7,  8,  9,  10, 12, 12,  12, 14,  15,  15,  17,  17,  18,  19,   20,  22,  25};
+	$BallD3	=	{3.0, 4,  5, 6.5, 9,  9,  10, 12, 13, 14, 15,  19, 20,  21,  23,  25,  25,  27,  28,   30,  30,  33};
+	$BallD4	=	{3.5, 5,  6, 8, 10,  10,  12, 13, 14, 15, 16,  20, 21,  23,  25,  27,  27,  29,  30,   32,  32,  35};
+	
+	
+//	$BrID =  	{5,  10, 12,  15,  17, 20, 25, 30, 35,  40,  45,  50,  55, 60, 65,  70,  75,  80,  85,  90,  95, 100};
+	$BrNOD = 	{11, 21, 25,  30,  40, 45, 50, 45, 50,  55,  60,  65,  70, 75, 85,  90,  95, 100, 105, 115, 120, 125};
+
+	$BrNWidth = {7,  8,  8,   9,   10, 11, 25, 30, 30,  30,  30,  30,  35, 40, 40,  45,  45,  50,  50,  50,  50,  50};
+	$NeedleD =	{1.5, 2.0, 2.5, 2.5, 2.5, 3.0, 3.0, 3.0, 3.0, 3.5, 3.5, 3.5, 3.5, 4.0, 4.0, 4.5, 4.5, 5.0, 5.0, 5.5, 6.0, 6.0};
+	
+	$BrROD1 = 	{11, 21, 24, 32, 35, 45, 47, 55, 62,  68,  75,  80,  90,  95,  100, 110, 115, 125, 130, 140, 145, 150};
+	$BrROD2 = 	{11, 21, 24, 32, 35, 47, 52, 62, 72,  80,  85,  90,  100, 110, 120, 125, 130, 140, 150, 160, 170, 180};
+	$BrROD3 = 	{11, 21, 24, 32, 35, 52, 62, 72, 80,  90,  100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 215};
+	$BrROD4 = 	{11, 21, 24, 32, 35, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 180, 190, 200, 210, 225, 240, 250};
+	
+	$BrRWidth1 ={7,   8,  8,  9, 10, 11, 12, 13,  14,  15,  16,  16,  18,  18,  18,  20,  20,  22,  22,  24,  24,  24};
+	$BrRWidth2 ={9,  10, 11, 12, 13, 14, 15, 16,  17,  18,  19,  20,  21,  22,  23,  24,  25,  26,  28,  30,  32,  34};
+	$BrRWidth3 ={10, 11, 12, 13, 14, 15, 17, 19,  21,  23,  25,  27,  29,  31,  33,  35,  37,  39,  41,  43,  45,  47};
+	$BrRWidth4 ={11, 12, 14, 15, 17, 19, 21, 23,  25,  27,  29,  31,  33,  35,  37,  42,  45,  48,  52,  54,  56,  58};
+	
+	
+	int $a = $b = $c = 0;
+	
+	//	Check for any "Window History" and delete if it exists.
+	 	if (`windowPref -exists DVY_BearingsWindow`)
+			{ windowPref -edit -topLeftCorner 125 700 -widthHeight 480 560 DVY_BearingsWindow;}
+	
+	//Check for multiple similar windows.
+		if (`window -q -ex DVY_BearingsWindow`) deleteUI DVY_BearingsWindow;
+	//Build window.
+		window -w 480 -h 560 -mnb 1 -mxb 0 -sizeable 1  -title "Davvey's Bearing Generator ver 1.0" DVY_BearingsWindow;
+	
+	//Build 'Edit' menu.
+	
+	string $menuBarLayout = `menuBarLayout`;
+		menu -label "File"; 
+ 			menuItem -label "Close" -command "deleteUI DVY_BearingsWindow";		
+		menu -label "About"; 
+	 		menuItem -label "About Bearing Generator" -command "DVY_AboutBearingsWin;";
+			
+	setParent..;
+
+	// Create Main Layout column
+			
+	string $MainPanel = `columnLayout -width 475 -adj 1 -cat "both" 5 -cal "center" "Main Panel"`;
+	
+		text -height 3 -label " " ;	//Spacer
+		separator -height 5 -style "double" ;
+		text -bgc .5 .5 1 -height 20 -align "center" -font "boldLabelFont" -label "Davvey's Bearing Generator.";
+		separator -height 5 -style "double";
+		text -height 3  -label " " ;	//Spacer
+		
+	string $Tabs = `tabLayout -width 435 -imw 1 -imh 1 "Tabs"`;
+	
+	string $TitleC1 = `columnLayout -width 420 -adj 1 -cal "center" "Setup Bearings"`;
+	
+		text -height 3 -label " " ;	//Spacer
+		separator -height 5 -style "double" ;
+		text -bgc 1 1 0.85 -height 2 -align "left" -label "";
+		text -bgc 1 1 0.85 -height 15 -align "left" 
+			-label " Fill in Fields as Required then press `Build` Button.";
+		text -bgc 1 1 0.85 -height 15 -align "left" -label " Select Bearing Type then enter data as required for Bearing Dimensions.";
+		text -bgc 1 1 0.85 -height 15 -align "left" -label " The GUI will calculate english equivalent sizes as each field is filled in";
+		text -bgc 1 1 0.85 -height 2 -align "left" -label "";
+		
+		separator -bgc 1 1 0.85 -height 5 -style "double";
+		text -height 5 -label " " ;	//Spacer
+		
+		
+			radioButtonGrp  -height 20 -nrb 3 -label " Bearing Type :-" 
+							-cl4 "right" "left" "left" "left" 
+							-columnWidth4 105 80 80 70 
+							-labelArray3 "Bush" "Ball" "Roller" 
+			
+							-onCommand1 "frameLayout -edit -collapse false BushBearingFrame;"
+							-offCommand1 "frameLayout -edit -collapse true BushBearingFrame;"
+							
+							-onCommand2 "frameLayout -edit -collapse false BallBearingFrame;"
+							-offCommand2 "frameLayout -edit -collapse true BallBearingFrame;"
+							
+							-onCommand3 "frameLayout -edit -collapse false RollerBearingFrame;"
+							-offCommand3 "frameLayout -edit -collapse true RollerBearingFrame;"
+							
+						BearingTypeRadioButton;	
+			
+		separator -height 10 -style "double";
+			
+		text -height 5 -label " " ;	//Spacer
+		text -height 15 -font "boldLabelFont" -align "center" -label " Bush Bearing Options " ;	//Spacer
+		text -height 5 -label " " ;	//Spacer
+		
+		frameLayout -bv true -bs "in" -width 410 -mh 3 -mw 3 -collapsable true -collapse true 
+							-labelVisible false -label "Bush Bearings Options" BushBearingFrame;
+		
+		columnLayout -width 420 -adj 1 -cal "center";
+		
+			
+				radioButtonGrp  -height 20 -nrb 3 -select 1 -label " Bearing Style :-" 
+							-cl4 "right" "left" "left" "left" 
+							-columnWidth4 105 80 80 70 
+							-labelArray3 "Plain" "Split" "Half" 
+						BushBearingStyleRadioButton;	
+		
+				radioButtonGrp  -height 20 -nrb 3 -select 1 -label " Flange Style :-" 
+							-cl4 "right" "left" "left" "left" 
+							-columnWidth4 105 80 80 70 
+							-labelArray3 "None" "Single End" "Both Ends" 
+						BushBearingFlangeRadioButton;	
+			
+		string $BearingInfoC = `rowColumnLayout -enable 1 -nc 3
+						-cw 1 145 -cal 1 "center" -cat 1 "both" 2
+						-cw 2 145 -cal 2 "center" -cat 2 "both" 2
+						-cw 3 145 -cal 3 "center" -cat 3 "both" 2
+					"BearingTitleCol"`;
+		
+		text -height 15 -label " Bearing Inside Diameter ";
+		text -height 15 -label " Bearing Outside Diameter";
+		text -height 15 -label "     Bearing Width.";
+		
+	setParent..;
+	
+		string $BushBearingC = `rowColumnLayout -enable 1 -nc 6
+						-cw 1 70 -cal 1 "center" -cat 1 "both" 1
+						-cw 2 70 -cal 2 "center" -cat 2 "both" 1
+						-cw 3 70 -cal 3 "center" -cat 3 "both" 1
+						-cw 4 70 -cal 4 "center" -cat 4 "both" 1
+						-cw 5 75 -cal 5 "center" -cat 5 "both" 1
+						-cw 6 70 -cal 6 "center" -cat 6 "both" 1
+					"BushBearingCol"`;
+	
+		text -height 20 -align "center" -label "   mm";
+		text -height 20 -align "center" -label "  inches";
+		text -height 20 -align "center" -label "   mm";
+		text -height 20 -align "center" -label "  inches";
+		text -height 20 -align "center" -label "   mm";
+		text -height 20 -align "center" -label "  inches";
+		
+		
+		floatField -width 85 -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_1` / 25.4; \floatField -edit -v $Val BFloatField_2;" BFloatField_1;
+		floatField -editable false -pre 3 BFloatField_2;
+		floatField -width 85 -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_3` / 25.4; \floatField -edit -v $Val BFloatField_4;" BFloatField_3;
+		floatField -editable false -pre 3 BFloatField_4;
+		floatField -width 85 -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_5` / 25.4; \floatField -edit -v $Val BFloatField_6;" BFloatField_5;
+		floatField -editable false -pre 3 BFloatField_6;
+		
+		text -height 20 -align "right" -label "Flange";
+		text -height 20 -align "left" -label "Thickness ";
+		text -height 20 -align "right" -label "Flange Out";
+		text -height 20 -align "left" -label "side Diameter ";
+		text -height 20 -align "center" -label "";
+		text -height 20 -align "center" -label "";
+		
+		floatField -width 85 -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_7` / 25.4; \floatField -edit -v $Val BFloatField_8;" BFloatField_7;
+		floatField -editable false -pre 3 BFloatField_8;
+		floatField -width 85 -editable true -pre 2 -cc "$Val = `floatField -q -v BFloatField_9` / 25.4; \floatField -edit -v $Val BFloatField_10;" BFloatField_9;
+		floatField -editable false -pre 3 BFloatField_10;
+		
+		
+		optionMenu -width 100 DVY_BushMaterial;
+				menuItem -l "Material";
+				menuItem -l "Brass";
+				menuItem -l "White_Metal";
+				menuItem -l "Nylon_White";
+				menuItem -l "Graphite";
+				menuItem -l "Tuffnol_Brown";
+				menuItem -l "PolyProp";
+				menuItem -l "Copper";
+					
+	setParent..;		
+				
+		separator -h 5 -style "none";
+				
+				button -enable true -height 25 -bgc 0.7 0.7 1 -label "Build Bush Bearings"
+					-command " print \"\\n Building Bush Bearings as Required Davvey © 2006..\\n\"; DVY_BushBearingBuild;"
+					BushBearingBuilder;	
+				
+		separator -h 5 -style "none";
+				
+	setParent..;		
+	setParent..;		
+		
+		text -height 5 -label " " ;	//Spacer
+		text -height 15 -font "boldLabelFont" -align "center" -label " Ball Bearing Options " ;	//Spacer
+		text -height 5 -label " " ;	//Spacer
+	frameLayout -bv true -bs "in" -width 410 -mh 3 -mw 3 -collapsable true -collapse true 
+							-labelVisible false -label "Ball Bearings Options" BallBearingFrame;
+		
+		columnLayout -width 420 -adj 1 -cal "center";
+
+			rowColumnLayout -enable 1 -nc 4
+					-cw 1 100 -cal 1 "center" -cat 1 "both" 1
+					-cw 2 130 -cal 2 "center" -cat 2 "both" 1
+					-cw 3 100 -cal 3 "center" -cat 3 "both" 1
+					-cw 4 100 -cal 4 "center" -cat 4 "both" 1
+				"BallBearingCol";
+				
+				text -height 15 -align "left" -label " Bearing Series";
+				text -height 15 -align "left" -label " Bearing Type    ";
+				text -height 15 -align "left" -label " ";
+				text -height 15 -align "left" -label " ";
+			
+			
+				$a =0;	
+					optionMenu -width 100 -cc "optionMenu -edit -sl 1 DVY_Ball_ID;\ DVY_BearingCallback(0)" DVY_BallSeries;
+						menuItem -l $Series[$a++];
+						menuItem -l $Series[$a++];
+						menuItem -l $Series[$a++];
+						menuItem -l $Series[$a++];
+					
+				$a =0;	
+					optionMenu -width 100 -cc "optionMenu -edit -sl 1 DVY_Ball_ID;" DVY_BallType;
+						menuItem -l $BBType[$a++];
+						menuItem -l $BBType[$a++];
+						menuItem -l $BBType[$a++];
+						menuItem -l $BBType[$a++];
+						menuItem -l $BBType[$a++];
+						menuItem -l $BBType[$a++];
+						menuItem -l $BBType[$a++];
+						menuItem -l $BBType[$a++];
+						
+	setParent..;
+			
+			rowColumnLayout -enable 1 -nc 3
+					-cw 1 145 -cal 1 "center" -cat 1 "both" 1
+					-cw 2 145 -cal 2 "center" -cat 2 "both" 1
+					-cw 3 145 -cal 3 "center" -cat 3 "both" 1
+				"BallBearingCol1";
+				
+				text -height 15 -align "left" -label " Bearing Inside Diameter";
+				text -height 15 -align "left" -label " Bearing Outside Diameter";
+				text -height 15 -align "left" -label "      Bearing Width";
+			
+	setParent..;
+		
+		rowColumnLayout -enable 1 -nc 6
+				-cw 1 80 -cal 1 "center" -cat 1 "both" 1
+				-cw 2 70 -cal 2 "center" -cat 2 "both" 1
+				-cw 3 70 -cal 3 "center" -cat 3 "both" 1
+				-cw 4 70 -cal 4 "center" -cat 4 "both" 1
+				-cw 5 70 -cal 5 "center" -cat 5 "both" 1
+				-cw 6 70 -cal 6 "center" -cat 6 "both" 1
+			"BallBearingCol2";
+			
+			text -height 20 -align "center" -label "   mm";
+			text -height 20 -align "center" -label "  inches";
+			text -height 20 -align "center" -label "   mm";
+			text -height 20 -align "center" -label "  inches";
+			text -height 20 -align "center" -label "   mm";
+			text -height 20 -align "center" -label "  inches";
+				
+		$a =0;	
+			optionMenu -width 100 -cc "DVY_BearingCallback(1)" DVY_Ball_ID;
+				menuItem -l "Bearing ID";
+				menuItem -l $BrID[$a++];	menuItem -l $BrID[$a++];
+				menuItem -l $BrID[$a++];	menuItem -l $BrID[$a++];
+				menuItem -l $BrID[$a++];	menuItem -l $BrID[$a++];
+				menuItem -l $BrID[$a++];	menuItem -l $BrID[$a++];
+				menuItem -l $BrID[$a++];	menuItem -l $BrID[$a++];
+				menuItem -l $BrID[$a++];	menuItem -l $BrID[$a++];
+				menuItem -l $BrID[$a++];	menuItem -l $BrID[$a++];
+				menuItem -l $BrID[$a++];	menuItem -l $BrID[$a++];
+				menuItem -l $BrID[$a++];	menuItem -l $BrID[$a++];
+				menuItem -l $BrID[$a++];	menuItem -l $BrID[$a++];
+				menuItem -l $BrID[$a++];	menuItem -l $BrID[$a++];
+				
+				floatField -editable false -pre 3 BFloatField_11;
+				floatField -editable false -pre 3 BFloatField_12;
+				
+				floatField -editable false -pre 3 BFloatField_13;
+				floatField -editable false -pre 3 BFloatField_14;
+					
+				floatField -editable false -pre 3 BFloatField_15;
+				
+				text -height 20 -align "right" -label "No of Balls  ";
+				intField -editable false BIntField_1;
+					
+				text -height 25 -align "center" -label " ";
+					
+				text -height 25 -align "center" -label "Ball Diameter ";
+					
+				floatField -editable false -pre 3 BFloatField_16;
+				floatField -editable false -pre 3 BFloatField_17;
+						
+	setParent..;		
+			
+		separator -h 5 -style "none";
+			button -enable true -height 25 -bgc 0.7 0.7 1 -label "Build Ball Bearings"
+				-command " print \"\\n Building Ball Bearings as Required Davvey © 2006..\\n\"; DVY_BallBearingBuild;"
+				BallhBearingBuilder;	
+				
+		separator -h 5 -style "none";
+
+		setParent..;		
+	setParent..;	
+		
+		text -height 5 -label " " ;	//Spacer
+		text -height 15 -font "boldLabelFont" -align "center" -label " Roller Bearing Options " ;	//Spacer
+		text -height 5 -label " " ;	//Spacer
+		
+		frameLayout -bv true -bs "in" -width 410 -mh 3 -mw 3 -collapsable true -collapse true 
+					-labelVisible false -label "Roller Bearings Options" RollerBearingFrame;
+		
+	columnLayout -width 420 -adj 1 -cal "center";
+
+		rowColumnLayout -enable 1 -nc 4
+				-cw 1 100 -cal 1 "center" -cat 1 "both" 1
+				-cw 2 130 -cal 2 "center" -cat 2 "both" 1
+				-cw 3 100 -cal 3 "center" -cat 3 "both" 1
+				-cw 4 100 -cal 4 "center" -cat 4 "both" 1
+			"BallBearingCol";
+			
+			text -height 15 -align "left" -label " Bearing Series";
+			text -height 15 -align "left" -label " Bearing Type    ";
+			text -height 15 -align "left" -label " ";
+			text -height 15 -align "left" -label " ";
+			
+		$a =0;	
+			optionMenu -width 100 -cc "optionMenu -edit -sl 1 DVY_Roller_ID;\ DVY_BearingCallback(2)" DVY_RollerSeries;
+				menuItem -l $Series[$a++];
+				menuItem -l $Series[$a++];
+				menuItem -l $Series[$a++];
+				menuItem -l $Series[$a++];
+						
+		$a =0;	
+			optionMenu -width 100  -cc "optionMenu -edit -sl 1 DVY_Roller_ID;\ DVY_BearingCallback(5)" DVY_RollerType;
+				menuItem -l $BRType[$a++];
+				menuItem -l $BRType[$a++];
+				menuItem -l $BRType[$a++];
+				menuItem -l $BRType[$a++];
+				menuItem -l $BRType[$a++];
+				menuItem -l $BRType[$a++];
+				menuItem -l $BRType[$a++];
+				menuItem -l $BRType[$a++];
+					
+	setParent..;
+		
+		rowColumnLayout -enable 1 -nc 3
+				-cw 1 145 -cal 1 "center" -cat 1 "both" 1
+				-cw 2 145 -cal 2 "center" -cat 2 "both" 1
+				-cw 3 145 -cal 3 "center" -cat 3 "both" 1
+			"RollerBearingCol1";
+			
+			text -height 15 -align "left" -label " Bearing Inside Diameter";
+			text -height 15 -align "left" -label " Bearing Outside Diameter";
+			text -height 15 -align "left" -label "      Bearing Width";
+			
+	setParent..;
+		
+		rowColumnLayout -enable 1 -nc 6
+				-cw 1 80 -cal 1 "center" -cat 1 "both" 1
+				-cw 2 70 -cal 2 "center" -cat 2 "both" 1
+				-cw 3 70 -cal 3 "center" -cat 3 "both" 1
+				-cw 4 70 -cal 4 "center" -cat 4 "both" 1
+				-cw 5 70 -cal 5 "center" -cat 5 "both" 1
+				-cw 6 70 -cal 6 "center" -cat 6 "both" 1
+			"RollerBearingCol2";
+			
+			text -height 20 -align "center" -label "   mm";
+			text -height 20 -align "center" -label "  inches";
+			text -height 20 -align "center" -label "   mm";
+			text -height 20 -align "center" -label "  inches";
+			text -height 20 -align "center" -label "   mm";
+			text -height 20 -align "center" -label "  inches";
+				
+	$a =0;	
+		optionMenu -width 100 -cc "DVY_BearingCallback(3)" DVY_Roller_ID;
+			menuItem -l "Bearing ID";
+			menuItem -l $BrID[$a++];	menuItem -l $BrID[$a++];
+			menuItem -l $BrID[$a++];	menuItem -l $BrID[$a++];
+			menuItem -l $BrID[$a++];	menuItem -l $BrID[$a++];
+			menuItem -l $BrID[$a++];	menuItem -l $BrID[$a++];
+			menuItem -l $BrID[$a++];	menuItem -l $BrID[$a++];
+			menuItem -l $BrID[$a++];	menuItem -l $BrID[$a++];
+			menuItem -l $BrID[$a++];	menuItem -l $BrID[$a++];
+			menuItem -l $BrID[$a++];	menuItem -l $BrID[$a++];
+			menuItem -l $BrID[$a++];	menuItem -l $BrID[$a++];
+			menuItem -l $BrID[$a++];	menuItem -l $BrID[$a++];
+			menuItem -l $BrID[$a++];	menuItem -l $BrID[$a++];
+
+			floatField -editable false -pre 3 BFloatField_21;
+			floatField -editable false -pre 3 BFloatField_22;
+			
+			floatField -editable false -pre 3 BFloatField_23;
+			floatField -editable false -pre 3 BFloatField_24;
+				
+			floatField -editable false -pre 3 BFloatField_25;
+				
+	setParent..;
+			
+		rowColumnLayout -enable 1 -nc 5
+				-cw 1 80 -cal 1 "center" -cat 1 "both" 1
+				-cw 2 70 -cal 2 "center" -cat 2 "both" 1
+				-cw 3 140 -cal 3 "right" -cat 3 "both" 1
+				-cw 4 70 -cal 4 "center" -cat 4 "both" 1
+				-cw 5 70 -cal 5 "center" -cat 5 "both" 1
+			"RollerBearingCol3";
+
+			text -height 20 -align "right" -label "No of Rollers  ";
+			intField -editable false BIntField_2;
+				
+			text -height 25 -align "right" -label "Roller Diameter ";
+				
+			floatField -editable false -pre 3 BFloatField_26;
+			floatField -editable false -pre 3 BFloatField_27;
+			
+	setParent..;		
+			
+		separator -h 5 -style "none";
+				button -enable true -height 25 -bgc 0.7 0.7 1 -label "Build Roller Bearings"
+					-command " print \"\\n Building Roller Bearings as Required Davvey © 2006..\\n\"; DVY_RollerBearingBuild;"
+					RollerBearingBuilder;	
+				
+		separator -h 5 -style "none";
+	
+	setParent $Tabs;
+	setParent $MainPanel;	
+
+		separator -h 5 -style "none";
+		
+	setParent..;		
+	
+//Show the DVY_Bearings UI Window.
+	
+ 	showWindow DVY_BearingsWindow;
+	
+}// End of DVY_Bearings Global procedure.
+
+global proc DVY_BearingCallback(int $T)
+{
+	
+// ******************************************************************************** //	
+//	Global Variables
+	 
+	global string $Series[], $BBType[], $BRType[];
+	global float $BrID[], $BrOD1[], $BrOD2[], $BrOD3[], $BrOD4[],
+						 $BrROD1[], $BrROD2[], $BrROD3[], $BrROD4[],
+				 $NoBalls1[], $NoBalls2[], $NoBalls3[], $NoBalls4[],
+				 $BallD1[], $BallD2[], $BallD3[], $BallD4[],
+				 $BrWidth1[], $BrWidth2[], $BrWidth3[],  $BrWidth4[],
+				 $BrRWidth1[], $BrRWidth2[], $BrRWidth3[], $BrRWidth4[],
+				 $BrNOD[], $BrNWidth[], $NeedleD[];
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Local Variables
+	 
+	int $CHTeeth[];
+
+	int $e, $E, $N, $i, $j;	
+	float $Pi, $m, $A, $GW, $PCD, $BD, $RD, $OD;
+	float $Ad, $Dd, $Pd, $WH, $Angle, $Helix ;
+	float $Pos[], $Profiles[];
+	
+	int $CHp = 0;
+	float $Ratios[];
+//	string $ModS = `optionMenu -q -v DVY_Mod`;
+	int $BrS = `optionMenu -q -sl DVY_BallSeries`;
+//	print ("$BrS is " + $BrS + "\n");
+	
+	int $BrR = `optionMenu -q -sl DVY_RollerSeries`;
+//	print ("$BrR is " + $BrR + "\n");
+	
+	int $BrN = `optionMenu -q -sl DVY_RollerType`;
+//	print ("$BrN is " + $BrN + "\n");
+	
+
+	if  (`optionMenu -q -sl DVY_Ball_ID` > 1)
+		{
+			int $BrT = `optionMenu -q -sl DVY_Ball_ID`;
+			float $BearID = `optionMenu -q -v DVY_Ball_ID`;
+			
+			if ($T == 1)
+				{
+				 if ($BrS == 1)
+					{
+						$i = ($BrT -2);
+						$OD = ($BrOD1[$i] * 1.0);
+						$W = ($BrWidth1[$i] * 1.0);
+						$BD =  ($BallD1[$i] * 1.0);
+						$N = $NoBalls1[$i];
+						print $OD;
+						
+						floatField -edit -v ($BearID / 25.4)  BFloatField_11;
+						floatField -edit -v $OD  BFloatField_12;
+						floatField -edit -v ($OD / 25.4)  BFloatField_13;
+						
+						floatField -edit -v $W  BFloatField_14;
+						floatField -edit -v ($W / 25.4)  BFloatField_15;
+						
+						floatField -edit -v $BD  BFloatField_16;
+						floatField -edit -v ($BD / 25.4)  BFloatField_17;
+						
+						intField -edit -v $N BIntField_1;
+					}
+					
+				 if ($BrS == 2)
+					{
+						$i = ($BrT -2);
+						$OD = ($BrOD2[$i] * 1.0);
+						$W = ($BrWidth2[$i] * 1.0);
+						$BD =  ($BallD2[$i] * 1.0);
+						$N = $NoBalls2[$i];
+						print $OD;
+						
+						floatField -edit -v ($BearID / 25.4)  BFloatField_11;
+						floatField -edit -v $OD  BFloatField_12;
+						floatField -edit -v ($OD / 25.4)  BFloatField_13;
+						
+						floatField -edit -v $W  BFloatField_14;
+						floatField -edit -v ($W / 25.4)  BFloatField_15;
+						
+						floatField -edit -v $BD  BFloatField_16;
+						floatField -edit -v ($BD / 25.4)  BFloatField_17;
+						
+						intField -edit -v $N BIntField_1;
+					}
+					
+				 if ($BrS == 3)
+					{
+						$i = ($BrT -2);
+						$OD = ($BrOD3[$i] * 1.0);
+						$W = ($BrWidth3[$i] * 1.0);
+						$BD =  ($BallD3[$i] * 1.0);
+						$N = $NoBalls3[$i];
+						print $OD;
+						
+						floatField -edit -v ($BearID / 25.4)  BFloatField_11;
+						floatField -edit -v $OD  BFloatField_12;
+						floatField -edit -v ($OD / 25.4)  BFloatField_13;
+						
+						floatField -edit -v $W  BFloatField_14;
+						floatField -edit -v ($W / 25.4)  BFloatField_15;
+						
+						floatField -edit -v $BD  BFloatField_16;
+						floatField -edit -v ($BD / 25.4)  BFloatField_17;
+						
+						intField -edit -v $N BIntField_1;
+					}
+					
+					
+				}
+		}
+		
+	if ($T == 0)
+		{
+			if  (`optionMenu -q -sl DVY_Ball_ID` == 1)
+				{
+					floatField -edit -v 0  BFloatField_11;
+					floatField -edit -v 0  BFloatField_12;
+					floatField -edit -v 0  BFloatField_13;
+					
+					floatField -edit -v 0  BFloatField_14;
+					floatField -edit -v 0  BFloatField_15;
+					
+					floatField -edit -v 0  BFloatField_16;
+					floatField -edit -v 0  BFloatField_17;
+					
+					intField -edit -v 0 BIntField_1;
+			}
+		}
+	
+	if  (`optionMenu -q -sl DVY_Roller_ID` > 1)
+		{
+			int $BrT = `optionMenu -q -sl DVY_Roller_ID`;
+			float $BearID = `optionMenu -q -v DVY_Roller_ID`;
+			
+			if ($T == 3)
+				{
+				 if ($BrR == 1)
+					{
+						$i = ($BrT -2);
+						$OD = ($BrROD1[$i] * 1.0);
+						$W = ($BrRWidth1[$i] * 1.0);
+						$BD =  ($BallD1[$i] * 1.0);
+						$N = $NoBalls1[$i];
+	//					print $OD; print "\n";
+						
+						floatField -edit -v ($BearID / 25.4)  BFloatField_21;
+						floatField -edit -v $OD  BFloatField_22;
+						floatField -edit -v ($OD / 25.4)  BFloatField_23;
+						
+						floatField -edit -v $W  BFloatField_24;
+						floatField -edit -v ($W / 25.4)  BFloatField_25;
+						
+						floatField -edit -v $BD  BFloatField_26;
+						floatField -edit -v ($BD / 25.4)  BFloatField_27;
+						
+						intField -edit -v $N BIntField_2;
+					}
+					
+				 if ($BrR == 2)
+					{
+						$i = ($BrT -2);
+						$OD = ($BrROD2[$i] * 1.0);
+						$W = ($BrRWidth2[$i] * 1.0);
+						$BD =  ($BallD2[$i] * 1.0);
+						$N = $NoBalls2[$i];
+	//					print $OD; print "\n";
+						
+						floatField -edit -v ($BearID / 25.4)  BFloatField_21;
+						floatField -edit -v $OD  BFloatField_22;
+						floatField -edit -v ($OD / 25.4)  BFloatField_23;
+						
+						floatField -edit -v $W  BFloatField_24;
+						floatField -edit -v ($W / 25.4)  BFloatField_25;
+						
+						floatField -edit -v $BD  BFloatField_26;
+						floatField -edit -v ($BD / 25.4)  BFloatField_27;
+						
+						intField -edit -v $N BIntField_2;
+					}
+					
+				 if ($BrR == 3)
+					{
+						$i = ($BrT -2);
+						$OD = ($BrROD3[$i] * 1.0);
+						$W = ($BrRWidth3[$i] * 1.0);
+						$BD =  ($BallD3[$i] * 1.0);
+						$N = $NoBalls3[$i];
+	//					print $OD; print "\n";
+						
+						floatField -edit -v ($BearID / 25.4)  BFloatField_21;
+						floatField -edit -v $OD  BFloatField_22;
+						floatField -edit -v ($OD / 25.4)  BFloatField_23;
+						
+						floatField -edit -v $W  BFloatField_24;
+						floatField -edit -v ($W / 25.4)  BFloatField_25;
+						
+						floatField -edit -v $BD  BFloatField_26;
+						floatField -edit -v ($BD / 25.4)  BFloatField_27;
+						
+						intField -edit -v $N BIntField_2;
+					}
+					
+				 if ($BrR == 4)
+					{
+						$i = ($BrT -2);
+						$OD = ($BrROD4[$i] * 1.0);
+						$W = ($BrRWidth4[$i] * 1.0);
+						$BD =  ($BallD4[$i] * 1.0);
+						$N = $NoBalls4[$i];
+	//					print $OD; print "\n";
+						
+						floatField -edit -v ($BearID / 25.4)  BFloatField_21;
+						floatField -edit -v $OD  BFloatField_22;
+						floatField -edit -v ($OD / 25.4)  BFloatField_23;
+						
+						floatField -edit -v $W  BFloatField_24;
+						floatField -edit -v ($W / 25.4)  BFloatField_25;
+						
+						floatField -edit -v $BD  BFloatField_26;
+						floatField -edit -v ($BD / 25.4)  BFloatField_27;
+						
+						intField -edit -v $N BIntField_2;
+					}
+					
+				 if (($BrN == 3) && ($BrR > 0))
+					{
+						$i = ($BrT -2);
+						$OD = ($BrNOD[$i] * 1.0);
+						$W = ($BrNWidth[$i] * 1.0);
+						$BD = $NeedleD[$i];
+						$N = $NoBalls1[$i];
+						$N = (22.0/7.0) * (($OD + $BearID) * 0.5) / ($BD * 1.1);
+						
+						print $OD; print "\n";
+						
+						print $W; print "\n";
+						print $BD; print "\n";
+						
+						floatField -edit -v ($BearID / 25.4)  BFloatField_21;
+						floatField -edit -v $OD  BFloatField_22;
+						floatField -edit -v ($OD / 25.4)  BFloatField_23;
+						
+						floatField -edit -v $W  BFloatField_24;
+						floatField -edit -v ($W / 25.4)  BFloatField_25;
+						
+						floatField -edit -v $BD  BFloatField_26;
+						floatField -edit -v ($BD / 25.4)  BFloatField_27;
+						
+						intField -edit -v $N BIntField_2;
+					}
+					
+					
+					
+				}
+		}
+		
+	if ($T == 2)
+		{
+			if  (`optionMenu -q -sl DVY_Roller_ID` == 1)
+				{
+					floatField -edit -v 0  BFloatField_21;
+					floatField -edit -v 0  BFloatField_22;
+					floatField -edit -v 0  BFloatField_23;
+					
+					floatField -edit -v 0  BFloatField_24;
+					floatField -edit -v 0  BFloatField_25;
+					
+					floatField -edit -v 0  BFloatField_26;
+					floatField -edit -v 0  BFloatField_27;
+					
+					intField -edit -v 0 BIntField_2;
+			}
+		}
+
+		
+}// End of DVY_BearingCallback global procedure.
+
+
+
+
+global proc DVY_AboutBearingsWin()
+ {
+	global float $DVYTol;
+	if ((`window -ex DavveyAboutBearingsWindow`) == true) 
+		{
+			deleteUI DavveyAboutBearingsWindow;
+		}
+		if (`windowPref -ex DavveyAboutBearingsWindow`) windowPref -remove DavveyAboutBearingsWindow;
+		window -t " About:-  Davvey's Bearing Generator." -width 425 -height 300 -sizeable 0 DavveyAboutBearingsWindow;
+		//Build 'Edit' menu.
+	
+	string $menuBarLayout = `menuBarLayout -height 20`;
+		menu -label "File"; 
+ 			menuItem -label "Close" -command "deleteUI DavveyAboutBearingsWindow";		
+
+	setParent;
+	setParent;
+
+		columnLayout -adjustableColumn true -columnAttach "both" 5 -columnWidth 350; 
+	
+		text -height 2 -label " " ;	//Spacer
+		separator -height 10 -style "double" ;
+			text -bgc 0.5 0.5 1 -height 20 -align "center" -fn "boldLabelFont" -l "Davvey's Bearing Generator..";
+			text -bgc 0.5 0.5 1 -height 20 -align "center" -fn "boldLabelFont" -l "copyright (c) 2006 Dave Lake..";
+		separator -height 8 -style "double" ;
+		text -height 2 -label " " ;	//Spacer
+		
+	frameLayout -cl 0 -label "" -labelAlign "center" -borderStyle "etchedOut";
+		columnLayout -adjustableColumn true -columnAttach "both" 2 -columnWidth 250; 
+		
+		text -bgc 1 1 0.8 -height 5 -align "left" -l " ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -fn "boldLabelFont" -l "  Special Thanks:- ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -fn "plainLabelFont" -l "  Thanks to my wife Jan for her support and patience during the time";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "   its taken to learn Maya and how to write these scripts.";
+		text -bgc 1 1 0.8 -height 10 -align "left" -l " ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "  Also dedicated to Jackie and Joanna (my expensive pride and joys!!)";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "  Finally these Collected works are dedicated to the memory of Darryl.";
+		text -bgc 1 1 0.8 -height 5 -align "left" -l " ";
+		setParent ..;	
+		setParent ..;	
+		text -align "center" -l "email :- Davvey@ntlworld.com";
+		text -align "center" -l "website :- www..............";
+	setParent ..; 
+
+	showWindow DavveyAboutBearingsWindow;
+	
+}// End of DVY_AboutBearingsWin Procedure
+
+ 

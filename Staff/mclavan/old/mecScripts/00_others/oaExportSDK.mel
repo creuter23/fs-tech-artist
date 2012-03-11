@@ -1,0 +1,69 @@
+////////////////////////////////////////////////////////////////////////////////
+global proc oaExportSDKExportArgs() {
+/*
+AUTHORS: "Oleg Alexander" <olegalexander@gmail.com>
+DESCRIPTION: Gathers info from UI and sends it to 'do' procedure.
+TO USE: Call the proc from the UI.
+RETURNS: Nothing. 
+*/
+
+	//Gather info from UI
+	int $shelfButton = `checkBox -q -v shelfButton_checkBox`;
+	string $search = `textFieldGrp -q -tx search_textFieldGrp`;
+	string $replace = `textFieldGrp -q -tx replace_textFieldGrp`;
+
+	//Call the 'do' proc
+	oaExportSDKExport($shelfButton, $search, $replace);
+
+} //End of oaExportSDKExportArgs
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+global proc oaExportSDK() {
+/*
+AUTHORS: "Oleg Alexander" <olegalexander@gmail.com>
+DESCRIPTION: UI.
+TO USE: Call the proc.
+RETURNS: Nothing. 
+*/
+	//If the UI already exists, delete it
+	if (`window -query -exists oaExportSDKWin`) {
+		deleteUI oaExportSDKWin;
+		windowPref -remove oaExportSDKWin;
+	}
+
+	//Create the UI
+	window 
+		-title "oa Export SDK"
+		-resizeToFitChildren true
+		-sizeable true
+		oaExportSDKWin;
+		
+		columnLayout -adjustableColumn true -rowSpacing 5 -columnOffset "both" 5;
+			
+			text "Select some driven objects";
+			
+			button
+				-l "Export Set Driven Key Commands"
+				-h 30
+				-bgc 1 0.8 0.5
+				-c "oaExportSDKExportArgs"
+				-ann "Exports Set Driven Key commands for the selected objects to the Script Editor";
+
+			checkBox 
+				-al "left" 
+				-v off 
+				-l "Create Shelf Button"
+				shelfButton_checkBox;				
+			
+			separator;
+			
+			textFieldGrp -l "Search For:" -ann "Optional" search_textFieldGrp;
+			textFieldGrp -l "Replace With:" -ann "Optional" replace_textFieldGrp;
+			
+    showWindow oaExportSDKWin;
+	
+} //End of oaExportSDK
+

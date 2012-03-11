@@ -1,0 +1,802 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davveys Gear Generator
+''    Author:  
+''    Last Updated: Apr 07, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4442.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////
+//	Title Section
+
+//								- DVY_HelixGear -
+
+
+//////////////////////////////////////////////////////////////////////////////////////
+//	Description and Usage Section
+/*
+
+	Called by DVY_GearBuild to generate and position a Single Helical Type Gear.
+	Single, Double and "HerringBone" style can be produced in both Left and Right 
+	Handed form.
+	Gear is named and sequentially numbered automatically. 
+	Subsequent Gears in same Group are rotated to ensure correct meshing and moved
+	upwards to correct position. Also Handing is reversed to ensure correct meshing.
+	
+	All Gears are produced to Metric Gear Standards using the Metric Module format.
+
+
+*/		
+//////////////////////////////////////////////////////////////////////////////////////
+
+	
+global proc string[] DVY_HelixGear (float $Data[], int $N, int $ID, int $Idx, string $Groups[])
+ {
+	print ("\n   Start of DVY_HelixGear procedure. © Davvey..\n"); 
+
+// ******************************************************************************** //	
+//	Global Variables
+	 
+	 global string $TeethProfiles[], $Type[];
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Local Variables
+	 
+	string $Temp[], $Temps[],$Shader[], $Tooth[]; 
+	string $CurSel[], $GearGrp[], $Gears[]; string $PCurveC;	
+	int $e, $E, $i, $Idx, $j, $n, $N,$R;	
+	float $Pi, $m, $Mn, $Mt, $A, $GWc, $GW,$PCD, $PCDn, $BD, $RD, $OD;
+	float $p, $Pc, $Pn, $Ad, $Dd, $WH, $Angle, $Helix, $Hand, $Double;
+	float $Pos[], $Profiles[];
+	float $HubMx, $BoreMx, $Bore, $HubT;
+	float $Bool;
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Constants and "Static Data"
+	$e = $E = 1;
+	$Pi = (22.0/7.0) ;				//	Constant for Pi.
+	$N = $N;						//	Teeth per Gear.
+	$m = $Data[0];					//	Module
+	$Mn = $Data[0];					//	Module in Normal Plane
+	$A = $Data[1];					//	Pressure Amgle in degrees.
+	$GW = $Data[2];					//	Gear Width
+	$Helix = $Data[3];				//	Helix Angle for Teeth.
+	$Hand = $Data[4];				//	Helix Angle (1 = Rt, 2 = Lf Hand) 
+	$Double = $Data[5];				//	Style Single, Double or HerringBone Tooth
+	
+	
+	if (`radioButtonGrp -q -sl GearHubRadioButton` == 1)	
+		{// Set to One to produce a dummy shaft & Screw for Boolean op to Hubbed Gear Body	
+			$Bool = 1;
+		}
+		 else if (`radioButtonGrp -q -sl GearHubRadioButton` == 2)	
+			{// Set to Zero if no Hub required on the Gear Body	
+				$Bool = 0;
+			}
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Calculated Data
+	
+	$Ad = $m;										//	Addendum
+	$Dd = 1.25 * $m;								//	Dedendum
+	$Angle = (360.00/$N);							//	Angle of Rotation for each tooth.
+	$WH = $Ad + $Dd;								//	Tooth working height.
+	$Mt = ($Mn /(`cos (($Helix * $Pi)/ 180)`));		//	Module in Transverse plane
+	$Pn = ($Pc * `cosd $Helix`);					//	Normal Circular Pitch
+	$p = ($Mn * $Pi);								//	Circular Pitch
+	$Pt = ($p /(`cos (($Helix * $Pi)/ 180)`));		//	Module in Transverse plane
+	$PCD = ($N * $Mt);								//	Pitch Circle Diameter 
+	$BD = ($PCD * `cosd $A`);						//	Base Diameter.
+	$RD = ($PCD - (2.5 * $m * 1.00));				//	Root Diameter.
+	$OD = ($PCD + (2 * $m));						//	Outside Diameter (over Teeth).	
+
+//	if ($Double == 1) {$GW = ($GW *0.4);}
+//	if ($Double == 2) {$GW = ($GW *0.50);}
+
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Print Results of Calculated Data
+		
+/*
+	print ("\nNumber of Teeth $N is " + $N);
+	print (" , Helix Angle $Helix is " + $Helix);
+	print (" and Pressure Angle is " + $A + ". © Davvey..\n");
+	
+	print ("\nModule in the normal plane $Mn is " + $Mn + ". © Davvey..\n");
+	print ("module in the transverse plane $Mt is " + $Mt + ". © Davvey..\n");
+	
+	print ("\nCircular Pitch $p is " + $p + ". © Davvey..\n");
+	print ("Transverse circular pitch $Pt is " + $Pt + ". © Davvey..\n");
+
+	print ("\nPitch Circle Diameter $PCD is " + $PCD + ". © Davvey..\n");
+	print ("Tip Diameter $OD is " + $OD + ". © Davvey..\n");
+	print ("Base Diameter $BD is " + $BD + ". © Davvey..\n");
+	print ("$Root Diameter $RD is " + $RD + ". © Davvey..\n");
+	
+	print ("Angle of Rotation for one Tooth is " + $Angle + ". © Davvey..\n");
+	print ("Gear Width is " + $GW + ". © Davvey..\n");
+	
+	if ($Double == 0)
+		{ 
+			if ($Hand == 1)	{ print ("\nRight Hand Helical gear to be set up. © Davvey..\n"); }
+			if ($Hand == 2) { print ("\nLeft Hand Helical gear to be set up. © Davvey..\n"); }
+		}
+*/
+
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+//	Create Shaders for Gear Parts.
+					
+		if(!`objExists Teeth_SH `) { $shader[0] = `DVY_Shaders(0)`; }
+			 $Shader[0] = "Teeth_SH";
+		if(!`objExists Shaft_SH`) { $shader[1] = `DVY_Shaders(9)`; }
+			 $Shader[1] = "Shaft_SH";
+		if(!`objExists Gear_SH`) { $shader[2] = `DVY_Shaders(1)`; }
+			 $Shader[2] = "Gear_SH";	
+		if(!`objExists GearHub_SH`) { $shader[2] = `DVY_Shaders(2)`; }
+			 $Shader[3] = "GearHub_SH";
+			 
+//		print "\nShaders used are..\n";
+//		print $Shader;
+
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+//	Section to set up Gear Groups as Required.
+
+	$GName = ("Grp_" + $ID + "_" + $Type[$Idx]);
+	print ("$GName is " + $GName + "\n");
+
+	$GearGrp[0] = $Groups[0];
+	
+	
+	while (`objExists ($GName + "Gear_GrpN_" + $e)`)
+		{
+			$e++;	print ("$e is " + $e + "\n");
+		}
+		
+		$GearGrp[1] = `group -em -name ($GName + "Gear_GrpN_" + $e)`;
+
+		$GearGrp[2] = `group -em -name ($GName + "GearRotate_GrpN_" + $e)`;
+		$GearGrp[3] = `group -em -name ($GName + "Shaft_GrpN_" + $e)`;
+		
+		parent $GearGrp[3] $GearGrp[2];
+		parent $GearGrp[2] $GearGrp[1];
+		parent $GearGrp[1] $GearGrp[0];
+		
+		$n = $e;
+
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+//	Section to set Gear Width to allow generation of Tooth Helix curve.
+
+// 	Section for Single Right Hand Helix Gear.
+	
+	if (($GW < 30) && ($m > 5)) { $Helix = 5;}
+	if (($GW < 30) && ($m < 5)) { $Helix = 10;}
+	if (($GW < 30) && ($m < 3)) { $Helix = 15;}
+		
+		if (($Double == 0) && ($Hand == 1))
+		{
+			$R = 0;
+			$Pos[0] = ($GW * 1.9);
+			if ($GW < 50) { $Pos[0] = ($GW * 1.75);}
+			
+			print "\nA Single Right Hand Helix Gear will be built. © Davvey..\n"; 
+		}
+		
+// 	Section for Single Left Hand Helix Gear.
+	
+	if (($Double == 0) && ($Hand == 2))
+		{
+			$R = 0;
+			$Pos[0] = ($GW * 1.9);
+			if ($GW < 50) { $Pos[0] = ($GW * 1.75);}
+			print "\nA Single Left Hand Helix Gear will be built. © Davvey..\n"; 
+		}
+		
+	
+// 	Section for Double Helix Gear.
+	
+	if ($Double == 1)
+		{
+			$R = 0;
+			$Pos[0] = ($GW *0.8);
+			print "\nA Double Helix Gear will be built. © Davvey..\n"; 
+		}
+
+// 	Section for HerringBone Helix Gear.
+	
+	if ($Double == 2)
+		{
+			$R = 1;
+			$Pos[0] = ($GW *0.9);
+			print "\nA HerringBone Helix Gear will be built. © Davvey..\n"; 
+		}
+		
+// ******************************************************************************** //	
+//	Section to call procedure to generate Helix profile curve.
+	
+	$Name = (DVY_HelixProfile ($PCD, $Helix, $Pos[0], "ToothProfile"));
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Section to Generate "Base" Curve  profiles for all Gear Teeth Profile
+//	and Worm Shaft Thread and move into postion.
+
+	$Profiles[0] = 1;		// 	Gear Type required.
+	$Profiles[1] = 2;		// 	Quantity of "Standard" Profiles.
+	$Profiles[2] = 2;		//	Quantity of EndCapProfiles required.
+	$Profiles[3] = 0;		// 	Quantity of "AngledEnd" Profiles.
+	$Profiles[4] = 0;		// 	Quantity of "Center" Profiles.
+
+// 	Section for HerringBone Helix Gear Tooth end Profiles.
+	
+	if ($Double == 2)
+		{
+			$Profiles[2] = 1;		//	Quantity of EndCapProfiles required.
+			$Profiles[3] = 1;		// 	Quantity of "AngledEnd" Profiles.
+		}
+	
+	DVY_ToothProfile ($Profiles, $Helix, $m);
+		select -r $TeethProfiles[0];
+			$Temp = `duplicate -rr -renameChildren`;
+			$Temps[2] = $Temp[0];
+		
+				$Temps[0] = $TeethProfiles[5];
+				$Temps[1] = $TeethProfiles[0];
+				$Temps[3] = $TeethProfiles[1];
+				$Temps[4] = $TeethProfiles[2];
+				scale 1 ($m * 1.0) ($m *0.97) $Temps;
+				
+//				scale 1 ($m * 1.0) ($m *0.9) $Temps;
+//				select -r $Temps[1] $Temps[2] $Temps[3];
+//				scale 1 ($m * 1.0) ($m *0.825); 
+				
+				move -r 0 ($PCD * 0.5) 0 $Temps;
+					setAttr ($Temps[0] + ".sx") ($m * -0.5);
+					setAttr ($Temps[4] + ".sx") ($m * 0.5);
+	
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+// Section to position Profiles for tooth shape depending upon Gear Tooth Type.
+
+	if ($Double < 2)
+		{
+			for ($i=0; $i<5; $i++)
+				{
+					select -r ("DVYLocator" + ($i + 1));
+					  	select -add $Temps[$i];
+						delete `parentConstraint -weight 1`;
+				}
+			rotate -r -os 0 -180 0 $Temps[4];
+		}
+		
+	if ($Double == 2)
+		{	
+			setAttr ($Temps[0] + ".sx") 0;
+			setAttr ($Temps[4] + ".sx") ($m * -0.5);
+			
+			for ($i=1; $i<4; $i++)
+				{
+					select -r ("DVYLocator" + ($i + 1));
+					  	select -add $Temps[$i];
+						delete `parentConstraint -weight 1`;
+				}
+				
+				select -r ("DVYLocator" + (1));
+					  	select -add $Temps[4];
+						delete `parentConstraint -weight 1`;
+	
+				select -r ("DVYLocator" + (5));
+					select -add $Temps[0];
+					delete `pointConstraint -offset 0 0 0 -weight 1`;
+					$Temp[4] = $Temps[0];
+					$Temps[0] = $Temps[4];
+					$Temps[4] = $Temp[4];
+		}
+
+// -------------------------------------------------------------------------------- //
+		
+// ******************************************************************************** //	
+// Section to position Loft Tooth surfaces and convert to Polygons.
+		
+		$Temp = `loft -ch 0 -u 1 -c 0 -ar 1 -d 1 -ss 2 -rn 0 -po 0 -rsn true
+				$TeethProfiles[3] $TeethProfiles[4]`;
+				$Temps[5] = $Temp[0];
+		
+		$Temp = `loft -ch 0 -u 1 -c 0 -ar 1 -d 1 -ss 2 -rn 0 -po 0 -rsn true
+				$TeethProfiles[6] $TeethProfiles[7]`;
+				$Temps[6] = $Temp[0];
+			
+	select -r $TeethProfiles[3] $TeethProfiles[4] $TeethProfiles[6] $TeethProfiles[7];
+	delete;
+			
+		$Temp = `loft -ch 0 -u 0 -c 0 -ar 1 -d 1 -ss 1 -rn 0 -po 0 -rsn true
+				$Temps[0] $Temps[1] $Temps[2] $Temps[3] $Temps[4]`;
+				$Temps[7] = $Temp[0];
+	
+		$Temp = `duplicateCurve -ch 0 -rn 0 -local 1 ( $Temps[7] + ".u[0]")` ;
+			scale  1 1 0 $Temp;
+			$TeethProfiles[3] = $Temp[0];
+				
+		$Temp = `nurbsToPoly -mnd $R -ch 0 -f 3 -pt 0 -pc 200 -chr 0.1 -ft 0.01 -mel 0.001 -d 0.1 -ut 1
+				-un 3 -vt 1 -vn 3 -uch 0 -ucr 0 -cht 1 -es 0 -ntr 0 -mrt 0 -uss 1 $Temps[5]`;
+				$CurSel[0] = $Temp[0];
+	
+		$Temp = `nurbsToPoly -mnd 1 -ch 0 -f 3 -pt 0 -pc 200 -chr 0.1 -ft 0.01 -mel 0.001 -d 0.1 -ut 1
+				-un 3 -vt 1 -vn 3 -uch 0 -ucr 0 -cht 1 -es 0 -ntr 0 -mrt 0 -uss 1 $Temps[6]`;
+				$CurSel[1] = $Temp[0];
+			
+		$Temp = `nurbsToPoly -mnd 0 -ch 0 -f 3 -pt 0 -pc 200 -chr 0.1 -ft 0.01 -mel 0.001 -d 0.1 -ut 1
+					-un 3 -vt 1 -vn 3 -uch 0 -ucr 0 -cht 1 -es 0 -ntr 0 -mrt 0 -uss 1 $Temps[7]`;
+			$CurSel[2] = $Temp[0];
+				
+		$CurSel = `polyUnite -ch 0 $CurSel`;
+		polyMergeVertex -d ($m * 0.025) -ch 0 $CurSel[0];
+			
+	$Tooth[0] = `rename $CurSel[0] ($GName + "Tooth_" + $e)`;
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Section to Create Gear Ring to hold full set of Helical Gear Teeth
+//	
+		$Pos[10] = (`getAttr ($TeethProfiles[3] + ".boundingBoxSizeX")`);
+		$Pos[12] = (`getAttr ($Tooth[0] + ".boundingBoxSizeX")`);
+		print ("\nToothWidth is " + $Pos[12] + "\n");
+		
+		print ("GWidth is " + $Pos[10] + "\n");
+//		$Pos[10] = (($Pos[10] / $GW) * 1.01);
+			
+	if ($Double == 0 ) 
+		{
+			$Pos[9] = ($GW * 1);
+			$Pos[10] = (($GW * 1.0) / $Pos[10]);
+		}
+	if ($Double == 1 )
+		{ 
+			$Pos[9] = ($GW * 0.48);
+			$Pos[10] = (($GW * 0.47) / $Pos[10]);
+		}
+	if ($Double == 2 ) 
+		{ 
+			$Pos[9] = ($GW * 0.48);
+			$Pos[10] = (($GW * 0.5) / $Pos[10]);
+		}
+			
+		print ("\nGearWidth is " + $Pos[10] + "\n");
+
+		
+		$Temps = `revolve -ch 0 -po 0 -rn 0 -ssw 0 -esw 360 -ut 0 -tol 0.01
+				-d 3 -s $N -ulp 1 -ax 1 0 0 $TeethProfiles[3]`;
+				$TeethProfiles[4] = $Temps[0];
+				
+			scale $Pos[10] 1.02 1.02 $TeethProfiles[4];
+			
+		$Temps = `duplicateCurve -ch 1 -rn 0 -local 1 ($TeethProfiles[4] + ".u[0]")` ;
+			$TeethProfiles[15] = $Temps[0];
+				
+//			$Temps = `duplicateCurve -ch 1 -rn 0 -local 1 ($TeethProfiles[4] + ".u[2]")` ;
+
+			select $TeethProfiles[15];
+			$Temps = `duplicate -rr -renameChildren`;
+			move ($Pos[9] * -1) 0 0;
+			$TeethProfiles[16] = $Temps[0];
+			$Temps = `duplicate -rr -renameChildren`;
+			$TeethProfiles[17] = $Temps[0];
+
+			scale 1 0.95 0.95 $TeethProfiles[15];
+			scale 1 0.95 0.95 $TeethProfiles[16];
+		
+		$Temps = `loft -ch 0 -u 1 -c 0 -ar 1 -d 1 -ss 1 -rn 0 -po 0 -rsn true 
+			$TeethProfiles[17] $TeethProfiles[16]`;
+			$TeethProfiles[7] = $Temps[0];
+			
+		$Temps = `loft -ch 0 -u 1 -c 0 -ar 1 -d 1 -ss 1 -rn 0 -po 0 -rsn true 
+			($TeethProfiles[4] + ".u[0]") $TeethProfiles[15]`;
+			$TeethProfiles[8] = $Temps[0];
+			
+		$Temps = `loft -ch 0 -u 1 -c 0 -ar 1 -d 1 -ss 1 -rn 0 -po 0 -rsn true 
+			$TeethProfiles[16] $TeethProfiles[15]`;
+			$TeethProfiles[6] = $Temps[0];	
+				
+		$Pos[11] = (`getAttr ($TeethProfiles[15] + ".boundingBoxSizeY")` * 1.015);
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Section to convert Nurbs Surfaces to Poly Gear Ring and combine Polys to form a Ring	
+		
+	$Temps = `nurbsToPoly -mnd 0 -ch 0 -f 3 -pt 0 -pc 200 -chr 0.1 -ft 0.01
+			-mel 0.001 -d 0.1 -ut 1 -un 3 -vt 1 -vn 3 -uch 0 -ucr 0 -cht 1
+			-es 0 -ntr 0 -mrt 0 -uss 1 $TeethProfiles[4]`;
+	
+	$Temps = `nurbsToPoly -mnd 1 -ch 0 -f 3 -pt 0 -pc 200 -chr 0.1 -ft 0.01
+			-mel 0.001 -d 0.1 -ut 1 -un 3 -vt 1 -vn 3 -uch 0 -ucr 0 -cht 1
+			-es 0 -ntr 0 -mrt 0 -uss 1 $TeethProfiles[6]`;
+	
+	$Temps = `nurbsToPoly -mnd 1 -ch 0 -f 3 -pt 0 -pc 200 -chr 0.1 -ft 0.01
+			-mel 0.001 -d 0.1 -ut 1 -un 3 -vt 1 -vn 3 -uch 0 -ucr 0 -cht 1
+			-es 0 -ntr 0 -mrt 0 -uss 1 $TeethProfiles[7]`;
+	
+	$Temps = `nurbsToPoly -mnd 0 -ch 0 -f 3 -pt 0 -pc 200 -chr 0.1 -ft 0.01
+			-mel 0.001 -d 0.1 -ut 1 -un 3 -vt 1 -vn 3 -uch 0 -ucr 0 -cht 1
+			-es 0 -ntr 0 -mrt 0 -uss 1 $TeethProfiles[8]`;
+
+	$Temps = `polyUnite -ch 0 nurbsToPoly1 nurbsToPoly2 nurbsToPoly3 nurbsToPoly4`;
+		$Gears[1] = `rename $Temps[0] ("RingGear" + $e)`;
+			
+	if ($Double == 1)
+		{
+			select -r $Tooth[0] $Gears[1];
+				move - r ($GW * 0.26) 0 0;
+
+				select -r $Gears[1]; 
+					$Temp = `duplicate -rr -renameChildren`;
+					move - r ($GW * -0.52) 0 0 $Temp;
+					scale 1 1 -1 $Temp[0];
+					$Temps = `polyBoolOp -op 1 -ch 0 $Gears[1] $Temp[0]`;
+					$Gears[1] = `rename $Temps[0] ("GearRing" + $e)`;
+					
+					select -r $Tooth[0]; 
+						$Temp = `duplicate -rr -renameChildren`;
+						move - r ($GW * -0.52) 0 0 $Temp;
+						scale 1 1 -1 $Temp[0];
+						$Temps = `polyUnite -ch 0 $Tooth[0] $Temp[0]`;
+						$Tooth[0] = `rename $Temps[0] ("GearRing" + $e)`;
+		}
+
+	if ($Double == 2)
+		{
+			select -r $Gears[1];
+			CenterPivot;
+			$Pos[0] = `getAttr ($Gears[1] + ".boundingBoxCenterX")`;
+			move -os ($Pos[0] * -1) 0 0;
+			makeIdentity -apply true -t 1 -r 1 -s 1 -n 0 ;
+			select -r $Gears[1]; 
+			
+			$Temp = `duplicate -rr -renameChildren`;
+				move - r ($GW * -0.25) 0 0 $Temp;
+				move - r ($GW * 0.25) 0 0 $Gears[1];
+				
+			$Temps = `polyBoolOp -op 1 -ch 0 $Gears[1] $Temp[0]`;
+				$Gears[1] = `rename $Temps[0] ($GName + "GearRing" + $e)`;
+			
+			$Pos[1] = `getAttr ($Tooth[0] + ".boundingBoxMinX")`;
+				select -r $Tooth[0]; 
+				$Temp = `duplicate -rr -renameChildren`;
+				move -ws ($Pos[1] * 1) 0 0 $Temp[0];
+					scale -1 1 1 $Temp[0];
+					
+				move -ws ($Pos[1] * -1) 0 0 $Tooth[0];
+					$Temps = `polyUnite -ch 0 $Tooth[0] $Temp[0]`;
+					$Tooth[0] = `rename $Temps[0] ($GName + "Tooth" + $e)`;
+					polyMergeVertex -d ($m * 0.025) -ch 0 $Tooth[0];
+		}
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Section to duplicate Gear Tooth, Rotate and combine to form 
+//	Gear Ring
+
+	$Temps[0]= `group -em -name ("HelicalGearRingN_" + $e)`;
+		parent $Tooth[0] $Temps[0];
+		$CurSel[0] = $Tooth[0];
+	
+		for ($i=1; $i<$N; $i++)
+			{
+				select $Tooth[0];
+				$Temp = `duplicate -rr -renameChildren`;
+				rotate -r ($Angle * $i) 0 0 $Temp[0];
+				$CurSel[$i] = $Temp[0];
+			}
+			
+			$Temp = `polyUnite -ch 0 -name ($GName + "RingGear_" + $e) $CurSel`;
+				$Gears[2] = $Temp[0];
+				$Temp = `polyUnite -ch 0 -name ($GName + "GearTeeth_" + $e) $Gears[1] $Gears[2]`;
+				if ($Hand == 2)
+					{
+						rotate 0 180 0 $Temp[0];
+					}
+					
+				if (($e % 2) == 0)
+					{
+						setAttr ($Temp[0] + ".sz") -1;
+					}
+				$Gears[1] = $Temp[0];
+				
+		select -r $Gears[1];
+			hyperShade -assign "initialShadingGroup";
+			hyperShade -assign $Shader[0];
+	
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+//	Section to calculate shaft and Keyway sizes for Gear Body.
+//	$HubMx = (((cosd (180/$N)) * $PCD) - ($h + 0.050));
+	
+		$HubMx = ($PCD * 0.6);
+		$BoreMx = ($HubMx * 0.35);
+		$Shaft = $Data[14] = $PCD * 0.3;		//	Shaft Diameter
+		$Key = $Data[15];						//	Set to One if Keyway is required
+//		$KeyWidth = $Data[16];					//	Keyway Width.
+//		$KeyHeight = $Data[17];					//	Keyway Height (Twice this value is Key height.
+		$Bore = (($RD/2) * 0.99 ) - $Shaft ;
+		$HubT = (($HubMx - $BoreMx) * 0.5);
+		$HubT = ($Shaft * 0.40) ;
+		
+		if ($Bool == 1) {$HubT = ($Shaft * 0.40);}
+		if ($Bool == 0) {$HubT = 0;}
+		
+		$Temp = DVY_ShaftDesign ($BoreMx, (($GW * 1.025) + $HubT), $N, ($HubMx * 0.1), $Gears[6], $Bool, $e);
+			$ShaftGrp = $Temp;
+			move -r ($HubT * 0.5) 0 0 $ShaftGrp[0];
+			xform -ws -piv 0 0 0  $ShaftGrp[0];
+			makeIdentity -apply true -t 1 -r 1 -s 1 -n 0 ;
+		
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+//	Section to Generate Gear Body.
+	
+	int $Face = ($N + 1);
+	
+	$Temp = `polyCylinder -r ($RD * 0.475) -h ($GW * 1.05) -sx ($N * 1) -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+		rotate -r 0 0 90 ;	
+		polyBevel -o 0.10 -oaf 1 -af 1 -sg 1 -ws 0 -mv 1 -sa 20 -ch 0 ($Temp[0] + ".f[" + $Face + "]");
+		polyBevel -o 0.10 -oaf 1 -af 1 -sg 1 -ws 0 -mv 1 -sa 20 -ch 0 ($Temp[0] + ".f[" + ($Face - 1) + "]");
+		polySubdivideFacet -dv 1 -m 1 -ch 0 ($Temp[0] + ".f[" + (($Face * 2 ) - 1) + "]");
+		polySubdivideFacet -dv 1 -m 1 -ch 0 ($Temp[0] + ".f[" + ($Face - 1) + "]");
+	
+	$Gears[0] = `rename $Temp[0] ($GName + "GearBody_" + $e)`;
+	
+	if ($Bool == 1)
+		{
+			$Temp = `polyCylinder -r ($HubMx * 0.4) -h ($HubT) -sx ($N * 1)-sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+				polyBevel -o 0.10 -oaf 1 -af 1 -sg 1 -ws 0 -mv 1 -sa 20 -ch 0 ($Temp[0] + ".f[" + $Face + "]");
+				polySubdivideFacet -dv 1 -m 1 -ch 0 ($Temp[0] + ".f[" + ($Face) + "]");
+				move -r ((($GW * 1.05) + $HubT) * 0.5) 0 0 $Temp[0];
+				rotate -r 180 0 90 $Temp[0];
+			
+			$Temp = `polyBoolOp -op -1 -ch 0 $Gears[0] $Temp[0]`;
+		
+			$Gears[0] = `rename $Temp[0] ("SpurGear_" + $e)`;
+		}
+				select -r $ShaftGrp[3] $ShaftGrp[4]; parent -w;
+				move -r (($GW * 0.525) + ($HubT * 0.0)) 0 0 $ShaftGrp[2] $ShaftGrp[4]; 
+		
+	if ($Bool == 1)
+		{
+			$Temp = `polyBoolOp -op 2 -ch 0 $Gears[0] $ShaftGrp[4]`;	//("BoolScrew_" + $e)`;
+				$Gears[0] = `rename $Temp[0] ($GName + "Gear_" + $e)`;
+		}
+			$Temp = `polyBoolOp -op 2 -ch 0 $Gears[0] $ShaftGrp[3]`;	//("BoolShaft_" + $e)`;
+			$Gears[0] = `rename $Temp[0] ($GName + "GearBody_" + $e)`;
+			
+		select -r $Gears[0];
+			hyperShade -assign "initialShadingGroup";
+			hyperShade -assign $Shader[2];
+	
+	parent $Gears[1] $Gears[0];
+	parent $Gears[0] $ShaftGrp[0];
+	parent $ShaftGrp[0] $GearGrp[3]; 
+	print "Heellp \n";
+	print $ShaftGrp;
+	for ($i=0; $i < `size $ShaftGrp`; $i++)
+		{
+			if (`objExists $ShaftGrp[$i]`)
+				{
+					$ShaftGrp[$i] = `rename $ShaftGrp[$i] ($GName + $ShaftGrp[$i])`;
+				}
+		}
+	
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+
+	$j = `size $GearGrp`;	
+	
+		for ($i=0; $i < `size $Gears`; $i++)
+			{ $GearGrp[($i + $j)] = $Gears[$i];}
+			
+		$j = $i + $j - 1;
+		
+			for ($i=0; $i<3; $i++)
+				{ $GearGrp[($i + $j)] = $ShaftGrp[$i];}
+				
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+// Clean up scene if required.
+			
+	select "*Surface*"; delete;
+	select "*Profile*"; delete;
+	select "HelixGroup*"; delete; 
+	
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+// Add custom attribute to record Gear size Group name PCD and Tooth Pitch and Height.
+	
+	if ($E > 1)
+	{
+		if (!`exists $GearGrp[0]`)
+		   {
+		 	 if (!`attributeExists "NameOfGearGrp" $GearGrp[0]`) 
+				{ addAttr -ln NameOfGearGrp -dt "string" $GearGrp[0];}
+			       setAttr -l 1 -k 0 -type "string" ($GearGrp[0] + ".NameOfGearGrp") $GearGrp[0];
+
+			 if (!`attributeExists "module" $GearGrp[0]`) 
+				{ addAttr -ln module -at short $GearGrp[0];}
+			       setAttr -l 1 -k 0 -cb 1 ($GearGrp[0] + ".module") $m;
+				 
+			 if (!`attributeExists "CircularPitch" $GearGrp[0]`) 
+				{ addAttr -ln CircularPitch -sn CrPitch -at double $GearGrp[0];}
+			       setAttr -l 1 -k 0 ($GearGrp[0] + ".CircularPitch") $p;
+							
+			 if (!`attributeExists "Helix" $GearGrp[0]`) 
+				{ addAttr -ln Helix -at double $GearGrp[0];}
+			       setAttr -l 1 -k 0 ($GearGrp[0] + ".Helix") $Helix;
+				   
+			 if (!`attributeExists " ToothHeight" $GearGrp[0]`)
+				{ addAttr -ln ToothHeight -sn Height -at double $GearGrp[0];}
+			      setAttr -l 1 -k 0 ($GearGrp[0] + ".ToothHeight") $WH;
+		 	}
+	}
+
+	for ($i=1; $i<`size $GearGrp`; $i++)
+		{	
+		 if (!`exists $GearGrp[$i]`)
+		   {
+		 	if (!`attributeExists "NameOfGearGrp" $GearGrp[$i]`) 
+			  { addAttr -ln NameOfGearGrp -dt "string" $GearGrp[$i];}
+				setAttr -l 1 -k 0 -type "string" ($GearGrp[$i] + ".NameOfGearGrp") $GearGrp[0];
+
+			if (!`attributeExists "module" $GearGrp[$i]`) 
+			 { addAttr -ln module -at short $GearGrp[$i];}
+			   setAttr -l 1 -k 0 ($GearGrp[$i] + ".module") $m;
+			
+			if (!`attributeExists "HelixAngle" $GearGrp[$i]`) 
+			 { addAttr -ln Helix -at double $GearGrp[$i];}
+			    setAttr -l 1 -k 0 ($GearGrp[$i] + ".Helix") $Helix;
+				 
+			if (!`attributeExists "CircularPitch" $GearGrp[$i]`) 
+			 { addAttr -ln CircularPitch -sn CrPitch -at double $GearGrp[$i];}
+			    setAttr -l 1 -k 0 ($GearGrp[$i] + ".CircularPitch") $p;
+				 
+			if (!`attributeExists " ToothHeight" $GearGrp[$i]`)
+			 { addAttr -ln ToothHeight -sn Height -at double $GearGrp[$i];}
+			    setAttr -l 1 -k 0 ($GearGrp[$i] + ".ToothHeight") $WH;
+				 
+			if (!`attributeExists " ToothAngle" $GearGrp[$i]`)
+			 { addAttr -ln ToothAngle -sn Angle -at double $GearGrp[$i];}
+			    setAttr -l 1 -k 0 -cb 1 ($GearGrp[$i] + ".ToothAngle") $Angle;
+		
+			if ($i > 0)
+				 { 
+				  if (!`attributeExists "NameOfGear" $GearGrp[$i]`) 
+				   { addAttr -ln NameOfGear -dt "string" $GearGrp[$i];}
+				 	  setAttr -l 1 -k 0 -type "string" ($GearGrp[$i] + ".NameOfGear") $GearGrp[$i];
+	
+				  if (!`attributeExists "GearType" $GearGrp[$i]`) 
+				   { addAttr -ln GearType -dt "string" $GearGrp[$i];}
+				      setAttr -l 1 -k 0 -type "string" ($GearGrp[$i] + ".GearType") "Worm";
+	
+				  if (!`attributeExists "PitchCircleDiameter" $GearGrp[$i]`) 
+				   { addAttr -ln PitchCircleDiameter -sn PCD -at double $GearGrp[$i];}
+				      setAttr -l 1 -k 0 -cb 1 ($GearGrp[$i] + ".PitchCircleDiameter") $PCD;
+	
+				  if (!`attributeExists "ToothCount" $GearGrp[$i]`) 
+				   { addAttr -ln ToothCount -at short $GearGrp[$i];}
+				      setAttr -l 1 -k 0 -cb 1 ($GearGrp[$i] + ".ToothCount") $N;
+				
+				  if (!`attributeExists "GearNo" $GearGrp[$i]`)
+				   { addAttr -ln GearNo -at short $GearGrp[$i];}
+				     setAttr -l 1 -k 0 -cb 1 ($GearGrp[$i] + ".GearNo") $e;
+			     }
+		 }print ($GearGrp[$i] + " OOps \n");
+	}
+
+
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+// Section to move and set "interlock" position for Gears if more than one in the Group.
+		
+	clear $Pos;
+
+	$Pos[0] = (`getAttr (($GName + "Gear_GrpN_" + (1)) + ".ToothAngle")` * 0.5);
+	$Pos[1] = (`getAttr (($GName + "Gear_GrpN_" + (1)) + ".PitchCircleDiameter")` * 0.5);
+	$Pos[2] = (`getAttr (($GName + "Gear_GrpN_" + $e) + ".PitchCircleDiameter")` * 0.5);
+	$Pos[3] = (`getAttr (($GName + "Gear_GrpN_" + $e) + ".ToothAngle")` * 0.5);
+
+	float $Move;
+	
+	// Section to move Gears if all in one Group.
+	if ($e > 1)
+		{
+			for ($i=2; $i<$e; $i++)
+				{
+					$Pos[4] = (`getAttr (($GName + "Gear_GrpN_" + $i)  + ".PitchCircleDiameter")` * 1);
+					$Pos[5] = ($Pos[5] + $Pos[4]);
+					$Pos[0] = (`getAttr (($GName + "Gear_GrpN_" + ($i-1))  + ".ToothAngle")` * 0.5);
+				}
+				
+			$Move = ($Pos[1] +  $Pos[2] + $Pos[5]);
+				// print ("Center Position is " + $Move + " for " + ("HelixGear_GrpN_" + $e) + ".\n");
+				move -r 0 $Move 0 $GearGrp[1];
+			
+			$Pos[10] = `getAttr ($GName + "Gear_GrpN_" + ($e-1) + ".rx")`;
+			$Pos[11] = `getAttr ($GName + "Gear_GrpN_" + ($e-1) + ".ToothCount")`;
+
+			if ((($N % 2) == 0) && ($Pos[11] ==0))
+				{
+					if (($e % 2) == 0) 	
+						{
+							print ("Angle to rotate " + $GearGrp[1] + " is " + $Pos[3] + "\n");
+							rotate $Pos[3] 0 0 $GearGrp[1];
+						}
+				}
+				
+			if ((($N % 2) !=0) && ($Pos[10] !=0))
+				{
+					print ("Angle to rotate " + $GearGrp[1] + " maybe " + $Pos[3] + "\n");
+					rotate $Pos[3] 0 0 $GearGrp[1];
+				}
+				else if  ((($N % 2) ==0) && ($Pos[10] ==0))
+					{
+						if ((($N % 2) ==0) && ($Pos[11] !=0))
+							{
+								print ("Angle to rotate " + $GearGrp[1] + " is know " + $Pos[3] + "\n");
+								rotate $Pos[3] 0 0 $GearGrp[1];
+							}
+					}
+		}// End of Gear Moves if all in one group.
+			
+	if ($Bool == 0)
+		{
+			select -r $ShaftGrp[2] $ShaftGrp[4];
+			delete;
+		}
+		
+	
+// ******************************************************************************** //	
+// End of procedure and collect required Return Values or Data.
+
+//	return ;	
+
+//	print ("\n" + $GearGrp[0] + " contains following parts :- \n");
+//	print $GearGrp; print (" © Davvey..\n");
+	print ("\nHelical Gear named " + $GearGrp[1]);
+	print (" has been generated and positioned ready for use. © Davvey..\n");
+	print ("\n  End of DVY_HelixGear procedure. © Davvey..\n"); 
+	
+	select -r $GearGrp[0];
+
+	return $GearGrp;
+
+ }
+	

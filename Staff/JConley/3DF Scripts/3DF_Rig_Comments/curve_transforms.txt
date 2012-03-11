@@ -1,0 +1,6 @@
+A
+All of your curves had frozen transforms.
+F - Few
+One or a few of your curves had transform values.
+F - Many
+Many or all of your curves had transform values on them.

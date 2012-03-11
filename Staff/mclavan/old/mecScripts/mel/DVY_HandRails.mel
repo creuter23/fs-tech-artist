@@ -1,0 +1,173 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davveys Stair Generator
+''    Author:  
+''    Last Updated: Mar 25, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4609.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+
+//	DVY_HandRails("StairGrp_1", 2);
+
+
+global proc string DVY_HandRails(string $HrName, int $T)
+{
+	string $HandRail[], $Temp[], $Temps[], $Tmp[];
+
+	float $Pos[];
+	
+	if ($T == 0)
+		{
+			$Temps = `circle -c 0 0 0 -nr 0 0 0 -sw 360 -r 12.5 -d 3 -ut 0 -tol 0.01 -s 18 -ch 0 `;
+		}
+		
+	if ($T == 1)
+		{
+			$Temps = `circle -c 0 0 0 -nr 0 0 0 -sw 360 -r 25.0 -d 3 -ut 0 -tol 0.01 -s 18 -ch 0 `;
+		}
+	
+	
+	if ($T == 2)
+		{
+			$Temps = `circle -c 0 0 0 -nr 0 0 0 -sw 360 -r 25.0 -d 3 -ut 0 -tol 0.01 -s 18 -ch 0 `;
+		}
+
+	
+	if ($T == 3)
+		{
+			$Temps = `circle -c 0 0 0 -nr 0 0 0 -sw 360 -r 25 -d 3 -ut 0 -tol 0.01 -s 18 -ch 0 `;
+					rotate 0 0 10;
+					makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+					
+				select -r ($Temps[0] + ".cv[0]") ($Temps[0] + ".cv[10:17]") ;
+					move -r 5 0 0;
+				
+				select -r ($Temps[0] + ".cv[1:9]") ;
+					move -r -5 0 0;
+					
+				select -r ($Temps[0] + ".cv[2]") ($Temps[0] + ".cv[8]") 
+							  ($Temps[0] + ".cv[11]")  ($Temps[0] + ".cv[17]");
+						scale 1.15 1.14 1; 	  
+							
+				scale 1 0.795 1 $Temps[0];
+				select -r ($Temps[0] + ".cv[3]") ($Temps[0] + ".cv[7]") 
+							  ($Temps[0] + ".cv[12]")  ($Temps[0] + ".cv[16]");
+						scale 1.10 1 1; 	  
+			
+		}
+	
+		
+	if (($T == 4) || ($T == 5) || ($T == 6))
+		{
+			$Temps = `circle -c 0 0 0 -nr 0 0 0 -sw 360 -r 25 -d 3 -ut 0 -tol 0.01 -s 18 -ch 0 `;
+					rotate 0 0 10;
+					makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+					
+				select -r ($Temps[0] + ".cv[2]")  ($Temps[0] + ".cv[17]");
+					move -r 0 2.92 0;
+					
+				select -r ($Temps[0] + ".cv[3]")  ($Temps[0] + ".cv[16]");
+					move -r 0 8.12 0;
+					
+				select -r ($Temps[0] + ".cv[4]")  ($Temps[0] + ".cv[15]");
+					move -r 0 8.89 0;
+					
+					
+				select -r ($Temps[0] + ".cv[8]") ($Temps[0] + ".cv[11]");
+					move -r 0 -2.92 0;
+					
+				select -r ($Temps[0] + ".cv[7]") ($Temps[0] + ".cv[12]");
+					move -r 0 -8.12 0;
+					
+				scale 1 0.795 1 $Temps[0];
+				
+				select -r ($Temps[0] + ".cv[0:4]") ($Temps[0] + ".cv[15:17]");
+					scale 1.5 1 1;
+					move -r 0 26 0;
+					
+				select -r ($Temps[0] + ".cv[5]") ($Temps[0] + ".cv[14]");
+					move -r 0 14.0 0;
+					scale 0.85 1 1;
+					
+				select -r ($Temps[0] + ".cv[4]") ($Temps[0] + ".cv[15]");
+					move -r 0 -6.4 0;
+				
+				select -r ($Temps[0] + ".cv[7:12]");
+					scale 1.3 1 1;
+					
+				select -r ($Temps[0] + ".cv[6:7]") ($Temps[0] + ".cv[12:13]");
+					scale 1.34 1 1;
+					move -r 0 -1.25 0;
+						
+			if ($T == 5)
+				{
+					select -r ($Temps[0] + ".cv[0:5]")  ($Temps[0] + ".cv[14:17]");
+						scale 1.1 1 1;
+						move -r 0 -13.6 0;
+				}
+				
+			if ($T == 6)
+				{
+					select -r ($Temps[0] + ".cv[0:5]")  ($Temps[0] + ".cv[14:17]");
+						scale 1.1 1 1;
+						move -r 0 -2.0 0;
+						
+					select -r ($Temps[0] + ".cv[5]")  ($Temps[0] + ".cv[14]");
+						scale 0.6 1 1;
+						
+					select -r ($Temps[0] + ".cv[4]")  ($Temps[0] + ".cv[15]");
+						move -r 0 -11.0 0;
+						
+					select -r ($Temps[0] + ".cv[6]")  ($Temps[0] + ".cv[13]");
+						scale 1.17 1 1;
+				}
+		}
+		
+	if ($T == 7)
+		{
+			$Temps = `circle -c 0 0 0 -nr 0 0 0 -sw 360 -r 25 -d 3 -ut 0 -tol 0.01 -s 18 -ch 0 `;
+					rotate 0 0 10;
+					makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+			
+				select -r ($Temps[0] + ".cv[2]") ($Temps[0] + ".cv[8]")
+						 ($Temps[0] + ".cv[11]") ($Temps[0] + ".cv[17]");
+					scale -r 1 1.14 1;
+					
+				select -r ($Temps[0] + ".cv[5]") ($Temps[0] + ".cv[14]");
+					scale -r 0.94 1 1;
+					
+				select -r ($Temps[0] + ".cv[4:6]")  ($Temps[0] + ".cv[13:15]");
+					scale -r 0.845 1 1;
+				
+				select -r ($Temps[0] + ".cv[0:3]")  ($Temps[0] + ".cv[16:17]");
+						move -r 0 11.2 0;
+			
+				select -r ($Temps[0] + ".cv[7:12]") ;
+						move -r 0 -11.2 0;
+						
+				select -r ($Temps[0] + ".cv[0:2]")  ($Temps[0] + ".cv[8:11]") ($Temps[0] + ".cv[17]");
+					scale -r 1.5 1 1;
+		}
+		
+		if ($T > 2)
+			{
+				$Temps = `rebuildCurve -ch 0 -rpo 1 -rt 0 -end 1 -kr 0 -kcp 0 -kep 1
+											-kt 1 -s 36 -d 3 -tol 0.01 $Temps[0]`;
+			}
+			
+		select -r $Temps[0];
+		
+		makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+	
+	$HandRail[0] = `rename $Temps[0] ($HrName + "_TempRail_1")`;
+	
+	return $HandRail[0];
+	
+}

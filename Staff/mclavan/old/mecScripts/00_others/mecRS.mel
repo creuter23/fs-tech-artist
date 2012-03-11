@@ -1,0 +1,1524 @@
+// ---------------------- Basic Riging Tools work procedures ----------------------------------
+// ---------------------- Basic Riging Tools work procedures ----------------------------------
+// ---------------------- Basic Riging Tools work procedures ----------------------------------
+
+/* ------------------------------------------------------------------------------------------------
+  mecDupExists
+  Disc:
+       This procedure check to see if $obj exists anywhere in the scene.
+       An array is returned the first element is the name and the second 
+       is $obj exists in the scene.
+  Input:
+        $obj(string) - A object's name in maya need to be check if it has a duplicate.
+  Return:
+         (string[]) 2 indices. Index[0] = the name of the object and 
+                    Index[1] = Ether "none" == object is unique or 
+                    "match" == object has a duplicate.
+
+   STAND ALONE PROCEDURE
+ ------------------------------------------------------------------------------------------------
+ ================================================================================================*/
+proc string[] mecDupExists(string $obj)
+{
+    string $tok[];
+    tokenize $obj "|" $tok;
+    
+    string $last = $tok[(size($tok)-1)];
+
+    string $state = "none";
+    if(size(`ls $last`) > 0)
+           $state = "match";
+
+    return {$last, $state};
+
+}
+
+proc mecAROri( string $mecSource[], string $mecTarget[] )
+{
+
+	// Looping backwards, zero won't be done because it will be the root
+	//		of the joint chain. 
+	for( $i = (size($mecSource)-1) ; $i >= 0 ; $i--)
+	{
+		if( $i != 0 )
+		{
+			parent -w $mecSource[$i];
+			parent -w $mecTarget[$i];
+		}
+		
+		// Copy the Rotate Axis
+		float $mecScaleO = `getAttr ($mecSource[$i]+".rotateAxisX")`;
+		// Copy the Joint Orient
+		float $mecOri = `getAttr ($mecSource[$i]+".jointOrientX")`;
+
+		// Set the Rotate Axis and the Joint Orient for the target joint
+
+		setAttr ($mecTarget[$i]+".rotateAxisX") $mecScaleO;
+		setAttr ($mecTarget[$i]+".jointOrientX") $mecOri;
+
+	}
+	
+	// ReParent the joints together
+	//	This is not done in the loop before because the children positions
+	//	will get messed up.
+	for( $i = (size($mecTarget)-1) ; $i > 0 ; $i--)
+	{
+		parent $mecTarget[$i] $mecTarget[$i-1];
+		parent $mecSource[$i] $mecSource[$i-1];
+	}
+
+	select -cl;
+}
+
+// Redrawing of the joints.
+proc mecARReDo( string $mecJs[],  int $zeroOut )
+{
+
+	string $mecNew[] = `duplicate -rc $mecJs[0]`;
+	select -r $mecNew[0];
+	
+	// Switch the names
+	string $mecTemp[];	
+	for( $i = 0; $i < size($mecJs) ; $i++ )
+	{
+		$mecTemp[$i] = $mecJs[$i];
+		
+	}
+
+	// Cleaning the joints.
+	
+	// Cleaning the rotations off.
+	// Unparenting the joints
+	for ( $i = 0; $i < size($mecJs) ; $i++)
+	{
+		if($i != 0)
+		{
+			string $parentN[] = `parent -w $mecJs[$i]`;
+			$mecJs[$i] = $parentN[0];
+                        $parentN = `parent -w $mecNew[$i]`;
+                        $mecNew[$i] = $parentN[0];
+			//parent -w $mecJs[$i];
+			//parent -w $mecNew[$i];
+		}
+	}
+	
+	for( $i = 0; $i < size($mecJs) ; $i++)
+	{
+		parent $mecNew[$i] $mecJs[$i];
+		select -r $mecNew[$i];
+		makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+		parent -w $mecNew[$i];
+	}
+
+	
+	// Reparent the joints
+	// Clean the Translations values
+	for ( $i = 0 ; $i <= (size($mecJs)-1) ; $i++)
+	{
+		if( $i != 0 )
+		{
+			parent $mecJs[$i] $mecJs[$i-1];
+			parent $mecNew[$i] $mecNew[$i-1];
+		}
+	}
+/**/
+	// Duplicating joint chain before the clean
+	string $mecSource[] = `duplicate -rc $mecNew[0]`;
+	
+	joint -e -oj xyz -zso -ch $mecNew[0];
+	
+	//mecARReDo(`ls -type joint -dag LtLegRoot`);
+	//mecARReDo();	
+	// Correcting the orientations
+	delete $mecJs;
+	mecAROri( $mecSource, $mecNew );
+	delete $mecSource;
+	
+	for( $i = 0; $i < size($mecNew) ; $i++ )
+		rename $mecNew[$i] $mecTemp[$i];
+
+        if($zeroOut)
+        {
+            setAttr ($mecTemp[size($mecTemp)-1] + ".jointOrientX") 0;
+            setAttr ($mecTemp[size($mecTemp)-1] + ".jointOrientY") 0;
+            setAttr ($mecTemp[size($mecTemp)-1] + ".jointOrientZ") 0;
+        }
+}
+
+// Input: Array of strings that contain the proper orientation (source)
+//		  Array of strings that is the destination for the orientation info (Target)
+// Output: None
+// Discription:
+// Cleaning up the joints values.  Preserving the orginal joint's orientation, while
+//		resetting the rotates and scales to their defaults.  Finally making sure that
+//		there is only a value in translate x other than the root joint.
+
+
+
+global proc mecRSJReDrawDoIt(int $zeroOut)
+{
+       mecARReDo(`ls -sl -dag`, $zeroOut);
+}
+
+
+
+/* mecPadScriptWork
+   Disc:
+        All the work is done in this procedure.
+        Information is grabbed from the interface.
+        Duplicate objects are checked for.
+        Group is generated according to the options selected in the GUI.
+
+*/
+proc mecPadScriptWork()
+{
+     string $sel[] = `ls -sl`;
+     string $nameSel[] = mecDupExists($sel[0]);
+     string $name;
+     // Find out which options are selected.
+    if(`checkBox -q -v mecRSPadSCB3`)
+           $name = $nameSel[0];
+    $name += `textField -q -text mecRSPadSText`;
+
+
+    print ($name + "\n");
+   
+    string $nameEx[] = `mecDupExists($name)`;
+
+    if("match" == $nameEx[1])
+               error ($name + " allready exists!\n");
+
+    
+    string $grp = `group -em -w -n $name`;
+
+    
+    print($grp + "\n");
+    // If Ori is checked the group will match its orients.
+    if(`checkBox -q -v mecRSPadSCBOri`)
+    {
+                 string $OC[] = `orientConstraint  $sel[0] $grp`;
+                 delete $OC;
+                 clear($OC);
+    }
+   
+    // If Point is checked the group will match the selected .
+    if(`checkBox -q -v mecRSPadSCBP`)
+    {
+                 string $PC[] = `pointConstraint $sel[0] $grp`;
+                 delete $PC;
+                 clear($PC);
+    }
+
+
+    // Parenting the new group into its proper location.
+   
+    string $radio = `radioCollection -q -sl mecRSPadSRadio`;
+    if($radio == "mecRSPadSParent" )
+    {
+              string $parent[] = `listRelatives -p -f $sel[0]`;
+
+              if(size($parent) > 0)
+              {
+                    //parent -w $sel[0];
+                    print $parent;
+                    parent $grp $parent[0];
+              }
+              parent $sel[0] $grp;
+
+    }
+
+
+}
+
+
+// This procedure moves the name of the selected to the mecPadSText text field.
+//      The main purpose is to be able to modify the naming convention of the 
+//      currently selected object.
+proc mecPadScriptGrab()
+{
+     string $sel[] = `ls -sl`;
+     string $selRef[] = mecDupExists($sel[0]);
+     textField -e -text $selRef[0] mecRSPadSText;
+
+     // Unchecking use selected name.
+     checkBox -e -v 0 mecRSPadSCB3;
+}
+
+// Triggers all the local procedures above.
+global proc mecRSPadScriptExe(int $val)
+{
+       if($val)
+               mecPadScriptWork();
+       else
+               mecPadScriptGrab();
+}
+
+/*
+// 	Procedure will select every object in the scene that has $selType somewhere in its name.
+//	
+//	Input: 	(string) $selType = Selection identifer
+//		(int)	 $addTog  = Should current group be added(1) or replace(0) current selection. 	
+//	Output: None
+//	Results:
+//		If the value $selType is present in the name of a node it will be selected along with 
+//		every other occurance in the scene file.  EVERY NODE IS CHECKED.
+
+
+
+Example
+	//"CtrlMC" is selected replacing anything else that is selected.
+	mec_Sel("CtrlMC", 0);
+
+	//"CtrlMC_Arm" is added to the currently selected nodes in the scene.
+	mec_Sel("CtrlMC_Arm", 1);
+*/
+
+
+global proc mecRS_Sel(string $selType, int $addTog)
+{
+
+	//Grab everything in the scene;
+	//	You might want to limit this to transforms.
+	string $sel[] = `ls`;
+	
+	//"CtrlMC"
+	// Items to be selected.	
+	string $select[];
+
+	for($s in $sel)
+	{
+		// Checking to see if node has $selType in its name
+		if( `gmatch $s ("*"+$selType+"*")` )
+			$select[size($select)] = $s;	
+
+	}
+
+	if($addTog)
+		select -add $select;
+	else
+		select -r $select;
+}
+
+/* mecPadScript
+   Disc:
+        Starter procedure.
+        GUI is generated.
+        Once apply is hit on the interface work is done through another proc.
+
+*/
+
+
+
+//======================= End of Basic Rigging Tools Procedures ===============================
+//======================= End of Basic Rigging Tools Procedures ===============================
+//======================= End of Basic Rigging Tools Procedures ===============================
+
+
+/* ========= Priming script procedures ========================================================= */
+/* ========= Priming script procedures ========================================================= */
+/* ========= Priming script procedures ========================================================= */
+/*
+  This script is to prime a control.
+
+
+// What will this procedure need.
+Ultimately it creats at least one pad (or waste) group parented
+above a selected control.  The pads created will mimic the orientation and
+posibily the position of the joint or object of the users choosing.
+
+Needed
+- How many pads are going to created.
+  - Top pad and pad between the top pad and the controller.
+  - An example of this is to do automation pads between the waste group and 
+    the control curve.
+- Will the entire control curve move or will it's pivot be only moved.
+- What are the names of the pads going to be.
+- Will there be Suffix allready on the control curve.
+  - Maybe give the user the option of naming the whole system.
+  if($name == "")
+  {
+        $name = $ctrlName;
+  }
+
+
+*/
+
+
+
+/* ------------------------------------------------------------------------------------------------
+   mecPadScriptWork2
+   Disc:
+        Mainly this procedure will create a group, match its trans and ori, 
+               and then ether place the group in the world or parent to the 
+               main object.
+   Input: $sel(string) - object that is going to be mimiced.
+          $name(string) - name of the new object.
+          $ori(int) - Orient match (1==yes, 0==no)
+          $point(int) - Translate match (1==yes, 0==no)
+          $type(int) - parent == 1 or world == 0
+   Output:
+          (String) Returns the name of the new group unless the name exists and then it returns 0.
+   
+STAND ALONE PROCEDURE
+ ------------------------------------------------------------------------------------------------
+ ================================================================================================*/
+
+proc string mecPadScriptWork2(string $sel, string $name, int $ori, int $point, int $type)
+{
+    // Check to see if the $name exists in the scene file.
+    string $nameEx[] = `mecDupExists($name)`;
+
+    // If the name exists then 0 is returned.
+    if("match" == $nameEx[1])
+               return "0";
+
+    string $grp = `group -em -w -n $name`;
+
+    // If Ori is checked the group will match its orients.
+    if($ori == 1)
+    {
+                 string $OC[] = `orientConstraint  $sel $grp`;
+                 delete $OC;
+                 clear($OC);
+    }
+   
+    // If Point is checked the group will match the selected .
+    if($point == 1)
+    {
+                 string $PC[] = `pointConstraint $sel $grp`;
+                 delete $PC;
+                 clear($PC);
+    }
+
+
+    // Parenting the new group into its proper location.
+
+   if($type == 1 )
+    {
+              string $parent[] = `listRelatives -p -f $sel`;
+
+              if(size($parent) > 0)
+              {
+                    //parent -w $sel[0];
+                    print $parent;
+                    parent $grp $parent[0];
+              }
+              parent $sel $grp;
+
+    }
+
+    return $grp;
+}
+
+
+/* ------------------------------------------------------------------------------------------------
+  mecPrimeCtrl
+  This procedure primes a control so that it is ready to be used in a control
+    system.
+  Input:
+        $ctrlName (string) The name of the control curve.
+        $name (string) The base name of the pads.
+        $source (string) The objects for which its position and orientation will
+                be mimiced.
+        $pad (int) How many pads will there be?
+        $wasteName (string) The Suffix for the waste pad.
+        $autoName (string) The Suffix for the automation pads.
+        $pos (int) Does the shape move ($pos == 1) or Does only its pivot ($pos == 0)
+   Output:
+          (string array) The names of the pads and control curve generated in order.
+          
+ 
+    STAND ALONE PROCEDURE
+ ------------------------------------------------------------------------------------------------
+ ================================================================================================*/
+
+//mecPrimeCtrl("a", "", "joint2", 3, "_wa", "_auto", 1);
+
+proc string[] mecPrimeCtrl(string $ctrlName, string $name, string $sourceName,
+              int $pads, string $wasteName, string $autoName, int $pos)
+{
+
+      // The string will contain all the pads and the control curve in order.
+      string $group[];
+
+      // Does the user what to keep the same name as the control curve?
+      if($name == "")
+      {
+            $name = $ctrlName;
+      }
+    
+      // Generate pads
+      // Loop through how many pads need to be made.
+      int $i;
+      for( $i = 0; $i < $pads; $i++)
+      {
+        //The first pad to be generated will be the waste.
+        if( $i == 0 )
+        {
+            string $nameWa = ($name+$wasteName);
+            $group[$i] = mecPadScriptWork2($sourceName, $nameWa, 1, 1, 0);
+            // Error Checking to make sure duplicate names don't exists!
+            if( $group[$i] == "0")
+            {
+                int $i;
+                for($i = 0; $i < (size($group)-1); $i++)
+                       delete $group[$i];
+                error ("Duplicate node names exists: " + $nameWa);
+            }
+        }
+        else  //Followed by the Auto pads.
+        {
+            string $nameAuto = ($name+$autoName+$i);
+            $group[$i] = mecPadScriptWork2($sourceName, $nameAuto, 1, 1, 0);
+            // Error Checking to make sure duplicate names don't exists!
+            if( $group[$i] == "0")
+            {
+                print $group;
+                int $i;
+                for($i = 0; $i < (size($group)-1); $i++)
+                       delete $group[$i];
+                error ("Duplicate node names exists: " + $nameAuto);
+            };
+        }
+    
+      }
+    
+      // Move the control to its proper position.
+      // Will the shape node move with it or will it just be the pivot?
+    
+      // Parent the pads and the control groups together.
+      if( $pos == 1 )
+      {
+          // The whole curve is moving.
+          string $PC[] = `pointConstraint $sourceName $ctrlName`;
+          delete $PC;
+          clear($PC);
+      }
+      else
+      {
+          // Only the pivot will be moved.
+          float $piv[] = `xform -q -ws -piv $sourceName`;
+          print $piv;
+          xform -ws -piv $piv[0] $piv[1] $piv[2] $ctrlName;
+      }
+    
+    
+      // The first is left in world.  Every pad after that
+      //   will be parented under it.
+      for($i = 1; $i < $pads; $i++)
+      {
+              parent $group[$i] $group[$i-1];
+      }
+
+      // parent the control curve under pads.
+      parent $ctrlName $group[size($group)-1];
+
+      // Delete History on the control curve
+      delete -ch $ctrlName;
+      // Freeze Transforms on the control curve.
+      makeIdentity -apply true -t 1 -r 1 -s 1 -n 0 $ctrlName;
+
+      return $group;
+}
+
+proc string mecPrimeGuiB(string $text, string $obj, string $parent)
+{
+        text -l "" -h 5 -w 280;
+        rowLayout -w 255 -nc 3 -columnWidth3 200 10 45 ;
+        
+        string $mecField = `textFieldGrp -w 200 -l $text -tx "" -cal 1 "left"
+        		-cw2 80 125 $obj`;
+        text -l "" -w 10;
+        button -l "Grab" -w 50 -align "center" 
+        	 -c "mecRSBackGrab($obj)" ($obj+"but");
+        
+        setParent $parent;
+        return $mecField;
+}
+
+global proc mecRSBackGrab(string $obj)
+{
+	string $sel[] = `ls -sl`;
+	textFieldGrp -e -tx $sel[0] $obj;
+
+}
+
+global proc mecRSBackGrabTxt(string $obj)
+{
+	string $sel[] = `ls -sl`;
+	textField -e -tx $sel[0] $obj;
+
+}
+
+global proc mecRSPrimeCtrlWork()
+{
+       string $sel[] = `ls -sl`;
+       
+       string $source = `textFieldGrp -q -text mecRSPrimeSOG`;
+       string $target = `textFieldGrp -q -text mecRSPrimeCCG`;
+
+       if(size($sel) > 1 && size($sel) < 3)
+       {
+            $source = $sel[0];
+            $target = $sel[1];
+       }
+
+
+       string $alt = `textField -q -text mecRSPrimeAltG`;
+       string $wa = `textField -q -text mecRSPrimeCWa`;
+       string $auto = `textField -q -text mecRSPrimeCAuto`;
+       int $num = `intField -q -v mecRSPrimeCNum`;
+       int $piv = `checkBox -q -v mecRSPrimeChk`;
+
+       mecPrimeCtrl($target, $alt, $source, $num, $wa, $auto, $piv);
+}
+
+
+// ================== End of Padding Script procedures=========================================
+// ================== End of Padding Script procedures=========================================
+// ================== End of Padding Script procedures=========================================
+
+
+// ---------------------------- Res Builder Script Procedures ------------------------------------
+
+global proc mecRSRezMaker()
+{
+
+     // All the items that are going to be low rez need to be selected.
+     // Most likely this will only be one group object, but there are situation that this may not
+     //      be the case.
+
+     // Gather object
+     string $detailOpt = `radioCollection -q -sl mecRSRezMRadio`;
+     // mecRezMLow mecRezMHigh are the to values it can return.
+     int $chkSmooth = `checkBox -q -v mecRSRezMChkBSmooth`;
+     int $divisions = `intFieldGrp -q -v1 mecRSRezMMax`;
+     string $low[] = `textScrollList -q -ai mecRSRezMTSLLow`;
+     string $med[] = `textScrollList -q -ai mecRSRezMTSLMed`;
+     string $smoothName[];
+     string $selCurve[] = `ls -sl`;
+
+     // Smoothing area.
+     //   This area checks to see if an object in the med rez area is allready smoothed.
+     //   If it is then it is bypassed.  If not then it is smoothed with the divisions 
+     //   inputted into the GUI.
+         for($m in $med)
+         {
+               string $hist[] = `listHistory $m`;
+
+               string $smooth[];
+               for($h in $hist)
+               {
+                      if(`gmatch $h "*Smooth*"`)
+                      {
+                                 if(`objectType -i polySmoothFace $h`)
+                                                $smooth[size($smooth)] = $h;
+                                 print ("match!\n ");
+                      }
+               }
+
+               if(`size($smooth)` == 1)
+               {
+                    $smoothName[size($smoothName)] = $smooth[0];
+               }
+               else if(`size($smooth)` == 0)
+               {
+                    string $smoothTemp[] = `polySmooth  -mth 0 -dv $divisions -c 1 -kb 1 -ksb 1 -khe 0 -kt 1 -kmb 1
+                                -suv 1 -sl 1 -dpe 1 -ps 0.1 -ro 1 -ch 1 $m`;
+                    $smoothName[size($smoothName)] = $smoothTemp[0];
+               }
+               else if(`size($smooth)` > 1)
+               {
+                   warning "More than one smooth exists.  Using first polySmooth.";
+                   $smoothName[size($smoothName)] = $smooth[0];
+               }
+
+               clear($smooth);
+         }
+
+
+
+     // Option needed for how many divisions the smooth is going to be. Default is 1.
+
+     // An attribute needs to be created.
+     //    enumerator
+     // An option is given is 2 levels of rez (low/high) or 3 (low/med/high).
+          // mecRezMLow mecRezMHigh are the to values it can return.
+
+     // Does the resolution attribute exists.
+     if(attributeExists ("resolution", $selCurve[0]))
+          deleteAttr ($selCurve[0]+".resolution");
+
+     if( $detailOpt == "mecRezMLow" )
+          addAttr -ln "resolution" -at "enum" -en "Low:High:" $selCurve[0];
+     else
+     {
+          addAttr -ln "resolution" -at "enum" -en "Low:Med:High:" $selCurve[0];
+          
+          // Create ulitity node for divisions.
+          string $divNode = `shadingNode -asUtility condition -n "condResDiv"` ;
+          setAttr ($divNode + ".colorIfTrueR") $divisions;
+          setAttr ($divNode + ".colorIfFalseR") 0;
+          setAttr ($divNode + ".operation") 2; // Greater than.
+          setAttr ($divNode + ".secondTerm") 1;
+          // Loop though all the smooth nodes and connect them.
+          for($sm in $smoothName)
+                  connectAttr -force ($divNode+".outColorR") ($sm+".divisions");
+                  //setAttr "polySmoothFace2.divisions" 0;
+          connectAttr -force ($selCurve[0]+".resolution") ($divNode+".firstTerm");
+// Result: Connected nurbsTorus1.resolution to condResVis.secondTerm // 
+
+//setAttr "condition1.firstTerm" 1;
+
+     }
+     setAttr -e -keyable true ($selCurve[0]+".resolution");
+     // Utlitity nodes need to be created.
+     // Condition
+
+      // Visibility
+      string $visNode = `shadingNode -asUtility condition -n "condResVis"` ;
+      setAttr ($visNode + ".colorIfTrueR") 1;
+      setAttr ($visNode + ".colorIfFalseR") 0;
+
+      // newly created resolution attribute is linked up with vis condition statement.
+      connectAttr -force ($selCurve[0]+".resolution") ($visNode+".firstTerm");
+//connectAttr -force pCone1.resolution condition1.firstTerm;
+
+      for($l in $low)
+             // Low rez
+             connectAttr -force ($visNode+".outColorR") ($l+".v");
+         // High rez
+      for($m in $med)
+             connectAttr -force ($visNode+".outColorG") ($m+".v");
+
+
+     
+}
+
+
+global proc mecRSRezMakerFill(string $objName)
+{
+       string $sel[] = `ls -sl`;
+       for($s in $sel)
+              textScrollList -e -append $s $objName;
+}
+/**/
+//================================ End of Res Builder Script procs ====================
+
+// ============================= IK/FK Builder script =============================
+
+proc mecIKFKMaker(string $IKChain[], string $FKChain[], string $bind[], string $control )
+{
+
+     // Orient Constrain the joints together.
+     // the names of the constraints need to be caught.
+     string $OConst[];
+     
+     int $i;
+     // check to make sure the sizes of the chains are the same.
+     for($i = 0; $i < size($IKChain); $i++)
+     {
+                string $OC[] = `orientConstraint $IKChain[$i] $FKChain[$i] $bind[$i]`;
+                $OConst[$i] = $OC[0];
+     }
+
+     // Create attribute
+     string $driver = ($control + ".IKFK");
+     addAttr -ln IKFK -at double  -min 0 -max 10 -dv 0 $control;
+     setAttr -e -keyable true $driver;
+
+     // Make the SDK
+     // Set the correct attributes
+
+     for($i = 0; $i < size($IKChain) ; $i++)
+     {
+         string $OCIK = $OConst[$i] + "." + $IKChain[$i] + "W0";
+         string $OCFK = $OConst[$i] + "." + $FKChain[$i] + "W1";
+                  // "joint9_orientConstraint1.joint1W0" 0;
+    
+         setDrivenKeyframe -cd $driver -dv 0
+                           -v 1 $OCIK;
+         setDrivenKeyframe -cd $driver -dv 0
+                           -v 0 $OCFK;
+         setDrivenKeyframe -cd $driver -dv 10
+                           -v 0 $OCIK;
+         setDrivenKeyframe -cd $driver -dv 10
+                           -v 1 $OCFK;
+     } /*
+*/
+}
+
+global proc mecRSIKFKMakerFill(string $objName)
+{
+       string $sel[] = `ls -sl`;
+       for($s in $sel)
+              textScrollList -e -append $s $objName;
+}
+
+global proc mecRSIKFKMakerWork()
+{
+     string $Bind[] = `textScrollList -q -ai mecRSIKFKTSLBind`;
+     string $IK[] = `textScrollList -q -ai mecRSIKFKTSLIK`;
+     string $FK[] = `textScrollList -q -ai mecRSIKFKTSLFK`;
+     string $sel[] = `ls -sl`;
+
+     mecIKFKMaker($IK, $FK, $Bind, $sel[0]);
+
+}
+// -------------------------- End of IK/FK Builder script ----------------------
+
+// --------------------------- Finger builder Script ---------------------------
+
+proc string mecBackCurveC(string $curveName, string $curveType)
+{
+
+     // I need to find which type of curve this script needs to generate.
+     
+     // Control for the Cluster controls.
+     // Control for the FK Controls.
+    string $name;
+    switch ($curveType)
+    {
+    case "Rombus" :
+     // Rombus
+        $name = `curve -d 1 -p 0 1 0 -p 1 0 0 -p 0 0 1 -p -1 0 0 -p 0 0 -1 -p 0 1 0
+           -p 0 0 1 -p 0 -1 0 -p 0 0 -1 -p 1 0 0 -p 0 1 0 -p -1 0 0 -p 0 -1 0
+           -p 1 0 0 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 
+           -k 11 -k 12 -k 13 -n $curveName`;
+     break;
+     case "Jack":
+     // Jack
+        $name = `curve -d 1 -p 0 0 0 -p 0.75 0 0 -p 1 0.25 0 -p 1.25 0 0 -p 1 -0.25 0
+               -p 0.75 0 0 -p 1 0 0.25 -p 1.25 0 0 -p 1 0 -0.25 -p 1 0.25 0 -p 1 0 0.25
+               -p 1 -0.25 0 -p 1 0 -0.25 -p 0.75 0 0 -p 0 0 0 -p -0.75 0 0 -p -1 0.25 0 
+               -p -1.25 0 0 -p -1 -0.25 0 -p -0.75 0 0 -p -1 0 0.25 -p -1.25 0 0 -p -1 0 -0.25 
+               -p -1 0.25 0 -p -1 0 0.25 -p -1 -0.25 0 -p -1 0 -0.25 -p -0.75 0 0 -p 0 0 0 
+               -p 0 0.75 0 -p 0 1 -0.25 -p 0 1.25 0 -p 0 1 0.25 -p 0 0.75 0 -p -0.25 1 0 
+               -p 0 1.25 0 -p 0.25 1 0 -p 0 1 0.25 -p -0.25 1 0 -p 0 1 -0.25 -p 0.25 1 0 
+               -p 0 0.75 0 -p 0 0 0 -p 0 -0.75 0 -p 0 -1 -0.25 -p 0 -1.25 0 -p 0 -1 0.25 
+               -p 0 -0.75 0 -p -0.25 -1 0 -p 0 -1.25 0 -p 0.25 -1 0 -p 0 -1 -0.25 -p -0.25 -1 0 
+               -p 0 -1 0.25 -p 0.25 -1 0 -p 0 -0.75 0 -p 0 0 0 -p 0 0 -0.75 -p 0 0.25 -1 
+               -p 0 0 -1.25 -p 0 -0.25 -1 -p 0 0 -0.75 -p -0.25 0 -1 -p 0 0 -1.25 -p 0.25 0 -1
+               -p 0 0.25 -1 -p -0.25 0 -1 -p 0 -0.25 -1 -p 0.25 0 -1 -p 0 0 -0.75 -p 0 0 0 
+               -p 0 0 0.75 -p 0 0.25 1 -p 0 0 1.25 -p 0 -0.25 1 -p 0 0 0.75 -p -0.25 0 1 
+               -p 0 0 1.25 -p 0.25 0 1 -p 0 0.25 1 -p -0.25 0 1 -p 0 -0.25 1 -p 0.25 0 1 
+               -p 0 0 0.75 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 
+               -k 12 -k 13 -k 14 -k 15 -k 16 -k 17 -k 18 -k 19 -k 20 -k 21 -k 22 -k 23 -k 24 
+               -k 25 -k 26 -k 27 -k 28 -k 29 -k 30 -k 31 -k 32 -k 33 -k 34 -k 35 -k 36 -k 37 
+               -k 38 -k 39 -k 40 -k 41 -k 42 -k 43 -k 44 -k 45 -k 46 -k 47 -k 48 -k 49 -k 50 
+               -k 51 -k 52 -k 53 -k 54 -k 55 -k 56 -k 57 -k 58 -k 59 -k 60 -k 61 -k 62 -k 63 
+               -k 64 -k 65 -k 66 -k 67 -k 68 -k 69 -k 70 -k 71 -k 72 -k 73 -k 74 -k 75 -k 76 
+               -k 77 -k 78 -k 79 -k 80 -k 81 -k 82 -k 83 -n $curveName` ;
+           break;
+     case "Circle":
+        $name = `circle -c 0 0 0 -nr 0 1 0 -sw 360 -r 1 -d 3 -ut 0
+                 -tol 0.01 -s 8 -ch 1 -n $curveName`;
+          break;
+    };
+
+    return $name;
+}
+
+/*
+  This is where all the heavy lifting for this script is done.  
+  The pads are created. The controls are orientated.
+  are created to control the finger automaticly and individually.
+  Input:
+  Output: (string) returns the names of the control curves.
+
+//mecPrimeCtrl("a", "", "joint2", 3, "_wa", "_auto", 1);
+
+proc string[] mecPrimeCtrl(string $ctrlName, string $name, string $sourceName,
+              int $pads, string $wasteName, string $autoName, int $pos)
+*/
+proc string[] mecFKbuilder( string $joints[], string $ctrlName, string $ctrlParent)
+{
+       // Waste joint for each joint.
+       string $ControlCrvs[];
+       string $AutoGrps[];
+       string $topGrp;
+       int $i = 0;
+       for($i = 0; $i < size($joints); $i++)
+       {
+            // Create control curve
+    
+            string $controlName = mecBackCurveC($ctrlName+($i+1), "Rombus");
+            string $PCTemp[] = `pointConstraint $joints[$i] $controlName`;
+            string $OCTemp[] = `orientConstraint $joints[$i] $controlName`;
+            delete $PCTemp;
+            delete $OCTemp;
+            clear($PCTemp);
+            clear($OCTemp);
+    
+            // Prime that control properly.
+            /*
+            //mecPrimeCtrl("a", "", "joint2", 3, "_wa", "_auto", 1);
+            proc string[] mecPrimeCtrl(string $ctrlName, string $name, string $sourceName,
+              int $pads, string $wasteName, string $autoName, int $pos)
+            */
+            string $pads[] = mecPrimeCtrl($controlName, "" , $joints[$i], 2, "_wa", "_auto", 1 );
+            
+            print $pads;
+            // Parent it to the correct system.
+            //$ControlCrvs[size($ControlCrvs)] = $pads[2];
+            $ControlCrvs[size($ControlCrvs)] = $controlName;
+            $AutoGrps[size($AutoGrps)] = $pads[1];
+            // If $i == 0 then parent the top pad to the given control.
+            if($i != 0)
+            {
+                 print($ControlCrvs[$i-1]+" Control curve above!\n");
+                 parent $pads[0] $ControlCrvs[$i-1];
+            }
+            else
+                $topGrp = $pads[0];
+
+            // Orient constrain joint to control.
+            orientConstraint $ControlCrvs[$i] $joints[$i];
+
+       }// End of loop
+       
+
+
+       // Parenting to main control system.
+       parent $topGrp $ctrlParent;
+
+
+       // - At this point everything is working.  
+       // - I haven't locked or hidden the controls yet.
+       // - Automation through utility nodes
+       //     - How about an automation script.  Break it down a little further.
+       // - GUI for it all.
+       // Automation.
+       return $ControlCrvs;
+
+}
+
+
+/*
+   AutoBuilder this scripts will put automation on a set of joints.
+   This is mainly used for fingers where one axis is needed to curl.
+        But it can be used for more complex systems like a tail or an FK back.
+
+  ---==STAND ALONE PROCEDURE==---
+*/
+
+
+global proc mecFingerBuilderWork()
+{
+
+     string $joints[] = `textScrollList -q -ai mecRSFingerTSL`;
+     string $ctrlName = `textField -q -tx mecRSFingerCtrl`;
+     string $ctrlCurve = `textField -q -tx mecRSFingerPO`;
+     // Get the pads/controls that will be automated.
+     int $automation = `checkBox -q -v mecRSFingerAutoCK`;
+     //string $axis = ``;  // optionMenu control
+
+     string $fingerObjs[] = mecFKbuilder( $joints, $ctrlName, $ctrlCurve);
+     string $pads[];
+
+     int $i;
+     for($i = 0 ; $i < size($fingerObjs) ; $i++)
+     {
+                $pads[$i] = $fingerObjs[$i]+"_auto1"; //{$fingerObjs[0]+"_auto1", $fingerObjs[1]+"_auto1", $fingerObjs[2]+"_auto1"};
+     }
+
+     if($automation)
+     {
+            mecFingerAutoBld( $pads, $ctrlName, $ctrlCurve );
+     }
+     // A control name will be given along with a control to connect it to.
+
+     select -r $fingerObjs[0];
+
+}
+
+global proc mecFingerAutoBld( string $ctrls[], string $finger, string $ctrlCurve)
+{
+
+     // A control curve will be created that will control the automation.
+     string $curveName = mecBackCurveC($finger+"Auto_ctrl", "Jack");
+     //Prime the control
+     string $pads[] = mecPrimeCtrl($curveName, ($finger+"Auto"), $ctrls[0], 1, "_wa", "", 1);
+
+     // If no axis is give then the control won't rescript any motion.
+
+     // Mulitiple/Div nodes one for each control;
+     //   they are named by the controls they will be controlling
+     // Utility nodes for curl.
+     string $utilNames[];
+     for($ctrl in $ctrls)
+     {
+         string $util = `shadingNode -n ("mec"+$ctrl+"_mAuto") -asUtility multiplyDivide `;
+         $utilNames[size($utilNames)] = $util;
+         connectAttr -force ($curveName+".rotate") ($util + ".input1");
+         connectAttr -force ($util+".output") ($ctrl+".rotate");
+
+     }
+
+     parent $pads[0] $ctrlCurve;
+     // Create an attribute on a control curve.
+     
+     // Option for placing individual control on control curve as well.
+     // Label padding to seperate fingers from on another.
+
+}
+
+
+// ========================= End of Finger builder Script =======================
+
+
+// This procedure resizes the height for the window when a different tab is selected.
+global proc mecRSTabResize()
+{
+       string $selTab = `tabLayout -q -selectTab mecRSMainTab`;
+       print($selTab + "\n");
+       if($selTab == "mecRSPadTcol")
+       {
+          window -e -h 223 mecRiggingSetWin;
+       }
+       else if($selTab == "mecRSRTcol")
+       {
+         window -e -h 360 mecRiggingSetWin;
+       }
+       else if($selTab == "mecRSPrimeCol")
+       {
+            window -e -h 318 mecRiggingSetWin;
+       }
+       else if($selTab == "mecRSRezTCol")
+       {
+            window -e -h 299 mecRiggingSetWin;
+       }
+       else if($selTab == "mecRSIKFKCol")
+       {
+            window -e -h 260 mecRiggingSetWin;
+       }
+}
+
+
+// Group padding Gui
+proc mecRTGroupPGui(string $parent)
+{
+//    formLayout -w 312 -h 300 -nd 1 -p $parent mecRSPadSFrm;
+//    formLayout -nd 1 -p $parent mecRSPadSFrm;
+    rowLayout -nc 2 -columnWidth2 20 280 mecRSPadMainR;
+
+    text -l "" -w 20 -p mecRSPadMainR;
+        columnLayout -p mecRSPadMainR mecRSPadSColMain;
+        text -h 5 -l "" -p mecRSPadSColMain;
+        
+        text -w 250 -vis 1
+    		-label "Group Padding"
+    		-align "center" -font "boldLabelFont" ;
+    
+        text -h 5 -l "";
+    
+    
+    
+    // Object Destination 
+        // Parent/Child Area
+        rowLayout -w 300 -nc 3 -columnWidth3 100 65 60 mecRSPadSR1;
+
+        text -l "Group Destination " -p mecRSPadSR1;
+        radioCollection mecRSPadSRadio;
+        radioButton -w 60 -p mecRSPadSR1
+        		-cl "mecRSPadSRadio"
+        		 -label "Parent" 
+        		-align "center"
+        		-sl mecRSPadSParent;
+    
+        radioButton -w 60
+        		 -label "World" -p mecRSPadSR1
+        		-cl "mecRSPadSRadio" -align "center"
+        		mecRSPadSWorld;
+    
+    
+    // Orientation   
+        rowLayout -w 300 -nc 3 -columnWidth3 100 90 90 
+    	-p mecRSPadSColMain mecRSPadSR2;
+        text -h 25 -l "Orientaton" -p mecRSPadSR2;
+        checkBox -w 90 -l "Match Orient" -p mecRSPadSR2
+        		-v 1 -align "center" mecRSPadSCBOri;
+        checkBox -w 90 -l "Match Point" -p mecRSPadSR2
+        		-v 1 -align "center" mecRSPadSCBP;
+        setParent mecRSPadSColMain;
+        
+        checkBox -w 170 -l "Use Selected Object's Name" -p mecRSPadSColMain
+        		-v 1 -align "center" mecRSPadSCB3;
+
+        text -h 5 -l "" -p mecRSPadSColMain;
+        
+    // Object name area
+        rowLayout -w 300 -nc 3 -columnWidth3 60 160 45 mecRSPadSR3;
+        text -l "Pad Name: " -p mecRSPadSR3;
+        textField -w 150 -text "" -p mecRSPadSR3 mecRSPadSText ;
+        button -w 45 -l "Grab" -c "mecRSPadScriptExe(0)" -p mecRSPadSR3;
+     
+       setParent mecRSPadSColMain;
+        text -h 10 -l "";
+
+        // Apply
+        rowLayout -w 300 -nc 2 -columnWidth2 60 150 ;
+        text -w 35 -l ""; 
+        button -l "Apply" -w 150 -align "center"
+        	 -c "mecRSPadScriptExe(1)";
+    
+        text -h 5 -l "" -p mecRSPadSColMain;
+    
+//    image -h 15 -w 312 -i "C:/Documents and Settings/Michael Clavan/Desktop/3dsetup2.bmp" -p mecRSPadSFrm mecRSPadSMe;
+
+//    formLayout -e -af mecRSPadSMe "bottom" 0 mecRSPadSFrm;
+}
+
+// Procedure for generating Gui for Prime Control Script.
+proc mecRSPrime(string $parent)
+{
+
+        formLayout -p $parent mecRSPrimeCFrm;
+        string $mainCol = "mecPrimeCtrlCol";
+        columnLayout -p mecRSPrimeCFrm $mainCol;
+        text -l "Prime Control Curve" -font "boldLabelFont" -w 245 -h 35 ;
+
+        string $mecPrimeSOG = mecPrimeGuiB("Source Object", "mecRSPrimeSOG", $mainCol);
+        //print $mecPrimeSOG;
+
+        button -e -c "mecRSBackGrab(\"mecRSPrimeSOG\")" mecRSPrimeSOGbut;
+
+        string $mecPrimeSOG = mecPrimeGuiB("Control Curve", "mecRSPrimeCCG", $mainCol);
+        text -l "" -h 5;
+        button -e -c "mecRSBackGrab(\"mecRSPrimeCCG\")" mecRSPrimeCCGbut;
+
+
+        rowLayout -w 245 -nc 2 -columnWidth2 110 75 ;
+        text -w 110 -vis 1 
+        		-label "Alternate Name"
+        		-align "left" -font "boldLabelFont" ;
+        textField -w 100 mecRSPrimeAltG;
+        setParent..;
+        text -l "" -h 3;
+
+        rowLayout -w 245 -nc 2 -columnWidth2 110 75 ;
+        text -w 110 -vis 1
+        		-label "Waste Pad Suffix"
+        		-align "left" -font "boldLabelFont" ;
+        textField -w 100 -text "_wa" mecRSPrimeCWa;
+        setParent..;
+        text -l "" -h 3;
+
+        rowLayout -w 245 -nc 2 -columnWidth2 110 75 ;
+        text -w 110 -vis 1 
+        		-label "Auto Pad Suffix"
+        		-align "left" -font "boldLabelFont" ;
+        textField -w 100 -text "_auto" mecRSPrimeCAuto;
+        setParent..;
+        text -l "" -h 3;
+
+        rowLayout -w 245 -nc 2 -columnWidth2 110 75 ;
+        text -w 110 -vis 1 
+        		-label "Number of Pads"
+        		-align "left" -font "boldLabelFont" ;
+        intField -w 25 -v 1 mecRSPrimeCNum;
+        setParent..;
+        text -l "" -h 3;
+
+        checkBox -w 180 -l "Move Controller to Curve's Location?"
+        		-v 1 -align "left" mecRSPrimeChk;
+
+
+        text -l "" -h 5;
+        button -l "Execute" -w 245 -c "mecRSPrimeCtrlWork()";
+        text -l "" -h 5;
+
+        formLayout -e -af mecPrimeCtrlCol "top" 0 mecRSPrimeCFrm;
+        formLayout -e -af mecPrimeCtrlCol "left" 15 mecRSPrimeCFrm;
+}
+
+// Procedure for Basic Rigging Tool GUI
+proc mecRSBasicTGui(string $parent)
+{
+    // Joint redraw options.
+
+    string $mainParent = `columnLayout -p $parent mecRSJRedrawCol`;
+    text -l "" -h 5;
+    text -l "Basic Rigging Tools" -font "boldLabelFont" -w 300 -h 15;
+    separator -w 300 -h 15 -hr 1 -st "single";
+    rowLayout -w 300 -nc 3 -columnWidth3 100 80 90;
+    text -h 15 -l "Joint Redraw Tool";
+    button -l "Apply" -w 70 -align "center"
+    	 -c "mecRSJReDrawDoIt(`checkBox -q -v mecRSJRedrawZero`)";
+    
+    checkBox -w 120 -l "End Joint Orient"
+    		-ann "Zero Out the Joint Orient of the end joint."
+    		-v 1 -align "center" mecRSJRedrawZero;
+    //text -h 5 -l "";
+    //setParent $mainParent;
+
+    //text -w 25 -l "";
+
+
+    setParent $mainParent;
+    //text -h 10 -l "";
+    separator -w 300 -h 15 -hr 1 -st "single";
+    //text -h 10 -l "";
+
+    text -w 300 -vis 1 -h 25
+    		-label "Rotate Orientation X"
+    		-align "center" -font "boldLabelFont" ;
+
+     rowColumnLayout -numberOfColumns 3
+ 			-columnWidth 1 100;
+
+     button -l "45deg" -c "rotate -r -os 45 0 0 ;";
+     button -l "90deg" -c "rotate -r -os 90 0 0 ;" ;
+     button -l "180deg" -c "rotate -r -os 180 0 0 ;";
+
+     setParent $mainParent;
+
+    text -w 300 -vis 1 -h 25
+    		-label "Constraints"
+    		-align "center" -font "boldLabelFont" ;
+
+    rowLayout -nc 6 -cw6 55 55 55 55 55 45 ;
+
+    button -l "Point" -w 55 -c "performPointConstraint 0;";
+    button -l "Option" -w 25 -c "PointConstraintOptions;";
+    button -l "Orient" -w 55 -c "performOrientConstraint 0;";
+    button -l "Option"  -w 25 -c "OrientConstraintOptions;";
+    button -l "Parent" -w 55 -c "performParentConstraint 0;";
+    button -l "Option" -w 25 -c "ParentConstraintOptions;";
+
+
+
+   setParent $mainParent;
+
+
+
+
+    text -w 300 -vis 1 -h 25
+    		-label "Misc. Buttons"
+    		-align "center" -font "boldLabelFont" ;
+    
+ //   rowLayout -w 205 -nc 2 -columnWidth2 15 200;
+
+ //   text -l "";
+
+    rowColumnLayout -numberOfColumns 3
+		-columnWidth 1 100
+		-columnWidth 2 100
+		-columnWidth 3 100;
+
+    button -l "Duplicate" -w 60 -align "center"
+    	-ann "Duplicate with rename children."
+    	 -c "duplicate -rc";
+
+    button -l "Freeze Trans." -w 60 -align "center"
+    	-ann "Freeze Transforms"
+    	 -c "makeIdentity -apply true -t 1 -r 1 -s 1 -n 0";
+ //   text -l "";
+
+    button -l "Delete History" -w 75 -align "center"
+    	-ann "Delete History"
+    	 -c "delete -ch;";
+
+    button -l "SelectCurveCVs" -c "selectCurveCV(\"all\")";
+
+    button -l "ReOrient Joint"  -ann "ReOrient joint towards it child.  Won't work with rotates on the joint."
+           -c "joint -e -oj xyz -zso";
+    button -l "ReOrient Js w/c" -ann "ReOrient joint and its children as well."
+           -c "joint -e -oj xyz -zso -ch";
+
+    setParent $mainParent;
+
+    	text -h 10 -l "";
+
+	separator -w 300 -hr 1 -st "single";
+	text -h 7 -l "";
+	
+	text -h 2 -l "";
+
+	
+	rowLayout -w 170 -nc 3 -columnWidth3 80 150 90 ;
+	text -w 80 -vis 1 -h 25
+		-label "Select Tool"
+		-align "center" -font "boldLabelFont" ;
+	textField -w 130 -text "_Bind" mecRSSelSText;
+	button -w 60 -l "Select It" -align "center" -ann "Selects all in the scene that match inputed."
+		 -c "mecRS_Sel(`textField -q -text mecRSSelSText`, 0)";
+	
+
+	
+	setParent $mainParent;
+    // Gererates the gui for select type script.
+    	//mecSelectScriptGui();
+}
+
+// =========------------------ Rez Builder GUI -----------------============
+
+
+proc mecRezMGUI(string $parent)
+{
+
+    // Main ColumnLayout
+    
+    string $mainParent = `columnLayout -p $parent mecRSRezMRLColMain`;
+
+
+    text -l "Resolution Builder" -font "boldLabelFont" -w 300 -h 25;
+    // Rez level selector
+    radioCollection mecRSRezMRadio;
+    rowLayout -w 300 -nc 3 -columnWidth3 45 100 150 mecRSRezMRLR;
+    text -l "" -w 15 -p mecRSRezMRLR;
+
+    radioButton -w 100 -p mecRSRezMRLR
+    		 -label "Low/High"
+    		-cl "mecRSRezMRadio" -align "center"
+    		mecRSRezMLow;
+    
+    radioButton -w 100 -p mecRSRezMRLR
+    		 -label "Low/Med/High" -ann "Med is smooth geometry divisions 0, High is the Max Div settings."
+    		-cl "mecRSRezMRadio" -align "center"
+    		-sl mecRSRezMHigh;
+
+    setParent $mainParent;
+    text -l "" -h 5;
+    
+    // Does the script smooth the geometry or is it allready smoothed.
+    
+    // Needs to check to see if the object is allready smoothed.
+    
+    rowLayout -w 300 -nc 3 -columnWidth3 45 100 175 mecRSRezMRLDiv;
+ 
+ /*  */
+    //columnLayout -p $mainParent;
+    text -l "" -w 10;
+
+
+    //columnLayout -p mecRSRezMRLDiv;
+    checkBox -w 60 -l "Smooth"
+    		-v 1 -align "center" mecRSRezMChkBSmooth;
+    
+    
+    //columnLayout -p $mainParent;
+    intFieldGrp -w 150 -l "Max Divisions" -nf 1 -v1 1 
+    		-cw2 75 25 mecRSRezMMax;
+    
+    
+
+    setParent $mainParent;
+    rowLayout -w 310 -h 200 -nc 3 -columnWidth3 5 150 150 mecRSRezMRL;
+    
+    columnLayout;
+    text -l "" -w 5;
+    setParent mecRSRezMRL;
+    
+    columnLayout;
+    text -w 150 -l "Low Res";
+    
+    textScrollList -w 140 -numberOfRows 5 -allowMultiSelection false
+     		-showIndexedItem 1  -ann "Place your low rez geometry here!"
+     		mecRSRezMTSLLow;
+    
+    button -w 140 -l "Submit" -c "mecRSRezMakerFill(\"mecRSRezMTSLLow\")";
+    button -w 140 -l "Reset" -c "textScrollList -e -ra mecRSRezMTSLLow";
+    setParent mecRSRezMRL;
+    
+    
+    columnLayout;
+    // Second Area
+    
+    text -w 140 -l "Medium Res";
+    
+    textScrollList -w 140 -numberOfRows 5 -allowMultiSelection false 
+    		-showIndexedItem 1  -ann "The geometry placed here will be the Med/High and be smoothed."
+     		mecRSRezMTSLMed;
+    
+    button -w 140 -l "Submit" -c "mecRSRezMakerFill(\"mecRSRezMTSLMed\")";
+    button -w 140 -l "Reset" -c "textScrollList -e -ra mecRSRezMTSLMed";
+    setParent mecRSRezMRL;
+    
+    setParent $mainParent;
+    text -l "" -h 5;
+    button -l "Apply" -w 300 -c "mecRSRezMaker()";
+
+}
+
+// =========================== End of Rez Builder GUI ==============================
+
+// ========================== IK/FK Builder GUI ======================
+proc mecRSIKFKMakerGUI(string $parent)
+{
+
+      string $mainCol = `columnLayout -p $parent mecRSIKFKColMain`;
+
+      text -h 5 -l "";
+      text -l "IK/FK Builder" -font "boldLabelFont" -w 300 -h 25;
+
+      rowLayout -w 310 -h 200 -nc 4 -columnWidth4 5 100 100 100 mecRSIKFKRL;
+      
+      columnLayout;
+      text -l "" -w 5;
+      setParent mecRSIKFKRL;
+      
+      columnLayout;
+      text -w 80 -l "Binding";
+      
+      textScrollList -w 90 -numberOfRows 5 -allowMultiSelection false
+       		-showIndexedItem 1
+       		mecRSIKFKTSLBind;
+      
+      button -w 90 -l "Submit" -c "mecRSIKFKMakerFill(\"mecRSIKFKTSLBind\")";
+      button -w 90 -l "Reset" -c "textScrollList -e -ra mecRSIKFKTSLBind";
+      setParent mecRSIKFKRL;
+      
+      
+      columnLayout;
+      // Second Area
+      
+      text -w 80 -l "IK";
+      
+      textScrollList -w 90 -numberOfRows 5 -allowMultiSelection false 
+      		-showIndexedItem 1
+       		mecRSIKFKTSLIK;
+      
+      button -w 90 -l "Submit" -c "mecRSIKFKMakerFill(\"mecRSIKFKTSLIK\")";
+      button -w 90 -l "Reset" -c "textScrollList -e -ra mecRSIKFKTSLIK";
+      setParent mecRSIKFKRL;
+      
+      // Thrid Area
+      columnLayout;
+      
+      text -w 80 -l "FK";
+      
+      textScrollList -w 90 -numberOfRows 5 -allowMultiSelection false 
+      		-showIndexedItem 1
+       		mecRSIKFKTSLFK;
+      
+      button -w 90 -l "Submit" -c "mecRSIKFKMakerFill(\"mecRSIKFKTSLFK\")";
+      button -w 90 -l "Reset" -c "textScrollList -e -ra mecRSIKFKTSLFK";
+      setParent mecRSIKFKColMain;
+      text -l "" -h 5;
+      button -l "Apply" -w 304 -c "mecRSIKFKMakerWork";
+
+}
+
+// -------------------------- End of IK/FK Builder GUI ----------------------
+
+// =========================== Finger Maker =================================
+
+proc mecFKBuilderGUI(string $parent)
+{
+    
+    // Ask for which type of control
+
+    rowLayout -w 310 -h 200 -p $parent -nc 3 -columnWidth3 5 150 150 mecRSRezMRL;
+    
+    columnLayout;
+    text -l "" -w 5;
+    setParent mecRSRezMRL;
+    
+    columnLayout;
+    text -w 150 -l "Joints";
+    
+    textScrollList -w 140 -numberOfRows 5 -allowMultiSelection false
+     		-showIndexedItem 1  -ann "Place your low rez geometry here!"
+     		mecRSFingerTSL;
+
+    button -w 140 -l "Submit" -c "mecRSRezMakerFill(\"mecRSFingerTSL\")";
+    button -w 140 -l "Reset" -c "textScrollList -e -ra mecRSFingerTSL";
+    setParent mecRSRezMRL;
+
+    string $col2 = `columnLayout`;
+    
+    text -l "" -h 5;
+    text -p $col2 -l "Name of Control";
+    
+    string $rowL2 = `rowLayout -nc 2 -cw2 105 40`;
+    textField -w 100 -p $rowL2 mecRSFingerCtrl ;
+    button -l "Grab" -w 40 -p $rowL2 -c "mecRSBackGrabTxt(\"mecRSFingerCtrl\")";
+    setParent $col2;
+
+    text -p $col2 -l "Parent Object";
+    string $rowL3 = `rowLayout -nc 2 -cw2 105 40`;
+    textField -w 100 -p $rowL3 mecRSFingerPO;
+    button -l "Grab" -w 40-p $rowL3 -c "mecRSBackGrabTxt(\"mecRSFingerPO\")";
+    
+    setParent $col2;
+    checkBox -w 90 -h 25 -v 1 -l "Automation" mecRSFingerAutoCK;
+    button -w 130 -l "Apply" -c "mecFingerBuilderWork()"; //mecFingerBuilderWork()
+
+}
+
+//------------------------------- Finger Maker --------------------------------------
+
+// MAIN gui for the script
+// GENERATES THE WINDOW WITH THE TABS.
+proc mecRSGui()
+{
+      // Generating the window with the tabs.
+      if(`window -exists mecRiggingSetWin`)
+      		deleteUI mecRiggingSetWin;
+      if( `windowPref -exists mecRiggingSetWin` )
+      		windowPref -r mecRiggingSetWin;
+
+      window -w 315 -h 360 -t "Rigging Tool Set"
+      		-titleBar 1 -mnb 1 -mxb 1 -mb 1
+      		-tlb 0 -sizeable 1 mecRiggingSetWin;
+
+
+      /*
+          formLayout -w 312 -h 300 -nd 1 mecRSPadSFrm;
+          image -h 15 -w 312 -i "3dsetup2.bmp" -p mecRSPadSFrm mecRSPadSMe;
+
+          formLayout -e -af mecRSPadSMe "bottom" 0 mecRSPadSFrm;
+      */
+      
+    //window -e -h 227 mecRiggingSetWin;
+
+
+    formLayout -w 312 -h 300 -nd 1 mecRSPadSFrm;
+    //image -h 15 -w 312 -i "C:/Documents and Settings/Michael Clavan/My Documents/maya/7.0/prefs/ICONS/3dsetup4.bmp" -p mecRSPadSFrm mecRSPadSMe;
+    image -h 15 -w 312 -i (`internalVar -userBitmapsDir`+"3dsetup.bmp") -p mecRSPadSFrm mecRSPadSMe;
+
+    //internalVar -
+    formLayout -e -af mecRSPadSMe "bottom" 0 mecRSPadSFrm;
+/**/
+      columnLayout -w 300 -h 295;
+      //tabLayout -w 300 -h 265 mecRSMainTab;
+      tabLayout -w 300 -tv 1 -cc "mecRSTabResize" mecRSMainTab;
+
+      // Basic Rigging Tools
+      columnLayout -w 300 -h 295 -p mecRSMainTab mecRSRTcol;
+      mecRSBasicTGui("mecRSRTcol");
+
+      // Pad Script
+      columnLayout -w 300 -h 300 -p mecRSMainTab mecRSPadTcol;
+      mecRTGroupPGui("mecRSPadTcol");
+
+      // Prime Control script
+      columnLayout -p mecRSMainTab mecRSPrimeCol; 
+      mecRSPrime("mecRSPrimeCol");
+      // Lock and Hide script
+
+      // IK/FK Builder
+      columnLayout -p mecRSMainTab mecRSIKFKCol;
+      mecRSIKFKMakerGUI("mecRSIKFKCol");
+
+      // Res Builder
+      columnLayout -p mecRSMainTab mecRSRezTCol; 
+      mecRezMGUI("mecRSRezTCol");
+      
+      //Finger Maker
+      columnLayout -p mecRSMainTab mecRSFingerMCol;
+      mecFKBuilderGUI("mecRSFingerMCol");
+
+      // Setting up the Tabs
+      tabLayout -e -tabLabel mecRSPadTcol "Group Padding" mecRSMainTab;
+      tabLayout -e -tabLabel mecRSRTcol "Basic Tools" mecRSMainTab;
+      tabLayout -e -tabLabel mecRSPrimeCol "Prime Control" mecRSMainTab;
+      tabLayout -e -tabLabel mecRSIKFKCol "IK/FK Bld" mecRSMainTab;
+      tabLayout -e -tabLabel mecRSRezTCol "Rez Bld" mecRSMainTab;
+      tabLayout -e -tabLabel mecRSFingerMCol "Finger Bld" mecRSMainTab;
+
+      showWindow mecRiggingSetWin;
+}
+
+mecRSGui();

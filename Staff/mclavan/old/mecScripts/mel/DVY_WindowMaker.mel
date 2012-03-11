@@ -1,0 +1,349 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davvey\'s Window Generator
+''    Author: Davvey 
+''    Last Updated: Feb 26, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/1145.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+	// $T = Type
+	// $H = Hinge Position
+	// $F = Fixed or Hinged
+	// $E = Group Number
+	// $E = Window Number
+	// $FrFeight = Frame Height
+	// $FrWidth = Frame Width
+
+/*
+
+	DVY_WindowMaker(0, 3, 0, 1, 1, 850, 1050);
+		
+*/
+
+
+global proc string[] DVY_WindowMaker(int $T, int $H, int $F, int $E, int $e, float $FrHeight, float $FrWidth)
+	
+{
+// ******************************************************************************** //	
+//	Global Variables	
+	global string $Units;
+
+	global float $DVYUnit;
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Local Variables
+	
+	string $Temp[], $Temps[], $Tmps[], $Shader[], $WinGrp[];
+	string $WName[] = {"Window_", "Door_"};
+	string $HName[] = {"TopHung_", "LeftHung_", "RightHung_", "Fixed_", "TiltLeft_", "TiltRight_"};
+	
+		float $FW, $FH, $FD, $Width, $Height;
+		float $WW[], $WH[], $WD[];
+		
+	int $a, $b, $c, $i, $j, $k;	
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Create Shaders for Window Frame & Glass.
+	
+	if(!`objExists Window_SH`) { $Shader[0] = `DVY_Shaders(41)`; }
+		 $Shader[0] = "Window_SH";		 
+	
+	if(!`objExists Glass_SH`) { $Shader[1] = `DVY_Shaders(49)`; }
+		 $Shader[1] = "Glass_SH";		 
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Window Frame dimensions
+		
+		float $FD = 20;	// Frame Depth
+		float $FW = 20;	// Frame Width
+		float $FH = 20;	// Frame Height
+		float $Fd = 20;	// Frame Depth
+		float $Fw = 20;	// Frame Width
+		float $Fh = 20;	// Frame Height
+		float $Gl = 10;	// Glass Thickness
+		
+		float $Height = ($FrHeight - $FH * 2);
+		float $Width = ($FrWidth - $FW * 1);
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Frame Type
+		
+	string $WinName = ($WName[$T] + $HName[$H] + $E );
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Build Hinged Frame
+	
+	if ($F == 0)
+	{
+	// Bottom Fixed Rail
+		$Temps = `polyCube -w $FrWidth -h $FH -d $FD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			move -r 0 ($FH * 0.5) ($FD * -0.5);
+		
+		$Tmps = `polyCube -w $FrWidth -h ($FH * 1.5) -d $FD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			move -r 0 ($FH * 0.75) ($FD * 0.5);
+		
+		$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmps[0]`;
+	
+		$Tmps = `polyCube -w ($Width - $Gl * 2) -h $Gl -d $Gl -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			select -r ($Tmps[0] + ".e[2]");		delete;
+			select -r ($Tmps[0] + ".vtx[4:5]");	delete;
+			
+				move -r ($Gl * -1.0) 0 0 ($Tmps[0] + ".vtx[4]") ;
+				move -r ($Gl * 1.0) 0 0 ($Tmps[0] + ".vtx[5]") ;
+				move -r 0 ($FH * 1.0 + $Gl * 0.5) ($FD * -0.75) $Tmps[0];
+				
+	
+		$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmps[0]`;
+		
+			$Temp[$a++] = $Temps[0];
+				
+			
+	// Top Fixed Rail
+		$Temps = `polyCube -w $FrWidth -h $FH -d $FD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			move -r 0 ($FH * -0.5) ($FD * -0.5);
+		
+		$Tmps = `polyCube -w $FrWidth -h ($FH * 1.5) -d $FD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			move -r 0 ($FH * -0.75) ($FD * 0.5);
+		
+		$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmps[0]`;
+			
+		$Tmps = `polyCube -w ($Width - $Gl * 2) -h $Gl -d $Gl -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			select -r ($Tmps[0] + ".e[3]");		delete;
+			select -r ($Tmps[0] + ".vtx[6:7]");	delete;
+				move -r ($Gl * -1.0) 0 0 ($Tmps[0] + ".vtx[4]") ;
+				move -r ($Gl * 1.0) 0 0 ($Tmps[0] + ".vtx[5]") ;
+				move -r 0 ($FH * -1.0 + ($Gl * -0.5)) ($FD * -0.75) $Tmps[0];
+			
+		$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmps[0]`;
+				move -r 0 ($Height + $FH * 2.0) 0 $Temps[0];
+			
+			$Temp[$a++] = $Temps[0];
+			
+			
+	// Left Hand Fixed Upright	
+		$Temps = `polyCube -w ($FW * 0.5) -h ($FrHeight) -d $FD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			move -r ($FW * 0.25) 0 ($FD * -0.5);
+		$Tmps = `polyCube -w $Fw -h ($FrHeight) -d $FD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			move -r ($FW * 0.5) 0 ($FD * 0.5);
+		$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmps[0]`;
+		
+		$Tmps = `polyCube -w $Gl -h ($FrHeight - $FH * 2) -d $Gl -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			select -r ($Tmps[0] + ".e[9]");		delete;
+			select -r ($Tmps[0] + ".vtx[5]") ($Tmps[0] + ".vtx[7]");	delete;
+			
+				move -r 0 ($Gl * 1.0) 0 ($Tmps[0] + ".vtx[1]") ;
+				move -r 0 ($Gl * -1.0) 0 ($Tmps[0] + ".vtx[3]") ;
+				move -r ($FH * 0.5 + $Gl * 0.5) 0 ($FD * -0.75) $Tmps[0];
+	
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmps[0]`;
+				scale 1 1 0.9999 $Temps[0];
+				move -r ($FrWidth * -0.5) ($Height * 0.5 + $FH * 1.0) 0 $Temps[0];
+				
+			$Temp[$a++] = $Temps[0];
+	
+	// Right Hand Upright	
+		$Temps = `polyCube -w ($FW * 0.5) -h ($FrHeight) -d $FD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			move -r ($FW * -0.25) 0 ($FD * -0.5);
+		$Tmps = `polyCube -w $Fw -h ($FrHeight) -d $FD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			move -r ($FW * -0.5) 0 ($FD * 0.5);
+		
+		$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmps[0]`;
+		
+		$Tmps = `polyCube -w $Gl -h ($FrHeight - $FH * 2) -d $Gl -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			select -r ($Tmps[0] + ".e[8]");		delete;
+			select -r ($Tmps[0] + ".vtx[4]") ($Tmps[0] + ".vtx[6]");	delete;
+				move -r 0 ($Gl * 1.0) 0 ($Tmps[0] + ".vtx[0]") ;
+				move -r 0 ($Gl * -1.0) 0 ($Tmps[0] + ".vtx[2]") ;
+				move -r ($FH * -0.5 + $Gl * -0.5) 0 ($FD * -0.75) $Tmps[0];
+	
+	
+		$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmps[0]`;
+				scale 1 1 0.9999 $Temps[0];
+				move -r ($FrWidth * 0.5) ($Height * 0.5 + $FH * 1.0) 0 $Temps[0];
+			
+			$Temp[$a++] = $Temps[0];
+			
+		// Boolean Operation on all Frame Members	
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temp[1]`;
+			$Tmps = `polyBoolOp -op 1 -ch 0 $Temp[2] $Temp[3]`;
+			$Temps = `polyUnite -ch 0 $Temps[0] $Tmps[0]`;
+			
+		$Temp[0] = `rename $Temps[0] ($WinName + "_" + $e)`;
+				select -r $Temp[0];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[0];
+	}	
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Build Hinged Frame
+	if ($F == 1)
+	{
+		// Bottom Rail
+		$Temps = `polyCube -w $FrWidth -h $FH -d $FD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			move -r 0 ($FH * 0.5) ($FD * -0.5);
+		$Tmps = `polyCube -w ($FrWidth + $Fw * 1.0) -h ($Fh * 2) -d $Fd -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			move -r 0 ($FH * 0.5) ($FD * 0.5);
+	
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmps[0]`;
+		
+		$Tmps = `polyCube -w ($Width - ($Gl * 4)) -h $Gl -d $Gl -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			select -r ($Tmps[0] + ".e[2]");		delete;
+			select -r ($Tmps[0] + ".vtx[4:5]");	delete;
+				move -r ($Gl * -1.0) 0 0 ($Tmps[0] + ".vtx[4]") ;
+				move -r ($Gl * 1.0) 0 0 ($Tmps[0] + ".vtx[5]") ;
+				move -r 0 ($FH * 1.0 + $Gl * 0.5) ($FD * -0.75) $Tmps[0];
+				
+		$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmps[0]`;
+		
+			$Temp[$a++] = $Temps[0];
+				
+			
+		// Top Rail	
+		$Temps = `polyCube -w $FrWidth -h $FH -d $FD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			move -r 0 ($FH * -0.5) ($FD * -0.5);
+		$Tmps = `polyCube -w ($FrWidth + $Fw * 1.0) -h ($Fh * 2) -d $Fd -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			move -r 0 ($FH * -0.5) ($FD * 0.5);
+		
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmps[0]`;
+				
+		$Tmps = `polyCube -w ($Width - ($Gl * 4)) -h $Gl -d $Gl -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			select -r ($Tmps[0] + ".e[3]");		delete;
+			select -r ($Tmps[0] + ".vtx[6:7]");	delete;
+				move -r ($Gl * -1.0) 0 0 ($Tmps[0] + ".vtx[4]") ;
+				move -r ($Gl * 1.0) 0 0 ($Tmps[0] + ".vtx[5]") ;
+				move -r 0 ($FH * -1.0 + $Gl * -0.5) ($FD * -0.75) $Tmps[0];
+			
+		$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmps[0]`;
+				move -r 0 ($FrHeight) 0 $Temps[0];
+			
+			$Temp[$a++] = $Temps[0];
+			
+			
+		// Left Hand Upright	
+		$Temps = `polyCube -w $FW -h ($FrHeight) -d $FD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			move -r ($FW * 0.5) 0 ($FD * -0.5);
+		$Tmps = `polyCube -w ($Fw * 2) -h ($FrHeight + $Fh * 1.0) -d $Fd -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			move -r ($FW * 0.5) 0 ($FD * 0.5);
+		
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmps[0]`;
+			
+		$Tmps = `polyCube -w $Gl -h $Height -d $Gl -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			select -r ($Tmps[0] + ".e[9]");		delete;
+			select -r ($Tmps[0] + ".vtx[5]") ($Tmps[0] + ".vtx[7]");	delete;
+			
+				move -r 0 ($Gl * 1.0) 0 ($Tmps[0] + ".vtx[1]") ;
+				move -r 0 ($Gl * -1.0) 0 ($Tmps[0] + ".vtx[3]") ;
+				move -r ($FH * 1.0 + $Gl * 0.5) 0 ($FD * -0.75) $Tmps[0];
+			
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmps[0]`;
+				scale 1 1 0.9999 $Temps[0];
+				move -r ($FrWidth * -0.5) ($Height * 0.5 + $FH * 1.0) 0 $Temps[0];
+			
+			$Temp[$a++] = $Temps[0];
+	
+			
+		// Right Hand Upright	
+		$Temps = `polyCube -w $FW -h ($FrHeight) -d $FD -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			move -r ($FW * -0.5) 0 ($FD * -0.5);
+		$Tmps = `polyCube -w ($Fw * 2) -h ($FrHeight + $Fh * 1.0) -d $Fd -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			move -r ($FW * -0.5) 0 ($FD * 0.5);
+		
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmps[0]`;
+			
+		$Tmps = `polyCube -w $Gl -h $Height -d $Gl -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			select -r ($Tmps[0] + ".e[8]");		delete;
+			select -r ($Tmps[0] + ".vtx[4]") ($Tmps[0] + ".vtx[6]");	delete;
+				move -r 0 ($Gl * 1.0) 0 ($Tmps[0] + ".vtx[0]") ;
+				move -r 0 ($Gl * -1.0) 0 ($Tmps[0] + ".vtx[2]") ;
+				move -r ($FH * -1.0 + $Gl * -0.5) 0 ($FD * -0.75) $Tmps[0];
+				
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmps[0]`;
+				scale 1 1 0.9999 $Temps[0];
+				move -r ($FrWidth * 0.5) ($Height * 0.5 + $FH * 1.0) 0 $Temps[0];
+			
+			$Temp[$a++] = $Temps[0];
+			
+		// Boolean Operation on all Frame Members	
+			
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temp[2]`;
+			$Tmps = `polyBoolOp -op 1 -ch 0 $Temp[1] $Temp[3]`;
+			$Temps = `polyUnite -ch 0 $Temps[0] $Tmps[0]`;
+			
+			$Temp[0] = `rename $Temps[0] ($WinName + "_" + $e)`;
+				select -r $Temp[0];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[0];
+			
+	}// End of Hinged Window Frame
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Build Glass
+	
+	$Temps = `polyCube -w ($Width - 0) -h ($Height + 0) -d $Gl -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+		move -r 0 ($FrHeight * 0.5 - $FW * 0) ($Gl * -0.5) $Temps[0];
+		
+		$Temp[1] = `rename $Temps[0] ($WinName + "_Glass_" + $e)`;
+	
+		select -r $Temp[1];
+			hyperShade -assign "initialShadingGroup";
+			hyperShade -assign $Shader[1];
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Window Group and Position Hinge Location
+			
+	$WinGrp[0] = `group -em -name ($WinName + "_GrpN_" + $e)`;
+	if ($F ==0)
+		{
+			parent $Temp[0] $Temp[1] $WinGrp[0];
+		}
+		
+	if ($F ==1)
+		{
+			if ($H == 0) { move -r  0 ($FrHeight + ($FH * 0.5)) 0 ;}
+		
+			if ($H == 1) { move -r (($FrWidth + $FW) * -0.5) ($FrHeight * 0.5) 0 ;}
+			if ($H == 2) { move -r (($FrWidth + $FW) * 0.5) ($FrHeight * 0.5) 0 ;}
+		
+				parent $Temp[0] $Temp[1] $WinGrp[0];
+			
+			if ($H < 3) { move -r 0 0 ($FD) $WinGrp[0];}
+		}
+		$WinGrp[1] = $Temp[0];
+		$WinGrp[2] = $Temp[1];
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+	
+		select -r $WinGrp[0];
+		makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+		
+	return $WinGrp;
+	
+}

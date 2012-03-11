@@ -1,0 +1,830 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davveys Door Generator
+''    Author:  
+''    Last Updated: Mar 06, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4584.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+	// $T = Type
+	// $H = Hinge Position
+	// $F = Fixed or Hinged
+	// $E = Group Number
+	// $E = Door Number
+	// $DrFeight = Frame Height
+	// $DrWidth = Frame Width
+
+/*
+	DVY_DoorMaker(0, 2, 1, 1, 1, 1981, 610);
+*/		
+
+global proc string[] DVY_DoorMaker(int $T, int $H, int $Panels, int $E, int $e, float $DrHeight, float $DrWidth)
+	
+{
+// ******************************************************************************** //	
+//	Global Variables	
+	
+	global string $Units;
+	global float $DVYUnit;
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Local Variables
+	
+	string $Door[], $DoorGrp[], $GlassGrp[], $Temp[], $Temps[], $Tmps[], $Shader[];
+	string $DrName[] = {"Plain_", "SinglePanel_", "TwoPanel_", "ThreePanel_", "FourPanel", "FivePanel", "SixPanel_", "EightPanel_"};
+	string $DrType[] = {"ExternalDoor_", "InternalDoor_"};
+
+	float $FW, $FH, $FD, $Width, $Height;
+	float $WW[], $WH[], $WD[];
+	
+	int $a, $b, $c, $i, $j, $k;	
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Create Shaders for Door Frame & Glass.
+	
+	if(!`objExists Door_SH`) { $Shader[0] = `DVY_Shaders(42)`; }
+		 $Shader[0] = "Door_SH";		 
+	
+	if(!`objExists Glass_SH`) { $Shader[1] = `DVY_Shaders(49)`; }
+		 $Shader[1] = "Glass_SH";
+		 
+	if(!`objExists Black_SH`) { $Shader[2] = `DVY_Shaders(34)`; }
+		 $Shader[2] = "Black_SH";
+		 
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Door Frame dimensions
+		
+		float $Dd = 45; 			// Door Depth
+		if ($T == 1) { $Dd = 40;}
+		
+		float $Dw = $DrWidth;		// Door Width
+		float $Dh = $DrHeight; 		// Door Height
+		float $Gl = 10;				// Glass Thickness
+		
+		float $DrH = 100;	// Door Edge Height
+		float $DrW = 100;	// Door Edge Width
+		
+		float $Height = ($DrHeight - $FH * 2);
+		float $Width = ($DrWidth - $FW * 1);
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Door Group and Position Hinge Location
+			
+	$DoorGrp[0] = `group -em -name ($DrType[$T] + "GrpN_" + $E + "_DoorGrp_" + $e)`;
+
+	if ($H == 1)
+		{ xform -ws -piv ($Dw * -0.5) ($Dh * 0.5) ($Dd * -1 ) $DoorGrp[0]; }
+		
+	if ($H == 2)
+		{ xform -ws -piv ($Dw * 0.5) ($Dh * 0.5) ($Dd * -1 ) $DoorGrp[0]; }
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Set Data for Panel Types
+		
+	float $Panel[];
+	
+	if ($Panels == 1)
+		{ $Panel[0] = ($Dw - $DrW * 2);		$Panel[1] = ($Dh - $DrH * 2); }	
+		
+	if ($Panels == 2)
+		{ $Panel[0] = ($Dw - $DrW * 2);		$Panel[1] = ($Dh - $DrH * 3)/2; }	
+		
+	if ($Panels == 3)
+		{ $Panel[0] = ($Dw - $DrW * 2);		$Panel[1] = ($Dh - $DrH * 4)/3; }	
+	
+	if ($Panels == 4)
+		{ $Panel[0] = ($Dw - $DrW * 3)/2; 	$Panel[1] = ($Dh - $DrH * 3)/2; }	
+		
+	if ($Panels == 5)
+		{ $Panel[0] = ($Dw - $DrW * 3)/2; 	$Panel[1] = ($Dh - $DrH * 4) * 2/5;
+		  $Panel[2] = ($Dw - $DrW * 2); 	$Panel[3] = ($Dh - $DrH * 4) * 1/5;}
+	
+	if ($Panels == 6)
+		{ $Panel[0] = ($Dw - $DrW * 3)/2; 	$Panel[1] = ($Dh - $DrH * 4) * 2/5;	
+		  $Panel[2] = ($Dw - $DrW * 3)/2; 	$Panel[3] = ($Dh - $DrH * 4) * 1/5;}
+		
+	if ($Panels == 8)
+		{ $Panel[0] = ($Dw - $DrW * 3)/2; 	$Panel[1] = ($Dh - $DrH * 5)/4; }
+		
+	if ($Panels == 9)
+		{ $Panel[0] = ($Dw - $DrW * 2);		$Panel[1] = ($Dh - $DrH * 3)/2;	
+		  $Panel[2] = ($Dw - $DrW * 3)/2; 	$Panel[3] = ($Dh - $DrH * 3)/2; }
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Door Name.
+		
+	string $DoorType = ("_" + $DrName[$T] + "Door_" + $e);
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Build Solid Door.
+		
+	if ($Panels == 0)
+		{
+			$Temps = `polyCube -w ($Dw) -h ($Dh) -d $Dd -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move -r 0 ($Dh * 0.5) ($Dd * -0.5);
+				xform -ws -piv 0 0 0 $Temps[0];
+					$Door[0] = $Temps[0];
+				
+				select -r $Door[0];
+				makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+		}
+	
+// Build Door Outside Frame.
+	
+	if ($Panels >= 1)
+		{  $a = 0;
+			// Bottom Fixed Rail
+				$Temps = `polyCube -w $Dw -h $DrH -d $Dd -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r 0 ($DrH * 0.5) ($Dd * -0.5);
+						$Temp[$a++] = $Temps[0];
+		
+			// Top Fixed Rail
+				$Temps = `polyCube -w $Dw -h $DrH -d $Dd -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r 0 ($Dh - $DrH * 0.5) ($Dd * -0.5);
+						$Temp[$a++] = $Temps[0];
+					
+			// Left Door Edge
+				$Temps = `polyCube -w $DrW -h $Dh -d ($Dd * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r (($Dw - $DrW) * -0.5) ($Dh * 0.5) ($Dd * -0.5);
+						$Temp[$a++] = $Temps[0];
+					
+			// Right Door Edge
+				$Temps = `polyCube -w $DrW -h $Dh -d ($Dd * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r (($Dw - $DrW) * 0.5) ($Dh * 0.5) ($Dd * -0.5);
+						$Temp[$a++] = $Temps[0];
+					
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temp[1]`;
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[2]`;
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[3]`;
+				$Door[0] = $Temps[0];
+		}
+
+	$a = 0;
+		
+	if ($Panels >= 1)
+		{// Single Panel.
+			$Temps = `polyCube -w ($Panel[0]) -h 15 -d $Dd -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				scale 1 1 0.5 ($Temps[0] + ".f[1]");
+				move -r 0 (7.5) ($Dd * -0.5);
+					$Temp[$a++] = $Temps[0];
+				
+			$Temps = `polyCube -w ($Panel[0]) -h 15 -d $Dd -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				scale 1 1 0.5 ($Temps[0] + ".f[3]");
+				move -r 0 ($Panel[1] - 7.5) ($Dd * -0.5);
+					$Temp[$a++] = $Temps[0];
+					
+			$Temps = `polyCube -w 15 -h ($Panel[1]) -d ($Dd * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				scale 1 1 0.5 ($Temps[0] + ".f[4]");
+				move -r ($Panel[0] * -0.5 + 7.5) ($Panel[1] * 0.5) ($Dd * -0.5);
+					$Temp[$a++] = $Temps[0];
+		
+			$Temps = `polyCube -w 15 -h ($Panel[1]) -d ($Dd * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				scale 1 1 0.5 ($Temps[0] + ".f[5]");
+				move -r ($Panel[0] * 0.5 - 7.5) ($Panel[1] * 0.5) ($Dd * -0.5);
+					$Temp[$a++] = $Temps[0];
+			
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temp[1]`;
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[2]`;
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[3]`;
+					$Door[1] = $Temps[0];
+			
+				$Temps = `polyCube -w ($Panel[0] - 20) -h ($Panel[1] - 20) -d ($Dd * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					scale 1 1 0.5 $Temps[0];
+					move -r 0 ($Panel[1] * 0.5) ($Dd * -0.5) $Temps[0];
+					
+				$GlassGrp[0] = `rename $Temps[0] ($DrType[$T] + "GrpN_" + $E + "_Pane_1")`;
+				
+					polyExtrudeFacet -ch 0 -kft 1 -ws 0
+						-pvx 0 -pvy 0 -pvz 0
+						-tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1
+						-ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+						-ltz 2.5-ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 0.75 -lsy 0.95 -lsz 1
+						-ldx 1 -ldy 0 -ldz 0 -w 0 -gx 0 -gy -1 -gz 0
+						-att 0 -mx 0 -my 0 -mz 0 -sma 30 ($GlassGrp[0] + ".f[0]");
+				
+					polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 1
+							-worldSpace 1 -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001
+							-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180
+							-ch 0  ($GlassGrp[0] + ".f[0]");
+				
+					polyExtrudeFacet -ch 0 -kft 1 -ws 0
+						-pvx 0 -pvy 0 -pvz 0
+						-tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1
+						-ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+						-ltz 2.5-ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 0.75 -lsy 0.95 -lsz 1
+						-ldx 1 -ldy 0 -ldz 0 -w 0 -gx 0 -gy -1 -gz 0
+						-att 0 -mx 0 -my 0 -mz 0 -sma 30 ($GlassGrp[0] + ".f[1]");
+					
+					polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 1
+							-worldSpace 1 -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001
+							-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180
+							-ch 0  ($GlassGrp[0] + ".f[1]");
+					
+			select -r $GlassGrp[0];
+				hyperShade -assign "initialShadingGroup";
+				 hyperShade -assign $Shader[0];
+		}
+			
+	if ($Panels == 5)
+		{// Shorter Single Panel.
+			$Temps = `polyCube -w ($Panel[2]) -h 15 -d $Dd -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				scale 1 1 0.5 ($Temps[0] + ".f[1]");
+				move -r 0 (7.5) ($Dd * -0.5);
+					$Temp[$a++] = $Temps[0];
+				
+			$Temps = `polyCube -w ($Panel[2]) -h 15 -d $Dd -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				scale 1 1 0.5 ($Temps[0] + ".f[3]");
+				move -r 0 ($Panel[3] - 7.5) ($Dd * -0.5);
+					$Temp[$a++] = $Temps[0];
+					
+			$Temps = `polyCube -w 15 -h ($Panel[3]) -d ($Dd * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				scale 1 1 0.5 ($Temps[0] + ".f[4]");
+				move -r ($Panel[2] * -0.5 + 7.5) ($Panel[3] * 0.5) ($Dd * -0.5);
+					$Temp[$a++] = $Temps[0];
+		
+			$Temps = `polyCube -w 15 -h ($Panel[3]) -d ($Dd * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				scale 1 1 0.5 ($Temps[0] + ".f[5]");
+				move -r ($Panel[2] * 0.5 - 7.5) ($Panel[3] * 0.5) ($Dd * -0.5);
+					$Temp[$a++] = $Temps[0];
+			
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temp[1]`;
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[2]`;
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[3]`;
+					$Door[10] = $Temps[0];
+			
+				$Temps = `polyCube -w ($Panel[2] - 20) -h ($Panel[3] - 20) -d ($Dd * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					scale 1 1 0.5 $Temps[0];
+					move -r 0 ($Panel[3] * 0.5) ($Dd * -0.5);
+					
+				$GlassGrp[4] = `rename $Temps[0] ($DrType[$T] + "GrpN_" + $E + "_Pane_5")`;
+					
+					polyExtrudeFacet -ch 0 -kft 1 -ws 0
+						-pvx 0 -pvy 0 -pvz 0
+						-tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1
+						-ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+						-ltz 2.5-ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 0.75 -lsy 0.85 -lsz 1
+						-ldx 1 -ldy 0 -ldz 0 -w 0 -gx 0 -gy -1 -gz 0
+						-att 0 -mx 0 -my 0 -mz 0 -sma 30 ($GlassGrp[4] + ".f[0]");
+				
+					polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 1
+							-worldSpace 1 -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001
+							-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180
+							-ch 0  ($GlassGrp[4] + ".f[0]");
+					
+					polyExtrudeFacet -ch 0 -kft 1 -ws 0
+						-pvx 0 -pvy 0 -pvz 0
+						-tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1
+						-ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+						-ltz 2.5-ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 0.75 -lsy 0.85 -lsz 1
+						-ldx 1 -ldy 0 -ldz 0 -w 0 -gx 0 -gy -1 -gz 0
+						-att 0 -mx 0 -my 0 -mz 0 -sma 30 ($GlassGrp[4] + ".f[1]");
+					
+					polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 1
+							-worldSpace 1 -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001
+							-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180
+							-ch 0  ($GlassGrp[4] + ".f[1]");
+					
+			select -r $GlassGrp[4];
+				hyperShade -assign "initialShadingGroup";
+				 hyperShade -assign $Shader[0];
+		}
+		
+	if ($Panels == 6)
+		{// Shorter Single Panel.
+			$Temps = `polyCube -w ($Panel[2]) -h 15 -d $Dd -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				scale 1 1 0.5 ($Temps[0] + ".f[1]");
+				move -r 0 (7.5) ($Dd * -0.5);
+					$Temp[$a++] = $Temps[0];
+				
+			$Temps = `polyCube -w ($Panel[2]) -h 15 -d $Dd -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				scale 1 1 0.5 ($Temps[0] + ".f[3]");
+				move -r 0 ($Panel[3] - 7.5) ($Dd * -0.5);
+					$Temp[$a++] = $Temps[0];
+					
+			$Temps = `polyCube -w 15 -h ($Panel[3]) -d ($Dd * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				scale 1 1 0.5 ($Temps[0] + ".f[4]");
+				move -r ($Panel[2] * -0.5 + 7.5) ($Panel[3] * 0.5) ($Dd * -0.5);
+					$Temp[$a++] = $Temps[0];
+		
+			$Temps = `polyCube -w 15 -h ($Panel[3]) -d ($Dd * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				scale 1 1 0.5 ($Temps[0] + ".f[5]");
+				move -r ($Panel[2] * 0.5 - 7.5) ($Panel[3] * 0.5) ($Dd * -0.5);
+					$Temp[$a++] = $Temps[0];
+			
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temp[1]`;
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[2]`;
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[3]`;
+					$Door[20] = $Temps[0];
+	
+				$Temps = `polyCube -w ($Panel[2] - 20) -h ($Panel[3] - 20) -d ($Dd * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					scale 1 1 0.5 $Temps[0];
+					move -r 0 ($Panel[3] * 0.5) ($Dd * -0.5);
+
+				$GlassGrp[4] = `rename $Temps[0] ($DrType[$T] + "GrpN_" + $E + "_Pane_5")`;
+				
+				polyExtrudeFacet -ch 0 -kft 1 -ws 0
+						-pvx 0 -pvy 0 -pvz 0
+						-tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1
+						-ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+						-ltz 2.5-ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 0.75 -lsy 0.85 -lsz 1
+						-ldx 1 -ldy 0 -ldz 0 -w 0 -gx 0 -gy -1 -gz 0
+						-att 0 -mx 0 -my 0 -mz 0 -sma 30 ($GlassGrp[4] + ".f[0]");
+				
+					polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 1
+							-worldSpace 1 -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001
+							-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180
+							-ch 0  ($GlassGrp[4] + ".f[0]");
+					
+					polyExtrudeFacet -ch 0 -kft 1 -ws 0
+						-pvx 0 -pvy 0 -pvz 0
+						-tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1
+						-ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+						-ltz 2.5-ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 0.75 -lsy 0.85 -lsz 1
+						-ldx 1 -ldy 0 -ldz 0 -w 0 -gx 0 -gy -1 -gz 0
+						-att 0 -mx 0 -my 0 -mz 0 -sma 30 ($GlassGrp[4] + ".f[1]");
+					
+					polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 1
+							-worldSpace 1 -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001
+							-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180
+							-ch 0  ($GlassGrp[4] + ".f[1]");
+					
+			select -r $GlassGrp[4];
+				hyperShade -assign "initialShadingGroup";
+				 hyperShade -assign $Shader[0];
+		}
+		
+	if ($Panels == 9)
+		{// Narrow Lower Panel.
+			$Temps = `polyCube -w ($Panel[2]) -h 15 -d $Dd -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				scale 1 1 0.5 ($Temps[0] + ".f[1]");
+				move -r 0 (7.5) ($Dd * -0.5);
+					$Temp[$a++] = $Temps[0];
+				
+			$Temps = `polyCube -w ($Panel[2]) -h 15 -d $Dd -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				scale 1 1 0.5 ($Temps[0] + ".f[3]");
+				move -r 0 ($Panel[3] - 7.5) ($Dd * -0.5);
+					$Temp[$a++] = $Temps[0];
+					
+			$Temps = `polyCube -w 15 -h ($Panel[3]) -d ($Dd * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				scale 1 1 0.5 ($Temps[0] + ".f[4]");
+				move -r ($Panel[2] * -0.5 + 7.5) ($Panel[3] * 0.5) ($Dd * -0.5);
+					$Temp[$a++] = $Temps[0];
+		
+			$Temps = `polyCube -w 15 -h ($Panel[3]) -d ($Dd * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				scale 1 1 0.5 ($Temps[0] + ".f[5]");
+				move -r ($Panel[2] * 0.5 - 7.5) ($Panel[3] * 0.5) ($Dd * -0.5);
+					$Temp[$a++] = $Temps[0];
+			
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temp[1]`;
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[2]`;
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[3]`;
+					$Door[20] = $Temps[0];
+	
+				$Temps = `polyCube -w ($Panel[2] - 20) -h ($Panel[3] - 20) -d ($Dd * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					scale 1 1 0.5 $Temps[0];
+					move -r 0 ($Panel[3] * 0.5) ($Dd * -0.5);
+
+				$GlassGrp[1] = `rename $Temps[0] ($DrType[$T] + "GrpN_" + $E + "_Pane_2")`;
+				
+				polyExtrudeFacet -ch 0 -kft 1 -ws 0
+						-pvx 0 -pvy 0 -pvz 0
+						-tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1
+						-ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+						-ltz 2.5-ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 0.75 -lsy 0.95 -lsz 1
+						-ldx 1 -ldy 0 -ldz 0 -w 0 -gx 0 -gy -1 -gz 0
+						-att 0 -mx 0 -my 0 -mz 0 -sma 30 ($GlassGrp[1] + ".f[0]");
+				
+					polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 1
+							-worldSpace 1 -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001
+							-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180
+							-ch 0  ($GlassGrp[1] + ".f[0]");
+					
+					polyExtrudeFacet -ch 0 -kft 1 -ws 0
+						-pvx 0 -pvy 0 -pvz 0
+						-tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1
+						-ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+						-ltz 2.5-ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 0.75 -lsy 0.95 -lsz 1
+						-ldx 1 -ldy 0 -ldz 0 -w 0 -gx 0 -gy -1 -gz 0
+						-att 0 -mx 0 -my 0 -mz 0 -sma 30 ($GlassGrp[1] + ".f[1]");
+					
+					polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 1
+							-worldSpace 1 -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001
+							-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180
+							-ch 0  ($GlassGrp[1] + ".f[1]");
+					
+			select -r $GlassGrp[1];
+				hyperShade -assign "initialShadingGroup";
+				 hyperShade -assign $Shader[0];
+		}
+		
+	if ($Panels == 1)
+		{
+			move -r 0 $DrH 0 $Door[1] $GlassGrp[0];
+			$Temps = `polyUnite -ch 0 $Door[0] $Door[1]`;
+			$Door[0] = $Temps[0];
+		}
+		
+	if ($Panels == 2)
+		{
+			select -r $Door[1] $GlassGrp[0];
+			$Temps = `duplicate -rr -renameChildren -un`;
+			print $Temps;
+				$Door[2] = $Temps[0]; $GlassGrp[1] = $Temps[1];
+				move -r 0 $DrH 0 $Door[1] $GlassGrp[0];
+				move -r 0 (($Dh+$DrH) * 0.5) 0 $Door[2] $GlassGrp[1];
+					
+			$Temps = `polyCube -w ($Dw - $DrW * 2) -h ($DrH) -d ($Dd) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 ($Dh *0.5) ($Dd * -0.5) $Temps[0];
+
+			$Temps = `polyUnite -ch 0 $Door[0] $Door[1] $Door[2] $Temps[0]`;
+				$Door[0] = $Temps[0];
+		}
+		
+	if ($Panels == 3)
+		{
+			select -r $Door[1] $GlassGrp[0];
+			$Temps = `duplicate -rr -renameChildren -un`;
+				$Door[2] = $Temps[0]; $GlassGrp[1] = $Temps[1];
+				
+			select -r $Door[1] $GlassGrp[0];
+			$Temps = `duplicate -rr -renameChildren -un`;
+				$Door[3] = $Temps[0]; $GlassGrp[2] = $Temps[1];
+				
+				move -r 0 $DrH 0 $Door[1] $GlassGrp[0];
+				move -r 0 ($Panel[1] + $DrH * 2.0) 0 $Door[2] $GlassGrp[1];
+				move -r 0 ($Panel[1] * 2 + $DrH * 3.0) 0 $Door[3] $GlassGrp[2];
+				
+			$Temps = `polyCube -w ($Dw - $DrW * 2) -h ($DrH) -d ($Dd) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 ($Panel[1] + $DrH * 1.5) ($Dd * -0.5) $Temps[0];
+				$Door[4] = $Temps[0];
+				
+			$Temps = `polyCube -w ($Dw - $DrW * 2) -h ($DrH) -d ($Dd) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 ($Panel[1] * 2 + $DrH * 2.5) ($Dd * -0.5) $Temps[0];
+
+			$Temps = `polyUnite -ch 0 $Door[0] $Door[1] $Door[2] $Door[3] $Door[4] $Temps[0]`;
+				$Door[0] = $Temps[0];
+		}
+		
+	if ($Panels == 4)
+		{ select -r $Door[1] $GlassGrp[0];
+			for ($i=1; $i<$Panels; $i++)
+				{
+					$Temps = `duplicate -rr -renameChildren -un`;
+					$Door[$i+1] = $Temps[0]; 
+					$GlassGrp[$i] = $Temps[1];
+				}
+					move -r ($Dw * -0.5 + $DrW + ($Panel[0] * 0.5)) ($DrH) 0 $Door[1] $GlassGrp[0];
+					move -r ($Dw * 0.5 - $DrW - ($Panel[0] * 0.5)) ($DrH) 0 $Door[2] $GlassGrp[1];
+					move -r ($Dw * -0.5 + $DrW + ($Panel[0] * 0.5)) ($Panel[1] + $DrH * 2) 0 $Door[3] $GlassGrp[2];
+					move -r ($Dw * 0.5 - $DrW - ($Panel[0] * 0.5)) ($Panel[1] + $DrH * 2) 0 $Door[4] $GlassGrp[3];
+			
+			$Temps = `polyCube -w ($Dw - $DrW * 2) -h ($DrH) -d ($Dd) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 ($Dh *0.5) ($Dd * -0.5) $Temps[0];
+				$Temp[0] = $Temps[0];
+		
+			$Temps = `polyCube -w ($DrW) -h ($Dh - $DrH * 2) -d ($Dd * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 ($Dh *0.5) ($Dd * -0.5) $Temps[0];
+				$Temp[1] = $Temps[0];
+		
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temp[1]`;
+			$Temps = `polyUnite -ch 0 $Door[0] $Door[1] $Door[2] $Door[3] $Door[4] $Temps[0]`;
+			$Door[0] = $Temps[0];
+		}
+
+	if ($Panels == 5)
+		{ select -r $Door[1] $GlassGrp[0];
+			for ($i=1; $i<4; $i++)
+				{
+					$Temps = `duplicate -rr -renameChildren -un`;
+					$Door[$i+1] = $Temps[0];
+					$GlassGrp[$i] = $Temps[1];
+				}
+					move -r ($Dw * -0.5 + $DrW + ($Panel[0] * 0.5)) ($DrH) 0 $Door[1] $GlassGrp[0];
+					move -r ($Dw * 0.5 - $DrW - ($Panel[0] * 0.5)) ($DrH) 0 $Door[2] $GlassGrp[1];
+	
+				
+					move -r ($Dw * -0.5 + $DrW + ($Panel[0] * 0.5)) ($Panel[1] + $DrH * 2) 0 $Door[3] $GlassGrp[2];
+					move -r ($Dw * 0.5 - $DrW - ($Panel[0] * 0.5)) ($Panel[1] + $DrH * 2) 0 $Door[4] $GlassGrp[3];
+					
+					select -r $Door[10] $GlassGrp[4];
+						move -r 0 ($Panel[1] * 2 + $DrH * 3) 0;
+						
+			$Temps = `polyCube -w ($Dw - $DrW * 2) -h ($DrH) -d ($Dd) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 ($Panel[1] + $DrH * 1.5) ($Dd * -0.5) $Temps[0];
+				$Temp[0] = $Temps[0];
+		
+			$Temps = `polyCube -w ($Dw - $DrW * 2) -h ($DrH) -d ($Dd) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 ($Panel[1] * 2 + $DrH * 2.5) ($Dd * -0.5) $Temps[0];
+				$Temp[1] = $Temps[0];
+				
+			$Temps = `polyCube -w ($DrW) -h ($Panel[1] * 2 + $DrH * 2) -d ($Dd * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 ($Panel[1] + $DrH * 2.0) ($Dd * -0.5) $Temps[0];
+				$Temp[2] = $Temps[0];
+	
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temp[1]`;
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[2]`;
+					
+					$Temps = `polyUnite -ch 0 $Door[0] $Door[1] $Door[2] $Door[3]
+											$Door[4] $Door[10] $Temps[0]`;
+					$Door[0] = $Temps[0];
+		}		
+
+	if ($Panels == 6)
+		{ select -r $Door[1] $GlassGrp[0];
+			for ($i=1; $i<4; $i++)
+				{
+					$Temps = `duplicate -rr -renameChildren -un`;
+					$Door[$i+1] = $Temps[0];
+					$GlassGrp[$i] = $Temps[1];
+				}
+					move -r ($Dw * -0.5 + $DrW + ($Panel[0] * 0.5)) ($DrH) 0 $Door[1] $GlassGrp[0];
+					move -r ($Dw * 0.5 - $DrW - ($Panel[0] * 0.5)) ($DrH) 0 $Door[2] $GlassGrp[1];
+	
+				
+					move -r ($Dw * -0.5 + $DrW + ($Panel[0] * 0.5)) ($Panel[1] + $DrH * 2) 0 $Door[3] $GlassGrp[2];
+					move -r ($Dw * 0.5 - $DrW - ($Panel[0] * 0.5)) ($Panel[1] + $DrH * 2) 0 $Door[4] $GlassGrp[3];
+					
+					select -r $Door[20] $GlassGrp[4];
+						$Temps = `duplicate -rr -renameChildren -un`;
+						$Door[21] = $Temps[0];
+					 	$GlassGrp[5] = $Temps[1];
+						move -r ($Dw * -0.5 + $DrW + ($Panel[0] * 0.5)) ($Panel[1] * 2 + $DrH * 3) 0 $Door[20] $GlassGrp[4];
+						move -r ($Dw * 0.5 - $DrW - ($Panel[0] * 0.5)) ($Panel[1] * 2 + $DrH * 3) 0 $Door[21] $GlassGrp[5];
+		
+			$Temps = `polyCube -w ($Dw - $DrW * 2) -h ($DrH) -d ($Dd) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 ($Panel[1] + $DrH * 1.5) ($Dd * -0.5) $Temps[0];
+				$Temp[0] = $Temps[0];
+		
+			$Temps = `polyCube -w ($Dw - $DrW * 2) -h ($DrH) -d ($Dd) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 ($Panel[1] * 2 + $DrH * 2.5) ($Dd * -0.5) $Temps[0];
+				$Temp[1] = $Temps[0];
+				
+			$Temps = `polyCube -w ($DrW) -h ($Dh - $DrH * 2) -d ($Dd * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 ($Dh *0.5) ($Dd * -0.5) $Temps[0];
+				$Temp[2] = $Temps[0];
+	
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temp[1]`;
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[2]`;
+					
+					$Temps = `polyUnite -ch 0 $Door[0] $Door[1] $Door[2] $Door[3]
+											$Door[4] $Door[20] $Door[21] $Temps[0]`;
+					$Door[0] = $Temps[0];
+		}
+		
+	if ($Panels == 8)
+		{ select -r $Door[1];
+			for ($i=1; $i<$Panels; $i++)
+				{
+					$Temps = `duplicate -rr -renameChildren -un`;
+					$Door[$i+1] = $Temps[0];
+				}
+					move -r ($Dw * -0.5 + $DrW + ($Panel[0] * 0.5)) ($DrH) 0 $Door[1];
+					move -r ($Dw * 0.5 - $DrW - ($Panel[0] * 0.5)) ($DrH) 0 $Door[2];
+				
+					move -r ($Dw * -0.5 + $DrW + ($Panel[0] * 0.5)) ($Panel[1] + $DrH * 2) 0 $Door[3];
+					move -r ($Dw * 0.5 - $DrW - ($Panel[0] * 0.5)) ($Panel[1] + $DrH * 2) 0 $Door[4];
+					
+					move -r ($Dw * -0.5 + $DrW + ($Panel[0] * 0.5)) ($Panel[1] * 2 + $DrH * 3) 0 $Door[5];
+					move -r ($Dw * 0.5 - $DrW - ($Panel[0] * 0.5)) ($Panel[1] * 2 + $DrH * 3) 0 $Door[6];
+					
+					move -r ($Dw * -0.5 + $DrW + ($Panel[0] * 0.5)) ($Panel[1] * 3 + $DrH * 4) 0 $Door[7];
+					move -r ($Dw * 0.5 - $DrW - ($Panel[0] * 0.5)) ($Panel[1] * 3 + $DrH * 4) 0 $Door[8];
+					
+			$Temps = `polyCube -w ($Dw - $DrW * 2) -h ($DrH) -d ($Dd) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 ($Panel[1] + $DrH * 1.5) ($Dd * -0.5) $Temps[0];
+				$Temp[0] = $Temps[0];
+		
+			$Temps = `polyCube -w ($Dw - $DrW * 2) -h ($DrH) -d ($Dd) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 ($Panel[1] * 2 + $DrH * 2.5) ($Dd * -0.5) $Temps[0];
+				$Temp[1] = $Temps[0];
+				
+			$Temps = `polyCube -w ($Dw - $DrW * 2) -h ($DrH) -d ($Dd) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 ($Panel[1] * 3 + $DrH * 3.5) ($Dd * -0.5) $Temps[0];
+				$Temp[2] = $Temps[0];
+				
+			$Temps = `polyCube -w ($DrW) -h ($Dh - $DrH * 2) -d ($Dd * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 ($Dh *0.5) ($Dd * -0.5) $Temps[0];
+				$Temp[3] = $Temps[0];
+	
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temp[1]`;
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[2]`;
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[3]`;
+		
+					$Temps = `polyUnite -ch 0 $Door $Temps[0]`;
+					$Door[0] = $Temps[0];
+		}
+		
+	if ($Panels == 9)
+		{select -r $Door[20] $GlassGrp[1];
+			$Temps = `duplicate -rr -renameChildren -un`;
+				$Door[21] = $Temps[0];
+				$GlassGrp[2] = $Temps[1];
+			
+				move -r ($Dw * -0.5 + $DrW + ($Panel[2] * 0.5)) ($DrH) 0 $Door[20] $GlassGrp[1];
+				move -r ($Dw * 0.5 - $DrW - ($Panel[2] * 0.5)) ($DrH) 0 $Door[21] $GlassGrp[2];
+	
+				select -r $Door[1] $GlassGrp[0];
+					move -r 0 ($Panel[1] * 1 + $DrH * 2) 0;
+	
+			$Temps = `polyCube -w ($Dw - $DrW * 2) -h ($DrH) -d ($Dd) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 ($Panel[1] + $DrH * 1.5) ($Dd * -0.5) $Temps[0];
+				$Temp[0] = $Temps[0];
+				
+			$Temps = `polyCube -w ($DrW) -h ($Panel[3] * 1 + $DrH * 0) -d ($Dd * 0.999) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 ($Panel[3] * 0.5 + $DrH) ($Dd * -0.5) $Temps[0];
+				$Temp[1] = $Temps[0];
+				
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temp[1]`;
+					
+				$Temps = `polyUnite -ch 0 $Door[0] $Door[1] $Door[20] $Door[21] $Temps[0]`;
+					$Door[0] = $Temps[0];
+		}	
+		
+	if((`optionMenu -q -sl DVY_InternalDoorOption` == 14)
+		|| (`optionMenu -q -sl DVY_ExternalDoorOption` == 14))		
+		{
+			$Temps = `polyCube -w 10 -h ($Panel[1] -30) -d ($Dd * 0.5) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 ($Panel[1] * 0.5 + $DrH) ($Dd * -0.5) $Temps[0];
+				$Temp[0] = $Temps[0];
+
+			for ($i=1; $i<5; $i++)
+				{
+					$Temps = `polyCube -w ($Dw - 30 - $DrW * 2) -h 10 -d ($Dd * 0.499) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move 0 ($Panel[1] * (0.20 * $i) + $DrH) ($Dd * -0.5) $Temps[0];
+					$Temp[$i] = $Temps[0];
+				}
+			
+			$Temps = `polyUnite -ch 0 $Temp`;
+				$GlassGrp[1] = `rename $Temps[0] ($DrType[$T] + "GrpN_" + $E + "_GlazingBar_5")`;
+				select -r $GlassGrp[1];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[2];
+		}
+		
+		
+	if((`optionMenu -q -sl DVY_InternalDoorOption` == 15)
+		|| (`optionMenu -q -sl DVY_ExternalDoorOption` == 15))		
+		{
+			for ($i=0; $i<2; $i++)
+				{
+					$Temps = `polyCube -w ($Dw - 30 - $DrW * 2) -h 10 -d ($Dd * 0.499) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move 0 ($Panel[1] * (0.330 * ($i+1)) + $DrH) ($Dd * -0.5) $Temps[0];
+					$Temp[$i] = $Temps[0];
+				}
+	
+			$Temps = `polyUnite -ch 0 $Temp[0] $Temp[1] `;
+	
+			move 0 ($Panel[1] + $DrH * 1) 0 $Temps[0];
+		
+				$GlassGrp[2] = `rename $Temps[0] ($DrType[$T] + "GrpN_" + $E + "_GlazingBar_5")`;
+				select -r $GlassGrp[2];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[2];
+		}
+		
+	if((`optionMenu -q -sl DVY_InternalDoorOption` == 16)
+		|| (`optionMenu -q -sl DVY_ExternalDoorOption` == 16))		
+		{
+			$Temps = `polyCube -w 10 -h ($Panel[1] -30) -d ($Dd * 0.5) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 ($Panel[1] * 0.5 + $DrH) ($Dd * -0.5) $Temps[0];
+				$Temp[0] = $Temps[0];
+			
+			for ($i=1; $i<3; $i++)
+				{
+					$Temps = `polyCube -w ($Dw - 30 - $DrW * 2) -h 10 -d ($Dd * 0.499) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move 0 ($Panel[1] * (0.330 * $i) + $DrH) ($Dd * -0.5) $Temps[0];
+					$Temp[$i] = $Temps[0];
+				}
+	
+			$Temps = `polyUnite -ch 0 $Temp[0] $Temp[1] $Temp[2]`;
+	
+			move 0 ($Panel[1] + $DrH * 1) 0 $Temps[0];
+		
+				$GlassGrp[3] = `rename $Temps[0] ($DrType[$T] + "GrpN_" + $E + "_GlazingBar_1")`;
+				select -r $GlassGrp[3];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[2];
+		}
+		
+
+	if((`optionMenu -q -sl DVY_InternalDoorOption` == 18)
+		|| (`optionMenu -q -sl DVY_ExternalDoorOption` == 18))		
+		{
+			$Temps = `polyCube -w 10 -h ($Panel[1] -30) -d ($Dd * 0.5) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move (($Dw - 30 - $DrW * 2) * 0.167) ($Panel[1] * 0.5 + $DrH) ($Dd * -0.5) $Temps[0];
+				$Temp[0] = $Temps[0];
+				
+			$Temps = `polyCube -w 10 -h ($Panel[1] -30) -d ($Dd * 0.5) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move (($Dw - 30 - $DrW * 2) * -0.167)  ($Panel[1] * 0.5 + $DrH) ($Dd * -0.5) $Temps[0];
+				$Temp[1] = $Temps[0];
+				
+			
+			for ($i=1; $i<3; $i++)
+				{
+					$Temps = `polyCube -w ($Dw - 30 - $DrW * 2) -h 10 -d ($Dd * 0.499) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move 0 ($Panel[1] * (0.330 * $i) + $DrH) ($Dd * -0.5) $Temps[0];
+					$Temp[$i+1] = $Temps[0];
+				}
+	
+			$Temps = `polyUnite -ch 0 $Temp[0] $Temp[1] $Temp[2] $Temp[3]`;
+	
+			move 0 ($Panel[1] + $DrH * 1) 0 $Temps[0];
+		
+				$GlassGrp[3] = `rename $Temps[0] ($DrType[$T] + "GrpN_" + $E + "_GlazingBar_1")`;
+				select -r $GlassGrp[3];
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[2];
+		}
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Add Glass
+		
+	if((`optionMenu -q -sl DVY_InternalDoorOption` > 8)	|| (`optionMenu -q -sl DVY_ExternalDoorOption` > 8)	)
+		{
+			if((`optionMenu -q -sl DVY_InternalDoorOption` > 8) &&
+				 (`optionMenu -q -sl DVY_InternalDoorOption` < 14))
+					{ select -r $GlassGrp;}
+	
+			if((`optionMenu -q -sl DVY_ExternalDoorOption` > 8) &&
+				 (`optionMenu -q -sl DVY_ExternalDoorOption` < 14))
+					{ select -r $GlassGrp;}
+				
+			if((`optionMenu -q -sl DVY_InternalDoorOption` == 14) || (`optionMenu -q -sl DVY_ExternalDoorOption` == 14))
+				{ select -r $GlassGrp[0];}
+		
+			if((`optionMenu -q -sl DVY_InternalDoorOption` == 15) || (`optionMenu -q -sl DVY_ExternalDoorOption` == 15))
+				{ select -r $GlassGrp[1];}
+					
+			if((`optionMenu -q -sl DVY_InternalDoorOption` == 16) || (`optionMenu -q -sl DVY_ExternalDoorOption` == 16))
+				{ select -r $GlassGrp[0];}
+					
+			if((`optionMenu -q -sl DVY_InternalDoorOption` == 17) || (`optionMenu -q -sl DVY_ExternalDoorOption` == 17))
+				{ select -r $GlassGrp[0];}
+				
+			if((`optionMenu -q -sl DVY_InternalDoorOption` == 18) || (`optionMenu -q -sl DVY_ExternalDoorOption` == 18))
+				{ select -r $GlassGrp[0];}
+				
+			if((`optionMenu -q -sl DVY_InternalDoorOption` == 19) || (`optionMenu -q -sl DVY_ExternalDoorOption` == 19))
+				{ select -r $GlassGrp[2] $GlassGrp[3];}
+		
+			if((`optionMenu -q -sl DVY_InternalDoorOption` == 20) || (`optionMenu -q -sl DVY_ExternalDoorOption` == 20))
+				{ select -r $GlassGrp[2] $GlassGrp[3] $GlassGrp[4] $GlassGrp[5];}
+					
+				hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[1];
+		}
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Position Hinge Location
+
+	if ($H == 1)
+		{ xform -ws -piv ($Dw * -0.5) ($Dh *0.5) ($Dd * -1 ) $Door[0]; }
+		
+	if ($H == 2)
+		{ xform -ws -piv ($Dw * 0.5) ($Dh *0.5) ($Dd * -1 ) $Door[0]; }
+		
+		$DoorGrp[1] = `rename $Door[0] ($DrType[$T] + "GrpN_" + $E + $DoorType)`;
+		select -r $DoorGrp[1];
+			hyperShade -assign "initialShadingGroup";
+			hyperShade -assign $Shader[0];
+		
+	parent $DoorGrp[1] $DoorGrp[0];
+	if ($Panels >= 1) { parent $GlassGrp $DoorGrp[0];}
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+	
+	if ($T == 0)
+		{	move -r 0 30 0 $DoorGrp[0];	}
+		
+	select -r $DoorGrp[0];
+		makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+		
+	return $DoorGrp;
+	
+}

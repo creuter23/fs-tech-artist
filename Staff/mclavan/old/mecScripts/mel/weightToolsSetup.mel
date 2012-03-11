@@ -1,0 +1,47 @@
+// Copyright (C) 2000-2002 Michael Bazhutkin
+// www.geocites.com/bazhutkin
+// bazhutkin@mail.ru
+//
+//  Weight Tools 1.0
+//  Script File
+//  MODIFY THIS AT YOUR OWN RISK
+//
+//  Creation Date: November 22, 2002
+//
+//  Description:
+//	Setup export(import)Cluster(Skin)Weights procedures
+//	Call weightToolsSetup
+
+
+global proc weightToolsSetup()
+{  
+	global string $gShelfTopLevel;
+	if (`tabLayout -exists $gShelfTopLevel`)
+	{
+		shelfButton
+			-parent ($gShelfTopLevel + "|" + `tabLayout -q -st $gShelfTopLevel`)
+			-command "exportClusterWeights"
+			-image1 "exportClusterWeights.xpm"
+			-annotation "Export Cluster Weights. Select object."
+			-label "Export Cluster Weights";
+		shelfButton
+				-parent ($gShelfTopLevel + "|" + `tabLayout -q -st $gShelfTopLevel`)
+				-command "importClusterWeights"
+				-image1 "importClusterWeights.xpm"
+				-annotation "Import Cluster Weights. Select object."
+				-label "Import Cluster Weights";
+		shelfButton
+				-parent ($gShelfTopLevel + "|" + `tabLayout -q -st $gShelfTopLevel`)
+				-command "exportSkinWeights"
+				-image1 "exportSkinWeights.xpm"
+				-annotation "Export Skin Weights. Select object and joint(s) for mask if it`s necessary."
+				-label "Export Skin Weights";
+		shelfButton
+				-parent ($gShelfTopLevel + "|" + `tabLayout -q -st $gShelfTopLevel`)
+				-command "importSkinWeights"
+				-image1 "importSkinWeights.xpm"
+				-annotation "Import Skin Weights. Select object and joint(s) for mask if it`s necessary."
+				-label "Import Skin Weights";
+		
+	} else	error "You need a shelf for `Weight Tool` to work!";
+}

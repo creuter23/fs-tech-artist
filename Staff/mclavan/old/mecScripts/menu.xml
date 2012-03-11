@@ -1,0 +1,215 @@
+<toolset>
+	<menu tearoff="1">My Scripts
+		<script type="0">Basic Rigging Toolset
+			<exe1>source mecRS</exe1>
+			<exe2></exe2>
+			<ann>Generates my basic rigging toolset</ann>
+		</script>
+		<script type="1">Renaming Tools
+			<exe1>import mecRenameTools</exe1>
+			<exe2>mecRenameTools.gui()</exe2>
+			<ann>Various different renaming tools.</ann>
+		</script>
+		<script type="1">Rigging Tools (Low Rez)
+			<exe1>import mecRigTools</exe1>
+			<exe2>mecRigTools.gui()</exe2>
+			<ann>Various different rigging tools for developing a low rez version.</ann>
+		</script>
+		<script type="0">Anim Weight
+			<exe1>source animeWeight</exe1>
+			<exe2>animeWeight</exe2>
+			<ann>Different set of tools for weighting</ann>
+		</script>		
+		<script type="0">GUI Builder
+			<exe1>source guiBuilder</exe1>
+			<exe2></exe2>
+			<ann>Quick way to build interfaces.</ann>
+		</script>
+
+		<script type="1">Face Extract (me)
+			<exe1>import mecFEX</exe1>
+			<exe2>mecFEX.gui()</exe2>
+			<ann>PolyFace extraction tool, used with making blendshapes (detached head)</ann>
+		</script>
+		<script type="1">Script Job Builder
+			<exe1>import mecSJCreate</exe1>
+			<exe2>mecSJCreate.gui()</exe2>
+			<ann>Allows the user to create and monitor Script Jobs.</ann>
+		</script>
+		<script type="1">mecConvert (PC ONLY)
+			<exe1>import mecConvert</exe1>
+			<exe2>mecConvert.gui()</exe2>
+			<ann>Converts selected images into xpm (PC ONLY)</ann>
+		</script>	
+	</menu>	
+	<menu tearoff="1">Rigging
+		<script type="0">BSpiritCorrectiveShape
+			<exe1>source BSpiritCorrectiveShape.mel;</exe1>
+			<exe2>BSpiritCorrectiveShape</exe2>
+			<ann>Duplicate in pose, reposition verts, select blend then orginal, final execute the script.</ann>
+		</script>
+		<menu tearoff="0">Comet Scripts
+			<script type="0">Comet Menu
+				<exe1>source cometMenu.mel;</exe1>
+				<exe2></exe2>
+				<ann>Generates a menu for all of Michael Comets Scripts</ann>
+			</script>			
+		</menu>
+		<menu tearoff="0">Macroni Kazoo
+			<script type="0">zooToolBox
+				<exe1>source zooToolBox.mel;</exe1>
+				<exe2>zooToolBox</exe2>
+				<ann>Generates a menu for all of Macroni Kazoo's Scripts</ann>
+			</script>
+			<script type="0">zooXferAnim
+				<exe1>source zooXferAnim.mel;</exe1>
+				<exe2>zooXferAnim</exe2>
+				<ann>Transfer Animation</ann>
+			</script>
+		</menu>
+		
+		<menu tearoff="0">Control Icons
+			<script type="0">kk_controllers
+				<exe1>source kk_controllers;</exe1>
+				<exe2></exe2>
+				<ann>Great way to create and modify control icons.</ann>
+			</script>
+			<script type="0">Control Icons (Rig101)
+				<exe1>source rig101wireControllers;</exe1>
+				<exe2>rig101wireControllers</exe2>
+				<ann>Rigging 101's Control Icon script</ann>
+			</script>
+			<script type="0">JS Facial Win (StopStaring)
+				<exe1>source jsFacialWin;</exe1>
+				<exe2>jsFacialWin</exe2>
+				<ann>Facial Control Creator - Stop Staring - Judd Simantov (www.cgmuscle.com)</ann>
+			</script>
+			
+		</menu>
+		<menu tearoff="0">General
+			<script type="0">Lock and Hide (Rig101)
+				<exe1>source rig101locknHide;</exe1>
+				<exe2>rig101locknHide</exe2>
+				<ann>Rigging 101's Lock and Hide script</ann>
+			</script>
+			<script type="0">Attribute Man
+				<exe1>source attributeMan;</exe1>
+				<exe2>attributeMan</exe2>
+				<ann>Tools for reordering attributes.</ann>
+			</script>
+			
+			
+		</menu>
+		<menu tearoff="0">Parts
+
+		</menu>
+		<menu tearoff="0">Weighting
+			<script type="0">Save Weight Script (comet)
+				<exe1>source cometSaveWeights;</exe1>
+				<exe2>cometSaveWeights</exe2>
+				<ann>Transfer weights (Comet)</ann>
+			</script>		
+		</menu>
+
+	</menu>		
+	<menu tearoff="1">Modeling		
+		<menu tearoff="1">Devveys (Geo Generators)		
+			<script type="0">Bearings
+				<exe1>source DVY_Bearings;</exe1>
+				<exe2>DVY_Bearings;</exe2>
+				<ann>Generates different types of bearings</ann>
+			</script>
+			<script type="0">Pulleys
+				<exe1>source DVY_Pulleys;</exe1>
+				<exe2>DVY_Pulleys;</exe2>
+				<ann>Generates different types of pulleys</ann>
+			</script>
+			<script type="0">Chains
+				<exe1>source DVY_Chains;</exe1>
+				<exe2>DVY_Chains;</exe2>
+				<ann>Generates different types of chains.</ann>
+			</script>
+			<script type="0">Bearings
+				<exe1>source DVY_Bearings;</exe1>
+				<exe2>DVY_Bearings;</exe2>
+				<ann>Generates different types of bearings</ann>
+			</script>
+			<script type="0">InExDoors
+				<exe1>source DVY_InExDoors;</exe1>
+				<exe2>DVY_InExDoors;</exe2>
+				<ann>Generates different types of interior or external doors.</ann>
+			</script>
+			<script type="0">Escalators
+				<exe1>source DVY_Escalators;</exe1>
+				<exe2>DVY_Escalators;</exe2>
+				<ann>Generates different types of Escalators.</ann>
+			</script>
+			<script type="0">Gears
+				<exe1>source DVY_Gears;</exe1>
+				<exe2>DVY_Gears;</exe2>
+				<ann>Generates different types of Gears.</ann>
+			</script>
+			<script type="0">Nuts and Bolts
+				<exe1>source DVY_BoltandNut;</exe1>
+				<exe2>DVY_BoltandNut;</exe2>
+				<ann>Generates different types of nuts and bolts.</ann>
+			</script>			
+			<script type="0">Pistons
+				<exe1>source DVY_Pistons;</exe1>
+				<exe2>DVY_Pistons;</exe2>
+				<ann>Generates different types of Pistons.</ann>
+			</script>	
+			<script type="0">Screws
+				<exe1>source DVY_Screws;</exe1>
+				<exe2>DVY_Screws;</exe2>
+				<ann>Generates different types of Screws.</ann>
+			</script>	
+			<script type="0">Springs
+				<exe1>source DVY_Springs;</exe1>
+				<exe2>DVY_Springs;</exe2>
+				<ann>Generates different types of Springs.</ann>
+			</script>	
+			<script type="0">Stairs
+				<exe1>source DVY_Stairs;</exe1>
+				<exe2>DVY_Stairs;</exe2>
+				<ann>Generates different types of Stairs.</ann>
+			</script>	
+			<script type="0">Steel
+				<exe1>source DVY_Steel;</exe1>
+				<exe2>DVY_Steel;</exe2>
+				<ann>Generates different types of Steel.</ann>
+			</script>
+			<script type="0">Windows
+				<exe1>source DVY_Windows;</exe1>
+				<exe2>DVY_Windows;</exe2>
+				<ann>Generates different types of Windows.</ann>
+			</script>
+			<script type="0">Lego
+				<exe1>source DVY_Lego;</exe1>
+				<exe2>DVY_Lego;</exe2>
+				<ann>Generates different types of Lego.</ann>
+			</script>			
+		</menu>	
+	</menu>	
+	<!--
+	<menu tearoff="1">Modeling
+	
+		<script type="0">Save Weight Script (comet)
+			<exe1>source cometSaveWeights;</exe1>
+			<exe2>cometSaveWeights</exe2>
+			<ann>Transfer weights (Comet)</ann>
+		</script>		
+
+	</menu>
+	<menu tearoff="1">Utility
+		<script type="1">mecConvert (PC ONLY)
+			<exe1>import mecConvert</exe1>
+			<exe2>mecConvert.gui()</exe2>
+			<ann>Converts selected images into xpm (PC ONLY)</ann>
+		</script>
+	</menu>
+	-->
+
+</toolset>
+
+

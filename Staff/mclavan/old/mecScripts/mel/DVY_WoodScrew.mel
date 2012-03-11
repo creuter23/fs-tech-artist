@@ -1,0 +1,739 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name:  Davvey\'s Screw Generator
+''    Author:  
+''    Last Updated: Jan 30, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4427.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+
+//	DVY_WoodScrew;
+
+
+global proc DVY_WoodScrew()
+	
+{
+	global float $WSThreadDiam[], $WSThreadPitch[], $WSLength[];
+	global float $TSThreadDiam[], $ThreadPitchST[], $TSLength[];
+
+	global float $ThreadLength[], $ThreadLengthL[], $ThreadPitch[];
+	global float $NutFlat[], $SqNutFlat[], $SqFlat[], $HexFlat[];
+	global float $DVYUnit;	
+	global int $SW, $SWL, $ST, $STW;
+	
+	global string $Units;
+
+
+	string $Tmp[], $Temp[], $Temps[], $ScBarrel[], $ScThread[], $Shader[];
+	clear $Tmp $Temp $Temps $ScBarrel $ScThread;
+	string $Type[] = { "WoodScrew_", "DeckScrew_", "TwinThread", "ChipBoard_", "DryWall_", "SelfTapper_"};
+	float $Pos[]; clear $Pos;
+	float $Diam, $Length, $P, $Turns, $Lead, $Len; 
+	float $XMax, $XMin, $YMax, $YMin;
+	float $h, $TD, $PCD, $RD;
+	
+	int $a, $b, $c, $e, $i, $Idx, $j, $k, $r;
+	// Set Integers for size of each RadioButton Collection
+	$a = 6;
+	$b = $a + 10;
+	$c = $b + 8;
+	
+	
+	$i = 0;
+	
+	string $WSName = `optionMenu -q -v DVY_WSDiamOption`;
+	string $WSLName = `optionMenu -q -v DVY_WSLengthOption`;
+	string $Select = `iconTextRadioCollection -q -sl ScrewRadioCollection`;
+	string $SHelect = `iconTextRadioCollection -q -sl HeadRadioCollection`;
+	string $SDelect = `iconTextRadioCollection -q -sl SlotRadioCollection`;
+	
+	$Idx = endString($Select, 1);
+	$Idx = $Idx - 1;
+	print ("$Idx is " + $Idx + "\n");
+	
+	// Set Global scale units.
+	DVY_ScaleSet;
+	
+	print ("Current units are " + $Units + " and Scale Factor $DVYUnit is " + $DVYUnit + "\n");
+
+	for ($each in $ThreadPitch)
+		{
+			$WSThreadPitch[$i++] =  ceil (1000 * 25.4/$each)/1000;
+		}
+		
+	if ($Select == "iconTextRadioButton6")
+		{// Set Pitch for SelfTapper Threads
+			$i = 0;
+			for ($each in $ThreadPitchST)
+				{
+					$WSThreadPitch[$i++] =  ceil (1000 * 25.4/$each)/1000;
+				}
+		}
+		
+	
+	$Length = $SWL;
+	
+	print ("$SHelect is " + $SHelect + "\n");
+	print ("$SDelect is " + $SDelect + "\n");
+	
+	string $SetAttrA[] = {".tx", ".tz", ".sx", ".sy", ".sz"};
+	string $SetAttrB[] = {".sx", ".sy", ".sz"};
+	string $SetAttrC[] = {".tx", ".ty", ".tz", ".rx", ".ry", ".rz", ".sx", ".sy", ".sz"};
+
+//	$WSThreadDiam =	{2.00, 2.50, 3.00, 3.25, 3.50, 3.75, 4.00, 4.50, 5.00, 5.50, 6.00, 6.50, 7.00, 7.50, 8.00, 9.50};
+	$NutFlat =		{3.47, 3.47, 4.62, 4.62, 5.77, 5.77, 5.77, 6.93, 9.25, 9.25, 9.25, 12.7, 13.9, 15.0, 15.0, 16.2};
+	$SqNutFlat =	{4.00, 4.00, 5.00, 5.00, 6.00, 6.00, 6.00, 7.00, 8.00, 10.0, 11.0, 12.0, 13.0, 14.0, 16.0, 18.0};
+	$HexFlat =		{2.32, 2.32, 2.32, 3.47, 3.47, 3.47, 3.47, 3.47, 4.62, 4.62, 4.62, 6.93, 6.93, 6.93, 8.09, 8.09};
+	$SqFlat =		{1.50, 1.50, 2.00, 2.50, 2.50, 2.50, 3.00, 3.50, 3.50, 4.00, 4.00, 5.00, 5.00, 5.00, 6.00, 7.00};
+	
+	
+//	print ("$WSName is " + $WSName + "\n");
+//	print ("$WSLName is " + $WSLName + "\n");
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+//	Create Shaders for Nut and Bolt Parts.
+					
+	string $SHName;
+	int $s, $Sh = 0;
+	if (`optionMenu -q -sl DVY_ScrewOption` > 1)
+		{
+			$SHName = `optionMenu -q -v DVY_ScrewOption`;
+			$s = `optionMenu -q -sl DVY_ScrewOption`;
+			
+			print ("Shader name is " + $SHName + "\n");
+			if ($s == 2) {$Sh = 30;}
+			if ($s == 3) {$Sh = 37;}
+			
+			if ($s == 4) {$Sh = 34;}
+			if ($s == 5) {$Sh = 33;}
+			if ($s == 6) {$Sh = 21;}
+			if ($s == 7) {$Sh = 27;}
+			
+			if (!`objExists ($SHName + "_SH") `) { $Shader[0] = `DVY_Shaders($Sh)`; }
+				 $Shader[0] = ($SHName + "_SH");
+		
+		}
+		
+		print "\nShaders used are..\n";
+		print $Shader;
+		
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+	
+	if (($WSName == "Diameter") || ($WSLName == "Length"))
+		{	print  "Oops!! Please select a Screw Diameter and Length before continuing © Davvey..\n";}
+	
+		else{// Start of Screw Building Section
+	
+			if ($Select == "NONE") 
+				{ print "Please select a Screw Type © Davvey..\n";}
+								
+				else {// set to suit screw type i.e wood and deck = $length 0.5. Others is $Length * 0.9.
+						if (($Select == "iconTextRadioButton1") || ($Select == "iconTextRadioButton2"))
+							{$Len = ($Length *0.5);}
+							
+						if (($Select == "iconTextRadioButton3") || ($Select == "iconTextRadioButton4") ||
+							($Select == "iconTextRadioButton5") || ($Select == "iconTextRadioButton6"))
+							{$Len = ($Length *0.9);}
+							
+							
+					if (($SHelect == "NONE") || ($SDelect == "NONE"))
+						{ print "Please select a Screw Head and Driver Type © Davvey..\n";}
+						else{// Set Screw Head and Driver Type.
+			
+						// Set up variables for calculations of pitch and no. of turns required etc.
+							$Diam = $WSThreadDiam[$SW-2];
+							$P =  $WSThreadPitch[$SW-2];
+							$Turns = ceil ($Len/$P);
+							$r = ($Turns * 8);
+				//			print ("Sections required are " + ($Turns * 8) + " © Davvey..\n");
+							
+						// Thread Height
+							$h =  ($P * sqrt(3))/2;			
+							
+						// Calculate corners of Thread Profile.
+							$XMax = $h;
+							$XMin = 0;
+							$YMax = $h * 0.325;
+							$YMin = $P * -0.325;
+							
+							if ($Select == "iconTextRadioButton1")
+								{	$YMax = $h * 0.425;
+									$YMin = $P * -0.425;
+								}
+								
+							if ($Select == "iconTextRadioButton3")
+								{	$P = $P * 2;
+									$r = ($Turns * 4);
+								}
+								
+/*							
+							print ("$Diam is " + $Diam + "\n");
+							print ("$Length is " + $Length + "\n");
+							print ("$Len is " + $Len + "\n");
+							print ("Pitch $P is " + $P + "\n");
+							print ("$Turns is " + $Turns + "\n");
+/*						
+							print ("$XMax is " + $XMax + "\n");
+							print ("$XMin is " + $XMin + "\n");
+							print ("$YMax is " + $YMax + "\n");
+							print ("$YMin is " + $YMin + "\n");
+*/							
+						// Generate profile of Thread Shape.
+							
+							$Tmp[0] = `curve -d 1 -p 0 $YMax 0 -p $h 0 0 -p 0 $YMin 0 -p 0 $YMax 0 -k 0 -k 1 -k 2 -k 3 -name "Profile_0"` ;				
+								closeCurve -ch 0 -ps 1 -rpo 1 -bb 0.5 -bki 1 -p 0.1 $Tmp[0];
+								move -r ($Diam * 0.5 -$h) 0 0 $Tmp[0];
+							
+							// Group profile ready for copying and rotatiing and moving to create the Screw Thread.
+								select -r $Tmp[0];
+								$Temp[9] = `group -name DVY_0`; xform -os -piv 0 0 0;
+								
+							// Copy, Scale, Rotate and Move profile top generate Screw Tip Section
+								select -r $Temp[9];
+								$Temps = `duplicate -rr -renameChildren`; 
+								$Temp[8] = $Temps[0];
+								scale -r 0.95 0.95 0.95 ;
+								rotate -r 0 -45 0;
+								move -r 0 ($P * -0.125) 0;
+								$j = 7;
+								for ($i=1; $i<9; ++$i) 
+									{$Temps = `duplicate -rr -renameChildren -st`;
+										$Temp[$j--] = $Temps[0];
+									}
+									select -r $Temp[0];
+									$Tmps = `planarSrf -ch 0 -d 3 -ko 0 -tol 0 -rn 0 -po 0 $Temp[0]`;
+									$ScThread[1] = $Tmps[0];
+									
+							// End of Tip Generation
+									
+								if (($Select == "iconTextRadioButton4") || ($Select == "iconTextRadioButton5")||
+									 ($Select == "iconTextRadioButton6"))
+									{ $r = $r - 2;}
+									else if ($Select == "iconTextRadioButton3")
+										{ $r = $r - 4;}
+										else { $r = $r - 10;}
+									
+								select -r $Temp[9] ;	
+							
+								$Temps = `duplicate -rr -renameChildren`;
+								$Temp[10] = $Temps[0];
+								rotate -r 0 45 0 $Temp[10];
+								move -r 0 ($P * 0.125) 0 $Temp[10];
+								
+								for ($i=11; $i<$r; ++$i) 
+									{
+										$Temps = `duplicate -rr -renameChildren -st`;
+										$Temp[$i] = $Temps[0];
+									}
+							
+								select $Temp[$r-1];
+								$Temps = `duplicate -rr -renameChildren`; 
+								$Temp[$r++] = $Temps[0];
+								scale -r 0.95 0.95 0.95 ;
+								rotate -r 0 45 0;
+								move -r 0 ($P * 0.125) 0;
+	
+								for ($i=1; $i<4; ++$i) 
+									{$Temps = `duplicate -rr -renameChildren -st`;
+										$Temp[$r++] = $Temps[0];
+									}
+								select $Temp[$r-1];
+								$Tmps = `planarSrf -ch 0 -d 3 -ko 0 -tol 0 -rn 0 -po 0 $Temp[$r-1]`;
+								$ScThread[2] = $Tmps[0];
+										
+								$Tmps = `loft -ch 0 -u 0 -c 0 -ar 1 -d 3 -ss 2 -rn 0 -po 0 -rsn true $Temp`;
+								$ScThread[0] = $Tmps[0];
+								
+								select -r "DVY*"; delete;
+								
+							$Temp = `polyCone -r ($Diam * 0.5 - $h) -h ($h * 3) -sx 24 -sy 2 -sz 0 -ax 0 1 0 -ch 0`;
+								setAttr ($Temp[0] + ".rotateZ") 180;
+								setAttr ($Temp[0] + ".translateY") ($h * -1.5);
+								move -r 0 ($h * 1.0) 0 ($Temp[0] + ".vtx[48]");
+								
+								$Pos[0] = `getAttr ($Temp[0] + ".boundingBoxMinY")`;
+									
+								$Pos[1] = $Length + $Pos[0];
+								$Pos[2] = $Length - $Len;
+								$Pos[3] = `getAttr ($ScThread[0] + ".boundingBoxMaxY")` * 0.975;
+								
+							
+							$Temps = `polyCylinder -r ($Diam * 0.5 -$h) -h ($Pos[1] * 1) -sx 24 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+								setAttr ($Temps[0] + ".translateY") ($Pos[1] * 0.5);
+								
+								$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+								$ScBarrel[0] = $Temps[0];
+								if ($Select == "iconTextRadioButton1")
+									{scale 1.6 1 1.6 $ScBarrel[0];}
+								
+								if ($Select == "iconTextRadioButton5")
+									{scale 1.5 1 1.5 $ScBarrel[0];}
+									
+								if ($Select == "iconTextRadioButton1")
+									{
+										$Temp = `polyCylinder -r ($Diam * 0.5) -h ($Pos[2] * 1.05) -sx 24 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+										setAttr ($Temp[0] + ".ty") ($Pos[2] * 0.5 + ($Pos[3] * 0.975));
+									//	select $Temp[50];
+											select -r ($Temp[0] + ".f[24]") ;
+												polyBevel -offset 0.5 -offsetAsFraction 1 -autoFit 1 -segments 1
+												-worldSpace 0 -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001
+												-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180
+												-ch 1 ($Temp[0] + ".f[24]");
+													
+										$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $ScBarrel[0]`;
+									}
+									
+								if ($Select == "iconTextRadioButton2")
+									{
+										$Temp = `polyCylinder -r (($Diam * 0.5) * 0.9) -h ($Pos[2] * 1.05) -sx 24 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+										setAttr ($Temp[0] + ".ty") ($Pos[2] * 0.5 + ($Pos[3]* 0.936));
+											select -r ($Temp[0] + ".f[24]") ;
+												polyBevel -offset 0.5 -offsetAsFraction 1 -autoFit 1 -segments 1
+												-worldSpace 0 -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001
+												-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180
+												-ch 1 ($Temp[0] + ".f[24]");
+													
+										$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $ScBarrel[0]`;
+										
+									}
+									
+									
+								parent $ScThread[2] $ScThread[1] $ScThread[0];
+								if ($Select == "iconTextRadioButton3")
+									{ move -r 0 ($P * 0.5) 0 $ScThread[0];
+										select $ScThread[0];
+										$Tmps = `duplicate -rr -renameChildren`;
+										$ScThread[4] = $Tmps[0];
+										rotate 0 180 0 $ScThread[4];
+										makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+										scale 1.5 1 1.5 $Temps[0];
+										select -r $Temps[0];
+										makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+										parent $ScThread[4] $ScThread[0];
+										
+									}
+/*										
+								string $selected[] = `select -r -hi $ScThread[0]`;
+								string $Selected[] = `ls -sl -tr`;
+									for ($Each in $Selected)
+										{
+										 for ($E in $SetAttrC)
+											if (`objExists $Each`) {setAttr -l 1 -k 0 ($Each + $E);}
+										}
+*/										
+							$ScBarrel[0] = $Temps[0];
+							
+						// Build Head of Screw Section.
+							
+						$Pos[0] = `getAttr ($ScBarrel[0] + ".boundingBoxMaxY")`;
+
+								if (($SHelect == "iconTextRadioButton7") || ($SHelect == "iconTextRadioButton8"))
+									{// CounterSunk / Oval Head Section
+										print "Build Countersink Head \n";
+										$Pos[1] = ($Diam * 0.45);
+										$Temps = `polyCone -r ($Diam * 0.9) -h $Diam -sx 24 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+											rotate 180 0 0 $Temps[0];
+											move -r 0 ($Pos[0] *0.99) 0 $Temps[0];
+											
+										if  ($SHelect == "iconTextRadioButton8")
+											{// Counterunk Oval Head Section
+												$Tmps = `polySphere -r ($Diam * 0.9) -sx 24 -sy 24 -ax 0 1 0 -ch 0`;
+												scale 1 0.15 1 $Tmps[0];
+												move -r 0 ($Pos[0]*0.99 + ($Diam * 0.5)) 0 $Tmps[0];
+												$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmps[0]`;
+											}
+
+									}// End of Countersunk / Oval Head Section
+									
+								if ($SHelect == "iconTextRadioButton9")
+									{// Round Head Section	
+										print "Build Round Head \n";
+										$Temp = `polySphere -r ($Diam * 0.925) -sx 24 -sy 24 -ax 0 1 0 -ch 0`;
+										move -r 0 ($Diam * -0.225) 0 $Temp[0];
+										$Tmps = `polyCube -w ($Diam * 2) -h ($Diam * 2) -d ($Diam *2) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+										move -r 0 ($Diam / -1) 0 $Tmps[0];
+										$Temps = `polyBoolOp -op 2 -ch 0 $Temp[0] $Tmps[0]`;
+										move -r 0 $Pos[0] 0 $Temps[0];
+										
+									}// End of Round Head Section
+									
+								if ($SHelect == "iconTextRadioButton10")
+									{// Pan Head Section	
+										print "Build Round Head \n";
+										$Temp = `polySphere -r ($Diam * 1.025) -sx 24 -sy 24 -ax 0 1 0 -ch 0`;
+										scale 1 0.5 1 $Temp[0];
+
+										$Tmps = `polyCube -w ($Diam * 3) -h ($Diam * 2) -d ($Diam * 3) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+										move -r 0 ($Diam / -1) 0 $Tmps[0];
+										
+										$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Tmps[0]`;
+										move -r 0 ($Diam * 0.1) 0 $Temp[0];
+										
+										$Tmps = `polyCylinder -r ($Diam * 1.025) -h ($Diam * 0.1) -sx 24 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+										move -r 0 ($Diam * 0.05) 0 $Tmps[0];
+										
+										$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmps[0]`;
+										move -r 0 $Pos[0] 0 $Temps[0];
+										
+									}// End of Pan Head Section
+									
+								if ($SHelect == "iconTextRadioButton11")
+									{// Cheese Head Section	
+										print "Build Round Head \n";
+										$Temp = `polySphere -r ($Diam * 1.025) -sx 24 -sy 24 -ax 0 1 0 -ch 0`;
+										scale 1 0.225 1 $Temp[0];
+
+										$Tmps = `polyCube -w ($Diam * 3) -h ($Diam * 2) -d ($Diam * 3) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+										move -r 0 ($Diam / -1) 0 $Tmps[0];
+										
+										$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Tmps[0]`;
+										move -r 0 ($Diam * 0.65) 0 $Temp[0];
+										
+										$Tmps = `polyCylinder -r ($Diam * 1.025) -h ($Diam * 0.65) -sx 24 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+										move -r 0 ($Diam * 0.325) 0 $Tmps[0];
+										
+										$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmps[0]`;
+										move -r 0 $Pos[0] 0 $Temps[0];
+										
+									}// End of Cheese Head Section
+									
+								if ($SHelect == "iconTextRadioButton12")
+									{// Hexagon Head Section	
+										
+										$Temp = `polyCylinder -r ($NutFlat[$SW-2] * 0.5) -h ($Diam * 0.4) -sx 6 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+										rotate 0 30 0 $Temp[0];
+										move -r 0 ($Diam *0.2) 0 $Temp[0];
+										
+										$Tmps = `polyCylinder -r ($NutFlat[$SW-2] * 0.43) -h ($Diam * 0.05) -sx 24 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+										move -r 0 ($Diam * 0.425) 0 $Tmps[0];
+										scale  0.85 1 0.85 ($Tmps[0] + ".f[25]");
+								
+										$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmps[0]`;
+										move -r 0 $Pos[0] 0 $Temps[0];
+										rotate 0 90 0 $Temps[0];
+										
+									} // End of Hexagon Head Section
+									
+								if (($SHelect == "iconTextRadioButton13") || ($SHelect == "iconTextRadioButton14"))
+									{// Hexagon/Washer Head Section	
+										
+										$Temp = `polyCylinder -r ($NutFlat[$SW-2] * 0.5) -h ($Diam * 0.4) -sx 6 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+										rotate 0 30 0 $Temp[0];
+										move -r 0 ($Diam *0.25) 0 $Temp[0];
+										$Tmps = `polyCylinder -r ($NutFlat[$SW-2] * 0.55) -h ($Diam * 0.05) -sx 24 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+										move -r 0 ($Diam * 0.025) 0 $Tmps[0];
+										$Temp = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmps[0]`;
+										
+										
+										$Tmps = `polyCylinder -r ($NutFlat[$SW-2] * 0.43) -h ($Diam * 0.05) -sx 24 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+										move -r 0 ($Diam * 0.45) 0 $Tmps[0];
+										scale  0.85 1 0.85 ($Tmps[0] + ".f[25]");
+								
+										$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmps[0]`;
+										
+										move -r 0 $Pos[0] 0 $Temps[0];
+										rotate 0 90 0 $Temps[0];
+										
+									}// End of Hexagon/Washer Head Section	
+									
+								if ($SHelect == "iconTextRadioButton15")
+									{// Square Head Section	
+										
+										$Temp = `polyCube -w ($SqNutFlat[$SW-2]) -h ($Diam * 0.5) -d ($SqNutFlat[$SW-2]) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+										move -r 0 ($Diam *0.25) 0 $Temp[0];
+										
+										$Tmps = `polyCylinder -r ($SqNutFlat[$SW-2] * 0.5) -h ($Diam * 0.05) -sx 24 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+										move -r 0 ($Diam * 0.525) 0 $Tmps[0];
+										scale  0.85 1 0.85 ($Tmps[0] + ".f[25]");
+								
+										$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmps[0]`;
+										move -r 0 $Pos[0] 0 $Temps[0];
+										rotate 0 90 0 $Temps[0];
+										
+									}// End of Sqaure Head Section
+									
+								if ($SHelect == "iconTextRadioButton16")
+									{// Truss or Wafer Head Section	
+										print "Build Round Head \n";
+										$Temp = `polySphere -r ($Diam * 1.125) -sx 24 -sy 24 -ax 0 1 0 -ch 0`;
+										scale 1 0.25 1 $Temp[0];
+
+										$Tmps = `polyCube -w ($Diam * 3) -h ($Diam * 2) -d ($Diam * 3) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+										move -r 0 ($Diam / -1) 0 $Tmps[0];
+										
+										$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Tmps[0]`;
+										move -r 0 ($Diam * 0.1) 0 $Temp[0];
+										
+										$Tmps = `polyCylinder -r ($Diam * 1.125) -h ($Diam * 0.1) -sx 24 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+										move -r 0 ($Diam * 0.05) 0 $Tmps[0];
+										
+										$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmps[0]`;
+										move -r 0 $Pos[0] 0 $Temps[0];
+										
+										
+									}// End of Truss or Wafer Head Section
+									
+							// Driver Slot Cutting Section	
+									
+								if (($SDelect == "iconTextRadioButton18") || ($SHelect == "iconTextRadioButton14"))
+									{// Plain Slot Section
+										print "Build Plain Slot Drive Head \n";
+										$Pos[3] = `getAttr ($Temps[0] + ".boundingBoxMaxY")`;
+										
+										$Tmps = `polyCube -w ($Diam * 0.25) -h ($Diam * 0.5) -d ($Diam * 4) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+										move -r 0 $Pos[3] 0 $Tmps[0];
+										
+										if ($SHelect == "iconTextRadioButton11")
+											{scale 1 1.1 1 $Tmps[0];}
+										
+										$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Tmps[0]`;
+
+									}// End of Plain Slot Section
+									
+									
+									if ($SDelect == "iconTextRadioButton19")
+										{// Phillips Head Slot Section
+											print "Build Phillips Drive Head \n";
+											$Pos[3] = `getAttr ($Temps[0] + ".boundingBoxMaxY")`;
+											
+											$Tmps = `polyCube -w ($Diam * 0.25) -h ($Diam * 0.5) -d ($Diam * 1.25) -sx 1 -sy 1 -sz 3 -ax 0 1 0 -ch 0`;
+												move - r 0 ($Diam * - 0.2) 0 ($Tmps[0] + ".f[6]");
+												move -r 0 $Pos[3] 0 $Tmps[0];
+											
+											$Temp = `polyCube -w ($Diam * 0.25) -h ($Diam * 0.5) -d ($Diam * 1.25) -sx 1 -sy 1 -sz 3 -ax 0 1 0 -ch 0`;
+												move - r 0 ($Diam * - 0.2) 0 ($Temp[0] + ".f[6]");
+												move -r 0 $Pos[3] 0 $Temp[0];
+												rotate 0 90 0 $Temp[0];
+													
+											$Tmps = `polyBoolOp -op 1 -ch 0 $Tmps[0] $Temp[0]`;
+											
+											$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Tmps[0]`;
+	
+										}// End of Plain Slot Section
+								
+									
+									if ($SDelect == "iconTextRadioButton20")
+										{// Pozidrive Head Section
+											print "Build Pozidrive Drive Head \n";
+											$Pos[3] = `getAttr ($Temps[0] + ".boundingBoxMaxY")`;
+											
+											$Tmps = `polyCube -w ($Diam * 0.25) -h ($Diam * 0.5) -d ($Diam * 1.25) -sx 1 -sy 1 -sz 3 -ax 0 1 0 -ch 0`;
+												move - r 0 ($Diam * - 0.2) 0 ($Tmps[0] + ".f[6]");
+												move -r 0 $Pos[3] 0 $Tmps[0];
+											
+											$Temp = `polyCube -w ($Diam * 0.025) -h ($Diam * 0.5) -d ($Diam * 1.25) -sx 1 -sy 1 -sz 3 -ax 0 1 0 -ch 0`;
+												move -r 0 $Pos[3] 0 $Temp[0];
+												rotate 0 45 0 $Temp[0];
+													
+											$Tmps = `polyBoolOp -op 1 -ch 0 $Tmps[0] $Temp[0]`;
+											select -r $Tmps[0];
+											$Temp = `duplicate -rr`;
+											rotate 0 90 0 $Temp[0];
+											
+											$Tmps = `polyBoolOp -op 1 -ch 0 $Tmps[0] $Temp[0]`;
+											
+											
+											$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Tmps[0]`;
+	
+										}// End of Pozidrive Section
+									
+									
+									if ($SDelect == "iconTextRadioButton21")
+										{// Hexagon Drive Section	
+											print "Build Hexagon Drive Head \n";
+											$Pos[3] = `getAttr ($Temps[0] + ".boundingBoxMaxY")`;
+											
+											$Tmps = `polyCylinder -r ($HexFlat[$SW-2] * 0.5) -h ($Diam * 0.75) -sx 6 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+												
+											move -r 0 $Pos[3] 0 $Tmps[0];
+											$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Tmps[0]`;
+											
+										} // End of Hexagon Drive Section
+									
+									
+									if ($SDelect == "iconTextRadioButton22")
+										{// Hexagon Drive Section	
+											print "Build Hexagon Drive Head \n";
+											$Pos[3] = `getAttr ($Temps[0] + ".boundingBoxMaxY")`;
+											
+											$Tmps = `polyCube -w $SqFlat[$SW-2] -h ($Diam * 0.75) -d $SqFlat[$SW-2] -sx 1 -sy 1 -sz 2 -ax 0 1 0 -ch 0`;
+										if ($SHelect == "iconTextRadioButton15") 
+											{scale 1 0.75 1 $Tmps[0];}
+											
+											move -r 0 $Pos[3] 0 $Tmps[0];
+											$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Tmps[0]`;
+											
+										} // End of Hexagon Drive Section
+									
+									
+									if ($SDelect == "iconTextRadioButton23")
+										{// Hexagon Torx Section	
+											print "Build Hexagon Drive Head \n";
+											$Pos[3] = `getAttr ($Temps[0] + ".boundingBoxMaxY")`;
+											
+											$Tmps = `polyCube -w ($Diam * 0.1) -h ($Diam * 0.25) -d ($Diam * 0.5) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+
+											scale -r 1  0.5 1 ($Tmps[0] + ".vtx[0:3]");
+											select -r ($Tmps[0] + ".vtx[4]"); select -tgl ($Tmps[0] + ".vtx[6]");
+											move -r ($Diam * -0.35) 0 0;
+											rotate 0 0 90 $Tmps[0];
+												xform -ws -piv 0 0 ($Diam * -0.25) $Tmps[0] ;
+												move -r 0 0($Diam * 0.25) $Tmps[0];
+												
+												select $Tmps[0]; makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+												$Temp = `duplicate -rr`;
+												rotate -r 0 180 0;
+												
+												$Tmps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmps[0] `;
+												$Temp = `duplicate -rr`;												
+												rotate 0 60 0;
+												$Tmps[1] = $Temp[0];
+												select $Tmps[0]; makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+												$Temp = `duplicate -rr`;
+												rotate 0 120 0;
+												
+											$Temp = `polyBoolOp -op 1 -ch 0 $Tmps[0] $Temp[0]`;	
+											$Tmps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmps[1]`;	
+											
+											move -r 0 $Pos[3] 0 $Tmps[0];
+											$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Tmps[0]`;
+											
+										} // End of Torx Drive Section
+									
+										
+									if ($SDelect == "iconTextRadioButton24")
+										{// Hexagon Torx Section	
+											print "Build Combination Drive Head \n";
+											$Pos[3] = `getAttr ($Temps[0] + ".boundingBoxMaxY")`;
+											
+											$Tmps = `polyCube -w ($Diam * 0.25) -h ($Diam * 0.5) -d ($Diam * 1.25) -sx 1 -sy 1 -sz 3 -ax 0 1 0 -ch 0`;
+												move - r 0 ($Diam * - 0.2) 0 ($Tmps[0] + ".f[6]");
+												move -r 0 $Pos[3] 0 $Tmps[0];
+												rotate 0 90 0 $Tmps[0];
+													
+											
+												$Temp = `polyCube -w ($Diam * 0.25) -h ($Diam * 0.5) -d ($Diam * 4) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+												move -r 0 $Pos[3] 0 $Temp[0];
+												
+												if ($SHelect == "iconTextRadioButton10")
+													{scale 1 1.1 1 $Temp[0];}
+											
+											$Tmps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Tmps[0]`;
+													
+											$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Tmps[0]`;
+										
+										}// End of Combination Drive Section
+										
+										
+									
+									$Temp = `polyBoolOp -op 1 -ch 0 $ScBarrel[0] $Temps[0] `;
+									
+									parent $ScThread[0] $Temp[0];
+										$ScBarrel[0] = `rename $Temp[0] "ScrewThread_1"`;
+										select -r $ScBarrel[0];
+			
+										nonLinear -type flare 
+											-lowBound -1 -highBound 0.15 
+											-startFlareX 0.5 -startFlareZ 0.5 
+											-endFlareX 1.0 -endFlareZ 1.0 -curve 0;
+										
+										select -r $ScBarrel[0]; delete -ch;
+								
+									
+						}// End of Head and Driver Type.
+					}// End of Screw Type Section
+		$e = 1;
+	while (`objExists ($Type[$Idx] + "ScrewGrpN_" + $e)`)
+		{
+			$e++;	print ("$e is " + $e + "\n");
+		}
+					
+		$Temp[0] = `group -em -name ($Type[$Idx] + "ScrewGrpN_" + $e)`;
+						
+		$ScBarrel[0] = `rename $ScBarrel[0] ($Type[$Idx] + "Screw_" + $e)`;
+		
+			$Pos[0] = `getAttr ($ScBarrel[0] + ".boundingBoxMinY")`;
+				move -r 0 ($Pos[0] * -1) 0 $ScBarrel[0];
+				select -r $ScBarrel;
+				makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;		
+			parent $ScBarrel[0] $Temp[0];
+			
+			select -r $Temp[0];
+			
+			if (`optionMenu -q -sl DVY_ScrewOption` > 1)
+				{
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[0];
+				}
+			
+		scale $DVYUnit $DVYUnit $DVYUnit $Temp[0];
+
+			
+		string $Node[];
+		
+		$Node[0] = `createNode multiplyDivide -name ($Type[$Idx] + "Rotator_Node_" + $e)`;
+				setAttr ($Node[0] + ".op") 1;
+					connectAttr -f ($ScBarrel[0] + ".ty") ($Node[0] + ".input1Y");
+					connectAttr -f ($Node[0] + ".outputY") ($ScBarrel[0] + ".ry");
+					setAttr ($Node[0] + ".input2Y") (360 / $P);
+
+
+			string $selected[] = `select -r -hi $ScThread[0]`;
+			string $Selected[] = `ls -sl -tr`;
+				for ($Each in $Selected)
+					{
+					 for ($E in $SetAttrC)
+						if (`objExists $Each`) {setAttr -l 1 -k 0 ($Each + $E);}
+					}
+				for ($Each in $SetAttrA)
+					{ 
+						setAttr -l 1 -k 0 ($ScBarrel[0] + $Each);
+					}
+					
+				for ($Each in $SetAttrB)
+					{
+						setAttr -l 1 -k 0 ($Temp[0] + $Each);
+					}
+					
+				$k = 1; $Dist = $Diam * 2 * $DVYUnit;
+					if (`intSliderGrp -q -v WSItemsReqSliderGrp` > 1)
+						{	
+							$r = 1;
+							while (`objExists ($Type[$Idx] + "ScrewMainGrpN_" + $r)`)
+								{
+									$r++;	print ("$e is " + $r + "\n");
+								}
+
+							$Temp[1] = `group -em -name ($Type[$Idx] + "ScrewMainGrpN_" + $r)`;
+							parent $Temp[0] $Temp[1];
+							
+							$j = `intSliderGrp -q -v WSItemsReqSliderGrp` - 1;
+							print ("Duplicating orginal to give required Quantity of " + $j + ". © Davvey 2006");
+							select -r $Temp[0];
+				
+							for ($i=0; $i<$j; ++$i)
+							{
+								$Temps = `duplicate -rr -renameChildren -un`; 
+								$Groups[$k] = $Temps[0];
+								move -r $Dist 0 0 $Groups[$k];
+														
+							}		
+							
+						}
+
+			select -r $Temp[0];
+			
+		}// End of Screw Building Section
+		
+		
+}

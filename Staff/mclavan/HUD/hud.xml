@@ -1,0 +1,23 @@
+<hud>
+    <seq>Prop</seq>
+    <artist>Katie Neylon</artist>
+    <asset>Fire Hydrant</asset>
+    <production>University Production</production>
+    <date>09/30/11</date>
+    <department>Modeling</department>
+    <frame>
+            <start>1</start>
+            <end>100</end>
+    </frame>
+    <res>1920x1080</res>
+    <output>wtf</output>
+    <maya>
+        <prop>C:\Users\mclavan\Dropbox\00_projects\HUD\FireHydrant.ma</prop>
+        <standIn>small_prop.ma</standIn>
+        <material>hud_material</material>
+    </maya>
+</hud>
+<!--
+A Folder is created in the base path for this script.
+An xml, maya.  
+-->

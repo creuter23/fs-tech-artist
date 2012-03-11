@@ -1,0 +1,574 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davvey\'s Belt  & Pulley Generator
+''    Author:  
+''    Last Updated: Feb 02, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4509.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+///////////////////////////////////////////////////////////////////////////////
+/*			
+				
+	Copyright © 2006 DVY_BeltBuild. All rights reserved davvey@ntlworld.com
+
+						- DVY_BeltBuild -
+///////////////////////////////////////////////////////////////////////////////
+						
+//	DVY_BeltBuild;
+//	Description and Usage Section
+
+//	Installation	
+		
+	Script is part of Davvey's Pulley and Belts Generator script pack.
+	
+	It is called to build a Single Belt Section. The singleSection is 
+	built then the scriptduplicates the section links to generate a full
+	belt. Script then calls DVY_CUrveBuild to build motion Path Curve.
+	The script calculates required no. of sections needed to build a 
+	full belt around the Curve Path. Then it builds Belt group of sections
+	and connects to a Motion Path ready for rigging by DVY_BeltDriver.
+	
+	These scripts can generate a high Poly count due to need for accurate
+	modelling of many Belt sections.
+
+*/
+	
+//////////////////////////////////////////////////////////////////////////
+//					DVY_BeltBuild Procedure
+//////////////////////////////////////////////////////////////////////////
+
+
+global proc DVY_BeltBuild()
+{
+	
+// ******************************************************************************** //	
+//	Global Variables
+	 
+	global string $Belt[], $BeltGrp[], $LinkGrp[], $ISO_No[], $TeethProfiles[], $Type[];
+	global string $CHType[], $Title[], $TitleN[], $IField[], $FField[], $Option[], $Shader[];
+	
+	global int $Teeth[];
+	global float $Pitch[], $PCDF[];
+	global float $TargetLength;
+	
+	global string $Units;
+
+	global float $DVYUnit;
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Local Variables
+	 
+	string $Temp[], $Temps[], $Item[], $Pulley[], $PulleyTeeth[];
+	clear $Pulley;
+	string $PuType[] = {"Help", "Flat_Belt", "Vee_Belt", "Toothed_Belt"};
+	
+	float $C, $Cd, $Ct, $D, $H, $P, $Ct, $D, $J, $L, $Lp, $InT, $OuT, $W;
+	float $Pi, $Angle, $PCD, $OD, $RD, $R, $R1, $R2, $f, $PinL;
+	int $CHTeeth[];
+	float $CHSize[];
+
+	int $e, $E, $i, $j, $N, $PL, $q, $t;	
+	float $Pi, $m, $A, $GW, $PCD, $BD, $RD, $OD;
+	float $BWidth, $BPitch;
+	
+	float $Ad, $Dd, $Pd, $WH, $Angle, $Helix ;
+	float $Pos[], $Profiles[], $Move, $Ratios[];
+	
+	float $BDepth, $BPitch, $BThick, $BWidth;
+	
+	int $QB = $Idx = $CHp = 0;
+	
+	string $Pulleys[], $Sel[], $Selected[], $buffer[];
+	string $Group[];
+	
+	$t = `radioButtonGrp -q -sl PulleyTypeRadioButton`;
+	print ("$t is " + $t + "\n");
+	
+	string $CHName = $PuType[$t-1];
+	print ("$CHName is " + $CHName + "\n");
+	
+		$Sel = `ls -sl`;
+		$Selected[0] = $Sel[0];
+		$numTokens = `tokenize $Sel[0] "_" $buffer`;
+		print $buffer;
+		
+		select -r ($buffer[0] + "_Belt_Grp_" + $buffer[4] + "_" + "Pulley_GrpN_*");
+		$Pulleys = `ls -tr -sl`;
+		
+		print $Pulleys;
+		print $Selected;
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Set Scaling unit for Global units used.
+		
+	DVY_ScaleSet;
+	print ("Current units are " + $Units + " and Scale Factor $DVYUnit is " + $DVYUnit + "\n");
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Create Shaders for Gear Parts.
+					
+		if(!`objExists Belt_SH `) {$Shader[0] = `DVY_Shaders(36)`; }
+			 $Shader[0] = "Belt_SH";
+			 
+//		print "\nShaders used are..\n";
+//		print $Shader;
+
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+//	Constants and "Static Data"
+	$E = $e = 1;
+	$CHTeeth[0] = 0;
+	$CHSize[0] = 0;
+	$Pi = 22.0/7.0;
+
+	
+	if (($t == 2) || ($t == 3))
+		{
+			for ($i=0; $i<5; $i++)
+				{				
+
+					$CHSize[$i] =  `floatField -q -v ("BFloatField_" + $i + "1")`;
+					if ($CHSize[$i] > 0)
+						{ $q = $q + 1;}
+				}
+			print ("Range of Pulley Diameters to be set up is \n");
+			print $CHSize;
+			print ("Quantity of Pulleys in Set is " + $q + "\n" );
+		}	
+		
+	if ($t == 2)
+		{
+			$BWidth = `floatField -q -v BFloatField_05`;	//	Width of Belt.
+			$BThick = `floatField -q -v BFloatField_0`;		//	Thickness Belt.
+			$BPitch = $BThick;
+			print ("\n" + "Belt Width is " + $BWidth + "mm \n");
+			print ( "Belt Thickness is " + $BThick + " mm \n");
+		}
+	
+	if ($t == 3)
+		{
+			$BDepth = `floatField -q -v BFloatField_001`;
+			$BWidth = `floatField -q -v BFloatField_105`;
+			$QB = `intField -q -v IFloatField_0`;	
+			$BPitch = $BDepth;
+			print ("\n" + "Belt Width is " + $BWidth + "mm \n");
+			print ( "Belt Depth is " + $BDepth + " mm \n");
+			print  ( "Number of Belts is " + $QB + " mm \n");
+		}
+	
+	
+	if ($t == 4)
+		{
+			for ($i=0; $i<5; $i++)
+				{
+					$CHTeeth[$i] = `intField -q -v ("TIntField_" + ($t-2) + $i + "1")`;
+					if ($CHTeeth[$i] > 9)
+						{ $q = $q + 1;}
+				}
+			$BWidth = `floatField -q -v BFloatField_2205`;	//	Width Between Roller side plates.
+			$BPitch = `floatField -q -v BFloatField_1001`;	//	Pitch of Belt.
+			print ("Range of Pulley Teeth to be set up is \n");
+			print $CHTeeth;
+			print ("Quantity of Pulleys in Set is " + $q + "\n" );
+			print ("\n" + "Belt Width is " + $BWidth + "mm \n");
+			print ( "Belt Pitch " + $BPitch + " mm \n");
+			
+		}	
+		
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+//	Section to set up Belt Groups as Required.
+	
+	$Belt[0] = `group -em -name ($CHName + "_GrpN_" + ($E))`;
+
+		if (!`attributeExists "NameOfBeltGrp" $Belt[0]`) 
+			{ addAttr -ln NameOfBeltGrp -dt "string" $Belt[0];}
+		       setAttr -l 1 -k 0 -type "string" ($Belt[0] + ".NameOfBeltGrp") $Belt[0];
+
+		if (!`attributeExists "BeltType" $Belt[0]`) 
+			{ addAttr -ln Type -dt "string" $Belt[0];}
+		       setAttr -l 1 -k 0 -type "string" ($Belt[0] + ".Type") $CHName;
+			   
+		if (!`attributeExists "BeltWidth" $Belt[0]`) 
+			{ addAttr -ln BeltWidth -at double $Belt[0];}
+		       setAttr -l 1 -k 0 ($Belt[0] + ".BeltWidth") $BWidth;
+			   
+		if ($t == 2)
+			{
+				if (!`attributeExists "BeltThickness" $Belt[0]`) 
+					{ addAttr -ln BeltThickness -at double $Belt[0];}
+				       setAttr -l 1 -k 0 ($Belt[0] + ".BeltThickness") $BThick;
+					   
+				if (!`attributeExists "Pitch" $Belt[0]`) 
+					{ addAttr -ln Pitch -at double $Belt[0];}
+				       setAttr -l 1 -k 0 ($Belt[0] + ".Pitch") $BPitch;
+			}	
+		
+		if ($t == 3)
+			{
+				if (!`attributeExists "BeltDepth" $Belt[0]`) 
+					{ addAttr -ln BeltDepth -at double $Belt[0];}
+				       setAttr -l 1 -k 0 ($Belt[0] + ".BeltDepth") $BDepth;
+					   
+				if (!`attributeExists "BeltQuantity" $Belt[0]`) 
+					{ addAttr -ln BeltQuantity -at short $Belt[0];}
+				       setAttr -l 1 -k 0 ($Belt[0] + ".BeltQuantity") $QB;
+					   
+				if (!`attributeExists "Pitch" $Belt[0]`) 
+					{ addAttr -ln Pitch -at double $Belt[0];}
+				       setAttr -l 1 -k 0 ($Belt[0] + ".Pitch") $BPitch;
+					   
+			}		   
+	
+		if ($t == 4)
+			{
+				if (!`attributeExists "Pitch" $Belt[0]`) 
+					{ addAttr -ln Pitch -at double $Belt[0];}
+				       setAttr -l 1 -k 0 ($Belt[0] + ".Pitch") $BPitch;
+			}		   
+			  
+
+		if (!`attributeExists "Grp_No_" $Belt[0]`)
+			{ addAttr -ln Grp_No_ -at short $Belt[0];}
+		      setAttr -l 1 -k 0 ($Belt[0] + ".Grp_No_") $E;
+		
+			
+			$LinkGrp[0] = `group -em -name ($CHName + "_Parts_GrpN_" + $E)`;
+				parent $LinkGrp[0] $Belt[0];
+				
+				
+				
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+//	Section to Build Belt Sections Belt Groups as Required.
+		
+	// Build single Flat-Belt Section.		
+		if ($t == 2)
+			{
+				$Temps = `polyCube -w ($BWidth * 1.00) -h ($BThick * 1.0) -d ($BThick * 1.0) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`; 	
+		
+				$Temp =  `polyCylinder -r ($BThick * 0.5) -h ($BWidth * 1.0) -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;	
+					rotate -r  0 0 90 ;
+					move -r 0 0 ($BThick * 0.5) $Temp[0];
+					
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+		
+				$Temp =  `polyCylinder -r ($BThick * 0.5) -h ($BWidth * 1.0) -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;	
+					rotate -r  0 0 90 ;
+					move -r 0 0 ($BThick * -0.5) $Temp[0];
+					
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+					move -r 0 ($BThick * -0.5) 0 $Temps[0];
+					xform -ws -piv 0 0 0 $Temps[0];
+		
+				$BeltGrp[0] = `rename $Temps[0] ($CHName + "_BeltPart_1")`;
+			}
+			
+			
+	// Build single Vee-Belt Section.		
+		if ($t == 3)
+			{	
+				$Temps = `polyCube -w ($BWidth * 1.0) -h ($BDepth * 1.0) -d ($BDepth * 3.0) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`; 	
+					scale 0.75 1 1 ($Temps[0] + ".f[1]");
+					polyBevel -offset 0.2 -offsetAsFraction 1 -autoFit 1 -segments 1 -worldSpace 0 
+							  -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+							  -miteringAngle 180 -angleTolerance 180 -ch 0  ($Temps[0] + ".e[6:7]") ;
+		
+				$Temp =  `polyCylinder -r ($BDepth * 0.5) -h ($BWidth * 1.0) -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;	
+					rotate -r  0 0 90 ;
+					move -r 0 0 ($BDepth * -0.5) $Temp[0];
+					$Temps[1] = $Temp[0];
+					
+				$Temp =  `polyCylinder -r ($BDepth * 0.5) -h ($BWidth * 1.0) -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;	
+					rotate -r  0 0 90 ;
+					move -r 0 0 ($BDepth * 0.5) $Temp[0];
+					$Temps[2] = $Temp[0];
+					
+				$Temp = `polyBoolOp -op 1 -ch 0 $Temps[1] $Temps[2]`;
+				$Temp = `polyBoolOp -op 3 -ch 0 $Temps[0] $Temp[0]`;
+
+				$Temps = `polyCube -w ($BWidth * 1.0) -h ($BDepth * 1.0) -d ($BDepth * 1.0) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`; 	
+					scale 0.75 1 1 ($Temps[0] + ".f[1]");
+					polyBevel -offset 0.2 -offsetAsFraction 1 -autoFit 1 -segments 1 -worldSpace 0 
+							  -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+							  -miteringAngle 180 -angleTolerance 180 -ch 0  ($Temps[0] + ".e[6:7]") ;
+					scale 0.9999 1 1 $Temps[0];
+
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+				
+				$BeltGrp[0] = `rename $Temps[0] ($CHName + "_BeltPart_1")`;
+			}
+			
+	// Build single Toothed-Belt Section.		
+	
+		if ($t == 4)
+			{
+				$Temps = `polyCube -w ($BWidth * 0.99) -h ($BPitch * 0.5) -d ($BPitch * 0.6) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`; 	
+					
+					scale 0.95 1 0.75 ($Temps[0] + ".f[1]");
+					polyBevel -offset 0.2 -offsetAsFraction 1 -autoFit 1 -segments 2 -worldSpace 0 
+							  -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 180
+							  -miteringAngle 180 -angleTolerance 180 -ch 0  ($Temps[0] + ".f[1]") ;
+					
+				$Temp = `polyCube -w ($BWidth * 1.0) -h ($BPitch * 0.26) -d ($BPitch * 1.0) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`; 	
+					move -r 0 ($BPitch * -0.125) 0 $Temp[0];
+					
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+					
+				$Temp =  `polyCylinder -r ($BPitch * 0.13) -h ($BWidth * 1.0) -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;	
+					rotate -r  0 0 90 ;	
+					move -r 0 ($BPitch * -0.125) ($BPitch * 0.5) $Temp[0];
+					
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+				
+				$Temp =  `polyCylinder -r ($BPitch * 0.13) -h ($BWidth * 1.0) -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;			
+					rotate -r 0 0 90;
+					move -r 0 ($BPitch * -0.125) ($BPitch * -0.5) $Temp[0];
+	
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+					
+				$BeltGrp[0] = `rename $Temps[0] ($CHName + "_BeltPart_1")`;
+			}
+		
+			select -r $BeltGrp[0];
+				hyperShade -assign "initialShadingGroup";
+				hyperShade -assign $Shader[0];
+				
+			parent $BeltGrp[0] $LinkGrp[0];
+			
+		if (($t == 3) && ($QB > 1))
+			{
+				move -r ($BWidth * 0.750 * $QB - ($BWidth * 0.75)) 0 0 $BeltGrp[0];
+
+				for ($j=1; $j<$QB; $j++)
+					{
+						select $BeltGrp[0];
+						$Temps = `duplicate -rr`;
+						move -r ($j * $BWidth * -1.50) 0 0 $Temps[0];
+							$Temp[$j] = $Temps[0];
+					}
+					
+			if (`radioButtonGrp -q -sl VeeBeltTypeRadioButton` == 2);		
+				{
+					$Pos[0] = $BWidth * 1.50 * $QB ;
+					$Temps = `polyCube -w ($Pos[0]) -h ($BDepth * 0.2) -d ($BDepth * 1.) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`; 	
+	
+					$Temp =  `polyCylinder -r ($BDepth * 0.1) -h ($Pos[0]) -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;	
+						rotate -r  0 0 90 ;
+						move -r 0 0 ($BDepth * -0.5) $Temp[0];
+						$Temps[1] = $Temp[0];
+						
+					$Temp =  `polyCylinder -r ($BDepth * 0.1) -h ($Pos[0]) -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;	
+						rotate -r  0 0 90 ;
+						move -r 0 0 ($BDepth * 0.5) $Temp[0];
+						$Temps[2] = $Temp[0];
+						
+						
+					$Temp = `polyBoolOp -op 1 -ch 0 $Temps[1] $Temps[2]`;
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+					
+					move -r 0 ($BDepth * -0.425) 0 $Temps[0];
+					$Temps[0] = `rename $Temps[0] ($CHName + "_BeltTopPart_1")`;
+					xform -ws -piv 0 0 0 $Temps[0];
+					
+					select -r $Temps[0];
+						hyperShade -assign "initialShadingGroup";
+						hyperShade -assign $Shader[0];
+					
+					parent $Temps[0] $LinkGrp[0];
+				
+				}
+			}
+				
+		scale $DVYUnit $DVYUnit $DVYUnit $Belt[0];
+		select -r $Belt[0];
+		makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+
+		string $DVY_Curve[];
+		$DVY_Curve[0] =	($buffer[0] + "_Belt_Main_GrpN_" + $buffer[4] + "_BeltCurve_1") ;
+		$DVY_Curve[1] = ($buffer[0] + "_Belt_Main_GrpN_" + $buffer[4] + "_Curve_Target_1"); 
+		print $DVY_Curve;
+
+		select -r $DVY_Curve;
+		delete;
+		
+		select -r $Selected[0];
+		DVY_BeltCurveBuild;
+		
+		$DVY_Curve[0] =	($buffer[0] + "_Belt_Main_GrpN_" + $buffer[4] + "_BeltCurve_1") ;
+		$DVY_Curve[1] = ($buffer[0] + "_Belt_Main_GrpN_" + $buffer[4] + "_Curve_Target_1"); 
+		
+		makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+		
+		select -r ("*cluster*Handle*");
+			delete;
+			
+			int $Sp = $q * 7;
+	// Rebuild and Close Curve with 3 Degress instead of a Linear Curve.
+		$Temp = `rebuildCurve -ch 1 -rpo 1 -rt 0 -end 1 -kr 2 -kcp 1 -kep 1 -kt 1 -s 21 -d 3 -tol 0.01 $DVY_Curve[0]`;
+			$DVY_Curve[0] = `rename $Temp[0] ($Sel[0] + "_BeltCurve_1")`;
+				closeCurve -ch 0 -ps 1 -rpo 1 -bb 0.5 -bki 1 -p 0.1 $DVY_Curve[0] ;
+				select -r $DVY_Curve[0];
+				CenterPivot;
+		
+	// Build Belt based on Pulley Group selected.
+		
+	float $SPVec1[], $SPVec2[], $SPVec3[];
+	float $Pos[], $SpPos[];
+		
+	float $CalcAngle[];
+	float $An[], $PCDS[];
+		
+	int $NT[]; 
+	float $P  = $BPitch;
+		
+		float $OrgLength = $ArcLen = `arclen -ch 0 $DVY_Curve[0] `;
+		float $NoOfPitches = ($OrgLength / ($P * $DVYUnit));
+		print "\n";
+		print ("Curve Length is " + $OrgLength + "\n");
+		print ("No of Pitches is " + $NoOfPitches + "\n");
+		
+		$NoOfPitches = `ceil $NoOfPitches`;
+		
+		print ("No of Pitches is " + $NoOfPitches + "\n");
+			
+		if (($NoOfPitches % 2) != 0)
+			{
+				$NoOfPitches = $NoOfPitches + 1;
+				print ("No of Pitches is now up to " + $NoOfPitches + "\n");
+			}
+			
+		$TargetLength = $P * $NoOfPitches;
+			
+		print ("Target Curve Length is " + $TargetLength + "\n");
+		
+		
+			print $LinkGrp;
+//		select -r $Temp[50];
+		
+		string $duper[], $Link[];
+		float $Offset = $P;
+		float $offset;
+		
+		$Number = $NoOfPitches;
+		
+		int $Count = 0;
+		float $Percent = 100 * ($NoOfPitches - $Count)/ $NoOfPitches;
+		int $Remainder = 100;
+
+//	select $Temp[50];
+	
+		//open up progress window
+			progressWindow
+				-title "Building Belt..."
+				-progress $Percent
+				-status "Building Belt and Motion Paths: 0%"
+				-isInterruptable true;
+		
+		for ($a=0; $a < $Number; $a++)
+			{
+				$offset = ($Offset * $a);
+				$duper = `duplicate -rr -renameChildren -un $LinkGrp[0] `;
+				
+				$Link[$a] = $duper[0];
+				
+				select -r $duper[0];
+				select -add $DVY_Curve[0];
+														
+					pathAnimation -name ($CHName  + "Belt_MotPathA" + ($a+1)) -fractionMode true 
+							-follow true -followAxis z -upAxis y -worldUpType "object"
+							-worldUpObject $DVY_Curve[1] -worldUpVector 0 1 0
+							-inverseUp false -inverseFront true -bank false
+							-startTimeU $offset -endTimeU ($offset + $TargetLength);
+					
+					cycleCheck -e off ($CHName  + "Belt_MotPathA" + ($a+1)) ;
+	
+				//Determine Progress Amount
+				$Count++;
+				$Percent = 100 * ($NoOfPitches - $Count)/($NoOfPitches);
+				$Remainder = 100 - $Percent;
+				//update progress window
+				if(`progressWindow -query -isCancelled`)
+					{//warning
+						warning("Belt Not Built! \(user cancelled\)\n");
+						break;
+					}//warning
+				progressWindow
+					-edit
+					-progress $Remainder
+					-status ("Built " + $Remainder + "% of Belt");
+				refresh -cv;
+			}
+			
+			$Percent = 100;
+			$Remainder = 100;
+				//update progress window
+				if(`progressWindow -query -isCancelled`)
+					{//warning
+						warning("Belt Built! \(user cancelled and Screen being redrawn\)\n");
+					}//warning
+				progressWindow
+					-edit
+					-progress $Percent
+					-status ("Built " + $Remainder + "% of Belt and redrawing Screen");
+			
+			//close progress window
+			progressWindow -endProgress;
+			
+		select -r $LinkGrp[0];
+		select -add ($buffer[0] + "_Belt_Grp_" + $buffer[4] + "Group_*") ;
+			delete;
+			
+		select -r ($buffer[0] + "_Belt_Parts_GrpN_*");
+			$TSel = `ls -tr -sl`;
+				DVY_MakeSelectedCycle($TSel) ;
+				
+//		parent $DVY_Curve $Belt[0];
+		parent $DVY_Curve[1] $DVY_Curve[0];
+		
+		parentConstraint -mo -weight 1 $Sel[0] $DVY_Curve[0];
+		
+		string $DAttrA[] = {".tx", ".ty", ".tz", ".rx", ".ry", ".rz", ".sx", ".sy", ".sz"};
+		
+			select -r -hi $Belt[0];
+			$List = `ls -tr -sl`;
+			
+			for ($each in $List)
+				{
+					for ($Att in $DAttrA) {setAttr -l 0 -k false ($each + $Att);}
+				}
+			
+			select -r ($buffer[0] + "_Belt_Grp_ " + $buffer[4] + "_Pulley_GrpN_*");
+			$List = `ls -tr -sl`;
+			
+			for ($each in $List)
+				{
+					for ($Att in $DAttrA) {setAttr -l 0 -k false ($each + $Att);}
+				}
+			
+			string $DAttrB[] = {".tx", ".ty", ".tz", ".rx", ".ry", ".rz"};
+			for ($Att in $DAttrB)
+				{
+					setAttr -l 0 -k true ($Sel[0] + $Att);
+				}
+			
+			
+			
+
+}

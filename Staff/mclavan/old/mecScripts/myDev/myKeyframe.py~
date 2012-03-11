@@ -1,0 +1,68 @@
+'''
+Keyframe option
+
+'''
+
+import maya.cmds as cmds
+
+
+def createKeyAttr():
+	'''
+	
+	'''
+	
+	# if the attribute doesn't exists
+	# attribute query
+	# cmds.attributeQuery( 
+	# dt(dataType) == used for strings
+	cmds.addAttr( ln="attr_all", dt="string" )
+# Create attributes on the objects that have the attribute to keyframe.
+
+
+# Loop to loop through the selected objects and selected channel box
+# 	to add an attribute with the selected names.
+
+
+# Code to add attribute
+
+# Code to grab selected channelbox and selected objects.
+
+
+selected = cmds.ls(sl=True)
+cbSelected = cmds.channelBox("mainChannelBox", q=True, selectedMainAttributes=True)
+
+for sel in selected:
+	if(cbSelected):
+		attrs = " ".join(cbSelected)
+		cmds.setAttr( sel+".attr_all", attrs, type="string")
+	else:
+		keyAttrs=cmds.listAttr(sel, sn=True, k=True)
+		attrs = " ".join(keyAttrs)
+		cmds.setAttr( sel+".attr_all", attrs, type="string")
+	
+def addSeq(attrs, dest):
+	'''
+		attrs(string[]) == ['tx', 'ty', 'tz']
+		dest(string) == "object.attr"
+	'''
+	# "tx ty ry"
+	sepAttrs = attrs
+	destAttrs = cmds.getAttr(dest)
+	print(destAttrs)
+	addAttrs = ""
+
+	if( destAttrs ):
+		for sAttr in sepAttrs:
+			if( sAttr not in destAttrs ):
+				addAttrs += " " + sAttr
+				print(addAttrs)
+	else:
+		addAttrs = " ".join(attrs)
+		
+	return addAttrs
+
+# addSeq(cmds.listAttr( sn=True, k=True),  'pSphere1.attr_all')
+	
+	
+	
+

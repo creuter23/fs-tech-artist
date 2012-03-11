@@ -1,0 +1,2641 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davveys Stair Generator
+''    Author:  
+''    Last Updated: Mar 25, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4609.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+
+
+// ******************************************************************************** //	
+// ******************************************************************************** //	
+// Local Procedure to build a Stair Post 
+//
+// 	Data required 
+
+//	Return
+
+
+proc string DVY_StairPost()
+{
+
+	string $Temp[], $Temps[], $Tmp[];
+	
+		$Temps = `polyCube -w 100 -h 25 -d 100  -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			move 0 -12.5 0 ;
+		
+		$Temp = `polySphere -r 68.0 -sx 20 -sy 18 -ax 0 1 0 -ch 0`;
+			scale 1 0.25 1;
+	
+		$Temps = `polyBoolOp -op 3 -ch 0 $Temps[0] $Temp[0]`;
+			rotate 180 0 0;
+			move 0 1000 0 ;
+		
+		$Temp = `polyCube -w 100 -h 1000 -d 100  -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			move 0 500 0 ;
+				polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 1
+						-worldSpace 1 -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001
+						-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180 -ch 0
+						($Temp[0] + ".e[4:5]") ($Temp[0] + ".e[8:9]");
+				
+			$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+				move 0 0 100;
+
+	return $Temps[0];
+	
+}
+
+
+// ******************************************************************************** //	
+// ******************************************************************************** //	
+// Local Procedure to build a Stair Rail 
+//
+// 	Data required 
+
+//	Return	
+
+proc string DVY_StairRail (float $Pos[], int $T)
+{
+	string $Temp[], $Temps[], $Tmp[];
+	float $W = 35;
+	if ($Pos[9] > 0) {$W = $Pos[9];}
+	
+		$Temps = `polyCube -w $W -h ($Pos[0] * $Pos[1]) -d ($Pos[2] * 1.0)  -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			polyBevel -offset 0.2 -offsetAsFraction 1 -autoFit 1 -segments 1 -worldSpace 1 
+						-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001
+						-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180 -ch 0
+					($Temps[0] + ".e[4:5]");
+		
+			move 0 ($Pos[0] * $Pos[1] * 0.5) ($Pos[2] * 0.25);
+				move -r 0 0 ($Pos[5] * 1) ($Temps[0] + ".f[5]");
+
+			if ($T == 0)
+				{
+					move -r ($Pos[3] * 0.5) 0 0 $Temps[0];
+					select $Temps[0];
+						$Temp = `duplicate -rr`;
+							move -r ($Pos[3] * -1.0) 0 0 $Temp[0];
+				}
+				
+			if ($T == 1)
+				{ 
+					move -r ($Pos[3] * 0.25) 0 ($Pos[4] * -2.0) $Temps[0];
+					select $Temps[0];
+						$Temp = `duplicate -rr`;
+							move -r ($Pos[3] * -0.5) 0 0 $Temp[0];
+				}
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+				
+			if ($T == 1)
+				{ 
+					$Temp = `polyCube -w $Pos[3] -h $Pos[1] -d ($Pos[7] * 1)  -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move 0 ($Pos[1] * 1.5 - $Pos[4]) ($Pos[7] * -0.5) $Temp[0];
+							makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+							$Temps[1] = $Temp[0];
+					
+					for ($i=1; $i < $Pos[0] ; $i++)
+						{
+							select -r $Temps[1];
+							$Temp = `duplicate -rr`;
+							move -r 0 ($Pos[1] * $i) ($Pos[6] * $i) $Temp[0];
+							if ($i == ($Pos[0] - 1)) { scale 1 1 3 $Temp[0];}
+							$Temps[$i+1] = $Temp[0];
+						}
+		
+					$Temp = `polyBoolOp -op 2 -ch 0 $Temps[0] $Temps[1]`;
+					for ($i=1; $i < $Pos[0] ; $i++)
+						{
+							$Temp = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[$i+1]`;
+						}
+				
+					$Temps = `polyCube -w $Pos[3] -h $Pos[1] -d $Pos[2]  -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move 0 ($Pos[1] * 0.5 ) ($Pos[2] * 0.5 - $Pos[4] * 1.5) $Temps[0];
+								
+					$Temps = `polyBoolOp -op 2 -ch 0 $Temp[0] $Temps[0]`;
+				}			
+				
+		if ($Pos[10] > 0)
+			{
+				$Temp = `polyCube -w ($Pos[3] *2) -h ($Pos[1] * 3) -d $Pos[2]  -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r 0 0 (50 + $Pos[2] * 0.5);
+					$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Temp[0]`;
+			}
+			
+		if ($Pos[12] > 0)
+			{
+				$Temp = `polyCube -w ($Pos[3] * 2) -h ($Pos[1] * 3) -d $Pos[2]  -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r 0 0 (50 + $Pos[2] * 0.5);
+					move -r 0 ($Pos[0] * $Pos[1]) ($Pos[6] * ($Pos[0] + 1));
+					$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Temp[0]`;
+		//	select -r $Temp[50];
+				
+				
+			}
+			
+
+	return $Temps[0];
+	
+}
+
+
+// ******************************************************************************** //	
+// ******************************************************************************** //	
+// Local Procedure to build a Stair Tread 
+//
+// 	Data required 
+
+//	Return	Built Tread.
+proc string DVY_StairTread (float $Ws,  float $Ds, float $Hs, int $Q)
+{
+	string $Temp[], $Temps[], $Tmp[];
+	
+	float $Pos[];
+	
+	if ($Q == 3) { $Ds = $Ds - ($Hs *0.5);}
+	if ($Q == 4) { $Ds = $Ds - $Hs;}
+
+		$Temps = `polyCube -w ($Ws) -h ($Hs) -d $Ds -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			move 0 ($Hs * -0.5) 0;
+			xform -ws -piv 0 0 0 $Temps[0];
+			
+	if ($Q == 1)
+		{		
+			polyBevel -offset 0.2 -offsetAsFraction 1 -autoFit 1 -segments 1 -worldSpace 1 
+						-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001
+						-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180 -ch 0
+					($Temps[0] + ".e[0:1]");
+		}
+			
+	if ($Q == 2)
+		{		
+			polyBevel -offset 0.2 -offsetAsFraction 1 -autoFit 1 -segments 1 -worldSpace 1 
+						-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001
+						-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180 -ch 0
+					($Temps[0] + ".e[0:3]");
+		}
+		
+	if ($Q > 2)
+		{		
+			$Temp = `polyCylinder -r ($Hs * 0.5) -h $Ws-sx 20 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+				move 0 ($Hs * -0.5) ($Ds * 0.5);
+				rotate 0 0 90;	
+			
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+				$Temp[0] = $Temps[0];
+		}
+		
+	if ($Q == 4)
+		{		
+			$Temp = `polyCylinder -r ($Hs * 0.5) -h $Ws-sx 20 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+				move 0 ($Hs * -0.5) ($Ds * -0.5);
+				rotate 0 0 90;	
+			
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+		}
+		
+		select $Temps[0];
+			makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+		
+	return $Temps[0];
+	
+}
+
+
+// ******************************************************************************** //	
+// ******************************************************************************** //	
+// Local Procedure to build a Hand Rail Panel
+//
+// 	Data required 
+
+//	Return	Built Panel.
+
+proc string DVY_Plate(string $Objects[])
+{
+	
+	string $Temp[], $Temps[], $Tmp[];
+	float $Pos[], $Pos1[], $Pos2[];
+	int $a, $b, $c, $i, $j, $k;
+	
+		$Temps = `duplicateCurve -ch 0 -rn 0 -local 0 ($Objects[0] + ".e[40]")`;
+			CenterPivot $Temps[0];
+			$Temp[0] = $Temps[0];
+		
+		$Temps = `duplicateCurve -ch 0 -rn 0 -local 0 ($Objects[1] + ".e[48]")`;
+			CenterPivot $Temps[0];
+			$Temp[1] = $Temps[0];
+		
+		$Tmps =`loft -ch 0 -u 0 -c 0 -ar 1 -d 3 -ss 1 -rn 0 -po 0 -rsn true $Temp[0] $Temp[1]`;
+	
+		if ($Objects[2] != "Stop")
+			{
+					$Pos1 = `xform -q -ws -rp $Temp[0]`;
+					$Pos2 = `xform -q -ws -rp $Temp[1]`;
+					
+					$Pos[0] = ($Pos1[0] + $Pos2[0]) * 0.5;
+					$Pos[1] = ($Pos1[0] - $Pos[0]) * 0.5;
+					select -r ($Tmps[0] + ".cv[0:1][1:2]") ;
+					move -r -x $Pos[1];
+			}
+
+				$Temps = `nurbsToPoly -mnd 1 -ch 0 -f 3 -pt 0 -pc 200 -chr 0.1 -ft 0.01 
+					-mel 0.001 -d 0.1 -ut 1 -un 3 -vt 1 -vn 3 -uch 0 -ucr 0 -cht 1 -es 0
+					-ntr 0 -mrt 0 -uss 1 -name "Panel_1" $Tmps[0]`;
+						
+					CenterPivot $Temps[0];
+					scale 1 0.9 1 $Temps[0];
+					xform -ws -piv 0 0 0 $Temps[0];
+					
+	select -r $Temp $Tmps; delete;
+	
+	return $Temps[0];
+}
+
+
+// ******************************************************************************** //	
+// ******************************************************************************** //	
+// Local Procedure to Duplicate and translate and or rotate Stair Parts
+
+proc string[] DVY_Duplicate ( string $Part, float $Ang[], float $Mov[], int $Count)
+{
+	
+	string $Temp[], $Temps[], $Tmp[];
+		
+		$Temp[0] = $Part;
+			$Temps = `duplicate -rr -renameChildren`;
+			$Temp[1] = $Temps[0];
+				rotate -r $Ang[0] $Ang[1] $Ang[2];
+				move -r $Mov[0] $Mov[1] $Mov[2];
+				for ($i=2; $i<$Count; ++$i)
+					{
+						$Temps = `duplicate -rr -renameChildren -st`;
+						$Temp[$i] = $Temps[0];
+					}
+		
+	return $Temp;
+}
+
+
+// ******************************************************************************** //	
+// ******************************************************************************** //	
+// Local Procedure to Build Hand Rail
+
+proc string DVY_Rail(string $Rails[], int $Face)
+{
+	string $Temp[], $Temps[], $Tmp[];
+		
+		$Temp = `loft -ch 0 -u 0 -c 0 -ar 1 -d 3 -ss 8 -rn 0 -po 0 -rsn true $Rails`;
+			$Temps = `nurbsToPoly -mnd 1 -ch 0 -f 3 -pt 0 -pc 200 -chr 0.1 -ft 0.01
+					-mel 0.001 -d 0.1 -ut 1 -un 3 -vt 1 -vn 3 -uch 0 -ucr 0 -cht 1 -es 0
+					-ntr 0 -mrt 0 -uss 1 -name "Rail_1" $Temp[0]`;
+				polyCloseBorder -ch 0 $Temps[0];
+			
+				$F = `polyEvaluate -f $Temps[0]`;
+				
+			if ($Face == 0)
+				{					
+					polyExtrudeFacet -ch 1 -kft 1 -ws 0 -ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+						-pvx 0 -pvy 0 -pvz 0 
+						-tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1
+						-ltz -50 -ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 1 -lsy 1 -lsz 1
+						-ldx 1 -ldy 0 -ldz 0-w 0 -gx 0 -gy -1 -gz 0 -att 0 -mx 0 -my 0 -mz 0
+						-sma 30 ($Temps[0] + ".f[" + ($F[0]-1) + "]");
+				}
+				select -r $Temp $Rails; delete;
+
+		return $Temps[0];
+	
+}
+
+
+// ******************************************************************************** //	
+// ******************************************************************************** //	
+// Local Procedure to Build a Landing Hand Rail with Spindles
+
+proc string[] DVY_LandingRail(string $StName, string $Rails[], float $Sizes[], int $Q, int $S, int $T)
+{
+	string $Temp[], $Temps[], $Tmp[];
+	string $Side[] = {"_LeftHand_", "_RightHand_","_LeftHandRear_", "_RightHandRear_"};;
+	int $N = $Sizes[2] /150;
+	
+		select $Rails[0];
+			$Temps = `duplicate -rr`;
+				$Rails[1] = $Temps[0];
+					move 0 0 ($Sizes[2] * 0.5) ;
+					move 0 0 ($Sizes[2] * -0.5) $Rails[0];
+					
+		$Temp = `loft -ch 0 -u 0 -c 0 -ar 1 -d 3 -ss 8 -rn 0 -po 0 -rsn true $Rails`;
+			$Temps = `nurbsToPoly -mnd 1 -ch 0 -f 3 -pt 0 -pc 200 -chr 0.1 -ft 0.01
+					-mel 0.001 -d 0.1 -ut 1 -un 3 -vt 1 -vn 3 -uch 0 -ucr 0 -cht 1 -es 0
+					-ntr 0 -mrt 0 -uss 1 -name "Rail_1" $Temp[0]`;
+				polyCloseBorder -ch 0 $Temps[0];
+				
+		select -r $Temp $Rails; delete;
+		
+	if ($T < 7)
+		{
+			$Tmp[0] = `curve -d 1 -p 21 0 0 -p 21 -50 0 -p -21 -50 0 -p -21 0 0`;
+				closeCurve -ch 0 -ps 1 -rpo 1 -bb 0.5 -bki 1 -p 0.1 $Tmp[0];
+					move 0 -10 ($Sizes[2] * 0.5) $Tmp[0];
+					$Rails[0] = $Tmp[0];
+				
+			$Temp[0] = `curve -d 1 -p 21 0 0 -p 21 -50 0 -p -21 -50 0 -p -21 0 0`;
+				closeCurve -ch 0 -ps 1 -rpo 1 -bb 0.5 -bki 1 -p 0.1 $Temp[0];
+					move 0 -10 ($Sizes[2] * -0.5) $Temp[0];
+					$Rails[1] = $Temp[0];
+					
+			$Temp = `loft -ch 0 -u 0 -c 0 -ar 1 -d 3 -ss 8 -rn 0 -po 0 -rsn true $Rails`;
+				$Tmp = `nurbsToPoly -mnd 1 -ch 0 -f 3 -pt 0 -pc 200 -chr 0.1 -ft 0.01
+						-mel 0.001 -d 0.1 -ut 1 -un 3 -vt 1 -vn 3 -uch 0 -ucr 0 -cht 1 -es 0
+						-ntr 0 -mrt 0 -uss 1 -name "Rail_2" $Temp[0]`;
+					polyCloseBorder -ch 0 $Tmp[0];
+					$Temps[1] = $Tmp[0];
+			
+				select -r $Temp $Rails; delete;
+						
+				$Temps = `polyUnite -ch 0 $Temps[0] $Temps[1]`;
+					move -r 0 $Sizes[1] 0 $Temps;
+					makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+					$Temps[0] = `rename $Temps[0] ($StName + $Side[$S] + "_LandingRail_1")`;
+				
+					
+				$Temp[0] = DVY_Spindles($StName, 900 , $Q);
+					move -r 0 0 (-100 + $Sizes[2] * 0.5);
+					$Temps[1] = `rename $Temp[0] ($StName + $Side[$S] + "_LandingSpindle_1")`;
+						
+			for ($i=1; $i<$N; $i++)
+				{
+					select $Temps[1];
+					$Temp = `duplicate -rr`;
+					$Temps[$i+1] = `rename $Temp[0] ($StName + $Side[$S] + "_LandingSpindle_" + ($i+1))`;
+					move -r 0 0 (-150 * $i) $Temps[$i+1];
+				}
+				
+			$Temp = `polyCube -w 45 -h 50 -d ($Sizes[2]) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move -r 0 24 0;
+				polyBevel -offset 0.1 -offsetAsFraction 1 -autoFit 1 -segments 1 -worldSpace 1 
+							-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001
+							-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180 -ch 0
+						($Temp[0] + ".f[1]");
+				
+				$Temps[$N+1] = `rename $Temp[0] ($StName + $Side[$S] + "_LandingBoard_" + ($i+1))`;
+		}
+	
+	if ($T == 7)
+		{
+			select -r $Temps[0]; $Temp = `duplicate -rr`; move -r 0 -300 0; $Temps[1] = $Temp[0];
+			
+			
+			select -r $Temps[0]; $Temp = `duplicate -rr`; move -r 0 -600 0; $Temps[2] = $Temp[0];
+			select -r $Temps[0]; $Temp = `duplicate -rr`; move -r 0 -850 0; 
+			CenterPivot; scale 1 1.5 1; $Temps[3] = $Temp[0];
+		}
+	
+		select -r $Temps;	
+		return $Temps;
+}
+
+
+// ******************************************************************************** //	
+// ******************************************************************************** //	
+// Local Procedure to Build a Spiral Section of Hand Rail with Spindles
+
+proc string[] DVY_SpiralRail(string $StName, string $Rails[], float $Sizes[], int $Q, int $S, int $T)
+{
+	string $Temp[], $Temps[], $Tmp[];
+	string $Side[] = {"_LeftHand_", "_RightHand_","_LeftHandRear_", "_RightHandRear_"};
+	
+	float $Calc;
+	float $Ang1 = -2.5; float $Ang2 = -88;
+	if ($Sizes[3] > 1000) { $Ang1 = -1.5; $Ang2 = -89.5;}
+	
+	$Calc = (($Ang2 - $Ang1 + 8)/-360.0) * ($Sizes[3] * 2 * 22.0/7.0);
+		
+//	print ("$Calc is " + $Calc + "\n");
+	
+	int $N = $Calc/150;
+	
+//	print ("$N is " + $N + "\n");
+	int $a = 1;
+	rotate 0 $Ang1 0 $Rails[0];
+	
+	select $Rails[0]; $Temps = `duplicate -rr`; move -r 0 ($Sizes[1] * 2 * 0.33) 0;
+		rotate 0 -30 0; $Rails[$a++] = $Temps[0];
+		
+	select $Rails[0]; $Temps = `duplicate -rr`; move -r 0 ($Sizes[1] * 2 *0.66) 0;
+		rotate 0 -60 0; $Rails[$a++] = $Temps[0];
+		
+	select $Rails[0]; $Temps = `duplicate -rr`; move -r 0 ($Sizes[1] * 2) 0;
+		rotate 0 $Ang2 0; $Rails[$a++] = $Temps[0];
+	
+		$Temp = `loft -ch 1 -u 0 -c 0 -ar 1 -d 3 -ss 8 -rn 0 -po 0 -rsn true $Rails`;
+		
+			$Temps = `nurbsToPoly -mnd 1 -ch 0 -f 3 -pt 0 -pc 200 -chr 0.1 -ft 0.01
+					-mel 0.001 -d 0.1 -ut 1 -un 3 -vt 1 -vn 3 -uch 0 -ucr 0 -cht 1 -es 0
+					-ntr 0 -mrt 0 -uss 1 -name "Rail_1" $Temp[0]`;
+				polyCloseBorder -ch 0 $Temps[0];
+				
+		select -r $Temp $Rails; delete;
+		
+		clear $Rails; $a = 1;
+	if ($T < 7)
+		{
+			$Tmp[0] = `curve -d 1 -p 21 0 0 -p 21 -50 0 -p -21 -50 0 -p -21 0 0`;
+				closeCurve -ch 0 -ps 1 -rpo 1 -bb 0.5 -bki 1 -p 0.1 $Tmp[0];
+					move ($Sizes[3] * -1 - 22.5) 900 0 $Tmp[0];
+					xform -ws -piv 0 0 0 $Tmp[0];
+						$Rails[0] = $Tmp[0];
+							rotate 0 $Ang1 0 $Rails[0];
+				
+				select $Rails[0]; 
+					$Temp = `duplicate -rr`; move -r 0 ($Sizes[1] * 2 * 0.33) 0;
+						rotate 0 -30 0; $Rails[$a++] = $Temp[0];
+					
+				select $Rails[0]; 
+					$Temp = `duplicate -rr`; move -r 0 ($Sizes[1] * 2 *0.66) 0;
+						rotate 0 -60 0; $Rails[$a++] = $Temp[0];
+					
+				select $Rails[0]; 
+					$Temp = `duplicate -rr`; move -r 0 ($Sizes[1] * 2) 0;
+						rotate 0 $Ang2 0; $Rails[$a++] = $Temp[0];
+					
+			$Temp = `loft -ch 0 -u 0 -c 0 -ar 1 -d 3 -ss 8 -rn 0 -po 0 -rsn true $Rails`;
+				$Tmp = `nurbsToPoly -mnd 1 -ch 0 -f 3 -pt 0 -pc 200 -chr 0.1 -ft 0.01
+						-mel 0.001 -d 0.1 -ut 1 -un 3 -vt 1 -vn 3 -uch 0 -ucr 0 -cht 1 -es 0
+						-ntr 0 -mrt 0 -uss 1 -name "Rail_2" $Temp[0]`;
+					polyCloseBorder -ch 0 $Tmp[0];
+					$Temps[1] = $Tmp[0];
+			
+				select -r $Temp $Rails; delete;
+						
+				$Temps = `polyUnite -ch 0 $Temps[0] $Temps[1]`;
+					$Temps[0] = `rename $Temps[0] ($StName + $Side[$S] + "_LandingRail_1")`;
+					
+		if ($Q > 0)
+			{
+				$Temp[0] = DVY_Spindles($StName, 900 , $Q);
+					move ($Sizes[3] * -1 - 22.5) 0 0 $Temp[0];
+					xform -ws -piv 0 0 0 $Temp[0];
+					rotate 0 -5 0 $Temp[0];
+					$Temps[1] = `rename $Temp[0] ($StName + $Side[$S] + "_LandingSpindle_1")`;
+						
+				$Sizes[4] = $Sizes[1] * 2/$N;
+				$Sizes[5] = -82.0 / ($N *1.0);
+						
+		//		print ("$Sizes[4] is " + $Sizes[4] + "\n");
+		//		print ("$Sizes[5] is " + $Sizes[5] + "\n");
+					
+				for ($i=1; $i<$N; $i++)
+					{
+						select $Temps[1];
+						$Temp = `duplicate -rr`;
+						$Temps[$i+1] = `rename $Temp[0] ($StName + $Side[$S] + "_LandingSpindle_" + ($i+1))`;
+						move -r 0 ($Sizes[4] * $i - 15) 0 $Temps[$i+1];
+						rotate 0 (($Sizes[5] * $i) -5) 0;
+					}
+			}
+		}
+	
+	if ($T == 7)
+		{
+			select -r $Temps[0]; $Temp = `duplicate -rr`; move -r 0 -300 0; $Temps[1] = $Temp[0];
+			
+			select -r $Temps[0]; $Temp = `duplicate -rr`; move -r 0 -600 0; $Temps[2] = $Temp[0];
+		}
+	
+		select -r $Temps;	
+		return $Temps;
+}
+
+// ******************************************************************************** //	
+// ******************************************************************************** //	
+
+global proc string[] DVY_SpiralStair(float $DVYsData[], int $DVYsOpt[], int $ShOpt[])
+{
+	
+// ******************************************************************************** //	
+//	Global Variables	
+	
+	global string $Units;
+	global float $DVYUnit;
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Local Variables
+	
+	string $Temp[], $Temps[], $Tmp[], $StairGrp[], $Stairs[], $StepGrp[], $Shader[];
+	string $Rail1[], $Rail2[], $Rail3[], $Rail3[];
+	string $Panels[], $Poles1[], $Poles2[];
+	
+	float $Pos[], $Ang[], $Mov[];
+	int $a, $b, $c, $i, $j, $k;
+	int $e, $E =1 ;
+	
+	float $StairOD = $DVYsData[0]; 		// `floatFieldGrp -q -v1 StaFloatFieldGrp_101`; //3000;
+	float $StairWd = $DVYsData[1]; 		// `floatFieldGrp -q -v1 StaFloatFieldGrp_102`; // 1200;
+	float $StairHt = $DVYsData[2]; 		// `floatFieldGrp -q -v1 StaFloatFieldGrp_103`; //225;
+	float $StairTh = $DVYsData[3]; 		// `floatFieldGrp -q -v1 StaFloatFieldGrp_104`; //100;
+	
+	float $Turns = $DVYsData[4]; 		//`floatFieldGrp -q -v1 StFloatField_100`; //2;
+	int $Steps = $Turns * $DVYsOpt[0]; 	//`intFieldGrp -q -v1 StIntField_100`;
+	int $Step = $DVYsOpt[0]; 			//`intFieldGrp -q -v1 StIntField_100`;
+	
+//	print ("$Turns is " + $Turns + "\n");
+//	print ("$Steps is " + $Steps + "\n");
+	
+	if ($Steps < 2) {$Steps = $Step;}
+	
+	float $Rot = 360/($Steps /$Turns);
+//	print ("$Rot is " + $Turns + "\n");
+	
+	
+	$Ang[0] = 0; $Ang[1] = $Rot; $Ang[2] = 0;
+	$Mov[0] = 0; $Mov[1] = $StairHt; $Mov[2] = 0;
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Create Shaders for Stair Parts.
+	
+	string $StairMaterial[] = {"PineWood", "MapleWood", "OakWood", "CherryWood", "WalnutWood",
+								"MahoganyWood", "CedarWood", "Stone", "Granite", "Glass", "Steel"};
+	string $ShName;
+	
+	int $S = $ShOpt[0];
+		if ($S > 1)
+			{
+				$ShName = ($StairMaterial[$S-2] + "_SH");
+					if(!`objExists $ShName`) { $Shader[0] = `DVY_Shaders(48+$S)`; }
+					$Shader[0] = $ShName;		 
+			}
+		
+	int $S = $ShOpt[1];
+		if ($S > 1)
+			{
+				$ShName = ($StairMaterial[$S-2] + "_SH");
+					if(!`objExists $ShName`) { $Shader[1] = `DVY_Shaders(48+$S)`; }
+					$Shader[1] = $ShName;		 
+			}
+	
+		
+	int $S = $ShOpt[2];
+		if ($S > 1)
+			{
+				$ShName = ($StairMaterial[$S-2] + "_SH");
+					if(!`objExists $ShName`) { $Shader[2] = `DVY_Shaders(48+$S)`; }
+					$Shader[2] = $ShName;		 
+			}
+		 
+	int $S = $ShOpt[3];
+		if ($S > 1)
+			{
+				$ShName = ($StairMaterial[$S-2] + "_SH");
+					if(!`objExists $ShName`) { $Shader[3] = `DVY_Shaders(48+$S)`; }
+					$Shader[3] = $ShName;		 
+			}
+			
+	int $S = $ShOpt[4];
+		if ($S > 1)
+			{
+				$ShName = ($StairMaterial[$S-2] + "_SH");
+					if(!`objExists $ShName`) { $Shader[4] = `DVY_Shaders(48+$S)`; }
+					$Shader[4] = $ShName;		 
+			}
+		
+//	print $Shader;
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Section to create Main Spiral Stair Groups.	
+	
+	while(`objExists ("SpiralStairs_Main_GrpN_" + $E)`)
+		{
+			$E++;	// print ("$E is " + $E + "\n");
+		}
+	
+		$StairGrp[0] = `group -em -name ("SpiralStairs_Main_GrpN_" + $E)`;
+		$e = $E;
+		
+		$StairGrp[1] = `group -em -name ("SpiralStairs_Steps_GrpN_" + $E)`;
+			parent $StairGrp[1] $StairGrp[0];
+
+		$StairGrp[2] = `group -em -name ("SpiralStairs_OuterHandRail_GrpN_" + $E)`;
+			parent $StairGrp[2] $StairGrp[0];
+		
+		$StairGrp[3] = `group -em -name ("SpiralStairs_InnerHandRail_GrpN_" + $E)`;
+			parent $StairGrp[3] $StairGrp[0];
+			
+	string $StairN = ("SpiralStairs_Main_GrpN_" + $E);
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Generate Steps.
+	
+	$Temps = `polyPlane -w $StairWd -h $StairTh  -sx 1 -sy 1 -ax 0 0 1 -ch 0 -name ($StairN + "Step_1")`;
+		move -r (($StairOD - $StairWd)  * 0.5) ($StairTh * 0.5) 0;
+		xform -ws -piv 0 0 0 $Temps[0];
+	
+			polyExtrudeFacet -ch 1 -kft 1 -ws 0 -ran 0 -divisions 6 -twist 0 -taper 1 -off 0
+						-pvx 0 -pvy 0 -pvz 0 
+						-tx 0 -ty 0 -tz 0 -rx 0 -ry ($Rot * 1.25) -rz 0 -sx 1 -sy 1 -sz 1
+						-ltz 0  -ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 1 -lsy 1 -lsz 1
+						-ldx 1 -ldy 0 -ldz 0-w 0 -gx 0 -gy -1 -gz 0 -att 0 -mx 0 -my 0 -mz 0
+						-sma 30 ($Temps[0] + ".f[0]");
+	
+			parent $Temps[0] $StairGrp[1];
+				$StepGrp[0] = $Temps[0];
+					select -r $StepGrp[0];
+						hyperShade -assign "initialShadingGroup";
+						hyperShade -assign $Shader[0];
+								
+			$Temps = DVY_Duplicate ($StepGrp[0], $Ang, $Mov, $Steps);
+				for ($i=1; $i<$Steps; $i++) { $StepGrp[$i] = $Temps[$i];} 
+							
+// Center Column Section
+			
+		$Pos[0] = ($StairOD * 0.5 - $StairWd);
+		$Pos[1] = 900 + $StairHt * $Steps;
+		
+//	if (`radioButtonGrp -q -sl SpiralColumnRadioButton` == 2)
+	if ($DVYsOpt[1] == 2)
+		{// Center Column Option
+			$Temps = `polyCylinder -r $Pos[0] -h $Pos[1] -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 1 -name ($StairN + "SpiralStair_Center_Pole_" + $E)`;
+				move 0 ($Pos[1] * 0.5) 0;
+				parent $Temps[0] $StairGrp[0];
+					select -r $Temps[0];
+						hyperShade -assign "initialShadingGroup";
+						hyperShade -assign $Shader[1];
+		}// End of Center Column Option
+				
+// Outer Hand Rail			
+//	if (`radioButtonGrp -q -sl OuterHandRailRadioButton` > 1)
+	if ($DVYsOpt[2] > 1)
+		{
+			$Temps[0] = DVY_HandRails($StairN, $DVYsOpt[10]);
+				
+		//	$Temps =`circle -c 0 0 0 -nr 0 0 0 -sw 360 -r 25 -d 3 -ut 0 -tol 0.01 -s 18 -ch 0 -name ($StairN + "OHRCircle_1")`;
+				move ($StairOD * 0.5 - 30) 900 10;
+				xform -ws -piv 0 0 0 $Temps[0];
+				
+			$Rail1[0] = $Temps[0];
+					parent $Rail1[0] $StairGrp[2];
+			$Temps = DVY_Duplicate ($Rail1[0], $Ang, $Mov, $Steps);
+				for ($i=1; $i<$Steps; $i++) { $Rail1[$i] = $Temps[$i];} 
+	
+				for ($i=1; $i<3; $i++)
+					{	
+						select -r $Rail1[$Steps-1];
+							$Temps = `duplicate -rr -renameChildren`;
+								rotate -r 0 ($Rot * $i /2) 0 $Temps[0];
+								move -r 0 20 0 $Temps[0];
+								$Rail1[$Steps -1 +$i] = $Temps[0];
+					}
+	
+				$Temps[0] =  DVY_Rail($Rail1, 0);
+				$Temps[0] = `rename $Temps[0] ($StairN + "OuterHand_Rail_1")`;
+					parent $Temps[0] $StairGrp[2];
+						select -r $Temps[0];
+							hyperShade -assign "initialShadingGroup";
+							hyperShade -assign $Shader[2];
+	
+	
+//		if (`radioButtonGrp -q -sl OuterHandRailRadioButton` == 3)
+		if ($DVYsOpt[2] == 3)
+			{// Lower Outer Hand Rail
+				$Temps[0] = DVY_HandRails($StairN, $DVYsOpt[11]);
+					move ($StairOD * 0.5 - 30) 500 -12.5;
+					xform -ws -piv 0 0 0 $Temps[0];
+					
+				 $Rail2[0] = $Temps[0];
+					parent $Rail2[0] $StairGrp[2];
+						
+				$Temps = DVY_Duplicate ($Rail2[0], $Ang, $Mov, $Steps);
+					for ($i=1; $i<$Steps; $i++) { $Rail2[$i] = $Temps[$i];} 
+					
+					for ($i=1; $i<3; $i++)
+						{	
+							select -r $Rail2[$Steps-1];
+								$Temps = `duplicate -rr -renameChildren`;
+									rotate -r 0 ($Rot * $i /2) 0 $Temps[0];
+									move -r 0 20 0 $Temps[0];
+									$Rail2[$Steps -1 +$i] = $Temps[0];
+						}
+						
+				$Temps[0] =  DVY_Rail($Rail2, 0);
+				$Temps[0] = `rename $Temps[0] ($StairN + "OuterHand_LowerRail_1")`;
+					parent $Temps[0] $StairGrp[2];
+						select -r $Temps[0];
+							hyperShade -assign "initialShadingGroup";
+							hyperShade -assign $Shader[2];
+		
+			}// End of Lower Outer Hand Rail
+			
+	//	if (`radioButtonGrp -q -sl HandRailRadioButton` == 2)
+		if ($DVYsOpt[5] == 2)
+			{// Outer Hand Rail Posts
+				$Tmps[0] = DVY_Spindles($StairN, $StairTh, $DVYsOpt[12]);
+					move ($StairOD * 0.5 - 30) (450 + $StairTh * 0.5) -20;
+					xform -ws -piv 0 0 0 $Tmps[0];
+					
+				$Poles1[0] = `rename $Tmps[0] ($StairN + "OuterHandRail_Pole_1")`;		
+					parent $Poles1[0] $StairGrp[2];
+					
+				$Temps = DVY_Duplicate ($Poles1[0], $Ang, $Mov, $Steps);
+					for ($i=1; $i<$Steps; $i++) { $Poles1[$i] = $Temps[$i];} 
+						select -r $Poles1[$Steps-1];
+							$Temps = `duplicate -rr -renameChildren`;
+								rotate -r 0 ($Rot * 1) 0 $Temps[0];
+								$Poles1[$Steps] = $Temps[0];
+									select -r $Poles1;
+										hyperShade -assign "initialShadingGroup";
+										hyperShade -assign $Shader[2];
+			}// End of Outer Hand Rail Posts
+			
+	//	if (`radioButtonGrp -q -sl HandRailRadioButton` == 3)
+		if ($DVYsOpt[5] == 3)
+			{// Outer Hand Rail Wall Supports
+				$Tmps = `polyCylinder -r 5 -h 50 -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ($StairN + "OuterHandRail_Pole_1")`;
+					rotate 0 0 90;
+					move ($StairOD * 0.5 - 10) 870 -20;
+				$Temps = `polyCylinder -r 5 -h 20 -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ($StairN + "OuterHandRail_Pole_1")`;
+					move ($StairOD * 0.5 - 30) 880 -20;
+					
+				$Tmps = `polyBoolOp -op 1 -ch 0 -name ($StairN + "OuterHandRail_Support_1") $Tmps[0] $Temps[0]`;
+					xform -ws -piv 0 0 0 $Tmps[0];
+			
+				$Poles1[0] = $Tmps[0];		
+					parent $Poles1[0] $StairGrp[2];
+					
+				$Temps = DVY_Duplicate ($Poles1[0], $Ang, $Mov, $Steps);
+					for ($i=1; $i<$Steps; $i++) { $Poles1[$i] = $Temps[$i];} 
+						select -r $Poles1[$Steps-1];
+							$Temps = `duplicate -rr -renameChildren`;
+								rotate -r 0 ($Rot * 1) 0 $Temps[0];
+								move -r 0 20 0 $Temps[0];
+									$Poles1[$Steps] = $Temps[0];
+										select -r $Poles1;
+											hyperShade -assign "initialShadingGroup";
+											 hyperShade -assign $Shader[2];
+							 
+		//	if (`radioButtonGrp -q -sl OuterHandRailRadioButton` == 3)
+			if ($DVYsOpt[2] == 3)
+				{// Lower Outer Hand Rail Support
+					select -r $Poles1;
+					$Temps = `duplicate -rr -renameChildren`;
+					move -r 0 -400 0 ;
+				}
+							 
+			}// End of Outer Hand Rail Wall Supports.
+				
+	//	if ((`radioButtonGrp -q -sl OuterPanelRadioButton` == 2) && (`radioButtonGrp -q -sl HandRailRadioButton` == 2))
+		if (($DVYsOpt[4] == 2) && ($DVYsOpt[5] == 2))
+			{// Outer HandRail Panels Section
+				$Panels[0] = DVY_Plate($Poles1);
+					$Panels[0] = `rename $Panels[0] ($StairN + "Panel_1")`;
+					parent $Panels[0] $StairGrp[2];
+					select -r $Panels[0];
+					
+					$Temps = DVY_Duplicate ($Panels[0], $Ang, $Mov, ($Steps-1));
+						for ($i=1; $i<$Steps-1; $i++) { $Panels[$i] = `rename $Temps[$i] ($StairN + $Temps[$i])`;} 
+						
+					clear $Temps;
+						$Temps[0] = $Poles1[$Steps-1];
+						$Temps[1] = $Poles1[$Steps];
+						$Temps[2] = "Stop";
+							$Panels[$Steps-1] = DVY_Plate($Temps);
+							$Panels[$Steps-1] = ` rename $Panels[$Steps-1] ($StairN + "Panel_" + $Steps)`;
+								parent $Panels[$Steps-1] $StairGrp[2];
+									catch (`select -r $Panels`);
+										hyperShade -assign "initialShadingGroup";
+										hyperShade -assign $Shader[4];
+			}// End of Outer HandRail Panels Section
+				
+		}// End of Outer Hand Rail options	
+		 
+// Inner Hand Rail			
+//	if (`radioButtonGrp -q -sl InnerHandRailRadioButton` > 1)
+	if ($DVYsOpt[3] > 1)	
+		{
+			$Temps[0] = DVY_HandRails($StairN, $DVYsOpt[13]);
+				move ($StairOD * 0.5 - $StairWd + 40) 900 10;
+				xform -ws -piv 0 0 0 $Temps[0];
+				
+			 $Rail3[0] = $Temps[0];
+				parent $Rail3[0] $StairGrp[3];
+					
+			$Temps = DVY_Duplicate ($Rail3[0], $Ang, $Mov, $Steps);
+				for ($i=1; $i<$Steps; $i++) { $Rail3[$i] = $Temps[$i];} 
+				move -r 0 20 0 $Rail3[$Steps-1];
+				
+				$Temps[0] =  DVY_Rail($Rail3, 0);
+				$Temps[0] = `rename $Temps[0] ($StairN + "InnerHand_Rail_1")`;
+					parent $Temps[0] $StairGrp[2];
+					select -r $Temps[0];
+						hyperShade -assign "initialShadingGroup";
+						hyperShade -assign $Shader[3];
+				
+	//	if (`radioButtonGrp -q -sl InnerHandRailRadioButton` == 3)
+		if ($DVYsOpt[3] == 3)	
+			{// Lower Inner Hand Rail
+				$Temps[0] = DVY_HandRails($StairN, $DVYsOpt[14]);
+					move ($StairOD * 0.5 - $StairWd + 40) 500 -12.5;
+					xform -ws -piv 0 0 0 $Temps[0];
+					
+				 $Rail4[0] = $Temps[0];
+				 	parent $Rail4[0] $StairGrp[3];
+						
+				$Temps = DVY_Duplicate ($Rail4[0], $Ang, $Mov, $Steps);
+					for ($i=1; $i<$Steps; $i++) { $Rail4[$i] = $Temps[$i];} 
+					
+					$Temps[0] = DVY_Rail($Rail4, 0);
+					$Temps[0] = `rename $Temps[0] ($StairN + "InnerHand_LowerRail_1")`;
+						parent $Temps[0] $StairGrp[2];
+						select -r $Temps[0];
+							hyperShade -assign "initialShadingGroup";
+							hyperShade -assign $Shader[3];
+				
+			}// End of Lower Inner Hand Rail
+			
+	//	if (`radioButtonGrp -q -sl HandRailRadioButton` == 2)
+		if ($DVYsOpt[5] == 2)
+			{// Inner HandRail Posts	
+				$Tmps[0] = DVY_Spindles($StairN, $StairTh - 40, $DVYsOpt[15]);
+					move ($StairOD * 0.5 - $StairWd + 40) (470 + $StairTh * 0.5) -20;
+					xform -ws -piv 0 0 0 $Tmps[0];
+						
+				$Poles2[0] = `rename $Tmps[0] ($StairN + "InnerHandRail_Pole_1")`;		
+					parent $Poles2[0] $StairGrp[3];
+						
+				$Temps = DVY_Duplicate ($Poles2[0], $Ang, $Mov, $Steps);
+					for ($i=1; $i<$Steps; $i++) { $Poles2[$i] = $Temps[$i];} 
+						move -r 0 -20 0 $Poles2[$Steps-1];
+							select -r $Poles2;
+								hyperShade -assign "initialShadingGroup";
+								hyperShade -assign $Shader[3];
+			}// End of Inner Hand Rail Posts
+			
+	//	if (`radioButtonGrp -q -sl HandRailRadioButton` == 3)
+		if ($DVYsOpt[5] == 3)
+			{// Inner Hand Rail Wall Supports
+				$Tmps = `polyCylinder -r 5 -h 50 -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ($StairN + "OuterHandRail_Pole_1")`;
+					rotate 0 0 90;
+					move ($StairOD * 0.5 - $StairWd + 20) 890 -20;
+				$Temps = `polyCylinder -r 5 -h 40 -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ($StairN + "OuterHandRail_Pole_1")`;
+					move ($StairOD * 0.5 - $StairWd + 40) 910 -20;
+					
+				$Tmps = `polyBoolOp -op 1 -ch 0 -name ($StairN + "InnerHandRail_Support_1") $Tmps[0] $Temps[0] `;
+						xform -ws -piv 0 0 0 $Tmps[0];
+			
+				$Poles2[0] = $Tmps[0];		
+						parent $Poles2[0] $StairGrp[3];
+						
+				$Temps = DVY_Duplicate ($Poles2[0], $Ang, $Mov, $Steps);
+					for ($i=1; $i<$Steps; $i++) { $Poles2[$i] = $Temps[$i];} 
+						move -r 0 -20 0 $Poles2[$Steps-1];
+							select -r $Poles2;
+								hyperShade -assign "initialShadingGroup";
+								hyperShade -assign $Shader[3];
+							 
+		//	if (`radioButtonGrp -q -sl InnerHandRailRadioButton` == 3)
+			if ($DVYsOpt[3] == 3)	
+				{// Lower Inner Hand Rail Support
+					select -r $Poles2;
+					$Temps = `duplicate -rr -renameChildren`;
+					move -r 0 -420 0 ;
+				}
+							 
+			}// End of Inner Hand Rail Wall Supports.
+	
+		}	
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Set Height if Step Thickness < Step Height.
+		
+	if ($StairTh < $StairHt)
+		{	
+			move -r 0 ($StairHt - $StairTh) 0 $StairGrp[0];
+			xform -ws -piv 0 0 0 $StairGrp[0];
+		}
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Complete Script and return.
+					 
+	select -r $StairGrp[0];
+		makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+
+		select -r $StairGrp[0];
+		delete -constructionHistory;
+		makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+		
+	return $StairGrp;
+	print "Completed building Stairs Davvey © 2006..\n";
+			
+}
+
+// ******************************************************************************** //	
+// ******************************************************************************** //	
+
+
+global proc string[] DVY_StraightStair(float $DVYsData[], int $DVYsOpt[], int $ShOpt[])
+{
+	
+// ******************************************************************************** //	
+//	Global Variables	
+	
+	global string $Units;
+	global float $DVYUnit;
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Local Variables
+	
+	string $Temp[], $Temps[], $Tmp[], $Risers[], $StairGrp[], $Stairs[], $StepGrp[], $Shader[];
+	string $Rail1[], $Rail2[], $Rail3[], $Rail3[];
+	string $Panels[], $Poles1[], $Poles2[];
+	
+	float $Pos[], $Ang[], $Mov[];
+	int $a, $b, $c, $i, $j, $k, $Q;
+	int $e, $E = 1 ;
+	
+	float $StairLen = $DVYsData[0]; // `floatFieldGrp -q -v1 StaFloatFieldGrp_001`;
+	float $StairWd = $DVYsData[1]; 	// `floatFieldGrp -q -v1 StaFloatFieldGrp_002`;
+	float $StairHt = $DVYsData[2]; 	// `floatFieldGrp -q -v1 StaFloatFieldGrp_003`;
+	float $StairTh = $DVYsData[3]; 	// `floatFieldGrp -q -v1 StaFloatFieldGrp_004`;
+	
+	float $Turns = $DVYsData[4]; 	//`floatFieldGrp -q -v1 StFloatField_100`;
+	int $Steps = $DVYsOpt[0]; 		//`intFieldGrp -q -v1 StIntField_000`;
+	
+	float $Rot = 0;					// 360/($Steps /$Turns);
+
+	$Ang[0] = 0; $Ang[1] = 0; $Ang[2] = 0;
+	$Mov[0] = 0; $Mov[1] = $StairHt; $Mov[2] = ($StairLen - 30) * -1;
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Create Shaders for Stair Parts.
+	
+	string $StairMaterial[] = {"PineWood", "MapleWood", "OakWood", "CherryWood", "WalnutWood",
+								"MahoganyWood", "CedarWood", "Stone", "Granite", "Glass", "Steel"};
+	string $ShName;
+	
+	int $S = $ShOpt[0];
+		if ($S > 1)
+			{
+				$ShName = ($StairMaterial[$S-2] + "_SH");
+					if(!`objExists $ShName`) { $Shader[0] = `DVY_Shaders(48+$S)`; }
+					$Shader[0] = $ShName;		 
+			}
+		
+	int $S = $ShOpt[1];
+		if ($S > 1)
+			{
+				$ShName = ($StairMaterial[$S-2] + "_SH");
+					if(!`objExists $ShName`) { $Shader[1] = `DVY_Shaders(48+$S)`; }
+					$Shader[1] = $ShName;		 
+			}
+	
+		
+	int $S = $ShOpt[2];
+		if ($S > 1)
+			{
+				$ShName = ($StairMaterial[$S-2] + "_SH");
+					if(!`objExists $ShName`) { $Shader[2] = `DVY_Shaders(48+$S)`; }
+					$Shader[2] = $ShName;		 
+			}
+		 
+	int $S = $ShOpt[3];
+		if ($S > 1)
+			{
+				$ShName = ($StairMaterial[$S-2] + "_SH");
+					if(!`objExists $ShName`) { $Shader[3] = `DVY_Shaders(48+$S)`; }
+					$Shader[3] = $ShName;		 
+			}
+			
+	int $S = $ShOpt[4];
+		if ($S > 1)
+			{
+				$ShName = ($StairMaterial[$S-2] + "_SH");
+					if(!`objExists $ShName`) { $Shader[4] = `DVY_Shaders(48+$S)`; }
+					$Shader[4] = $ShName;		 
+			}
+		
+//	print $Shader;
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Section to create Main Straight Stair Groups.	
+	
+	while(`objExists ("StraightStairs_Main_GrpN_" + $E)`)
+		{
+			$E++;	// print ("$E is " + $E + "\n");
+		}
+	
+		$StairGrp[0] = `group -em -name ("StraightStairs_Main_GrpN_" + $E)`;
+		$e = $E;
+		
+		$StairGrp[1] = `group -em -name ("StraightStairs_Steps_GrpN_" + $E)`;
+			parent $StairGrp[1] $StairGrp[0];
+
+		$StairGrp[2] = `group -em -name ("StraightStairs_OuterHandRail_GrpN_" + $E)`;
+			parent $StairGrp[2] $StairGrp[0];
+		
+		$StairGrp[3] = `group -em -name ("StraightStairs_InnerHandRail_GrpN_" + $E)`;
+			parent $StairGrp[3] $StairGrp[0];
+			
+	string $StairN = ("StraightStairs_Main_GrpN_" + $E);
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Generate Steps.
+	
+	if ( $StairHt > $StairTh) { $Q = $DVYsOpt[3]; }
+
+//	DVY_StairTread (float $Ws,  float $Ds, float $Hs, int $Q)
+		
+		$Temp[0] = DVY_StairTread ($StairWd, $StairLen, $StairTh, $Q);
+			move -r 0  $StairHt ($StairLen * -0.5);
+				parent $Temp[0] $StairGrp[1];
+				$StepGrp[0] = `rename $Temp[0] ($StairN + "Step_1")`;
+					select -r $StepGrp[0];
+						hyperShade -assign "initialShadingGroup";
+						hyperShade -assign $Shader[0];
+	
+			$Temps = DVY_Duplicate ($StepGrp[0], $Ang, $Mov, $Steps);
+				for ($i=1; $i<$Steps; $i++) { $StepGrp[$i] = $Temps[$i];} 
+
+// Stair Risers	
+	if ($DVYsOpt[1] == 1)
+		{
+			$Temps = `polyCube -w ($StairWd) -h ($StairHt - $StairTh) -d 10 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 (($StairHt - $StairTh) * 0.5) (-25);
+				
+				parent $Temps[0] $StairGrp[1];
+				$Risers[0] = `rename $Temps[0] ($StairN + "Riser_1")`;
+					select -r $Risers[0];
+						hyperShade -assign "initialShadingGroup";
+						hyperShade -assign $Shader[0];
+	
+			$Temps = DVY_Duplicate ($Risers[0], $Ang, $Mov, $Steps);
+				for ($i=1; $i<$Steps; $i++) { $Risers[$i] = $Temps[$i];} 
+		}
+		
+// Stair Side Rails		
+	if ($DVYsOpt[2] > 1)
+		{
+		//	DVY_StairRail (float $Pos[], int $T);
+			$Pos[0] = $Steps * 1.0;
+			$Pos[1] = $StairHt;
+			$Pos[2] = $StairLen * 1.25;
+			$Pos[3] = $StairWd -30;
+			$Pos[4] = $StairTh;
+			$Pos[5] = $Mov[2] * $Steps;
+			$Pos[6] = $Mov[2];
+			$Pos[7] = $StairLen;
+			
+			if ($DVYsOpt[2] == 2) {$Temp[0] = DVY_StairRail ($Pos, 0);}
+			if ($DVYsOpt[2] == 3) {$Temp[0] = DVY_StairRail ($Pos, 1);}
+			
+				parent $Temp[0] $StairGrp[1];
+				$Risers[0] = `rename $Temp[0] ($StairN + "StairRail_1")`;
+					select -r $Risers[0];
+						hyperShade -assign "initialShadingGroup";
+						hyperShade -assign $Shader[1];
+		}
+// Left Hand Rail			
+		
+	if ($DVYsOpt[4] > 1)
+		{
+			$Temps[0] = DVY_HandRails($StairN, $DVYsOpt[10]);
+				move ($StairWd * -0.5 + 15) 900 10;
+				xform -ws -piv 0 0 0 $Temps[0];
+				
+			 $Rail1[0] = `rename $Temps[0] ($StairN + "OHRCircle_1")`;
+					parent $Rail1[0] $StairGrp[2];
+			$Temps = DVY_Duplicate ($Rail1[0], $Ang, $Mov, $Steps);
+				for ($i=1; $i<$Steps; $i++) { $Rail1[$i] = $Temps[$i];} 
+	
+				$Temps[0] =  DVY_Rail($Rail1, 0);
+				$Temps[0] = `rename $Temps[0] ($StairN + "LeftHand_Rail_1")`;
+					parent $Temps[0] $StairGrp[2];
+					
+						select -r $Temps[0];
+							hyperShade -assign "initialShadingGroup";
+							hyperShade -assign $Shader[2];
+
+		if ($DVYsOpt[4] == 3)
+			{// Lower Left Hand Rail
+				$Temps[0] = DVY_HandRails($StairN, $DVYsOpt[11]);
+					move ($StairWd * -0.5 + 15) 500 -15;
+					xform -ws -piv 0 0 0 $Temps[0];
+					
+				 $Rail2[0] = `rename $Temps[0] ($StairN + "ohrCircle_1")`;
+					parent $Rail2[0] $StairGrp[2];
+						
+				$Temps = DVY_Duplicate ($Rail2[0], $Ang, $Mov, $Steps);
+					for ($i=1; $i<$Steps; $i++) { $Rail2[$i] = $Temps[$i];} 
+					
+						
+				$Temps[0] =  DVY_Rail($Rail2, 0);
+				$Temps[0] = `rename $Temps[0] ($StairN + "LeftHand_LowerRail_1")`;
+					parent $Temps[0] $StairGrp[2];
+						select -r $Temps[0];
+							hyperShade -assign "initialShadingGroup";
+							hyperShade -assign $Shader[2];
+		
+			}// End of Lower Left Hand Rail
+							
+		if ($DVYsOpt[7] == 2)
+			{// Left Hand Rail Posts
+				$Tmps[0] = DVY_Spindles($StairN, ($StairHt - 30), $DVYsOpt[12]);
+						move ($StairWd * -0.5 + 15) (460 + $StairHt * 0.5) -20;
+						xform -ws -piv 0 0 0 $Tmps[0];
+					
+				$Poles1[0] = `rename $Tmps[0] ($StairN + "LeftHandRail_Pole_1")`;
+					parent $Poles1[0] $StairGrp[2];
+					
+				$Temps = DVY_Duplicate ($Poles1[0], $Ang, $Mov, $Steps);
+					for ($i=1; $i<$Steps; $i++) { $Poles1[$i] = $Temps[$i];} 
+						select -r $Poles1[$Steps-1];
+							$Temps = `duplicate -rr -renameChildren`;
+								rotate -r 0 ($Rot * 1) 0 $Temps[0];
+								$Poles1[$Steps] = $Temps[0];
+									select -r $Poles1;
+										hyperShade -assign "initialShadingGroup";
+										hyperShade -assign $Shader[2];
+			}// End of Left Hand Rail Posts
+							
+		if ($DVYsOpt[7] == 3)
+			{// Left Hand Rail Wall Supports
+				$Tmps = `polyCylinder -r 5 -h 50 -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ($StairN + "OuterHandRail_Pole_1")`;
+					rotate 0 0 90;
+					move ($StairWd * -0.5 - 5) 870 -0;
+				$Temps = `polyCylinder -r 5 -h 20 -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ($StairN + "OuterHandRail_Pole_1")`;
+					move ($StairWd * -0.5 + 15) 880 -0;
+					
+				$Tmps = `polyBoolOp -op 1 -ch 0 -name ($StairN + "LeftHandRail_Support_1") $Tmps[0] $Temps[0]`;
+						xform -ws -piv 0 0 0 $Tmps[0];
+			
+				$Poles1[0] = $Tmps[0];		
+					parent $Poles1[0] $StairGrp[2];
+					
+				$Temps = DVY_Duplicate ($Poles1[0], $Ang, $Mov, $Steps);
+					for ($i=1; $i<$Steps; $i++) { $Poles1[$i] = $Temps[$i];} 
+						select -r $Poles1;
+							hyperShade -assign "initialShadingGroup";
+							 hyperShade -assign $Shader[2];
+							 
+			if ($DVYsOpt[4] == 3)
+				{// Lower Left Hand Rail Support
+					select -r $Poles1;
+					$Temps = `duplicate -rr -renameChildren`;
+					move -r 0 -390 -25 ;
+				}
+							 
+			}// End of Left Hand Rail Wall Supports.
+			
+		if (($DVYsOpt[6] == 2) || ($DVYsOpt[6] == 4))
+			{
+			 if ($DVYsOpt[7] == 2)
+				{// Left HandRail Panels Section
+					$Panels[0] = DVY_Plate($Poles1);
+						$Panels[0] = `rename $Panels[0] ($StairN + "LeftHand_Panel_1")`;
+						parent $Panels[0] $StairGrp[2];
+						select -r $Panels[0];
+						
+						$Temps = DVY_Duplicate ($Panels[0], $Ang, $Mov, ($Steps-1));
+							for ($i=1; $i<$Steps-1; $i++) { $Panels[$i] = `rename $Temps[$i] ($StairN + $Temps[$i])`;} 
+								select -r $Panels;
+									hyperShade -assign "initialShadingGroup";
+									hyperShade -assign $Shader[4];
+				}
+			}// End of Left HandRail Panels Section
+
+		}// End of Left Hand Rail options	
+		
+// Right Hand Rail			
+		
+	if ($DVYsOpt[5] > 1)
+		{
+			$Temps[0] = DVY_HandRails($StairN, $DVYsOpt[13]);
+				move ($StairWd * 0.5 - 15) 900 10;
+				xform -ws -piv 0 0 0 $Temps[0];
+				
+			 $Rail1[0] = `rename $Temps[0] ($StairN + "OHRCircle_1")`;
+					parent $Rail1[0] $StairGrp[2];
+			$Temps = DVY_Duplicate ($Rail1[0], $Ang, $Mov, $Steps);
+				for ($i=1; $i<$Steps; $i++) { $Rail1[$i] = $Temps[$i];} 
+	
+				$Temps[0] =  DVY_Rail($Rail1, 0);
+				$Temps[0] = `rename $Temps[0] ($StairN + "RightHand_Rail_1")`;
+					parent $Temps[0] $StairGrp[2];
+					
+						select -r $Temps[0];
+							hyperShade -assign "initialShadingGroup";
+							hyperShade -assign $Shader[2];
+							
+		if ($DVYsOpt[5] == 3)
+			{// Lower Right Hand Rail
+				$Temps[0] = DVY_HandRails($StairN, $DVYsOpt[14]);
+					move ($StairWd * 0.5 - 15) 500 -15;
+					xform -ws -piv 0 0 0 $Temps[0];
+					
+				 $Rail2[0] = `rename $Temps[0] ($StairN + "ohrCircle_1")`;
+					parent $Rail2[0] $StairGrp[2];
+						
+				$Temps = DVY_Duplicate ($Rail2[0], $Ang, $Mov, $Steps);
+					for ($i=1; $i<$Steps; $i++) { $Rail2[$i] = $Temps[$i];} 
+						
+				$Temps[0] =  DVY_Rail($Rail2, 0);
+				$Temps[0] = `rename $Temps[0] ($StairN + "RightHand_LowerRail_1")`;
+					parent $Temps[0] $StairGrp[2];
+						select -r $Temps[0];
+							hyperShade -assign "initialShadingGroup";
+							hyperShade -assign $Shader[2];
+			}// End of Lower Right Hand Rail
+							
+		if ($DVYsOpt[7] == 2)
+	
+			{// Right Hand Rail Posts
+				$Tmps[0] = DVY_Spindles($StairN, ($StairHt + -30), $DVYsOpt[15]);
+					move ($StairWd * 0.5 - 15) (460 + $StairHt * 0.5) -20;
+					xform -ws -piv 0 0 0 $Tmps[0];
+					
+				$Poles1[0] = `rename $Tmps[0] ($StairN + "RightHandRail_Pole_1")`;	
+					parent $Poles1[0] $StairGrp[2];
+					
+				$Temps = DVY_Duplicate ($Poles1[0], $Ang, $Mov, $Steps);
+					for ($i=1; $i<$Steps; $i++) { $Poles1[$i] = $Temps[$i];} 
+						select -r $Poles1[$Steps-1];
+							$Temps = `duplicate -rr -renameChildren`;
+								rotate -r 0 ($Rot * 1) 0 $Temps[0];
+								$Poles1[$Steps] = $Temps[0];
+									select -r $Poles1;
+										hyperShade -assign "initialShadingGroup";
+										hyperShade -assign $Shader[2];
+			}// End of Right Hand Rail Posts
+							
+		if ($DVYsOpt[7] == 3)
+			{// Right Hand Rail Wall Supports
+				$Tmps = `polyCylinder -r 5 -h 50 -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ($StairN + "OuterHandRail_Pole_1")`;
+					rotate 0 0 90;
+					move ($StairWd * 0.5 + 5) 870 -0;
+				$Temps = `polyCylinder -r 5 -h 20 -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0 -name ($StairN + "OuterHandRail_Pole_1")`;
+					move ($StairWd * 0.5 - 15) 880 -0;
+					
+				$Tmps = `polyBoolOp -op 1 -ch 0 -name ($StairN + "RightHandRail_Support_1") $Tmps[0] $Temps[0]`;
+					xform -ws -piv 0 0 0 $Tmps[0];
+			
+				$Poles1[0] = $Tmps[0];		
+					parent $Poles1[0] $StairGrp[2];
+					
+				$Temps = DVY_Duplicate ($Poles1[0], $Ang, $Mov, $Steps);
+					for ($i=1; $i<$Steps; $i++) { $Poles1[$i] = $Temps[$i];} 
+						select -r $Poles1;
+							hyperShade -assign "initialShadingGroup";
+							 hyperShade -assign $Shader[2];
+							 
+			if ($DVYsOpt[5] == 3)
+				{// Lower Right Hand Rail Support
+					select -r $Poles1;
+					$Temps = `duplicate -rr -renameChildren`;
+					move -r 0 -390 -25 ;
+				}
+							 
+			}// End of Right Hand Rail Wall Supports.
+			
+		if (($DVYsOpt[6] == 3) || ($DVYsOpt[6] == 4))
+			{
+			 if ($DVYsOpt[7] == 2)
+				{// Right HandRail Panels Section
+					$Panels[0] = DVY_Plate($Poles1);
+						$Panels[0] = `rename $Panels[0] ($StairN + "RightHand_Panel_1")`;
+						parent $Panels[0] $StairGrp[2];
+						select -r $Panels[0];
+						
+						$Temps = DVY_Duplicate ($Panels[0], $Ang, $Mov, ($Steps-1));
+							for ($i=1; $i<$Steps-1; $i++) { $Panels[$i] = `rename $Temps[$i] ($StairN + $Temps[$i])`;} 
+								select -r $Panels;
+									hyperShade -assign "initialShadingGroup";
+									hyperShade -assign $Shader[4];
+				}
+			}// End of Right HandRail Panels Section
+		}// End of Right Hand Rail options	
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Complete Script and return.
+					 
+	select -r $StairGrp[0];
+		makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+
+		select -r $StairGrp[0];
+		delete -constructionHistory;
+		makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+		
+	return $StairGrp;
+	print "Completed building Stairs Davvey © 2006..\n";
+			
+}
+
+
+// ******************************************************************************** //	
+// ******************************************************************************** //	
+
+
+global proc string[] DVY_ComplexStair(float $DVYsData[], int $DVYsOpt[], int $ShOpt[], int $DVYcOpts[])
+{
+	
+// ******************************************************************************** //	
+//	Global Variables	
+	
+	global string $Units;
+	global float $DVYUnit;
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Local Variables
+	
+	string $Temp[], $Temps[], $Tmp[], $Risers[], $StairGrp[], $Stairs[], $StepGrp[], $Shader[];
+	string $Rail1[], $Rail2[], $Rail3[], $Rail4[], $Rail5[], $Rail6[];
+	string $Panels[], $Poles1[], $Poles2[], $Post1[], $Post2[];
+	string $StairN; 		
+
+	float $Pos[], $Ang[], $Mov[], $SpMov[];
+	int $a, $b, $c, $i, $j, $k, $Q;
+	int $e, $E = 1 ;
+	
+	float $StairLen = $DVYsData[0]; 	// `floatFieldGrp -q -v1 StaFloatFieldGrp_001`; //3000;
+	float $StairWd = $DVYsData[1]; 		// `floatFieldGrp -q -v1 StaFloatFieldGrp_002`; // 1200;
+	float $StairHt = $DVYsData[2]; 		// `floatFieldGrp -q -v1 StaFloatFieldGrp_003`; //225;
+	float $StairTh = $DVYsData[3]; 		// `floatFieldGrp -q -v1 StaFloatFieldGrp_004`; //100;
+	
+	float $Turns = $DVYsData[4]; 		//`floatFieldGrp -q -v1 StFloatField_100`; //2;
+	int $Steps = $DVYsOpt[0]; 			//`intFieldGrp -q -v1 StIntField_000`;
+	int $QSteps, $SSteps;
+	float $Rot = 0;		// 360/($Steps /$Turns);
+
+	$Ang[0] = 0; $Ang[1] = 0; $Ang[2] = 0;
+	$Mov[0] = 0; $Mov[1] = $StairHt; $Mov[2] = ($StairLen - 30) * -1;
+	$SpMove[0] = 0;
+	$SpMov[1] = 140 * ($StairHt * -1) / $Mov[2];	
+	$SpMov[2] = -140;
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Create Shaders for Stair Parts.
+	
+	string $ShName;
+	string $StairMaterial[] = {"PineWood", "MapleWood", "OakWood", "CherryWood", "WalnutWood",
+								"MahoganyWood", "CedarWood", "Stone", "Granite", "Glass", "Steel"};
+	
+	int $S = $ShOpt[0];
+		if ($S > 1)
+			{
+				$ShName = ($StairMaterial[$S-2] + "_SH");
+					if(!`objExists $ShName`) { $Shader[0] = `DVY_Shaders(48+$S)`; }
+					$Shader[0] = $ShName;		 
+			}
+		
+	int $S = $ShOpt[1];
+		if ($S > 1)
+			{
+				$ShName = ($StairMaterial[$S-2] + "_SH");
+					if(!`objExists $ShName`) { $Shader[1] = `DVY_Shaders(48+$S)`; }
+					$Shader[1] = $ShName;		 
+			}
+	
+	int $S = $ShOpt[2];
+		if ($S > 1)
+			{
+				$ShName = ($StairMaterial[$S-2] + "_SH");
+					if(!`objExists $ShName`) { $Shader[2] = `DVY_Shaders(48+$S)`; }
+					$Shader[2] = $ShName;		 
+			}
+		 
+	int $S = $ShOpt[3];
+		if ($S > 1)
+			{
+				$ShName = ($StairMaterial[$S-2] + "_SH");
+					if(!`objExists $ShName`) { $Shader[3] = `DVY_Shaders(48+$S)`; }
+					$Shader[3] = $ShName;		 
+			}
+			
+	int $S = $ShOpt[4];
+		if ($S > 1)
+			{
+				$ShName = ($StairMaterial[$S-2] + "_SH");
+					if(!`objExists $ShName`) { $Shader[4] = `DVY_Shaders(48+$S)`; }
+					$Shader[4] = $ShName;		 
+			}
+		
+//	print $Shader;
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Section to create Main Straight Stair Groups.	
+	
+	while(`objExists ("Stairs_Main_GrpN_" + $E)`)
+		{
+			$E++;	// print ("$E is " + $E + "\n");
+		}
+	
+		$StairGrp[0] = `group -em -name ("Stairs_Main_GrpN_" + $E)`;
+		$e = $E;
+		
+		$StairGrp[1] = `group -em -name ("Stairs_GRpN_" + $E + "Flight1_GrpN_" + $E)`;
+			parent $StairGrp[1] $StairGrp[0];
+			
+			$StairGrp[11] = `group -em -name ("Stairs_GRpN_" + $E + "Steps1_GrpN_" + $E)`;
+				parent $StairGrp[11] $StairGrp[1];
+
+			$StairGrp[12] = `group -em -name ("Stairs_GRpN_" + $E + "LeftHandRail1_GrpN_" + $E)`;
+				parent $StairGrp[12] $StairGrp[1];
+			
+			$StairGrp[13] = `group -em -name ("Stairs_GRpN_" + $E + "RightHandRail1_GrpN_" + $E)`;
+				parent $StairGrp[13] $StairGrp[1];
+			
+		if ($DVYsOpt[1] > 1)
+			{
+				$StairGrp[2] = `group -em -name ("Stairs_GRpN_" + $E + "Flight2_GrpN_" + $E)`;
+					parent $StairGrp[2] $StairGrp[0];
+					
+					$StairGrp[21] = `group -em -name ("Stairs_GRpN_" + $E + "Steps2_GrpN_" + $E)`;
+						parent $StairGrp[21] $StairGrp[2];
+		
+					$StairGrp[22] = `group -em -name ("Stairs_GRpN_" + $E + "LeftHandRail2_GrpN_" + $E)`;
+						parent $StairGrp[22] $StairGrp[2];
+					
+					$StairGrp[23] = `group -em -name ("Stairs_GRpN_" + $E + "RightHandRail2_GrpN_" + $E)`;
+						parent $StairGrp[23] $StairGrp[2];
+			}
+				
+		if ($DVYsOpt[2] > 1)
+			{	
+				$StairGrp[3] = `group -em -name ("Stairs_GRpN_" + $E + "light3_GrpN_" + $E)`;
+					parent $StairGrp[3] $StairGrp[0];
+
+					$StairGrp[31] = `group -em -name ("Stairs_GRpN_" + $E + "Steps3_GrpN_" + $E)`;
+						parent $StairGrp[31] $StairGrp[3];
+		
+					$StairGrp[32] = `group -em -name ("Stairs_GRpN_" + $E + "LeftHandRail3_GrpN_" + $E)`;
+						parent $StairGrp[32] $StairGrp[3];
+					
+					$StairGrp[33] = `group -em -name ("Stairs_GRpN_" + $E + "RightHandRail3_GrpN_" + $E)`;
+						parent $StairGrp[33] $StairGrp[3];
+			}
+			
+		if ($DVYcOpts[0] > 5) 
+			{			
+				$StairGrp[4] = `group -em -name ("Stairs_GRpN_" + $E + "Winder1_GrpN_" + $E)`;
+					parent $StairGrp[4] $StairGrp[0];
+			}
+			
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Generate Steps.
+	
+	if ( $StairHt > $StairTh) { $Q = $DVYsOpt[3]; }
+
+//	DVY_StairTread (float $Ws,  float $Ds, float $Hs, int $Q)
+	
+	int $N = 2;
+		if ($DVYsOpt[1] > 0 ) { $N = 3;}
+		if ($DVYsOpt[2] > 0 ) { $N = 4;}
+		
+	for ($j=1; $j<$N; $j++)
+		{
+			$Steps = $DVYsOpt[$j-1];
+			$SSteps = ($DVYsOpt[$j-1] * $Mov[2]) / -150;
+			$StairN = ("Stairs_GrpN_" + $E + "Flight_" + $j);
+		// Stair Treads
+			$Temp[0] = DVY_StairTread (($StairWd -1), $StairLen, $StairTh, $DVYsOpt[5]);
+				move -r 0  $StairHt ($StairLen * -0.5);
+					parent $Temp[0] $StairGrp[1 + $j*10];
+					$StepGrp[0] = `rename $Temp[0] ($StairN + "Step_1")`;
+						select -r $StepGrp[0];
+							hyperShade -assign "initialShadingGroup";
+							hyperShade -assign $Shader[0];
+		
+				$Temps = DVY_Duplicate ($StepGrp[0], $Ang, $Mov, $Steps);
+					for ($i=1; $i<$Steps; $i++) { $StepGrp[$i] = $Temps[$i];} 
+	
+		// Stair Risers	
+			if ($DVYsOpt[3] == 1)
+				{
+					$Temps = `polyCube -w ($StairWd -1) -h ($StairHt - $StairTh) -d 10 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move 0 (($StairHt - $StairTh) * 0.5) (-25);
+						
+						parent $Temps[0] $StairGrp[1 + $j*10];
+						$Risers[0] = `rename $Temps[0] ($StairN + "Riser_1")`;
+							select -r $Risers[0];
+								hyperShade -assign "initialShadingGroup";
+								hyperShade -assign $Shader[0];
+			
+					$Temps = DVY_Duplicate ($Risers[0], $Ang, $Mov, $Steps);
+						for ($i=1; $i<$Steps; $i++) { $Risers[$i] = $Temps[$i];} 
+						
+				}
+		
+		// Stair Side Rails		
+			if ($DVYsOpt[4] > 1)
+				{
+				//	DVY_StairRail (float $Pos[], int $T);
+					$Pos[0] = $Steps * 1.0;
+					$Pos[1] = $StairHt;
+					$Pos[2] = $StairLen * 1.25;
+					$Pos[3] = $StairWd - 45;
+					$Pos[4] = $StairTh;
+					$Pos[5] = $Mov[2] * $Steps;
+				
+					if (($DVYcOpts[0] > 6) && ($j == 1))
+						{	
+							$Pos[0] = $Steps + 1.0;
+							$Pos[5] = $Mov[2] * ($Steps+1);
+						}
+					$Pos[6] = $Mov[2];
+					$Pos[7] = $StairLen;
+					$Pos[9] = 45;
+					$Pos[10] = $j;
+					$Pos[12] = 0;
+					if (($DVYcOpts[0] > 6)  && ($j ==1))
+						{ $Pos[12] = 1;}
+					
+					if ($DVYsOpt[4] == 2) {$Temp[0] = DVY_StairRail ($Pos, 0);}
+					if ($DVYsOpt[4] == 3) {$Temp[0] = DVY_StairRail ($Pos, 1);}
+					
+						parent $Temp[0] $StairGrp[1 + $j*10];
+						$Risers[0] = `rename $Temp[0] ($StairN + "StairRail_1")`;
+							select -r $Risers[0];
+								hyperShade -assign "initialShadingGroup";
+								hyperShade -assign $Shader[1];
+			}
+			
+		if (($DVYcOpts[0] > 6) && ($j == 1))
+			{$QSteps = $Steps + 2;	$SSteps = $SSteps + 2;}
+			else {$QSteps = $Steps + 1; }
+	
+		// Stair Posts and Rails
+			if ($DVYsOpt[6] > 1)
+				{	clear $Rail1; clear $Rail2;
+
+					$Temp[0] = DVY_StairPost();
+						move -r (22.5 + $StairWd * -0.5) 0 0;
+						$Post1[$j-1] = `rename $Temp[0]($StairN + "LeftHandStairPost_1")`;
+						parent $Post1[$j-1] $StairGrp[2 + $j*10];
+							select -r $Post1[$j-1];
+								hyperShade -assign "initialShadingGroup";
+								hyperShade -assign $Shader[2];
+				
+				// Left Hand Side Top Rail
+					$Temps[0] = DVY_HandRails($StairN, $DVYsOpt[10]);
+						move ($StairWd * -0.5 + 22.5) 900 105 $Temps[0];
+						xform -ws -piv 0 0 0 $Temps[0];
+						
+					 $Rail1[0] = `rename $Temps[0] ($StairN + "_OHRCircle_1")`;
+							parent $Rail1[0] $StairGrp[2 + $j*10];
+							
+						$Temps = DVY_Duplicate ($Rail1[0], $Ang, $Mov, $QSteps);
+							for ($i=1; $i<$QSteps; $i++) { $Rail1[$i] = $Temps[$i];} 
+							
+							$Temps[0] =  DVY_Rail($Rail1, 1);
+						
+				if ($DVYsOpt[10] < 7)
+					{
+						$Temp[0] = `curve -d 1 -p 21 0 0 -p 21 -50 0 -p -21 -50 0 -p -21 0 0`;
+							closeCurve -ch 0 -ps 1 -rpo 1 -bb 0.5 -bki 1 -p 0.1 $Temp[0];
+								move ($StairWd * -0.5 + 22.5) 890 105 $Temp[0];
+								xform -ws -piv 0 0 0 $Temp[0];
+					
+						 $Rail2[0] = `rename $Temp[0] ($StairN + "_OHRCircle_1")`;
+							parent $Rail2[0] $StairGrp[2 + $j*10];
+										
+						$Temp = DVY_Duplicate ($Rail2[0], $Ang, $Mov, $QSteps);
+							for ($i=1; $i<$QSteps; $i++) { $Rail2[$i] = $Temp[$i];} 
+						
+							$Temp[0] =  DVY_Rail($Rail2, 1);
+						
+							$Temps = `polyUnite -ch 0 $Temps[0] $Temp[0]`;
+					}
+					
+					$Temps[0] = `rename $Temps[0] ($StairN + "LeftHand_Rail_1")`;
+						parent $Temps[0] $StairGrp[2 + $j*10];
+						
+						select -r $Temps[0];
+							hyperShade -assign "initialShadingGroup";
+							hyperShade -assign $Shader[2];
+									
+				if ($DVYsOpt[10] == 7)
+					{
+						select -r $Temps[0];	duplicate -rr;	move -r 0 -300 0;
+						select -r $Temps[0];	duplicate -rr;	move -r 0 -600 0;
+					}
+						
+				if (($DVYsOpt[6] == 2)&& ($DVYsOpt[10] < 7))
+					{// Left Hand Spindles
+						$Tmps[0] = DVY_Spindles($StairN, ($StairHt - 30), $DVYsOpt[12]);
+							move ($StairWd * -0.5 + 22.5) (20 + $StairHt * 0.5) -20 $Tmps[0];
+							xform -ws -piv 0 0 0 $Tmps[0];
+								
+						$Poles1[0] = `rename $Tmps[0] ($StairN + "LeftHandRail_Spindle_1")`;
+							parent $Poles1[0] $StairGrp[2 + $j*10];
+							
+						$Temps = DVY_Duplicate ($Poles1[0], $Ang, $SpMov, $SSteps);
+							for ($i=1; $i<$SSteps; $i++) { $Poles1[$i] = $Temps[$i];} 
+				
+						select -r $Poles1;
+							hyperShade -assign "initialShadingGroup";
+							hyperShade -assign $Shader[2];
+																								
+					}// End of Left Hand Spindles
+				}
+				
+			if ($DVYsOpt[7] > 1)
+				{clear $Rail1; clear $Rail2;
+				
+					$Temp[1] = DVY_StairPost();
+						move -r (-22.5 + $StairWd * 0.5) 0 0;
+						$Post2[$j-1] = `rename $Temp[1]($StairN + "RightHandStairPost_1")`;
+						parent $Post2[$j-1] $StairGrp[3 + $j*10];
+							select -r $Post2[$j-1];
+								hyperShade -assign "initialShadingGroup";
+								hyperShade -assign $Shader[3];
+						
+				// Right Hand Side Top Rail
+					$Temps[0] = DVY_HandRails($StairN, $DVYsOpt[13]);
+						move ($StairWd * 0.5 - 22.5) 900 105;
+						xform -ws -piv 0 0 0 $Temps[0];
+					 $Rail2[0] = `rename $Temps[0] ($StairN + "_OHRCircle_1")`;
+							parent $Rail2[0] $StairGrp[3 + $j*10];
+					$Temps = DVY_Duplicate ($Rail2[0], $Ang, $Mov, ($QSteps));
+						for ($i=1; $i<$QSteps; $i++) { $Rail2[$i] = $Temps[$i];} 
+		
+						$Temps[0] =  DVY_Rail($Rail2, 1);
+									
+				if ($DVYsOpt[10] < 7)
+					{
+					$Temp[0] = `curve -d 1 -p 21 0 0 -p 21 -50 0 -p -21 -50 0 -p -21 0 0`;
+						closeCurve -ch 0 -ps 1 -rpo 1 -bb 0.5 -bki 1 -p 0.1 $Temp[0];
+							move ($StairWd * 0.5 - 22.5) 890 105 $Temp[0];
+							xform -ws -piv 0 0 0 $Temp[0];
+					
+						 $Rail2[0] = `rename $Temp[0] ($StairN + "_OHRCircle_1")`;
+							parent $Rail2[0] $StairGrp[3 + $j*10];
+										
+						$Temp = DVY_Duplicate ($Rail2[0], $Ang, $Mov, $QSteps);
+							for ($i=1; $i<$QSteps; $i++) { $Rail2[$i] = $Temp[$i];} 
+						
+							$Temp[0] =  DVY_Rail($Rail2, 1);
+						
+							$Temps = `polyUnite -ch 0 $Temps[0] $Temp[0]`;
+					}
+					
+						$Temps[0] = `rename $Temps[0] ($StairN + "RightHand_Rail_1")`;
+							parent $Temps[0] $StairGrp[3 + $j*10];
+							
+							select -r $Temps[0];
+								hyperShade -assign "initialShadingGroup";
+								hyperShade -assign $Shader[3];
+									
+				if ($DVYsOpt[10] == 7)
+					{
+						select -r $Temps[0];	duplicate -rr;	move -r 0 -300 0;
+						select -r $Temps[0];	duplicate -rr;	move -r 0 -600 0;
+					}
+						
+				if (($DVYsOpt[7] == 2) && ($DVYsOpt[10] < 7))
+					{// Right Hand Spindles
+						$Tmps[0] = DVY_Spindles($StairN, ($StairHt - 30), $DVYsOpt[12]);
+							move ($StairWd * 0.5 - 22.5) (20 + $StairHt * 0.5) -20 $Tmps[0];
+							xform -ws -piv 0 0 0 $Tmps[0];
+								
+						$Poles1[0] = `rename $Tmps[0] ($StairN + "RightHandRail_Spindle_1")`;
+							parent $Poles1[0] $StairGrp[3 + $j*10];
+							
+						$Temps = DVY_Duplicate ($Poles1[0], $Ang, $SpMov, $SSteps);
+							for ($i=1; $i<$SSteps; $i++) { $Poles1[$i] = $Temps[$i];} 
+				
+						select -r $Poles1;
+							hyperShade -assign "initialShadingGroup";
+							hyperShade -assign $Shader[3];
+																								
+					}// End of Right Hand Spindles
+				}
+		}
+		
+		float $Move[];
+		float $StairOD = ($StairWd + 50) * 2 ;
+		int $St = $DVYcOpts[1];	
+		float $Stepp = $St * 1.0;
+		print ("$Stepp is " + $Stepp + "\n");
+		string $SpSteps[];
+		
+		// Generate Winding Steps.
+		if ($DVYcOpts[0] > 6) 
+			{			
+				$Temps = `polyPlane -w ($StairWd -45) -h $StairTh  -sx 1 -sy 1 -ax 0 0 1 -ch 0`;
+					move -r (22.5 + ($StairOD - $StairWd)  * -0.5) ($StairTh * 0.5) 0;
+					xform -ws -piv 0 0 0 $Temps[0];
+				
+						polyExtrudeFacet -ch 0 -kft 1 -ws 0 -ran 0 -divisions 6 -twist 0 -taper 1 -off 0
+									-pvx 0 -pvy 0 -pvz 0 
+									-tx 0 -ty 0 -tz 0 -rx 0 -ry -30 -rz 0 -sx 1 -sy 1 -sz 1
+									-ltz 0  -ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 1 -lsy 1 -lsz 1
+									-ldx 1 -ldy 0 -ldz 0-w 0 -gx 0 -gy -1 -gz 0 -att 0 -mx 0 -my 0 -mz 0
+									-sma 30 ($Temps[0] + ".f[0]");
+						
+						polyExtrudeFacet -ch 0 -kft 1 -ws 0 -ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+									-pvx 0 -pvy 0 -pvz 0 
+									-tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1
+									-ltz -50  -ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 1 -lsy 1 -lsz 1
+									-ldx 1 -ldy 0 -ldz 0-w 0 -gx 0 -gy -1 -gz 0 -att 0 -mx 0 -my 0 -mz 0
+									-sma 30 ($Temps[0] + ".f[0]");
+						
+						polyExtrudeFacet -ch 0 -kft 1 -ws 0 -ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+									-pvx 0 -pvy 0 -pvz 0 
+									-tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1
+									-ltz -45  -ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 1 -lsy 1 -lsz 1
+									-ldx 1 -ldy 0 -ldz 0-w 0 -gx 0 -gy -1 -gz 0 -att 0 -mx 0 -my 0 -mz 0
+									-sma 30 ($Temps[0] + ".f[20:25]") ($Temps[0] + ".f[29]");
+					
+				if ($DVYsOpt[4] > 1)
+					{
+						polyExtrudeFacet -ch 0 -kft 1 -ws 0 -ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+									-pvx 0 -pvy 0 -pvz 0 
+									-tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1
+									-ltz -100  -ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 1 -lsy 1 -lsz 1
+									-ldx 1 -ldy 0 -ldz 0-w 0 -gx 0 -gy -1 -gz 0 -att 0 -mx 0 -my 0 -mz 0
+									-sma 30 ($Temps[0] + ".f[32]") ($Temps[0] + ".f[34]") ($Temps[0] + ".f[36]")
+											($Temps[0] + ".f[38]") ($Temps[0] + ".f[40]") ($Temps[0] + ".f[42]") ($Temps[0] + ".f[45]") ;
+						
+						polyExtrudeFacet -ch 0 -kft 1 -ws 0 -ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+									-pvx 0 -pvy 0 -pvz 0 
+									-tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1
+									-ltz ($StairHt * -1)  -ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 1 -lsy 1 -lsz 1
+									-ldx 1 -ldy 0 -ldz 0-w 0 -gx 0 -gy -1 -gz 0 -att 0 -mx 0 -my 0 -mz 0
+									-sma 30 ($Temps[0] + ".f[31]") ($Temps[0] + ".f[33]") ($Temps[0] + ".f[35]")
+											($Temps[0] + ".f[37]") ($Temps[0] + ".f[39]") ($Temps[0] + ".f[41]") ($Temps[0] + ".f[43]") ;
+			
+							move -r 0 -25 0 ($Temps[0] + ".e[87]");
+							move -r 0 -50 -50 ($Temps[0] + ".e[84]");
+					}
+						
+				if ($DVYsOpt[5] == 1)
+					{
+						polyBevel -offset 0.5 -offsetAsFraction 1 -autoFit 1 -segments 1 -worldSpace 1
+							-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 30
+							-miteringAngle 180 -angleTolerance 180 -ch 0 ($Temps[0] + ".f[1]") ($Temps[0] + ".f[30]");
+
+					}
+					
+				if ($DVYsOpt[5] == 2)
+					{
+						polyBevel -offset 0.5 -offsetAsFraction 1 -autoFit 1 -segments 1 -worldSpace 1
+							-fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001 -smoothingAngle 30
+							-miteringAngle 180 -angleTolerance 180 -ch 0
+							($Temps[0] + ".f[0]") ($Temps[0] + ".f[1]") ($Temps[0] + ".f[30]")($Temps[0] + ".f[44]");
+
+					}
+			
+				if ($DVYsOpt[5] > 2)
+					{	$STW = $StairWd ;
+						if ($DVYsOpt[4] > 1) {$STW = $StairWd - 45;}
+ 
+						$Temp = `polyCylinder -r ($StairTh * 0.5) -h ($STW -1)  -sx 20 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+							move (-50 + $STW * -0.5)  ($StairTh * 0.5) 0;
+							rotate 0 0 90;	
+						
+							$Temps = `polyUnite -ch 0 $Temps[0] $Temp[0]`;
+							
+						if ($DVYsOpt[5] == 4)
+							{
+								$Temp = `polyCylinder -r ($StairTh * 0.5) -h ($STW -1)  -sx 20 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+									move (-50 + $STW * -0.5)  ($StairTh * 0.5) 0;
+									rotate 0 0 90 $Temp[0];	
+										makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+											xform -ws -piv 0 0 0 $Temp[0];
+												rotate 0 -30 0 $Temp[0];
+												move -r -os 0 0 -50 ;
+								
+									$Temps = `polyUnite -ch 0 $Temps[0] $Temp[0]`;
+									
+							}	
+					}
+					
+				
+					
+//			select -r $Temp[50];
+					move -r 0 ($StairHt - $StairTh) 0 $Temps[0];
+							
+				if ($DVYsOpt[3] == 1)
+					{
+						$Temp = `polyCube -w ($StairWd -1) -h ($StairHt - $StairTh) -d 10 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+							move (-45 + $StairWd * -0.5) (($StairHt - $StairTh) * 0.5) (-25);
+							
+						$Temps = `polyUnite -ch 0 $Temps[0] $Temp[0]`;	
+							xform -ws -piv 0 0 0 $Temps[0];
+					}
+						move -r (50 + $StairWd * 0.5) 0 0 $Temps[0];
+						
+						
+						
+						parent $Temps[0] $StairGrp[4];
+							
+					$SpSteps[0] = `rename $Temps[0] ($StairN + "WinderStep_1")`;
+						select -r $SpSteps[0];
+							hyperShade -assign "initialShadingGroup";
+							hyperShade -assign $Shader[0];
+						
+					$Move[0] =  $Move[2] = 0; $Move[1] = $StairHt;
+					$Ang[1] = -30; 
+					
+					$Temps = DVY_Duplicate ($SpSteps[0], $Ang, $Move, $Stepp);	
+					clear $Temps;
+					
+			if ($DVYcOpts[0] == 10) 
+				{			
+					select -r $StairGrp[4];	
+						$Temp = `duplicate -rr`;
+							scale -1 1 1 $Temp[0];
+							rotate 0 -90 0 $Temp[0];
+							move (50+ $StairWd * 0.5) ($StairHt * 3) (-50 + $StairWd * -0.5) $Temp[0];
+								parent $Temp[0] $StairGrp[4];
+				}
+				move -r 0 ($StairHt * $DVYsOpt[0]) ($Mov[2] * $DVYsOpt[0] + ($StairWd * 0)) $StairGrp[4];
+			}
+		
+	// Straight Stairs Option	
+		if ($DVYcOpts[0] == 2) 
+			{
+				if ($DVYsOpt[6] > 1)
+					{
+						select -r $Post1[0] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * $DVYsOpt[0] - $StairTh * 0.5) (50 + $Mov[2] * $DVYsOpt[0]);
+					}
+
+				if ($DVYsOpt[7] > 1)
+					{
+						select -r $Post2[0] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * $DVYsOpt[0] - $StairTh * 0.5) (50 + $Mov[2] * $DVYsOpt[0]);
+					}
+			}
+		
+	// Mid Landing Option
+		if ($DVYcOpts[0] == 3) 
+			{
+				move -r 0 ($StairHt * $DVYsOpt[0]) ($Mov[2] * $DVYsOpt[0] + ($StairWd * -1.0)) $StairGrp[2];
+				
+				$Temps = `polyCube -w ($StairWd - 1) -h ($StairTh) -d ($StairWd + 50) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[0];
+
+				$Temp = `polyCube -w (45) -h ($StairHt +1) -d ($StairWd + 50 + $StairLen) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r ($Pos[3] * 0.5) (($StairHt - $StairTh) * -0.5 ) ($StairLen * 0.5);
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[1];
+				
+				$Tmps = `polyCube -w (45) -h ($StairHt + 1) -d ($StairWd + 50 + $StairLen) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r ($Pos[3] * -0.5) (($StairHt - $StairTh) * -0.5 ) ($StairLen * 0.5);
+					hyperShade -assign "initialShadingGroup";
+					hyperShade -assign $Shader[1];
+				
+					$Temps = `polyUnite -ch 0 $Temps[0] $Temp[0] $Tmps[0]`;
+						move -r 0 ($StairHt * $DVYsOpt[0] - $StairTh * 0.5) (-40 + $Mov[2] * $DVYsOpt[0] + ($StairWd * -0.5));
+						$Temps[0] = `rename $Temps[0] ($StairN + "Landing_1")`;
+							select -r $Temps[0];
+							parent $Temps[0] $StairGrp[2];
+					
+				if ($DVYsOpt[6] > 1)
+					{
+						select -r $Post1[1] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 0 ($StairWd * 1.0);
+								
+						select -r $Post1[1] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * $DVYsOpt[1] - $StairTh * 0.5) (50 + $Mov[2] * $DVYsOpt[1]);
+								
+				// Left Hand Side Landing Top Rail
+					$Temps[0] = DVY_HandRails($StairN, $DVYsOpt[10]);
+					float $Sizes[]; 
+					
+					$Sizes[0] = 0; $Sizes[1] = 900; $Sizes[2] = $StairWd;
+						$Temps = DVY_LandingRail($StairN, $Temps, $Sizes, $DVYsOpt[12], 0, $DVYsOpt[10]);				
+							move -r ($StairWd * -0.5 + 22.5) 0 0 $Temps;
+							move -r 0 ($StairHt * $DVYsOpt[0]) ($Mov[2] * $DVYsOpt[0] + ($StairWd * -0.5) + 100) $Temps;
+								parent $Temps  $StairGrp[22];
+								hyperShade -assign "initialShadingGroup";
+								hyperShade -assign $Shader[2];
+								
+						int $a = size($Temps) - 1;
+						select -r $Temps[$a];
+							hyperShade -assign "initialShadingGroup";
+							hyperShade -assign $Shader[1];
+					}
+
+		clear $Temps; 
+		if ($DVYsOpt[7] > 1)
+					{
+						select -r $Post2[1] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 0 ($StairWd * 1.0);
+								
+						select -r $Post2[1] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * $DVYsOpt[1] - $StairTh * 0.5) (50 + $Mov[2] * $DVYsOpt[1]);
+								
+				// Right Hand Side Landing Top Rail
+					$Temps[0] = DVY_HandRails($StairN, $DVYsOpt[10]);
+					float $Sizes[]; 
+			
+					$Sizes[0] = 0; $Sizes[1] = 900; $Sizes[2] = $StairWd;
+						$Temps = DVY_LandingRail($StairN, $Temps, $Sizes, $DVYsOpt[12], 1, $DVYsOpt[10]);				
+							move -r ($StairWd * 0.5 -22.5) 0 0 $Temps;
+							move -r 0 ($StairHt * $DVYsOpt[0]) ($Mov[2] * $DVYsOpt[0] + ($StairWd * -0.5) + 100) $Temps;
+								parent $Temps  $StairGrp[23];
+								hyperShade -assign "initialShadingGroup";
+								hyperShade -assign $Shader[3];
+								
+						int $a = size($Temps) - 1;
+						select -r $Temps[$a];
+							hyperShade -assign "initialShadingGroup";
+							hyperShade -assign $Shader[1];
+					}
+			}
+			
+	// Quarter Landing Option
+		if ($DVYcOpts[0] == 4) 
+			{
+				move -r (77.5 + $StairWd * 0.5) ($StairHt * $DVYsOpt[0]) ($Mov[2] * ($DVYsOpt[0] - 1) + ($StairWd * -0.5) -27.5) $StairGrp[2];
+				
+				$Temps = `polyCube -w (24 + $StairWd + $StairLen * 0.5) -h ($StairTh) -d ($StairWd -2) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r (12.5 + $StairLen * 0.25) 0 -1;
+						hyperShade -assign "initialShadingGroup";
+						hyperShade -assign $Shader[0];
+					
+				$Temp = `polyCube -w (45) -h ($StairHt + 1) -d ($StairWd ) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r ($Pos[3] * 0.5) (($StairHt - $StairTh) * -0.5 ) 0; 
+						hyperShade -assign "initialShadingGroup";
+						hyperShade -assign $Shader[1];
+						
+					$Temps = `polyUnite -ch 0 $Temps[0] $Temp[0]`;
+					
+				$Temp = `polyCube -w (45) -h ($StairHt + 1) -d ($StairWd ) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r ($Pos[3] * -0.5) (($StairHt - $StairTh) * -0.5 ) 0;
+						hyperShade -assign "initialShadingGroup";
+						hyperShade -assign $Shader[1];
+					
+					$Temps = `polyUnite -ch 0 $Temps[0] $Temp[0]`;
+				
+				$Tmps = `polyCube -w (60 + $StairWd + ($StairLen * 0.5)) -h ($StairHt + 1) -d (45) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r (0.25 * $StairLen + 29.5) (($StairHt - $StairTh) * -0.5 ) ($StairWd * -0.5);
+						hyperShade -assign "initialShadingGroup";
+						hyperShade -assign $Shader[1];
+					
+					$Temps = `polyUnite -ch 0 $Temps[0] $Temp[0]`;
+						move -r 0 ($StairHt * $DVYsOpt[0] - $StairTh * 0.5) ($Mov[2] * ($DVYsOpt[0]-1) + ($StairWd * -0.5));
+						$Temps[0] = `rename $Temps[0] ($StairN + "Landing_1")`;
+							select -r $Temps[0];
+							parent $Temps[0] $StairGrp[1];
+							
+				clear $Temps; 	
+				if ($DVYsOpt[6] > 1)
+					{
+						select -r $Post1[1] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * $DVYsOpt[1] - $StairTh * 0.5) (50 + $Mov[2] * $DVYsOpt[1]);
+						select -r $Post1[0] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * $DVYsOpt[0] - $StairTh * 0.5) (50 + $Mov[2] * $DVYsOpt[0]);
+								
+						select -r $Post1[0] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * ($DVYsOpt[0]) - $StairTh * 0.5) (($StairWd * -1) + 95 + $Mov[2] * $DVYsOpt[0]);
+								
+				// Left Hand Side Landing Top Rail
+					$Temps[0] = DVY_HandRails($StairN, $DVYsOpt[10]);
+					float $Sizes[]; 
+					
+					$Sizes[0] = 0; $Sizes[1] = 900; $Sizes[2] = $StairWd -50;
+						$Temps = DVY_LandingRail($StairN, $Temps, $Sizes, $DVYsOpt[12], 0, $DVYsOpt[10]);				
+							move -r ($StairWd * -0.5 + 22.5) 0 0 $Temps;
+							move -r 0 ($StairHt * $DVYsOpt[0]) (-25 + $Mov[2] * ($DVYsOpt[0]-1) + ($StairWd * -0.5)) $Temps;
+								parent $Temps  $StairGrp[12];
+								hyperShade -assign "initialShadingGroup";
+								hyperShade -assign $Shader[2];
+							
+						int $a = size($Temps) - 1;
+						select -r $Temps[$a];
+							hyperShade -assign "initialShadingGroup";
+							hyperShade -assign $Shader[1];
+								
+				clear $Temps;	clear $Temp;		
+				// Left Hand Side Landing Rear Top Rail
+					$Temps[0] = DVY_HandRails($StairN, $DVYsOpt[10]);
+					float $Sizes[]; 
+					
+					$Sizes[0] = 0; $Sizes[1] = 900; $Sizes[2] = $StairWd;
+						$Temps = DVY_LandingRail($StairN, $Temps, $Sizes, $DVYsOpt[12], 2, $DVYsOpt[10]);				
+							$Temp[0] = `group`; xform -os -piv 0 0 0;
+								rotate 0 90 0 $Temp[0];
+								move -r 0 ($StairHt * $DVYsOpt[0]) (0 + $Mov[2] * ($DVYsOpt[0]-1) + ($StairWd * -1)) $Temp[0];
+									parent $Temps  $StairGrp[12];
+										hyperShade -assign "initialShadingGroup";
+										hyperShade -assign $Shader[2];
+										
+									select $Temp; delete;
+							
+						int $a = size($Temps) - 1;
+						select -r $Temps[$a];
+							hyperShade -assign "initialShadingGroup";
+							hyperShade -assign $Shader[1];
+					}
+					
+				if ($DVYsOpt[7] > 1)
+					{
+						select -r $Post2[1] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * ($DVYsOpt[1]) - $StairTh * 0.5) (50 + $Mov[2] * $DVYsOpt[1]);
+					}
+				rotate 0 -90 0 $StairGrp[2];
+			}
+			
+	// Double Landing Option
+		if ($DVYcOpts[0] == 5) 	
+			{ 
+				move -r (77.5 + $StairWd * 0.5) ($StairHt * $DVYsOpt[0]) ($Mov[2] * ($DVYsOpt[0] - 1) + ($StairWd * -0.5) - 27.5) $StairGrp[2];
+				
+				move -r (105 + $StairWd * 1.0) ($StairHt * $DVYsOpt[0]) ($Mov[2] * ($DVYsOpt[0]-1)) $StairGrp[3];
+
+				move -r ($Mov[2] * ($DVYsOpt[1]-1) * -1)  ($StairHt * $DVYsOpt[1]) 50 $StairGrp[3];
+				
+				$Temps = `polyCube -w (25 + $StairWd + $StairLen * 0.5) -h ($StairTh) -d ($StairWd -2) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r (12.5 + $StairLen * 0.25) 0 -1;
+					
+				$Temp = `polyCube -w (45) -h ($StairHt) -d ($StairWd ) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r ($Pos[3] * 0.5) (($StairHt - $StairTh) * -0.5 ) 0; //($Mov[2] * -0.5 );
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+					
+				$Temp = `polyCube -w (45) -h ($StairHt) -d ($StairWd ) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r ($Pos[3] * -0.5) (($StairHt - $StairTh) * -0.5 ) 0;
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+				
+				$Tmps = `polyCube -w (60 + $StairWd + ($StairLen * 0.5)) -h ($StairHt) -d (45) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r (0.25 * $StairLen + 29.5) (($StairHt - $StairTh) * -0.5 ) ($StairWd * -0.5);
+				
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmps[0]`;
+					move -r 0 ($StairHt * $DVYsOpt[0] - $StairTh * 0.5) ( $Mov[2] * ($DVYsOpt[0]-1) + ($StairWd * -0.5));
+						$Temps[0] = `rename $Temps[0] ($StairN + "Landing_1")`;
+							select -r $Temps[0];
+								hyperShade -assign "initialShadingGroup";
+								hyperShade -assign $Shader[0];
+							parent $Temps[0] $StairGrp[1];
+					
+					select -r $Temps[0];
+						$Temp = `duplicate -rr`;
+							scale -1 1 -1 $Temp[0];
+						
+							move -r (75 + $StairWd * 0.5)  ($StairHt * $DVYsOpt[1]) (-30 + $Mov[2] * ($DVYsOpt[1]-1) + ($StairWd * -0.5) ) ;
+							rotate 0 180 0;
+							$Temp[0] = `rename $Temp[0] ($StairN + "Landing_2")`;
+								parent $Temp[0] $StairGrp[2];
+			
+				if ($DVYsOpt[6] > 1)
+					{
+						select -r $Post1[0] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * $DVYsOpt[0]) (50 + $Mov[2] * $DVYsOpt[0]) ;
+								
+						select -r $Post1[0] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * $DVYsOpt[0]) (95 + $Mov[2] * $DVYsOpt[0] + ($StairWd * -1)) ;
+						
+						select -r $Post1[1] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * $DVYsOpt[1]) (50 + $Mov[2] * $DVYsOpt[1]) ;
+						
+						select -r $Post1[1] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * $DVYsOpt[1]) (95 + $Mov[2] * $DVYsOpt[1] + ($StairWd * -1)) ;
+								
+						select -r $Post1[2] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * $DVYsOpt[2]) (50 + $Mov[2] * $DVYsOpt[2]) ;
+								
+								
+				// Left Hand Side Landing Top Rail
+					$Temps[0] = DVY_HandRails($StairN, $DVYsOpt[10]);
+					float $Sizes[]; 
+					
+					$Sizes[0] = 0; $Sizes[1] = 900; $Sizes[2] = $StairWd -50;
+						$Temps = DVY_LandingRail($StairN, $Temps, $Sizes, $DVYsOpt[12], 0, $DVYsOpt[10]);				
+							move -r ($StairWd * -0.5 + 22.5) 0 0 $Temps;
+							move -r 0 ($StairHt * $DVYsOpt[0]) (-25 + $Mov[2] * ($DVYsOpt[0]-1) + ($StairWd * -0.5)) $Temps;
+								parent $Temps $StairGrp[12];
+								hyperShade -assign "initialShadingGroup";
+								hyperShade -assign $Shader[2];
+							
+						int $a = size($Temps) - 1;
+						select -r $Temps[$a];
+							hyperShade -assign "initialShadingGroup";
+							hyperShade -assign $Shader[1];
+							
+				// Left Hand Side 2nd Landing Top Rail
+					select -r $Temps;
+						$Temp = `duplicate -rr -rc`;
+							move -r (75 + $StairWd * 0.5) ($StairHt * $DVYsOpt[1]) (-50 + $Mov[2] * ($DVYsOpt[1]-1) + ($StairWd * -0.5)) $Temp;
+							parent $Temp $StairGrp[22];
+								
+				clear $Temps;	clear $Temp;		
+				// Left Hand Side Landing Rear Top Rail
+					$Temps[0] = DVY_HandRails($StairN, $DVYsOpt[10]);
+					float $Sizes[]; 
+					
+					$Sizes[0] = 0; $Sizes[1] = 900; $Sizes[2] = $StairWd;
+						$Temps = DVY_LandingRail($StairN, $Temps, $Sizes, $DVYsOpt[12], 2, $DVYsOpt[10]);				
+							$Temp[0] = `group`; xform -os -piv 0 0 0;
+								rotate 0 90 0 $Temp[0];
+								move -r 0 ($StairHt * $DVYsOpt[0]) (0 + $Mov[2] * ($DVYsOpt[0]-1) + ($StairWd * -1)) $Temp[0];
+									parent $Temps  $StairGrp[12];
+										hyperShade -assign "initialShadingGroup";
+										hyperShade -assign $Shader[2];
+										
+									select $Temp; delete;
+							
+						int $a = size($Temps) - 1;
+						select -r $Temps[$a];
+							hyperShade -assign "initialShadingGroup";
+							hyperShade -assign $Shader[1];
+					
+				// Left Hand Side 2nd Landing Rear Top Rail
+					select -r $Temps;
+						$Temp = `duplicate -rr -rc`;
+							move -r (75 + $StairWd * 0.5) ($StairHt * $DVYsOpt[1]) (-50 + $Mov[2] * ($DVYsOpt[1]-1) + ($StairWd * -0.5)) $Temp;
+							parent $Temp $StairGrp[22];
+								
+					}
+
+				if ($DVYsOpt[7] > 1)
+					{
+						select -r $Post2[2] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * $DVYsOpt[2])(50 + $Mov[2] * $DVYsOpt[2]) ;
+					}
+				rotate 0 -90 0 $StairGrp[2];
+				rotate 0 180 0 $StairGrp[3];
+			}
+		
+	// Half Landing Option		
+		if ($DVYcOpts[0] == 6 )
+			{ 
+				move -r (55 + $StairWd * 1.0) ($StairHt * $DVYsOpt[0]) ($Mov[2] * ($DVYsOpt[0]-1)) $StairGrp[2];
+				
+				$Temps = `polyCube -w (50 + $StairWd * 2) -h ($StairTh) -d (100 + $StairWd -2) -sx 2 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r 0 0 -1;
+					
+						polyExtrudeFacet -ch 1 -kft 1 -pvx 0 -pvy 0 -pvz 0
+							-tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1
+							-ran 0 -divisions 1 -twist 0 -taper 1 -off 0 -ws 0
+							-ltz 40 -ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 1 -lsy 1 -lsz 1
+							-ldx 1 -ldy 0 -ldz 0 -w 0 -gx 0 -gy -1 -gz 0
+							-att 0 -mx 0 -my 0 -mz 0 -sma 30 ($Temps[0] + ".f[1]");
+				
+				$Temp = `polyCube -w (45) -h ($StairHt) -d ($StairWd + 100) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r (5 + $StairWd * 1.0) (($StairHt - $StairTh) * -0.5 ) 0; //($Mov[2] * -0.5 );
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+					
+				$Temp = `polyCube -w (45) -h ($StairHt) -d ($StairWd + 100 ) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r (-5 + $StairWd * -1.0 ) (($StairHt - $StairTh) * -0.5 ) 0;
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+				
+				$Tmps = `polyCube -w (45 + $StairWd * 2) -h ($StairHt) -d (45) -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					move -r 0 (($StairHt - $StairTh) * -0.5 ) (-27 + $StairWd * -0.5);
+				
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmps[0]`;
+						move -r (27.5 + $StairWd * 0.5) ($StairHt * $DVYsOpt[0] - $StairTh * 0.5) (-50 + $Mov[2] * ($DVYsOpt[0]-1) + ($StairWd * -0.5));
+							$Temps[0] = `rename $Temps[0] ($StairN + "Landing_1")`;
+							move -r 25 0 0 ($Temps[0] + ".f[13]");
+								select -r $Temps[0];
+									hyperShade -assign "initialShadingGroup";
+									hyperShade -assign $Shader[0];
+								parent $Temps[0] $StairGrp[1];
+		
+				if ($DVYsOpt[6] > 1)
+					{
+						select -r $Post1[0] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * $DVYsOpt[0]) (0 + $Mov[2] * $DVYsOpt[0]) ;
+								
+						select -r $Post1[0] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * $DVYsOpt[0]) (50 + $Mov[2] * $DVYsOpt[0] + ($StairWd *-1)) ;
+								
+						select -r $Post1[0] ;
+							$Temp = `duplicate -rr`;
+								move -r ($StairWd  + 5) ($StairHt * $DVYsOpt[0]) (50 + $Mov[2] * $DVYsOpt[0] + ($StairWd *-1)) ;
+								
+						select -r $Post1[0] ;
+							$Temp = `duplicate -rr`;
+								move -r (2 * $StairWd + 10) ($StairHt * $DVYsOpt[0]) (50 + $Mov[2] * $DVYsOpt[0] + ($StairWd *-1)) ;
+	
+						select -r $Post1[1] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * $DVYsOpt[1]) (50 + $Mov[2] * $DVYsOpt[1]) ;
+								
+								
+				// Left Hand Side Landing Top Rail
+					$Temps[0] = DVY_HandRails($StairN, $DVYsOpt[10]);
+					float $Sizes[]; 
+					
+					$Sizes[0] = 0; $Sizes[1] = 900; $Sizes[2] = $StairWd -50;
+						$Temps = DVY_LandingRail($StairN, $Temps, $Sizes, $DVYsOpt[12], 0, $DVYsOpt[10]);				
+							move -r ($StairWd * -0.5 + 22.5) 0 0 $Temps;
+							move -r 0 ($StairHt * $DVYsOpt[0]) (-25 + $Mov[2] * ($DVYsOpt[0]-1) + ($StairWd * -0.5)) $Temps;
+								parent $Temps $StairGrp[12];
+								hyperShade -assign "initialShadingGroup";
+								hyperShade -assign $Shader[2];
+							
+						int $a = size($Temps) - 1;
+						select -r $Temps[$a];
+							hyperShade -assign "initialShadingGroup";
+							hyperShade -assign $Shader[1];
+							
+				// Left Hand Side Landing 2nd Top Rail
+					select -r $Temps;
+						$Temp = `duplicate -rr -rc`;
+							move -r ($StairWd * 2) 0 0 $Temp;
+								
+				clear $Temps;	clear $Temp;		
+				// Left Hand Side Landing Rear Top Rail
+					$Temps[0] = DVY_HandRails($StairN, $DVYsOpt[10]);
+					float $Sizes[]; 
+					
+					$Sizes[0] = 0; $Sizes[1] = 900; $Sizes[2] = $StairWd;
+						$Temps = DVY_LandingRail($StairN, $Temps, $Sizes, $DVYsOpt[12], 2, $DVYsOpt[10]);				
+							$Temp[0] = `group`; xform -os -piv 0 0 0;
+								rotate 0 90 0 $Temp[0];
+								move -r 0 ($StairHt * $DVYsOpt[0]) (0 + $Mov[2] * ($DVYsOpt[0]-1) + ($StairWd * -1)) $Temp[0];
+									parent $Temps  $StairGrp[12];
+										hyperShade -assign "initialShadingGroup";
+										hyperShade -assign $Shader[2];
+										
+									select $Temp; delete;
+							
+						int $a = size($Temps) - 1;
+						select -r $Temps[$a];
+							hyperShade -assign "initialShadingGroup";
+							hyperShade -assign $Shader[1];
+					
+				// Left Hand Side 2nd Rear Top Rail
+					select -r $Temps;
+						$Temp = `duplicate -rr -rc`;
+							move -r (50 + $StairWd *1) 0 0 $Temp;
+					}
+
+				if ($DVYsOpt[7] > 1)
+					{
+						select -r $Post2[0] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * $DVYsOpt[0]) (0 + $Mov[2] * $DVYsOpt[0]) ;
+								
+						select -r $Post2[1] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * $DVYsOpt[1]) (50 + $Mov[2] * $DVYsOpt[1]) ;
+					}
+				rotate 0 180 0 $StairGrp[2];
+			}
+		
+	// Quarter Winder Option
+		if ($DVYcOpts[0] == 7) 
+			{
+				rotate 0 -90 0 $StairGrp[2];
+				move -r (77.5 + $StairWd * 0.5) ($StairHt * ($DVYsOpt[0] + $St)) ($Mov[2] * ($DVYsOpt[0] - 0) + ($StairWd * -0.5) -50) $StairGrp[2];
+			
+				if ($DVYsOpt[6] > 1)
+					{
+						select -r $Post1[0] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * ($DVYsOpt[0] + 1)) (10 + $Mov[2] * ($DVYsOpt[0] + 1)) ;
+						
+						select -r $Post1[1] ;
+							$Temp = `duplicate -rr`;
+								move -r  (0 + $Mov[2] * $DVYsOpt[1] * -1 ) ($StairHt * $DVYsOpt[1]) ;
+								
+				// Left Hand Side Winder Top Rail
+					$Temps[0] = DVY_HandRails($StairN, $DVYsOpt[10]);
+						move ($StairWd * -1 - 22.5) 900 0 $Temps[0];
+						xform -ws -piv 0 0 0 $Temps[0];
+							
+					float $Sizes[]; 
+					
+					$Sizes[0] = 0; $Sizes[1] = $StairHt; $Sizes[2] = $Mov[2]; $Sizes[3] = $StairWd;
+						$Temps = DVY_SpiralRail($StairN, $Temps, $Sizes, $DVYsOpt[12], 2, $DVYsOpt[10]);				
+							$Temp[0] = `group`; xform -os -piv 0 0 0;
+								
+							move -r ($StairWd * 0.5 + 45) ($StairHt * ($DVYsOpt[0] + 1)) (-5 + $Mov[2] * ($DVYsOpt[0] + 0)) $Temp[0];	
+								parent $Temps  $StairGrp[12];
+									hyperShade -assign "initialShadingGroup";
+									hyperShade -assign $Shader[2];
+								select $Temp[0]; delete;
+									
+					}
+
+				if ($DVYsOpt[7] > 1)
+					{
+						select -r $Post2[0] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * ($DVYsOpt[0] + 1)) (27.5 + $Mov[2] * ($DVYsOpt[0] + 1)) ;
+
+						select -r $Post2[1] ;
+							$Temp = `duplicate -rr`;
+								move -r  (0 + $Mov[2] * $DVYsOpt[1] * -1 ) ($StairHt * $DVYsOpt[1]) ;
+					}
+			}
+			
+	// Double Winder Option
+		if ($DVYcOpts[0] == 8) 
+			{
+				rotate 0 180 0 $StairGrp[2];
+				move -r (100 + $StairWd * 1.0) ($StairHt * ($DVYsOpt[0] + $St)) ($Mov[2] * ($DVYsOpt[0] - 0)) $StairGrp[2];
+			
+				if ($DVYsOpt[6] > 1)
+					{
+						select -r $Post1[0] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * ($DVYsOpt[0] + 1)) (10 + $Mov[2] * ($DVYsOpt[0] + 1)) ;
+						
+						select -r $Post1[1] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * $DVYsOpt[1]) (0 + $Mov[2] * $DVYsOpt[1] * -1 )  ;
+								
+						select -r $Post1[0] ;
+							$Temp = `duplicate -rr`;
+								move -r ($StairWd + 25) ($StairHt * ($DVYsOpt[0] + 4)) (75 + $Mov[2] * ($DVYsOpt[0] +1) - $StairWd) ;
+								
+						select -r $Post1[0] ;
+							$Temp = `duplicate -rr`;
+								move -r ($StairWd + 25) ($StairHt * ($DVYsOpt[0] + 3)) (75 + $Mov[2] * ($DVYsOpt[0] +1) - $StairWd) ;
+								
+				// Left Hand Side Winder Top Rail
+					$Temps[0] = DVY_HandRails($StairN, $DVYsOpt[10]);
+						move ($StairWd * -1 - 22.5) 900 0 $Temps[0];
+						xform -ws -piv 0 0 0 $Temps[0];
+							
+					float $Sizes[]; 
+					
+					$Sizes[0] = 0; $Sizes[1] = $StairHt; $Sizes[2] = $Mov[2]; $Sizes[3] = $StairWd;
+						$Temps = DVY_SpiralRail($StairN, $Temps, $Sizes, $DVYsOpt[12], 2, $DVYsOpt[10]);				
+							$Temp[0] = `group`; xform -os -piv 0 0 0;
+								
+							move -r ($StairWd * 0.5 + 45) ($StairHt * ($DVYsOpt[0] + 1)) (0 + $Mov[2] * ($DVYsOpt[0] + 0)) $Temp[0];	
+								parent $Temps $StairGrp[12];
+									hyperShade -assign "initialShadingGroup";
+									hyperShade -assign $Shader[2];
+									
+						string $SpRails[];
+						$SpRails = $Temps;
+						select -r $SpRails;
+						$Temps = `duplicate -rr -rc`;
+						select -clear;
+						
+						$Temp[1] = `group -em`;
+						xform -ws -piv (55 + $StairWd * 0.5) 0 (0 + $Mov[2] * ($DVYsOpt[0] )) $Temp[1];
+							parent $Temps $Temp[1];
+							select -r $Temp[1];
+								rotate 0 -89.5 0 $Temp[1];
+								move -r 0 ($StairHt * 3) 0 $Temp[1];
+									parent $Temps $StairGrp[12];
+									
+								select -r $Temp[0] $Temp[1]; delete; 
+			//			select -r $Temp[50];
+					}
+
+				if ($DVYsOpt[7] > 1)
+					{
+						select -r $Post2[0] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * ($DVYsOpt[0] + 1)) (0 + $Mov[2] * ($DVYsOpt[0] + 1)) ;
+
+						select -r $Post2[0] ;
+							$Temp = `duplicate -rr`;
+								move -r 75 ($StairHt * ($DVYsOpt[0] + 3)) (0 + $Mov[2] * ($DVYsOpt[0] + 1)) ;
+								
+						select -r $Post2[1] ;
+							$Temp = `duplicate -rr`;
+								move -r  0 ($StairHt * $DVYsOpt[1])  (0 + $Mov[2] * $DVYsOpt[1] * -1 );
+					}
+			}
+
+	// Triple Winder Option
+		if ($DVYcOpts[0] == 9) 
+			{
+				move -r (50 + $StairWd * 0.5) ($StairHt * ($DVYsOpt[0] + $St)) (50 + $StairWd * 0.5 +  $Mov[2] * ($DVYsOpt[0] +0)) $StairGrp[2];
+			
+				if ($DVYsOpt[6] > 1)
+					{
+						select -r $Post1[0] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * ($DVYsOpt[0] + 1)) (10 + $Mov[2] * ($DVYsOpt[0] +1)) ;
+						
+						select -r $Post1[1] ;
+							$Temp = `duplicate -rr`;
+								move -r  0 ($StairHt * $DVYsOpt[1])  (10 + $Mov[2] * ($DVYsOpt[1] +0));
+								
+						select -r $Post1[0] ;
+							$Temp = `duplicate -rr`;
+								move -r ($StairWd + 25) ($StairHt * ($DVYsOpt[0] + 4)) (75 + $Mov[2] * ($DVYsOpt[0] +1) -$StairWd) ;
+								
+						select -r $Post1[0] ;
+							$Temp = `duplicate -rr`;
+								move -r ($StairWd + 25) ($StairHt * ($DVYsOpt[0] + 3)) (75 + $Mov[2] * ($DVYsOpt[0] +1) -$StairWd) ;
+								
+						select -r $Post1[0] ;
+							$Temp = `duplicate -rr`;
+								move -r (2 * $StairWd + 50) ($StairHt * ($DVYsOpt[0] + 7)) (90 + $Mov[2] * ($DVYsOpt[0] +1)) ;
+								
+						select -r $Post1[0] ;
+							$Temp = `duplicate -rr`;
+								move -r (2 * $StairWd + 50) ($StairHt * ($DVYsOpt[0] + 6)) (90 + $Mov[2] * ($DVYsOpt[0] +1)) ;
+								
+				// Left Hand Side Winder Top Rail
+					$Temps[0] = DVY_HandRails($StairN, $DVYsOpt[10]);
+						move ($StairWd * -1 - 22.5) 900 0 $Temps[0];
+						xform -ws -piv 0 0 0 $Temps[0];
+							
+					float $Sizes[]; 
+					
+					$Sizes[0] = 0; $Sizes[1] = $StairHt; $Sizes[2] = $Mov[2]; $Sizes[3] = $StairWd;
+						$Temps = DVY_SpiralRail($StairN, $Temps, $Sizes, $DVYsOpt[12], 2, $DVYsOpt[10]);				
+							$Temp[0] = `group`; xform -os -piv 0 0 0;
+								
+							move -r ($StairWd * 0.5 + 45) ($StairHt * ($DVYsOpt[0] + 1)) (0 + $Mov[2] * ($DVYsOpt[0] + 0)) $Temp[0];	
+								parent $Temps $StairGrp[12];
+									hyperShade -assign "initialShadingGroup";
+									hyperShade -assign $Shader[2];
+									
+						string $SpRails[]; string $temp[];
+						$SpRails = $Temps;
+						select -r $SpRails;
+						$Temps = `duplicate -rr -rc`;
+						select -clear;
+						
+						$Temp[1] = `group -em`;
+						xform -ws -piv (55 + $StairWd * 0.5) 0 (0 + $Mov[2] * ($DVYsOpt[0] )) $Temp[1];
+							parent $Temps $Temp[1];
+							select -r $Temp[1];
+								rotate 0 -89.5 0 $Temp[1];
+								move -r 0 ($StairHt * 3) 0 $Temp[1];
+							
+						select -r $Temp[1];	
+						$temp = `duplicate -rr -rc`;
+								rotate 0 -179 0 $temp[0];
+								move -r 0 ($StairHt * 3) 0 $temp[0];
+
+								parent $Temps $temp[0] $StairGrp[12];
+						
+							select -r $Temp[0] $Temp[1]; delete; 
+					}
+
+				if ($DVYsOpt[7] > 1)
+					{
+						select -r $Post2[0] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * ($DVYsOpt[0] + 1)) (10 + $Mov[2] * ($DVYsOpt[0] +1)) ;
+						
+						select -r $Post2[1] ;
+							$Temp = `duplicate -rr`;
+								move -r  0 ($StairHt * $DVYsOpt[1])  (10 + $Mov[2] * ($DVYsOpt[1] +0));
+								
+						select -r $Post2[0] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * ($DVYsOpt[0] + 3)) (10 + $Mov[2] * ($DVYsOpt[0] +1)) ;
+								
+						select -r $Post2[0] ;
+							$Temp = `duplicate -rr`;
+								move -r 100 ($StairHt * ($DVYsOpt[0] + 4)) (35 + $Mov[2] * ($DVYsOpt[0] +1)) ;
+
+						select -r $Post2[1] ;
+							$Temp = `duplicate -rr`;
+								move -r  0 ($StairHt *  - 2) 0;
+								
+						select -r $Post2[1] ;
+							$Temp = `duplicate -rr`;
+								move -r  100 ($StairHt *  - 3) -25;
+					}
+				rotate 0 90 0 $StairGrp[2];
+			}
+			
+	// $-Shape Winder Option
+		if ($DVYcOpts[0] == 10) 
+			{
+				rotate 0 0 0 $StairGrp[2];
+				move -r (100 + $StairWd * 1.0) ($StairHt * ($DVYsOpt[0] + $St + $St)) ($Mov[2] * ($DVYsOpt[0] - 0) - ($StairWd * 1.0) -100) $StairGrp[2];
+
+				if ($DVYsOpt[6] > 1)
+					{
+						select -r $Post1[0] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * ($DVYsOpt[0] + 1)) (10 + $Mov[2] * ($DVYsOpt[0] +1)) ;
+						
+						select -r $Post1[1] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * $DVYsOpt[1])  (0 + $Mov[2] * $DVYsOpt[1] * 1 );
+								
+						select -r $Post1[0] ;
+							$Temp = `duplicate -rr`;
+								move -r ($StairWd) ($StairHt * ($DVYsOpt[0] + 3)) (100 + $Mov[2] * ($DVYsOpt[0] + 1) -$StairWd) ;
+								
+						select -r $Post1[0] ;
+							$Temp = `duplicate -rr`;
+								move -r ($StairWd + 100) ($StairHt * ($DVYsOpt[0] + 3)) (100 + $Mov[2] * ($DVYsOpt[0] + 1) -$StairWd) ;
+
+						select -r $Post1[0] ;
+							$Temp = `duplicate -rr`;
+								move -r ($StairWd) ($StairHt * ($DVYsOpt[0] + 4)) (100 + $Mov[2] * ($DVYsOpt[0] + 1) -$StairWd) ;
+								
+								
+							// Left Hand Side Winder Top Rail
+					$Temps[0] = DVY_HandRails($StairN, $DVYsOpt[10]);
+						move ($StairWd * -1 - 22.5) 900 0 $Temps[0];
+						xform -ws -piv 0 0 0 $Temps[0];
+							
+					float $Sizes[]; 
+					
+					$Sizes[0] = 0; $Sizes[1] = $StairHt; $Sizes[2] = $Mov[2]; $Sizes[3] = $StairWd;
+						$Temps = DVY_SpiralRail($StairN, $Temps, $Sizes, $DVYsOpt[12], 2, $DVYsOpt[10]);				
+							$Temp[0] = `group`; xform -os -piv 0 0 0;
+								
+							move -r ($StairWd * 0.5 + 45) ($StairHt * ($DVYsOpt[0] + 1)) (0 + $Mov[2] * ($DVYsOpt[0] + 0)) $Temp[0];	
+								parent $Temps $StairGrp[12];
+									hyperShade -assign "initialShadingGroup";
+									hyperShade -assign $Shader[2];
+									
+						string $SpRails[];
+						$SpRails = $Temps;
+						select -r $SpRails;
+						$Temps = `duplicate -rr -rc`;
+						select -clear;
+						
+						$Temp[1] = `group -em`;
+						xform -ws -piv (55 + $StairWd * 0.5) 0 (0 + $Mov[2] * ($DVYsOpt[0] )) $Temp[1];
+							parent $Temps $Temp[1];
+							select -r $Temp[1];
+								scale -1 1 1 $Temp[1];
+								rotate 0 -91 0 $Temp[1];
+								move -r 0 ($StairHt * 3) ($StairWd * -1 -100) $Temp[1];
+									parent $Temps $StairGrp[12];
+									
+								select -r $Temp[0] $Temp[1]; delete; 
+					}
+
+				if ($DVYsOpt[7] > 1)
+					{
+						select -r $Post2[0] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * ($DVYsOpt[0] + 1)) (50 + $Mov[2] * ($DVYsOpt[0] + 1)) ;
+
+						select -r $Post2[0] ;
+							$Temp = `duplicate -rr`;
+								move -r 100 ($StairHt * ($DVYsOpt[0] + 3)) (50 + $Mov[2] * ($DVYsOpt[0] + 1)) ;
+								
+
+						select -r $Post2[0] ;
+							$Temp = `duplicate -rr`;
+								move -r 100 ($StairHt * ($DVYsOpt[0] + 1)) (50 + $Mov[2] * ($DVYsOpt[0] + 1)) ;
+
+						select -r $Post2[0] ;
+							$Temp = `duplicate -rr`;
+								move -r 100 ($StairHt * ($DVYsOpt[0] + 4)) (50 + $Mov[2] * ($DVYsOpt[0] + 1)) ;
+								
+						select -r $Post2[1] ;
+							$Temp = `duplicate -rr`;
+								move -r 0 ($StairHt * $DVYsOpt[1]) (0 + $Mov[2] * $DVYsOpt[1] * 1 );
+					}
+			}
+		
+
+	return $StairGrp;
+
+}

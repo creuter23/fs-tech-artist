@@ -1,0 +1,521 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davveys Stair Generator
+''    Author:  
+''    Last Updated: Mar 25, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4609.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+
+//	DVY_Spindles("StairGrp_1", 8);
+
+
+proc string DVY_SpindleBevel(int $Up)
+{
+
+	string $Temp[], $Temps[], $Tmp[];
+	
+		$Temps = `polyCube -w 40 -h 10 -d 40  -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			move 0 -5 0 ;
+		
+		$Temp = `polySphere -r 28.30 -sx 20 -sy 18 -ax 0 1 0 -ch 0`;
+			rotate 0 9 0;
+			scale 1 0.25 1;
+	
+		$Temps = `polyBoolOp -op 3 -ch 0 $Temps[0] $Temp[0]`;
+		if ($Up == 0) { rotate 180 0 0;}
+
+	return $Temps[0];
+	
+}
+
+
+proc string DVY_SpindleRing(float $Leng, int $Up)
+{
+
+	string $Temp[], $Temps[], $Tmp[];
+	float $Pos[];
+	
+		$Temps = `polyTorus -r 15 -sr 5 -tw 0 -sx 18 -sy 18 -ax 0 1 0 -ch 1`;
+			$Pos[1] = `getAttr ($Temps[0] + ".boundingBoxMaxY")`;	
+				move 0 $Pos[1] 0 ;
+				
+			$Temp = `polyCylinder -r 15 -h $Leng -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+				move -r 0 ($Leng * 0.5) 0;
+			
+			$Tmp = `polyTorus -r 15 -sr 5 -tw 0 -sx 18 -sy 18 -ax 0 1 0 -ch 1`;
+				move -r 0 ($Leng - $Pos[1]) 0;
+				
+		if ($Up == 1)
+			{	
+				scale 0.75 1 0.75 ($Temp[0] + ".vtx[18:35]");
+				scale 0.8 1 0.8 $Tmp[0];
+			}
+				
+				
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmp[0]`;
+		
+	return $Temps[0];
+	
+}
+
+proc string DVY_SpindleSquare(float $Leng, int $Up)
+{
+
+	string $Temp[], $Temps[], $Tmp[];
+	float $Pos[];
+	
+	
+		$Temps = `polyCube -w 40 -h $Leng -d 40 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+			polyBevel -offset 5 -offsetAsFraction 0 -autoFit 1 -segments 1
+					-worldSpace 1 -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001
+					-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180 -ch 0
+				($Temps[0] + ".f[1]") ($Temps[0] + ".f[3]");
+
+	return $Temps[0];
+	
+}
+
+proc string DVY_SpindleTwist(float $Leng, int $Up)
+{
+
+	string $Temp[], $Temps[], $Tmp[];
+	float $Pos[];
+	int $len = ($Leng/10);
+	float $V = `about -version`;
+
+	if ($V >= 8.0) { print ("Version Number is " + $V + "\n");}
+	
+		$Temps = `polyHelix -c 1 -h 10 -w 30 -r 5.1 -sa 18 -sco 18
+			-sc 0 -d 1 -ax 0 1 0 -ch 1`;
+		
+			if ($V >= 8.0)
+				{
+					move -r 0 5 0 $Temps[0];
+				}
+		
+		
+			$Temp = `polyCylinder -r 10 -h 40 -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+			
+//			select -r $Temp[50];
+			
+				$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Temp[0]`;
+		
+			for ($i=1; $i<$len-1; $i++)
+				{
+					select -r $Temps[0];
+					$Temp = `duplicate -rr`;
+						move 0 ($i * 10) 0;
+						$Temps[$i] = $Temp[0];
+				}
+						
+					$Temp = `polyCube -w 40 -h 20 -d 40 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+						move 0 -5 0;			
+						
+						$Tmp = `polyBoolOp -op 2 -ch 0 $Temps[0] $Temp[0]`;
+						$Temps[0] = $Tmp[0];
+						
+						select -r $Temps[0];
+							$Temp =`duplicate -rr`;
+								rotate 180 0 0;
+								move 0 $Leng 0;
+								$Temps[$len-1] = $Temp[0];
+								
+							move -r 0 -5 0 $Temps;
+	
+							$Temps = `polyUnite -ch 0 $Temps`;
+				
+	return $Temps[0];
+	
+}
+
+proc string DVY_SpindleChamfer(int $Up)
+{
+
+	string $Temp[], $Temps[], $Tmp[];
+	
+	$Temps = `polyCube -w 39.99 -h 620 -d 39.99 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+	
+	if ($Up == 0)
+		{
+			polyBevel -offset 8 -offsetAsFraction 0 -autoFit 1 -segments 1
+					-worldSpace 1 -fillNgons 1 -mergeVertices 1 -mergeVertexTolerance 0.0001
+					-smoothingAngle 30 -miteringAngle 180 -angleTolerance 180 -ch 0
+				($Temps[0] + ".e[4:5]") ($Temps[0] + ".e[8:9]");
+		}
+		
+	if ($Up == 1)
+		{
+			$Temp = `polyCylinder -r 8 -h 1000 -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+				move -r 20 0 20;
+			$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Temp[0]`;
+
+			$Temp = `polyCylinder -r 8 -h 1000 -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+				move -r 20 0 -20;
+			$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Temp[0]`;
+			
+			
+			$Temp = `polyCylinder -r 8 -h 1000 -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+				move -r -20 0 20;
+			$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Temp[0]`;
+
+			$Temp = `polyCylinder -r 8 -h 1000 -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+				move -r -20 0 -20;
+			$Temps = `polyBoolOp -op 2 -ch 0 $Temps[0] $Temp[0]`;
+			
+				
+		}
+
+	return $Temps[0];
+	
+	
+}
+
+global proc string DVY_Spindles(string $SpName, float $Height, int $T)
+{
+	string $Spindle[], $Temp[], $Temps[], $Tmp[];
+	
+// HandRail Round Post style.	
+	if ($T == 0)
+		{
+			$Temps = `polyCylinder -r 15 -h (900 - $Height) -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 1 -name ("OuterHandRail_Pole_1")`;
+		}
+		
+// Plain Square Spindle Section		
+	if ($T == 1)
+		{
+			$Temps = `polyCube -w 40 -h 900 -d 40  -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 450 0 ;
+					xform -ws -piv 0 0 0 $Temps[0];
+		}
+		
+// Squared End & Round Spindle Section		
+	if ($T == 2)
+		{
+			$Temps = `polyCube -w 40 -h 20 -d 40  -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 10 0 ;
+					$Spindle[0] = DVY_SpindleBevel(0);
+						move 0 20 0 $Spindle[0];
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Spindle[0]`;
+						$Spindle[0] = $Temps[0];
+					
+							select -r $Spindle[0];
+							$Temps= `duplicate -rr`;
+								$Spindle[1] = $Temps[0];
+									move 0 900 0 $Spindle[1];
+									rotate 180 0 0 $Spindle[1];
+									
+						$Temp = `polyCylinder -r 19.95 -h 860 -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+							move -r 0 450 0;
+							
+							$Temps = `polyBoolOp -op 1 -ch 0 $Spindle[0] $Temp[0]`;
+							$Temps = `polyBoolOp -op 1 -ch 0 $Spindle[1] $Temps[0]`;
+		}
+		
+// Carved Spindles Section		
+	if ($T > 2)
+		{
+			$Temps = `polyCube -w 40 -h 140 -d 40  -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+				move 0 70 0 ;
+					$Spindle[0] = DVY_SpindleBevel(0);
+						move 0 140 0 $Spindle[0];
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Spindle[0]`;
+						$Spindle[0] = $Temps[0];
+					
+							select -r $Spindle[0];
+							$Temps= `duplicate -rr`;
+								$Spindle[1] = $Temps[0];
+									move 0 900 0 $Spindle[1];
+									rotate 180 0 0 $Spindle[1];
+		}
+		
+// Traditional Spindle Section		
+	if ($T == 3)
+		{
+			$Temp[0] =  DVY_SpindleRing(152.5, 0);
+				move -r 0 145 0;
+			$Temp[1] =  DVY_SpindleRing(152.5, 0);
+				move -r 0 297.5 0;
+			
+			$Temp[2] =  DVY_SpindleRing(152.5, 0);
+				move -r 0 450 0;
+			$Temp[3] =  DVY_SpindleRing(152.5, 0);
+				move -r 0 602.5 0;
+				
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temp[1]`;
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[2]`;
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[3]`;
+				
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Spindle[1]`;
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Spindle[0]`;
+		}
+		
+// Colonial Spindle Section		
+	if ($T == 4)
+		{
+			$Temp[0] =  DVY_SpindleRing(25, 0);
+				move -r 0 145 0;
+				
+			$Temp[1] =  DVY_SpindleRing(25, 0);
+				move -r 0 730 0;
+				
+			$Temps = `polyCylinder -r 15 -h 560 -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+				scale 0.75 1 0.75 ($Temps[0] + ".vtx[36:71]");
+				move -r 0 450 0;
+				
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[1]`;
+				
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Spindle[1]`;
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Spindle[0]`;
+		}
+		
+// Georgian Spindle Section		
+	if ($T == 5)
+		{
+			$Temp[0] =  DVY_SpindleRing(152.5, 0);
+				move -r 0 145 0;
+				
+			$Temp[1] =  DVY_SpindleRing(20, 0);
+				move -r 0 735 0;
+				
+			$Temps = `polyCylinder -r 15 -h 440 -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+				scale 0.75 1 0.75 ($Temps[0] + ".vtx[36:71]");
+				move -r 0 (516) 0;
+				
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[1]`;
+				
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Spindle[1]`;
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Spindle[0]`;
+		}
+		
+// Oxford Spindle Section		
+	if ($T == 6)
+		{
+			$Temp[0] =  DVY_SpindleRing(152.5, 1);
+				move -r 0 145 0;
+				
+			$Temp[1] =  DVY_SpindleRing(50, 1);
+				rotate 180 0 0;
+				move -r 0 755 0;
+				
+			$Temps = `polyCylinder -r 15 -h 110 -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+				scale 0.75 1 0.75 ($Temps[0] + ".vtx[0:35]");
+				move -r 0 (145 + 152.5 + 55) 0;
+				
+			$Tmp = `polyCylinder -r 15 -h 305 -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+				scale 0.75 1 0.75 ($Tmp[0] + ".vtx[36:71]");
+				move -r 0 (145 + 152.5 + 110 + 152.5) 0;
+			
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmp[0]`;
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[1]`;
+				
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Spindle[1]`;
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Spindle[0]`;
+		}
+		
+// Provincial Spindle Section		
+	if ($T == 7)
+		{
+			for ($i=0; $i<4; $i++)
+				{
+					$Temp[$i] =  DVY_SpindleSquare(25, 1);
+						move -r 0 (145 + ($i * 25)) 0;
+				}
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temp[1]`;
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[2]`;
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[3]`;
+						$Spindle[2] = $Temps[0];
+				
+			for ($i=0; $i<3; $i++)
+				{
+					$Temp[$i] =  DVY_SpindleSquare(25, 1);
+						move -r 0 (755 - ($i * 25)) 0;
+				}
+				
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Temp[1]`;
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[2]`;
+			
+				$Temp = `polyCube -w 40 -h 466 -d 40  -sx 1 -sy 1 -sz 1 -ax 0 1 0 -ch 0`;
+					scale 0.75 1 0.75 ($Temp[0] + ".vtx[2:5]");
+					move 0 460 0 ;
+					
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Spindle[2]`;
+				
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Spindle[1]`;
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Spindle[0]`;
+		}
+		
+// Twist Spindle Section		
+	if ($T == 8)
+		{
+			$Temp[0] =  DVY_SpindleRing(100, 1);
+				move -r 0 145 0;
+				
+			$Temp[1] =  DVY_SpindleRing(100, 1);
+				rotate 180 0 0;
+				move -r 0 755 0;
+				
+			$Temp[2] = DVY_SpindleTwist(430, 0)	;
+				rotate 0 90 0;
+				move -r 0 240 0;
+				
+				$Temps = `polyUnite -ch 0 $Temp $Spindle[0] $Spindle[1]`;	
+		}
+		
+// Stop Chamfered Spindle section.
+	if ($T == 9)
+		{
+			$Temp[0] =  DVY_SpindleChamfer(0);	
+				move 0 450 0 $Temp[0];
+			
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Spindle[1]`;
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Spindle[0]`;
+		
+		}
+		
+// Stop Volute Center section.
+	if ($T == 10)
+		{
+			$Temp[0] =  DVY_SpindleChamfer(1);	
+				move 0 450 0 $Temp[0];
+			
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temp[0] $Spindle[1]`;
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Spindle[0]`;
+		
+		}
+		
+// Fluted Oxford Spindle Section		
+		
+	if ($T == 11)
+		{
+			$Temp[0] =  DVY_SpindleRing(152.5, 1);
+				move -r 0 145 0;
+				
+			$Temp[1] =  DVY_SpindleRing(50, 1);
+				rotate 180 0 0;
+				move -r 0 755 0;
+				
+			$Temps = `polyCylinder -r 15 -h 110 -sx 36 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+				scale 0.75 1 0.75 ($Temps[0] + ".vtx[0:35]");
+				move -r 0 (145 + 152.5 + 55) 0;
+				
+			$Tmp = `polyCylinder -r 10 -h 305 -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+				scale 0.75 1 0.75 ($Tmp[0] + ".vtx[18:35]");
+				move -r 0 (145 + 152.5 + 110 + 152.5) 0 $Tmp[0];;
+
+					polyExtrudeFacet -ch 0 -kft 0 -pvx 0 -pvy 0 -pvz 0
+						-tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1
+						-ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+						-ltz 5 -ws 0 -ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 1 -lsy 1 -lsz 1
+						-ldx 1 -ldy 0 -ldz 0 -w 0 -gx 0 -gy -1 -gz 0
+						-att 0 -mx 0 -my 0 -mz 0 -sma 30 ($Tmp[0] + ".f[0:17]");
+				
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Tmp[0]`;
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[1]`;
+				
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Spindle[1]`;
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Spindle[0]`;
+		}
+		
+// Fluted Georgian Spindle Section		
+	if ($T == 12)
+		{
+			$Temp[0] =  DVY_SpindleRing(152.5, 0);
+				move -r 0 145 0;
+				
+			$Temp[1] =  DVY_SpindleRing(20, 0);
+				move -r 0 735 0;
+				
+			$Temps = `polyCylinder -r 10 -h 440 -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+			
+				scale 0.75 1 0.75 ($Temps[0] + ".vtx[18:35]");
+				move -r 0 (516) 0;
+				
+					polyExtrudeFacet -ch 0 -kft 0 -pvx 0 -pvy 0 -pvz 0
+						-tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1
+						-ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+						-ltz 5 -ws 0 -ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 1 -lsy 1 -lsz 1
+						-ldx 1 -ldy 0 -ldz 0 -w 0 -gx 0 -gy -1 -gz 0
+						-att 0 -mx 0 -my 0 -mz 0 -sma 30 ($Tmp[0] + ".f[0:17]");
+				
+						$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+						$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[1]`;
+						
+							$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Spindle[1]`;
+							$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Spindle[0]`;
+		}
+		
+// Fluted Colonial Spindle Section		
+	if ($T == 13)
+		{
+			$Temp[0] =  DVY_SpindleRing(25, 0);
+				move -r 0 145 0;
+				
+			$Temp[1] =  DVY_SpindleRing(25, 0);
+				move -r 0 730 0;
+				
+			$Temps = `polyCylinder -r 10 -h 560 -sx 18 -sy 1 -sz 0 -ax 0 1 0 -ch 0`;
+				scale 0.75 1 0.75 ($Temps[0] + ".vtx[18:35]");
+				move -r 0 450 0;
+				
+					polyExtrudeFacet -ch 0 -kft 0 -pvx 0 -pvy 0 -pvz 0
+						-tx 0 -ty 0 -tz 0 -rx 0 -ry 0 -rz 0 -sx 1 -sy 1 -sz 1
+						-ran 0 -divisions 1 -twist 0 -taper 1 -off 0
+						-ltz 5 -ws 0 -ltx 0 -lty 0 -lrx 0 -lry 0 -lrz 0 -lsx 1 -lsy 1 -lsz 1
+						-ldx 1 -ldy 0 -ldz 0 -w 0 -gx 0 -gy -1 -gz 0
+						-att 0 -mx 0 -my 0 -mz 0 -sma 30 ($Tmp[0] + ".f[0:17]");
+				
+				
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[0]`;
+				$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Temp[1]`;
+				
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Spindle[1]`;
+					$Temps = `polyBoolOp -op 1 -ch 0 $Temps[0] $Spindle[0]`;
+		}
+		
+// Colonial Twist Spindle Section		
+	if ($T == 14)
+		{
+			$Temp[0] =  DVY_SpindleRing(25, 0);
+				move -r 0 145 0;
+				
+			$Temp[1] =  DVY_SpindleRing(25, 1);
+				rotate 180 0 0;
+				move -r 0 755 0;
+				
+			$Temp[2] = DVY_SpindleTwist(570, 0)	;
+			nonLinear -type flare  -lowBound -1 -highBound 1
+				-startFlareX 1.0 -startFlareZ 1.0
+				-endFlareX 0.75 -endFlareZ 0.75 -curve 0;
+			
+				select $Temp[2]; delete -constructionHistory;
+						rotate 0 90 0;
+					move -r 0 170 0;
+				
+				$Temps = `polyUnite -ch 0 $Temp $Spindle[0] $Spindle[1]`;	
+		}
+		
+		if ($T > 0) { xform -ws -piv 0 0 0 $Temps[0];}
+		
+			select $Temps[0];
+			makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+		
+		$Spindle[0] = `rename  $Temps[0] ($SpName + "_Spindle_1")`;
+	
+	
+	return $Spindle[0];
+
+}

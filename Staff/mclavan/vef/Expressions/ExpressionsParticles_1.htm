@@ -1,0 +1,611 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>Particles Expressions</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
+
+<body bgcolor="#999999" text="#000000" link="#0000FF" vlink="#0000FF" alink="#FF0000">
+<table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#CCCCCC">
+  <!--DWLayoutTable-->
+  <tr> 
+    <td width="100%" height="135" valign="top"><p align="center"><font color="#000000" size="6" face="Times New Roman, Times, serif"><strong>Expressions</strong></font></p>
+      <p align="center"><strong><font color="#000000" size="6" face="Times New Roman, Times, serif">Here 
+        are some particle expression examples to help you understand how they 
+        work.</font></strong></p>
+      <p align="center"><em><font color="#000000" size="6" face="Times New Roman, Times, serif"></font></em></p>
+      <p align="left"><font color="#000000" size="5" face="Times New Roman, Times, serif">Summary:</font></p>
+      <blockquote> 
+        <p align="left"><em><font color="#000000" size="4" face="Times New Roman, Times, serif">In 
+          Maya, an expression is a script that calculates values for one or more 
+          attributes in your scene. Maya's expression language and MEL are not 
+          identical. The most significant difference is that Maya's expression 
+          language permits you to set the value of an attribute by putting the 
+          attributes's name on the left-hand side and assigning the values of 
+          an attribute to the right-hand side of an expression using mathematical 
+          operators <br>
+          ( ObjectName.AttributeName = value; ). <br>
+          In MEL, one must use the command getAttr to fetch the value of an attribute 
+          and assign it to a variable, and one must use setAttr to assign a value 
+          to an attribute.<br>
+          The Expression Editor is the window used to write and manage expressions. 
+          Window &gt; Animation Editors &gt; Expression Editor. Also, one can 
+          select an attribute in the Channel Box or Attribute Editor then right 
+          click and choose Expressions from the pop-up menu.</font></em></p>
+        <hr>
+        <p align="left"><em><font color="#000000" size="4" face="Times New Roman, Times, serif"></font></em></p>
+        <p align="left"><em><font color="#000000" size="4" face="Times New Roman, Times, serif"><a href="scenes/particlesExpression.mb">Download</a> 
+          the scene.</font></em></p>
+        <p align="left"><em><font color="#000000" size="4" face="Times New Roman, Times, serif">Beside 
+          each expression there are particles showing how they are affected by 
+          it.<br>
+          </font></em><em><font color="#000000" size="4" face="Times New Roman, Times, serif">The 
+          expressions have been numbered and a small explanation is included in 
+          this page.</font></em></p>
+      </blockquote></td>
+  </tr>
+  <tr> 
+    <td height="21" valign="top"><hr></td>
+  </tr>
+  <tr> 
+    <td height="75" valign="top"><blockquote> 
+        <p><font face="Times New Roman, Times, serif"><em><font color="#660000" size="4"><strong>1.)</strong></font><font color="#000000" size="4"> 
+          , <font color="#660000"><strong>2.)</strong></font> &amp; <font color="#660000"><strong>3.)</strong></font><br>
+          These use dnoise with velocity and position.<br>
+          velocity = dnoise (position);<br>
+          acceleration = dnoise (position);<br>
+          position = position + dnoise(position); </font></em></font></p>
+        <p><font face="Times New Roman, Times, serif"><em><font color="#000000" size="4"><br>
+          </font></em><font color="#000000" size="4"><u><strong>dnoise</strong></u><em> Returns a vector with each component 
+          containing a random number from -1 to 1. It works like the noise function 
+          except it expects and returns a vector argument. The returned vector 
+          represents the gradient of the noise field in three dimensions.</em></font></font></p>
+        <p><font face="Times New Roman, Times, serif"><em><font color="#000000" size="4">The 
+          vector dnoise (vector argument) argument specifies a vector for generating 
+          a random number. This gives a three-dimensional distribution of return 
+          values.</font></em></font></p>
+        <p><font face="Times New Roman, Times, serif"><em><font color="#000000" size="4">Example:</font></em></font></p>
+        <p><font face="Times New Roman, Times, serif"><em><font color="#000000" size="4">dnoise 
+          (&lt;&lt;10,20,-30&gt;&gt;)<br>
+          Returns &lt;&lt;-0.185,0.441,0.686&gt;&gt;</font></em></font></p>
+      </blockquote></td>
+  </tr>
+  <tr> 
+    <td height="21" valign="top"><hr></td>
+  </tr>
+  <tr> 
+    <td height="97" valign="top"><blockquote> 
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em><font color="#660000"><strong>4.)</strong></font> 
+          position = &lt;&lt;0,time,0&gt;&gt;; The particle moves up in Y as time 
+          increases. As the animation plays back, time is a constantly changing 
+          value determined using the following relationship: </em> </font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>Time 
+          = Current Frame Number / Frame Per Second</em></font></p>
+      </blockquote></td>
+  </tr>
+  <tr> 
+    <td height="21" valign="top"><hr></td>
+  </tr>
+  <tr> 
+    <td height="361" valign="top"><blockquote> 
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em><strong><font color="#660000">5.)</font></strong> 
+          , <font color="#660000"><strong>6.)</strong></font> &amp; <font color="#660000"><strong>7.)</strong></font> 
+          These uses sphrand with acceleration and the other one with velocity. 
+          Also, with rgbPP. </em> </font></p>
+        <p><font color="#000000"><font size="4" face="Times New Roman, Times, serif"><em>velocity 
+          = sphrand (10);<br>
+          rgbPP = sphrand(&lt;&lt; 1, .5,.8&gt;&gt;); Use this expression for 
+          Runtime and Creation.<br>
+          acceleration = sphrand (10);</em></font></font></p>
+        <p>&nbsp;</p>
+        <p><font color="#000000"><font size="4" face="Times New Roman, Times, serif"><em>The          </em><u><strong>sphrand</strong></u><em> command generates random vectors evenly 
+          distributed inside a sphere of the specified radius. <br>
+          If a vector argument is given, sphrand scales the output by the components 
+          of the vector argument.<br>
+          return value - float | vector</em></font></font></p>
+        <p><font color="#000000"><font size="4" face="Times New Roman, Times, serif"><em>This 
+          command may be used to generate evenly distributed points on the surface 
+          of a sphere when the output is normalized. (Returns a random vector 
+          value that exists within a spherical or ellipsoidal region of your choice. 
+          An ellipsoid is a sphere scaled along its X-, Y- or Z-axes).<br>
+          Examples:<br>
+          $radius = 42;<br>
+          $result = unit (sphrand(1)) * $radius;<br>
+          // Result: &lt;&lt;5.35843, 28.2859, -30.581&gt;&gt; //</em></font></font><br>
+        </p>
+        </blockquote></td>
+  </tr>
+  <tr> 
+    <td height="21" valign="top"><hr></td>
+  </tr>
+  <tr> 
+    <td height="542" valign="top"><blockquote> 
+        <p><em><font color="#000000" size="4" face="Times New Roman, Times, serif"><strong><font color="#660000">8.)</font></strong> 
+          Emitter Example</font></em></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em><br>
+          Although emitters are closely related to particles, they do not use 
+          creation and runtime expressions. </em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>Varying 
+          the emission rate:<br>
+          The following example is good for obtaining a randomized emission rate 
+          that can be used to simulate an eruption, a geyser, or a puffing smoke 
+          effect:</em></font></p>
+      </blockquote>
+      <ol>
+        <li><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>Create 
+          a directional emitter emitting particles in Y <br>
+          speed to 5<br>
+          Direction to 0,1,0 fi=or x,y, and z respectively<br>
+          Particle Render Type to Clouds (s/W)<br>
+          Radius to 0.2</em></font></li>
+        <li><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>Add 
+          gravity to the particles </em></font></li>
+        <li><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>Add 
+          an expression to control rate</em></font></li>
+      </ol>
+      <blockquote> 
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>Select 
+          the emitter, from the Channel Box select rate. Right-click and choose 
+          Expressions from the window that opens up. When the Expression Editor 
+          window opens, enter the following expression:</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>emitter1.rate 
+          = 1000*noise(time*1000);</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>This 
+          expression uses a noise as opposed to dnoise since rate is a scalar 
+          quantity. You would only use dnoise if you were working with a vector 
+          quantity such as position or color.</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>We 
+          multiply noise and time by 1000 to increase the amplitude and frequency 
+          of the noise values since they are far too small without these multipliers.</em></font></p>
+      </blockquote></td>
+  </tr>
+  <tr> 
+    <td height="21" valign="top"><hr></td>
+  </tr>
+  <tr> 
+    <td height="691" valign="top"><blockquote> 
+        <p><font size="4" face="Times New Roman, Times, serif"><em><font color="#000000"><strong><font color="#660000">9.)</font></strong> 
+          A position rule that uses noise and a custom attribute:</font></em></font><font color="#000000"> 
+          </font></p>
+        <p><font color="#000000"><font size="4" face="Times New Roman, Times, serif"><em>Make 
+          a custom vector attribute to store original position.<br>
+          Adding a custom vector attribute will give us a place to store the original 
+          position of each particle.</em></font></font></p>
+        <p><font color="#000000"><font size="4" face="Times New Roman, Times, serif"><em>Select 
+          particle Shape<br>
+          In the Add Dynamics Attribute in General:</em></font></font></p>
+        <p><font color="#000000"><font size="4" face="Times New Roman, Times, serif"><em>Attribute 
+          Name to origPos<br>
+          Data Type to Vector<br>
+          Attribute Type to Array<br>
+          Add Initial State Attribute to on<br>
+          Press OK</em></font></font></p>
+        <p><font color="#000000"><font size="4" face="Times New Roman, Times, serif"><em>An 
+          origPos field is added to the Per Particle (Array) Attributes section 
+          of the Attribute Editor</em></font></font></p>
+        <p><font color="#000000"><font size="4" face="Times New Roman, Times, serif"><em>Add 
+          a creation expression to origPos</em></font></font></p>
+        <p><font color="#000000"><font size="4" face="Times New Roman, Times, serif"><em>origPos= 
+          position;</em></font></font></p>
+        <p><font color="#000000"><font size="4" face="Times New Roman, Times, serif"><em>Add 
+          a runtime expression to position</em></font></font></p>
+        <p><font color="#000000"><font size="4" face="Times New Roman, Times, serif"><em>position 
+          = origPos + &lt;&lt; 0, 0.8 * noise ( origPos * 3+time*&lt;&lt;0,1,2&gt;&gt;) 
+          ,0 &gt;&gt;;</em></font></font></p>
+        <p><font color="#000000"><font size="4" face="Times New Roman, Times, serif"><em>Each 
+          particle moves in a wave-like fashion up and down along only the Y axis. 
+          The above expression is just adding a vector to origPos. The Y component 
+          of that vector is a statement that generates a random stream. <br>
+          0.8 controls the amplitude of that stream, 3 controls the frequency, 
+          &lt;&lt;0,1,2&gt;&gt; controls the direction of the phase.</em></font></font></p>
+        <p><font color="#000000"><font size="4" face="Times New Roman, Times, serif"><em>The 
+          </em><u><strong>noise</strong></u> <em>function produces a smoother random number stream 
+          than the rand function.</em></font></font></p>
+        <p><font size="4" face="Times New Roman, Times, serif"><em><font color="#000000">Notice 
+          how you are setting a value for origPos in the creation then modifying 
+          that value again in the runtime expression. <br>
+          This is a very common technique for working with particle expressions.<br>
+          </font></em></font><font size="4" face="Times New Roman, Times, serif"><em><font color="#000000"><br>
+          </font></em></font><font size="4"><em><font color="#000000"> </font></em></font> 
+        </p>
+      </blockquote></td>
+  </tr>
+  <tr> 
+    <td height="21" valign="top"><hr></td>
+  </tr>
+  <tr> 
+    <td height="353" valign="top"><blockquote> 
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em><strong><font color="#660000">10.)</font></strong> 
+          An acceleration rule that uses variables and magnitude: </em> </font></p>
+        <p><font color="#000000"><font size="4" face="Times New Roman, Times, serif"><em>int 
+          $frequency = 65;<br>
+          float $distance = mag (position);<br>
+          int $limit = 3;</em></font></font></p>
+        <p><font color="#000000"><font size="4" face="Times New Roman, Times, serif"><em>if 
+          ($distance &gt; $limit)<br>
+          acceleration = acceleration - (position * $frequency);</em></font></font></p>
+        <p><font color="#000000"><font size="4" face="Times New Roman, Times, serif"><em><br>
+          The Particles move in a swarming pattern. Watch one particle to see 
+          what it is doing. It is swinging between a range in 3D space defined 
+          by $limit. When the magnitude of the position is greater than that limit, 
+          the expression begins subtracting acceleration from the particle which 
+          increases its acceleration in the opposite direction.<br>
+          If this is unclear to you, try the same expression on a single particle 
+          instead of a cloud. Also, try changing the values used for frequency 
+          and limit.<br>
+          You can also try this same effect with emitted particles.</em></font></font></p>
+      </blockquote></td>
+  </tr>
+  <tr> 
+    <td height="21" valign="top"><hr></td>
+  </tr>
+  <tr> 
+    <td height="99" valign="top"><blockquote> 
+        <p><em><font color="#000000" size="4" face="Times New Roman, Times, serif"><strong><font color="#660000">11.)</font></strong> 
+          Change color based on Position: </font></em> </p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>Create 
+          an Omni emitter with default options.<br>
+          Add an rgbPP attribute<br>
+          Add the following runtime expression to position:</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>vector 
+          $pos = position;</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>if 
+          ($pos.y &gt;=0)<br>
+          rgbPP = &lt;&lt;1,0,0&gt;&gt;;</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>else 
+          </em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>rgbPP 
+          = &lt;&lt;0,0,1&gt;&gt;;</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>This 
+          expression stores the position for each particle in a vector variable 
+          called $pos. The if statement checks the Y component of that vector 
+          to see if it is above or below the Y axis. If the particle is above, 
+          it is red, otherwise it is blue.</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>You 
+          can try the same idea with acceleration or velocity instead of position.</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>Tip: 
+          The individual elements of a vector (i.e. &lt;&lt; x,y,z &gt;&gt; are 
+          called components.</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>You 
+          noticed that the first particle is black. Copy the same expression and 
+          add it to the creation section.</em></font></p>
+      </blockquote></td>
+  </tr>
+  <tr> 
+    <td height="21" valign="top"><hr></td>
+  </tr>
+  <tr> 
+    <td height="157" valign="top"><blockquote> 
+        <p><em><font color="#000000" size="4" face="Times New Roman, Times, serif"><strong><font color="#660000">12.)</font></strong> 
+          Particle ID </font></em></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>Just 
+          as each building on a street has its own address, each particle in a 
+          particle object has its own unique numerical identity called the particleId. 
+          <br>
+          ParticleId is an integer value ranging from 0 to count -1.</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>The 
+          particleId attribute makes it easier to control attributes of specific 
+          particles independently of other particles within the same particle 
+          object.<br>
+          This is especially useful for adding variation to attributes of a particle 
+          object.</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>Create 
+          an omni emitter<br>
+          Add an rgbPP attribute to particle<br>
+          Add a runtime expression to rgbPP</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>if 
+          (particleId == 10)<br>
+          rgbPP = &lt;&lt;0, 1, 0 &gt;&gt;;</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>press 
+          Create</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>The 
+          first particle in a particle object is always particleId 0.<br>
+          Therefore, the 9th particle emitted into particleShape is particleId 
+          10 and is colored green due to the if conditional statement in the expression.</em></font></p>
+      </blockquote></td>
+  </tr>
+  <tr> 
+    <td height="21" valign="top"><hr></td>
+  </tr>
+  <tr> 
+    <td height="146" valign="top"><blockquote> 
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em><strong><font color="#660000">13.)</font></strong> 
+          Below is another particleId example you can add as runtime or creation 
+          expression for rgbPP to produce some interesting results. </em></font></p>
+        <p><em><font color="#000000" size="4" face="Times New Roman, Times, serif">if 
+          (particleId % 10 == 0 )<br>
+          rgbPP = sphrand(1);</font></em></p>
+        <p><em><font color="#000000" size="4" face="Times New Roman, Times, serif"><br>
+          The symbol % stands for the modulus operation which is the remainder 
+          produced when two numbers are divided. <br>
+          The above expression divides the particleId by 10, if the remainder 
+          of the division is 0 then the sphrand function picks a random vector 
+          value between &lt;&lt;0,0,0 &gt;&gt; and &lt;&lt; 1,1,1 &gt;&gt;. In 
+          other words, every 10th particle will get a random color assigned.</font></em></p>
+      </blockquote></td>
+  </tr>
+  <tr> 
+    <td height="21" valign="top"><hr></td>
+  </tr>
+  <tr> 
+    <td height="79" valign="top"><blockquote> 
+        <p><font color="#000000" size="3" face="Times New Roman, Times, serif"><em><font color="#660000"><strong>14.) 
+          </strong></font><font size="4">Classic twinkle expression to control 
+          the particle color on a per particle basis. </font></em> </font></p>
+        <p><font color="#000000" size="4"><font face="Times New Roman, Times, serif"><em> 
+          rgbPP = &lt;&lt; 1, 1, 1 &gt;&gt; * (sin(0.5 * id + time * 20 ));</em></font></font></p>
+        <p><font color="#000000" size="4"><font face="Times New Roman, Times, serif"><em>This 
+          above expression controls the color of the particles on a per particle 
+          basis. Here is a break down of what is going on:</em></font></font></p>
+        <p><font color="#000000" size="4"><font face="Times New Roman, Times, serif"><em>&lt;&lt;1, 
+          1, 1 &gt;&gt; This is the rgb vector value of white. The expression 
+          multiplies a number against this value to change its overall value by 
+          &lt;&lt; 0, 0, 0 &gt;&gt; (black) and &lt;&lt; 1, 1, 1 &gt;&gt; (white)</em></font></font></p>
+        <p><font color="#000000" size="4"><font face="Times New Roman, Times, serif"><em>sin 
+          (0.5 id + time * 20 ) sin is a function that can create an oscillating 
+          value between 1 and -1.</em></font></font></p>
+        <p><font color="#000000" size="4"><font face="Times New Roman, Times, serif"><em><br>
+          0.5 * id When working with per particle expressions its is useful to 
+          work with the particleShape.particleId attribute. This attribute as 
+          you have seen gives us a unique value for each particle that this expression 
+          is applied to.</em></font></font></p>
+        <p><font color="#000000" size="4"><font face="Times New Roman, Times, serif"><em>0.5 
+          * id + time * 20 Again time is a great incrementer. Multiplying by 20 
+          in this case dictates the frequency or how fast this sin function repeats.</em></font></font></p>
+      </blockquote></td>
+  </tr>
+  <tr> 
+    <td height="21" valign="top"><hr></td>
+  </tr>
+  <tr> 
+    <td height="147" valign="top"><blockquote> 
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em><strong><font color="#660000">15.)</font></strong> 
+          An alternate expression with a similar result as example 14, which does 
+          not use negative values in the rgb vector:<br>
+          <br>
+          rgbPP = &lt;&lt; 1, 1, 1 &gt;&gt; * (( sin (0.5 * id + time * 20 ) * 
+          0.5) + 0.5); </em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>This 
+          example offsets the sin function to provide values that fall between 
+          0 and 1. To do this the sin is multiplied by 0.5 to cut the amplitude 
+          in half. An offset of 0.5 has also been added to keep its value above 
+          0.</em></font></p>
+      </blockquote></td>
+  </tr>
+  <tr> 
+    <td height="21" valign="top"><hr></td>
+  </tr>
+  <tr> 
+    <td height="204" valign="top"><blockquote> 
+        <p><em><font color="#000000" size="4" face="Times New Roman, Times, serif"><strong><font color="#660000">16.)</font></strong> 
+          An even simpler method than example 14. </font></em> </p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>Just 
+          like tossing a coin, we can make some of the particles dark gray and 
+          some white to cause a blinking<br>
+          effect:</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em> 
+          if (rand(1) &gt; 0.5)</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em> 
+          rgbPP = &lt;&lt;1, 1, 1 &gt;&gt;;</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em> 
+          else</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em> 
+          rgbPP = &lt;&lt;0.3, 0.3, 0.3&gt;&gt;;</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>In 
+          examples 14, 15, and 16 we've shown you three different ways to achieve 
+          a similar outcome. </em></font></p>
+      </blockquote></td>
+  </tr>
+  <tr> 
+    <td height="21" valign="top"><hr></td>
+  </tr>
+  <tr> 
+    <td height="128" valign="top"><blockquote> 
+        <p><font color="#000000" size="4"><em><font color="#660000" face="Times New Roman, Times, serif"><strong>17.)</strong></font><font face="Times New Roman, Times, serif"> 
+          Mimic a ramp behavior with a particle expression.</font></em></font></p>
+        <p><font face="Times New Roman, Times, serif"><em><font color="#000000" size="4">The 
+          following &quot;template&quot; can be used when writing a particle expression 
+          to animate from quantity A to quantity B over the particle's age:<br>
+          A+ ((B-A) * (age/lifespan))</font></em></font></p>
+        <p><font face="Times New Roman, Times, serif"><em><font color="#000000" size="4">This 
+          teaches you how create an expression to do the same as changing the 
+          color of a particle over its age based on a ramp.<br>
+          This is handy if you need some specific control that you can't get from 
+          a ramp.</font></em></font></p>
+      </blockquote>
+      <ul>
+        <li><font face="Times New Roman, Times, serif"><em><font color="#000000" size="4">create 
+          an omni emitter</font></em></font></li>
+        <li><font face="Times New Roman, Times, serif"><em><font face="Times New Roman, Times, serif"><em><font color="#000000" size="4">Set 
+          the lifespan Mode of the particle to Constant to 2.6</font></em></font></em></font></li>
+        <li><font face="Times New Roman, Times, serif"><em><font face="Times New Roman, Times, serif"><em><font color="#000000" size="4">Add 
+          an rgbPP attribute</font></em></font></em></font></li>
+        <li><font face="Times New Roman, Times, serif"><em><font face="Times New Roman, Times, serif"><em><font color="#000000" size="4">Press 
+          RMB in the rgbPP field and choose Runtime Expression<br>
+          Following the template from above, substitute values for white (A), 
+          light blue(B), and normalized age <br>
+          into the expression editor as shown below.</font></em></font></em></font></li>
+      </ul>
+      <blockquote> 
+        <p><font face="Times New Roman, Times, serif"><em><font color="#000000" size="4">$normAge 
+          = age/lifespan;<br>
+          vector $start = &lt;&lt; 1, 1, 1 &gt;&gt;;<br>
+          vector $end = &lt;&lt; 0, 0, 0.8 &gt;&gt;;<br>
+          rgbPP = $start + ( $end-$start) * ($normAge);</font></em></font></p>
+        <p><font face="Times New Roman, Times, serif"><em><font color="#000000" size="4">This 
+          expression causes the particles to slowly transition from white to blue 
+          over the particle's age. <br>
+          I n the same fashion ramps controlled their color. You can adjust the 
+          start and end colors in the <br>
+          expression to your liking once you see the effect the expression is 
+          having.</font></em></font></p>
+        <p><font face="Times New Roman, Times, serif"><em><font color="#000000" size="4">The 
+          particles at the very base of the stream where the particles leave the 
+          emitter are black. Copy <br>
+          the same expression to Creation.</font></em></font><br>
+        </p>
+      </blockquote></td>
+  </tr>
+  <tr> 
+    <td height="21" valign="top"><hr></td>
+  </tr>
+  <tr> 
+    <td height="138" valign="top"><blockquote> 
+        <p><em><font color="#660000" size="4" face="Times New Roman, Times, serif"><strong>18.)</strong></font><font color="#000000" size="4" face="Times New Roman, Times, serif"> 
+          Linstep and Smoothstep<br>
+          Linstep and smoothstep are built-in-functions within Maya that return 
+          a value between 0 and 1 over a specified range for a given unit (frames, 
+          fps,lifespan, age, etc). </font></em> </p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>Linstep 
+          produces a linear curve, smoothstep a linear curve with an ease in and 
+          ease out appearance at the tangents.</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>The 
+          syntax template for a linstep (or smoothstep) statement is as follows:</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"> 
+          <strong>linstep (start, end, unitParameter)</strong></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>One 
+          advantage of using either linstep or smoothstep is that the range of 
+          the effect can occur over any defined interval instead of being limited 
+          to the particle's age.</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>It 
+          is also possible to make the range of the values for linstep or smoothstep 
+          extend beyond the range of 0 to 1. For example, to make a particle's 
+          radius increase from 0 to 5 over the course of frames 8-50 the following 
+          runtime and creation expression could be used:</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em> 
+          radiusPP = 5 * linstep (8, 50, frame);</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>To 
+          make a linstep or smoothstep curve decrease instead of increase, subtract 
+          the linstep statement from 1. Below is a common smoothstep function 
+          that will cause opacity to fade out linearly over the particle's age 
+          if placed in the runtime expression:</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em> 
+          opacityPP = 1-(smoothstep (0, lifespanPP, age));<br>
+          <br>
+          Also set a Creation expression for lifespanPP to equal the time that 
+          you want the particle to live to, Ex:</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em> 
+          lifespanPP = 3;</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>One 
+          can also have the smoothstep function for opacity set to how long the 
+          particles will be alive without the <br>
+          lifespanPP as:</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em> 
+          opacityPP = 1- (smoothstep ( 0, 3, age));</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>The 
+          particles will start disappearing around 3 seconds. For this to work 
+          properly one must have the particle Lifespan Mode to Constant and Lifespan 
+          to 4.</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>The 
+          particle will only be alive for around 4 seconds. Remember that 1 second 
+          is equal to 30 or 24 frames depending to what your Time is set to.</em></font><br>
+        </p>
+      </blockquote></td>
+  </tr>
+  <tr> 
+    <td height="21" valign="top"><hr></td>
+  </tr>
+  <tr> 
+    <td height="208" valign="top"><blockquote> 
+        <p><em><font color="#000000" size="4" face="Times New Roman, Times, serif"><font color="#660000"><strong>19.)</strong></font> 
+          radiusPP</font></em></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>First 
+          make sure that you add a rgbPP expression before the radiusPP expression. 
+          You will be using the same<br>
+          expression as example 17.</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em> 
+          Add a rgbPP attribute to particle:</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em><br>
+          </em></font><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>$normAge 
+          = age/lifespan;</em></font><br>
+          <font color="#000000" size="4" face="Times New Roman, Times, serif"><em>vector 
+          $start = &lt;&lt; 1,1,1 &gt;&gt;;</em></font><br>
+          <font color="#000000" size="4" face="Times New Roman, Times, serif"><em>vector 
+          $end = &lt;&lt; 0.8, 0, 0 &gt;&gt;;</em></font><br>
+          <font color="#000000" size="4" face="Times New Roman, Times, serif"><em>rgbPP 
+          = $start + ($end - $start) * ($normAge);</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>Add 
+          this expression to Runtime and Creation.</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>Now, 
+          you'll control a particle attribute such as radiusPP using a dynamic 
+          attribute like velocity.</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>Add 
+          a radiusPP attribute and enter a runtime expression</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em> 
+          float $startRadius = 0.1;</em></font><br>
+          <font color="#000000" size="4" face="Times New Roman, Times, serif"><em>float 
+          $endRadius = 5;</em></font><br>
+          <font color="#000000" size="4" face="Times New Roman, Times, serif"><em>vector 
+          $vel = velocity;<br>
+          float $y = $vel.y;</em></font><br>
+          <font color="#000000" size="4" face="Times New Roman, Times, serif"><em>radiusPP 
+          = $y/10 * ( $startRadius + ( $endRadius - $startRadius) * $normAge);</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>The 
+          above expression changes the radius of the spheres based on a factor 
+          of their velocity in the y direction but also based on their normalized 
+          age. Notice that the radius decreases when the particle drops slow down 
+          then increases as they speed back up.</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>You 
+          may have noticed that now the spheres begin white but then turn black 
+          at some point, instead of being<br>
+          colored.</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>We 
+          will look into this in example 20.</em></font></p>
+      </blockquote></td>
+  </tr>
+  <tr> 
+    <td height="21" valign="top"><hr></td>
+  </tr>
+  <tr> 
+    <td height="190" valign="top"><blockquote> 
+        <p><em><font color="#000000" size="4" face="Times New Roman, Times, serif"><strong><font color="#660000">20.)</font></strong> 
+          Use the numeric render type to track down the problem. </font></em></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>The 
+          numeric render type is useful for determining what values a specific 
+          particle attribute holds.</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>Playback 
+          so you have some emitted particles.<br>
+          Select the particles.<br>
+          Set Particle Render Type to Numeric.<br>
+          Press Current Render Type and enter radiusPP in the Attribute Name field.</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>This 
+          displays the numeric radius value held for each particle. As you playback, 
+          the values start positive<br>
+          then become negative.<br>
+          Since the expression used is returning negative radius values, the spheres 
+          get turned &quot;inside out.&quot;<br>
+          This is why you see black instead of color.</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>Correct 
+          the expression so only positive radius values are used.</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em>Edit 
+          the last line for the radiusPP expression as follows:</em></font></p>
+        <p><font color="#000000" size="4" face="Times New Roman, Times, serif"><em> 
+          radiusPP = abs($y/10 * ( $startRadius + ($endRadius - $startRadius) 
+          * $normAge));</em></font></p>
+      </blockquote></td>
+  </tr>
+  <tr> 
+    <td height="18" valign="top"><hr></td>
+  </tr>
+  <tr> 
+    <td height="82" valign="top"><blockquote>
+        <p><em><font color="#000000" size="4" face="Times New Roman, Times, serif">These 
+          Expressions were referenced or taken from the following sources of information:</font></em></p>
+        <p><em><font color="#000000" size="4" face="Times New Roman, Times, serif">Mel 
+          Scripting for Maya Animators <font size="3">by</font> <font size="3">Mark 
+          R. Wilking &amp; Chris Kazmier.<br>
+          </font></font></em><em><font color="#000000" size="4" face="Times New Roman, Times, serif">Learning 
+          Maya | Dynamics</font><font color="#000000" size="3" face="Times New Roman, Times, serif"> 
+          -- Maya Alias | Wavefront.<br>
+          Maya online Help.</font></em><em><font color="#000000" size="3" face="Times New Roman, Times, serif"><br>
+          </font><font color="#000000" size="4" face="Times New Roman, Times, serif">Maya 
+          4.5 Bible</font><font color="#000000" size="3" face="Times New Roman, Times, serif"> 
+          by Joe Spadaro and Don Kim.</font></em></p>
+        </blockquote></td>
+  </tr>
+  <tr> 
+    <td height="18"></td>
+  </tr>
+</table>
+</body>
+</html>

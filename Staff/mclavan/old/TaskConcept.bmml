@@ -1,0 +1,145 @@
+<mockup version="1.0" skin="sketch" measuredW="1161" measuredH="529" mockupW="1107" mockupH="487">
+  <controls>
+    <control controlID="0" controlTypeID="com.balsamiq.mockups::TitleWindow" x="293" y="108" w="467" h="411" measuredW="450" measuredH="400" zOrder="0" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Task%20System</text>
+      </controlProperties>
+    </control>
+    <control controlID="1" controlTypeID="com.balsamiq.mockups::StickyNote" x="44" y="32" w="227" h="205" measuredW="109" measuredH="123" zOrder="1" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>To%20Do%20List%0AThe%20idea%20behind%20this%20script%20is%20to%20have%20a%20priority%20to%20do%20list%20inside%20of%20maya%20that%20is%20connected%20to%20the%20maya%20scene%20file%20and%20possible%20to%20a%20model.</text>
+      </controlProperties>
+    </control>
+    <control controlID="3" controlTypeID="com.balsamiq.mockups::StickyNote" x="829" y="84" w="-1" h="-1" measuredW="109" measuredH="123" zOrder="2" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>What%20does%20this%20script%20need%3F%0A-%20Priority%20Listing%0A%09-%20High%2C%20Medium%2C%20Low%0A-%20Time%20Stamping</text>
+      </controlProperties>
+    </control>
+    <control controlID="4" controlTypeID="com.balsamiq.mockups::TitleWindow" x="59" y="362" w="178" h="103" measuredW="450" measuredH="400" zOrder="3" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Task%20System</text>
+      </controlProperties>
+    </control>
+    <control controlID="5" controlTypeID="com.balsamiq.mockups::Button" x="66" y="393" w="55" h="40" measuredW="52" measuredH="28" zOrder="4" locked="false" isInGroup="-1">
+      <controlProperties>
+        <color>40463</color>
+        <text>ToDo</text>
+      </controlProperties>
+    </control>
+    <control controlID="6" controlTypeID="com.balsamiq.mockups::Button" x="121" y="393" w="55" h="40" measuredW="55" measuredH="28" zOrder="5" locked="false" isInGroup="-1">
+      <controlProperties>
+        <color>13576743</color>
+        <text>Error</text>
+      </controlProperties>
+    </control>
+    <control controlID="7" controlTypeID="com.balsamiq.mockups::Button" x="176" y="393" w="55" h="40" measuredW="48" measuredH="28" zOrder="6" locked="false" isInGroup="-1">
+      <controlProperties>
+        <color>2848996</color>
+        <text>GUI</text>
+      </controlProperties>
+    </control>
+    <control controlID="8" controlTypeID="com.balsamiq.mockups::FieldSet" x="501" y="141" w="244" h="343" measuredW="200" measuredH="170" zOrder="7" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Group%20Name</text>
+      </controlProperties>
+    </control>
+    <control controlID="9" controlTypeID="com.balsamiq.mockups::StickyNote" x="965" y="32" w="186" h="134" measuredW="109" measuredH="123" zOrder="8" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Possible%20Script%20Names%0A-%20Task%20Manager%0A-%20Task%20Tracker%0A-%20ToDo%20List</text>
+      </controlProperties>
+    </control>
+    <control controlID="10" controlTypeID="com.balsamiq.mockups::StickyNote" x="829" y="262" w="171" h="222" measuredW="109" measuredH="123" zOrder="9" locked="false" isInGroup="-1">
+      <controlProperties>
+        <color>10470904</color>
+        <text>Individual%20Items%0A-%20Name%0A-%20Priority%0A-%20Type%0A-%20Description%0A-%20Time%20Stamp%0A-%20List%20Order%20%23%0A-%20Amount%20Compeleted</text>
+      </controlProperties>
+    </control>
+    <control controlID="11" controlTypeID="com.balsamiq.mockups::Label" x="510" y="165" w="75" h="24" measuredW="70" measuredH="23" zOrder="10" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Task%20Name</text>
+      </controlProperties>
+    </control>
+    <control controlID="12" controlTypeID="com.balsamiq.mockups::TextInput" x="585" y="162" w="153" h="-1" measuredW="128" measuredH="27" zOrder="11" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Hand%20System%20Issue</text>
+      </controlProperties>
+    </control>
+    <control controlID="13" controlTypeID="com.balsamiq.mockups::ComboBox" x="516" y="197" w="-1" h="-1" measuredW="63" measuredH="50" zOrder="12" locked="false" isInGroup="-1">
+      <controlProperties>
+        <state>up</state>
+        <text>Error%0AToDo</text>
+      </controlProperties>
+    </control>
+    <control controlID="16" controlTypeID="com.balsamiq.mockups::TextArea" x="510" y="229" w="228" h="164" measuredW="200" measuredH="140" zOrder="13" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>The%20hand%20systems%20needs%20to%20tweeked.%20%20Fingers%20are%20don%27t%20see%20when%20completely%20pulled%20in%20from%20seperation.</text>
+        <verticalScrollbar>true</verticalScrollbar>
+      </controlProperties>
+    </control>
+    <control controlID="17" controlTypeID="com.balsamiq.mockups::Label" x="516" y="448" w="214" h="24" measuredW="182" measuredH="23" zOrder="14" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Created%3A%2011/30/2010%2012%3A09AM</text>
+      </controlProperties>
+    </control>
+    <control controlID="18" controlTypeID="com.balsamiq.mockups::Button" x="510" y="425" w="50" h="23" measuredW="44" measuredH="28" zOrder="15" locked="false" isInGroup="-1">
+      <controlProperties>
+        <color>40463</color>
+        <text>Top</text>
+      </controlProperties>
+    </control>
+    <control controlID="19" controlTypeID="com.balsamiq.mockups::Button" x="560" y="425" w="50" h="23" measuredW="50" measuredH="28" zOrder="16" locked="false" isInGroup="-1">
+      <controlProperties>
+        <color>40463</color>
+        <text>Up%201</text>
+      </controlProperties>
+    </control>
+    <control controlID="20" controlTypeID="com.balsamiq.mockups::Button" x="628" y="425" w="55" h="23" measuredW="65" measuredH="28" zOrder="17" locked="false" isInGroup="-1">
+      <controlProperties>
+        <color>13576743</color>
+        <text>Down%201</text>
+      </controlProperties>
+    </control>
+    <control controlID="21" controlTypeID="com.balsamiq.mockups::Button" x="683" y="425" w="55" h="23" measuredW="65" measuredH="28" zOrder="18" locked="false" isInGroup="-1">
+      <controlProperties>
+        <color>13576743</color>
+        <text>Bottom</text>
+      </controlProperties>
+    </control>
+    <control controlID="23" controlTypeID="com.balsamiq.mockups::RadioButton" x="585" y="198" w="56" h="21" measuredW="46" measuredH="22" zOrder="19" locked="false" isInGroup="-1">
+      <controlProperties>
+        <state>selected</state>
+        <text>High</text>
+      </controlProperties>
+    </control>
+    <control controlID="24" controlTypeID="com.balsamiq.mockups::RadioButton" x="641" y="197" w="56" h="21" measuredW="46" measuredH="22" zOrder="20" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Med</text>
+      </controlProperties>
+    </control>
+    <control controlID="25" controlTypeID="com.balsamiq.mockups::RadioButton" x="694" y="197" w="56" h="21" measuredW="43" measuredH="22" zOrder="21" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Low</text>
+      </controlProperties>
+    </control>
+    <control controlID="26" controlTypeID="com.balsamiq.mockups::List" x="308" y="140" w="177" h="325" measuredW="100" measuredH="126" zOrder="22" locked="false" isInGroup="-1">
+      <controlProperties>
+        <color>16777215</color>
+        <hasHeader>false</hasHeader>
+        <rowHeight>22</rowHeight>
+        <selectedIndex>0</selectedIndex>
+        <text>Hand%20System%20Issue%0AFinish%20SDK%20fingers%0AComplete%20RFL</text>
+        <verticalScrollbar>true</verticalScrollbar>
+      </controlProperties>
+    </control>
+    <control controlID="27" controlTypeID="com.balsamiq.mockups::CheckBox" x="512" y="398" w="101" h="22" measuredW="88" measuredH="22" zOrder="23" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Annotation</text>
+      </controlProperties>
+    </control>
+    <control controlID="28" controlTypeID="com.balsamiq.mockups::Button" x="610" y="395" w="128" h="28" measuredW="131" measuredH="28" zOrder="24" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Apply%20to%20Selected</text>
+      </controlProperties>
+    </control>
+  </controls>
+</mockup>

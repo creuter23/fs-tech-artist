@@ -1,0 +1,12 @@
+A
+All Files were submitted with the proper naming conventions and with only the required maya and excel files.
+F
+Your files were not submitted as outline.
+Not zipped
+You did not zip the folder before submitting it to the server.
+Not in folder
+You did not place your files in a folder before zipping.
+Not in folder Not zipped
+You did not place your files in a folder or zip them before submitting to the server.
+Naming Issue
+You did not name correctly. The correct Submission is 3DF_Last_First_Rig

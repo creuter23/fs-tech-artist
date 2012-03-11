@@ -1,0 +1,6 @@
+A
+There was no construction history on any of your curves.
+F - Few
+One or a few of your curves had construction history.
+F - Many
+Many or all of your curves had construction history.

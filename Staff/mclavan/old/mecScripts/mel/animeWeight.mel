@@ -1,0 +1,1465 @@
+/*
+AnimeWeight2.mel v1.1 Created 8/28/04
+
+What does this Script do?
+	This script give the ability to animate a character while painting weights on the character.
+ 	No more switching out of painting weights mode to see if you weight painting is looking good. Yeah.
+
+Usage:
+	souce AnimeWeight2.mel;
+	
+	- You can load item into the scrollTextList two ways.
+		1) By selecting the control or joint in question and hitting the Load button.
+		2) By selecting the bound skin and clicking Load from bind.
+			Duplicate selection won't be generated in the list box.
+	- Clear clears all the items in the List box.
+	- Clear Selected well clears the selected item.
+
+	- Selecting the item will make it appear in a frame below.  You can reduce when you are animating
+	  by unchecking one of the checkboxes on the right.
+
+
+Known Issues
+	- At this point the key buttons don't work but I'm hitting that soon.
+	  More problems have appeared because of the dynamic properties of the pop up frames.  So at this time the keying
+	  ability will be removed at this time.
+	- If you select a object other than a bound skin maya give you an No Object matches name error.
+	  This won't crash the script or what you are doing.  I'm going to eventually catch this error and change it
+	  into something a little more informative.
+	- Sometime when I'm on a PC ( yes, I work on a MAC :P ) I've notice the layout updateing on a different window.
+	  If changed the setParent commands so it writing to layouts should be direct.  And I haven't noticed it since but
+	  just in case you see anything like this tell me.  Al work around is to Load all the controls and joints first
+	  and then select a few of the items in the selection box.  After then start generating.  I haven't noticed any
+	  errors.
+	   UPDATE: I haven't had any problems with this since.
+        - At this time the rename tab doesn't work.  But I"m working at this now so it should be fixed soon.
+
+v1.1 Update
+        - A selection scrollList has been added so that you don't have to leave painted weight mode to select
+          a curve or a piece of geometry to add it to the animation list.
+        - When a object is selected in te selection scrollList the object will change color to so you which one it is.
+        
+Known Issues with v1.1
+        - The color doesn't change when you have an object in a layer with its color option on.  Change the layer color
+          to transparent to fix this.  At the present time I'm not going to make a work around for this.
+
+If you find any issues will my script please email at:
+	mc@3dsetup.com
+I always welcome comments with my script so don't be shy.
+
+Created by:
+	Michael Clavan
+	http://wwww.3dsetup.com
+	mc@3dsetup.com
+
+Enjoy the script.		
+
+*/
+global proc mcMainLayout()
+{
+       if( `window -exists mcAnimeWin` )
+       {
+           deleteUI mcAnimeWin;
+           window -w 500 -title "Painting Weights Toolkit" mcAnimeWin;
+       }
+       else
+           window -w 500 -title "Painting Weights Toolkit" mcAnimeWin;
+
+       tabLayout mcTabLayout;
+
+       animeGUI();
+       setParent mcTabLayout;
+       
+      
+       setParent mcTabLayout;
+       
+       mecPWHoldGUI();
+
+
+       //These names of the layout should be changed to make more sence here
+       tabLayout -edit 	-tabLabel mcScrollLay "Animate while painting"
+               -tabLabel mecQWHRowMain "Painted Weigths Quickset Holds"
+                mcTabLayout;
+
+
+
+       //Script job monitors when this window is destroyed and destroys itself.
+       scriptJob
+                -parent mcAnimeWin
+                -uid mcAnimeWin "mecWinTerm";
+}
+global proc correctNameGUI()
+{
+
+       scrollLayout -w 500 -h 600 mcScrollLayName;
+       columnLayout mcColLayName2;
+       string $mcNothingName [];
+       generateNameGUI($mcNothingName);
+
+}
+
+/*
+//Gui for rename function
+*/
+//The names going into this function must be the objects names.
+global proc generateNameGUI(string $mcQNames[])
+{
+       //Seeing if there is any dubs
+       setParent mcScrollLayName;
+       deleteUI mcColLayName2;
+       columnLayout mcColLayName2;
+       if( `size($mcQNames)` > 0 )
+       {
+       int $i = 0;
+
+       for( $mcName in $mcQNames )
+       {
+            //if incoming array has a hierarchy marker then it will be counted
+            if( `gmatch $mcName "*|*"` )
+            {
+              
+              columnLayout;
+              //names will be named in order so that later then can be looped though.
+              text -label $mcName ("mcNameCor" + $i);
+              textField -w 200 ("mcTextCor" + $i);
+              setParent mcColLayName2;
+              $i++; //incremeting the nameing
+            }  // end if
+       } //end for
+         text -label "";
+         text -label "Leaving the field(s) back will leave the name unchanged!";
+         button -w 100 -label "Change Name" -c "mcProcessRename" mcBtnRename;
+       } //end if
+       else
+           text -label "At this point no dupilcates have been found.";
+
+           //got to put in a manual reload button
+} //end of generateNameGUI
+
+global proc mcProcessRename()
+{
+       //must check how many children mcColLayName has
+       //Make sure to minus 3 for the two text boxes and the button
+       //  the textFields will are under rows with the labels they will only
+       //  be counted once. deleting one more to make the count start at zero
+       //  I think there is one more
+
+       int $mcCount =  `columnLayout -q -numberOfChildren mcColLayName2`;
+       //if above zero loop thought them changed there names.
+       int $i;
+       for( $i = 0; $i < ($mcCount - 3); $i++)
+       {
+            string $tempName = `text -q -label ("mcNameCor" + $i)`;
+            string $tempText = `textField -q -text ("mcTextCor" + $i)`;
+            if(!($tempText == ""))
+            {
+                 print ($tempName + " ");
+                 print ($tempText + "\n");
+             //rename the with what is in the text Field
+                 rename $tempName $tempText;
+
+            }// end if
+
+       } // end for
+
+       //if any of the textFields are blank then they won't be modified
+
+       //reload the textFieldList and the renameLayout tab.
+       textScrollList -e -ra mcTScrJoints;
+       skinClusterAdd();
+
+       deleteUI mcScrollLayName;
+       setParent mcTabLayout;
+       correctNameGUI();
+
+} //end of mcProcessRename
+
+global proc animeGUI()
+{
+	
+	
+       scrollLayout -w 500 -h 600 mcScrollLay;
+
+	rowLayout -w 500 -h 600 -nc 2 -cw2 20 480 mecAnimeRow;
+	text -l "" -w 20;
+	setParent mecAnimeRow;
+
+       columnLayout mcMainLayout;
+       text -l "" -h 10;
+       //rowLayout -w 500 -h 350 -nc 3 -cw3 180 200 400;
+      
+
+       rowLayout -w 500 -h 350 -numberOfColumns 3 -columnWidth3 180 200 400 -cl3 "left" "left" "left" -ad3 1 mcRowLay1;
+       columnLayout;
+       
+text -l "Selection Window" -w 180 -h 20;
+	//Row 1
+        textScrollList -numberOfRows 15 -allowMultiSelection true
+                      -sc "layoutAdd" -w 175 -h 200 mcTScrJoints;
+	
+	//returning to the rowLayout.
+	setParent mcRowLay1;
+
+	//Row 2
+	
+
+	columnLayout;
+        text -label "";
+        button -label "Load" -w 100 -c "textScrollAdd(`ls -sl`)" mcBtnLoad;
+        button -label "Load from Bind" -w 100 -c "skinClusterAdd" mcBtnBind;
+        text -label "";
+        button -label "Load (Painted Weights Menu)" -w 175 -c "mcLoadPaint" mcBtnLPaint;
+        button -label "Load 3 (Painted Weights Menu)" -w 175 -c "mcLoad3Paint" mcBtnL3Paint;
+        text -label "";
+        button -label "Clear" -w 100 -c "textScrollList -e  -ra mcTScrJoints; layoutAdd();" mcBtnClear;
+	button -label "Clear Selected" -w 100 -c "mcClearSelect" mcBtnClearS;
+      
+        //returning to the rowLayout
+	setParent mcRowLay1;
+        
+	//Row 3
+	columnLayout;
+	text -l "Objects in Scene" -w 250-h 20;
+        mecObjGUI();
+	
+        //setParent..;
+	//Going to the mainLayout
+        setParent mcMainLayout;
+
+	columnLayout -cat "left" 60;
+	text -l "" -h 15;
+	rowLayout -w 500 -h 75 -nc 4 -cw4 150 100 100 100;
+	text -l "Limit Dynamic Attributes" -w 150 -h 30;
+        checkBox -label "Translate" -value true -onc "layoutAdd" -ofc "layoutAdd" mcChkTrans;
+        checkBox -label "Rotate" -value true -onc "layoutAdd" -ofc "layoutAdd" mcChkRot;
+        checkBox -label "Scale" -value true -onc "layoutAdd" -ofc "layoutAdd" mcChkScale;
+	
+	setParent mcMainLayout;
+	
+	mecPWDGuiMe();
+
+	//This Layout will be dynamicly changed
+      
+	columnLayout mcTrashCol;
+
+
+       	showWindow mcAnimeWin;
+}
+
+//Selects the selected object that is selected in the painted weights menu
+global proc mcLoadPaint()
+{
+
+      if( `textScrollList -q -ex skinClusterInflList`)
+      {
+          string $mcGetItem[] = `textScrollList -q -si skinClusterInflList`;
+          string  $mcList[] = `textScrollList -q -ai mcTScrJoints`;
+
+          //print($mcGetItem);
+          int $onlyOne = true;
+	  for( $mcItemOne in $mcList )
+	  {
+		if( $mcItemOne == $mcGetItem[0] )
+			$onlyOne = false;
+	  }
+
+	  if($onlyOne)
+	  {
+		textScrollList -e -append $mcGetItem[0] mcTScrJoints;
+
+          }
+          
+          // will only the selected on be selected or its parent and child
+
+            //deselecting items
+            textScrollList -e -da mcTScrJoints;
+            
+            //selecting new item
+            textScrollList -e -si $mcGetItem[0] mcTScrJoints;
+  	    //redrawing the layout
+            layoutAdd();
+
+      }
+      else
+          warning "You need to have the painting weights tool options open.";
+
+}
+
+//Selects the selected object that is selected in the painted weights menu as well
+// as the its parent and child weighted joint.
+global proc mcLoad3Paint()
+{
+       if( `textScrollList -q -ex skinClusterInflList`)
+      {   
+          string $mcGetItem[] = `textScrollList -q -si skinClusterInflList`;
+          string  $mcList[] = `textScrollList -q -ai mcTScrJoints`;
+
+          //print($mcGetItem);
+          int $onlyOne = true;
+	  for( $mcItemOne in $mcList )
+	  {
+		if( $mcItemOne == $mcGetItem[0] )
+			$onlyOne = false;
+	  }
+
+	  if($onlyOne)
+	  {
+		textScrollList -e -append $mcGetItem[0] mcTScrJoints;
+
+          }
+
+          // will only the selected on be selected or its parent and child
+
+
+	     textScrollList -e -da mcTScrJoints;
+             textScrollList -e -si $mcGetItem[0] mcTScrJoints;
+             string $mcConnect[] = `listConnections $mcGetItem[0]`;
+             
+             int $onlyOne2 = true;
+             for($mcCon in $mcConnect)
+             {
+
+                if( `objectType $mcCon` == "joint" )
+                {
+                     for( $mcItemOne in $mcList )
+                     {
+                	if( $mcItemOne == $mcCon )
+                	    $onlyOne2 = false;
+                             
+                     } //end for
+                     
+                     if($onlyOne2)
+                     {
+                           textScrollList -e -append $mcCon mcTScrJoints;
+                           
+                     } //end if
+                     
+                     textScrollList -e -si $mcCon mcTScrJoints;
+                } //end if
+
+             } //end for
+             layoutAdd();
+
+      }
+      else
+          warning "You need to have the painting weights tool options open.";
+
+}
+global proc layoutAdd()
+{
+        string $mcAttrs[] = {"translateX", "translateY", "translateZ"};
+        string $mcAttrsR[] = {"rotateX", "rotateY", "rotateZ"};
+        string $mcAttrsS[] = {"scaleX", "scaleY", "scaleZ"};
+        
+	setParent mcMainLayout;
+	deleteUI mcTrashCol;
+	
+
+        columnLayout mcTrashCol;
+
+
+        string $mcSelectedItem[] = `textScrollList -q -si mcTScrJoints`;
+        
+        float $min = -360.0;
+        float $max = 360.0;
+        float $minT = -15;
+        float $maxT = 15;
+        float $minS = -5;
+        float $maxS = 5;
+        
+	//looping through all the items in the scroll list.
+        for( $mcObj in $mcSelectedItem )
+        {
+		string $mecObj2[];
+		tokenize $mcObj $mecObj2;
+	if( true )
+	{
+
+	    frameLayout -label $mecObj2[0]  -cll true -w 500
+                        -borderStyle "etchedOut" ($mecObj2[0] + "frameLayout");
+            columnLayout;
+
+             //Seeing if the translation checkbox is checked.
+             if(`checkBox -q -value mcChkTrans`)
+             {
+
+             	//Creating the translate sliders
+             	for( $mcAttr in $mcAttrs )
+             	{
+                        string $mcAttrName =  $mecObj2[0] + "." + $mcAttr;
+            		floatSliderGrp -label ($mcAttr) -field true
+			-max $maxT -min $minT -s .01
+               		-columnWidth 3 23 ($mecObj2[0] + $mcAttr);
+
+                        connectControl ($mecObj2[0] + $mcAttr) ($mecObj2[0] + "." + $mcAttr);
+            	 }
+            	 separator -w 500;
+             } //end if
+             
+
+
+             //Checking if the rotation checkBox is check
+             if(`checkBox -q -value mcChkRot`)
+             {
+
+             	//Creating the sliders for rotation
+             	for( $mcAttrR in $mcAttrsR )
+             	{
+                        string $mcBC = "setKeyframe " + $mecObj2[0] + "." + $mcAttrR;
+            	 	floatSliderGrp -label ($mcAttrR) -field true
+               		-max $max -min $min -columnWidth 3 23 ($mecObj2[0] + $mcAttrR);
+
+                        connectControl ($mecObj2[0] + $mcAttrR) ($mecObj2[0] + "." + $mcAttrR);
+
+             	}
+
+                separator -w 500 -st "out";
+	     } //end if
+
+             if(`checkBox -q -value mcChkScale`)
+             {
+             for( $mcAttrS in $mcAttrsS )
+             {
+
+             	floatSliderGrp -label ($mcAttrS) -field true
+               	-max $maxS -min $minS -s .1
+                -columnWidth 3 23 -h 25 ($mecObj2[0] + $mcAttrS);
+
+               	connectControl ($mecObj2[0] + $mcAttrS) ($mecObj2[0] + "." + $mcAttrS);
+             }
+             } //end if
+             //setParent..;
+             setParent mcTrashCol;
+        }
+	}
+}
+
+//
+global proc skinClusterAdd()
+{
+       string $mcSelName[] = `ls -sl`;
+       string $mcYesYes = `findRelatedSkinCluster $mcSelName[0]`;
+       
+       string $mcJointsTo[] = `skinCluster -q -inf $mcYesYes`;
+       string $mcJointsTo2[] = `sort($mcJointsTo)`;
+      
+      
+	for( $mcObj in $mcJointsTo2 )
+       {
+       		
+		//Checking to see if item all ready exsists
+		string  $mcList[] = `textScrollList -q -ai mcTScrJoints`;
+	
+		//this value will tell say if the item exsits more than once.
+		int $onlyOne = true;
+
+		for( $mcItemOne in $mcList )
+		{
+			if( $mcItemOne == $mcObj )
+				$onlyOne = false;
+		}
+
+		if($onlyOne)
+			textScrollList -e -append $mcObj mcTScrJoints;
+
+       }
+
+       generateNameGUI($mcJointsTo2);
+
+}
+
+
+//Adds Item to the textScrollList when the Load button is pressed.
+global proc textScrollAdd(string $mecAddItem[])
+{
+
+       for( $mcObj in $mecAddItem )
+       {
+       
+
+	//Checking to see if item all ready exsists
+	string  $mcList[] = `textScrollList -q -ai mcTScrJoints`;
+	
+	//this value will tell say if the item exsits more than once.
+	int $onlyOne = true;
+	for( $mcItemOne in $mcList )
+	{
+		if( $mcItemOne == $mcObj )
+			$onlyOne = false;
+	} // end for
+
+	if($onlyOne)
+		textScrollList -e -append $mcObj mcTScrJoints;
+       
+
+       }// end for
+
+}
+
+//Clears items that are selected when the Clear Selected button is pressed.
+global proc mcClearSelect()
+{
+	//aquiring a list of selected items
+	string $mcSelectedText[] = `textScrollList -q -si mcTScrJoints`;
+	
+	//removing each item
+	for( $mcSel in $mcSelectedText )
+	{
+		textScrollList -e -ri $mcSel mcTScrJoints;
+	}
+	
+	//resetting the Layout.
+	layoutAdd();
+}
+
+
+
+
+/*
+//This the layout and controls for the select add
+*/
+
+global proc mecObjGUI()
+{
+	
+	columnLayout;
+	
+	rowLayout -numberOfColumns 2 -columnWidth2 270 150 -cl2 "left" "left" -ad2 1;
+
+	textScrollList -numberOfRows 15 -allowMultiSelection true
+	               -sc "mecChangeBack(`textScrollList -q -ai mecTslObjSel`); mecChangeColor(`textScrollList -q -si mecTslObjSel`)"
+                      -w 250 -h 200 mecTslObjSel;	
+	
+	//allows to limit what is going to be shown in the scrollList
+	columnLayout;
+	radioCollection;
+		radioButton -label "Joints" -onCommand "mecObjSLoad(\"Joints\")";
+		radioButton -label "Curves" -onCommand "mecObjSLoad(\"Curves\")";
+		radioButton -label "Geometry" -onCommand "mecObjSLoad(\"Geometry\")";
+		radioButton -label "All" -onCommand "mecObjSLoad(\"All\")";
+	
+	//button to add overHead selection to the mainScrollList
+	button -label "Add" -w 100 -c "mecAddBut";
+
+}
+
+//If radio button is on the choice in question is shown.
+// If selection is changed then old selection objects are cleared and new ones 
+// are shown.  Switch statement?
+//
+//Clear the textScrollList first in each call.
+
+global proc mecObjSLoad( string $mecName )
+{
+	textScrollList -e -ra mecTslObjSel;
+	
+	switch($mecName)
+	{
+		//Don't except joints with | in it.  Warn user.
+		case "Joints":
+			string $mecJointsObjects[] = `ls -type "joint"`;
+			mecObjSLoop($mecJointsObjects);
+			break;
+
+		//If curve is selected then must check for "|"
+		case "Curves":
+			//graup all the trasfer node and see which one of them have nurbsCurves
+			//  as there children with object type.
+			string $mecGeoObjects[] = `ls -g`;
+			string $mecGeoCurves[];
+			int $mcCount = 0;
+
+			for( $mecObj in $mecGeoObjects )
+			{
+				
+				if( `nodeType $mecObj` == "nurbsCurve")
+				{
+					//Grap parent of the curve
+					string $mecO[] = `listRelatives -p $mecObj`;
+					
+                    $mecGeoCurves[$mcCount] = $mecO[0];
+					
+					$mcCount++;
+				} //end if
+			}
+			
+			if( !(size($mecGeoCurves) == 0) )
+				mecObjSLoop($mecGeoCurves);	
+			break;
+		
+		//Geometry is a little more complex because the locator have the | in them
+		// and white space " ".  Must tokenize for both of them.
+		//   There shouldn't be any problems with the doing tokenize on a string that
+		//   doesn't have | or " " it should be only one token.  The first token will
+		//   only be taken anyway.
+		case "Geometry":
+			string $mecGeoObjects[] = `ls -g`;
+			mecObjSLoop($mecGeoObjects);
+			break;
+		
+		//Same for geometry.
+		case "All":
+			string $mecAllObjects[] = `ls`;
+			mecObjSLoop($mecAllObjects);
+			break;
+	} //end switch
+}
+
+global proc mecObjSLoop(string $mecObjs[])
+{
+	sort($mecObjs);
+	for( $mecObj in $mecObjs)
+	{
+		string $mecObjType = `nodeType $mecObj`;
+		string $mecIn = $mecObj + " ( " + $mecObjType + " )";
+		textScrollList -e -append $mecIn mecTslObjSel;
+	} //end for
+}
+
+//Breaks up the string and returns it with just the object name
+global proc string [] mecTokenBreak(string $mecTextObjs[], string $mecWhat)
+{
+
+        //Fire off a loop and tokenize " " each string and put them in a temp array
+	//  Only putting the first token in the array
+	string $mecTempTokens[];
+	int $mecI = 0;
+	for( $mecTextObj in $mecTextObjs )
+	{
+		string $mecTempArray[];
+		tokenize $mecTextObj $mecWhat $mecTempArray;
+				
+		//Getting the first Token	
+		$mecTempTokens[$mecI] = $mecTempArray[0];
+		$mecI++;
+	}
+	
+	return $mecTempTokens;
+}
+//Adding the selected object to the other scrollTextList
+global proc mecAddBut()
+{
+        
+	//Getting the info from the textScrollList
+	string $mecTextObjs[] = `textScrollList -q -si mecTslObjSel`;
+
+        string $mecTempTokens[] = mecTokenBreak($mecTextObjs, " ");
+
+        string $mecFinalArray[] = mecTokenBreak($mecTempTokens, "|");
+	//Add them to the other scrollList
+	textScrollAdd($mecFinalArray);
+}
+
+// This procedure is run when the window is terminated.
+// The window returns the colors of the objects that may have been changed when searching
+//   through the selection window.
+global proc mecWinTerm()
+{
+      mecChangeBackAll();
+}
+
+//Changes the color of the array of items.
+global proc mecChangeColor(string $mecItems[])
+{
+     //remove the (type from the name);
+     string $mecReduce[] = mecTokenBreak($mecItems, " ");
+
+     for( $mecItem in $mecReduce )
+     {
+        color -ud 8 $mecItem;
+     }
+}
+
+//This procedure will turn all the objects that were changed color when selecting and
+//  turn them back to their orginal color.
+global proc mecChangeBack(string $mecItems[])
+{
+    //remove the (type) from the name
+    string $mecRed[] = mecTokenBreak($mecItems, " ");
+    string $mecReduce[] = mecTokenBreak($mecRed, "|");
+
+    for( $mecItem in $mecReduce )
+    {
+         color $mecItem;
+    }
+}
+
+//Turns back the color of all.
+global proc mecChangeBackAll()
+{
+     string $mecJoints[] = `ls -type "joint"`;
+     string $mecGeos[] = `ls -g`;
+     
+     //This loop changes the color back for the joints
+     for($mecJ in $mecJoints)
+     {
+         color $mecJ;
+     }// end for
+
+     //This loop changes the color back for the curves
+     for($mecG in $mecGeos)
+     {
+         color $mecG;
+     }// end for
+}
+
+
+//==============================================================================================
+//                        Holds Quickset Code
+//----------------------------------------------------------------------------------------------
+
+
+//Generates the GUI for the painted weights hold script
+global proc mecPWHoldGUI()
+{
+     rowLayout -nc 2 -cw2 10 500 mecQWHRowMain;
+     
+     text -l "" -w 10;
+     
+     setParent mecQWHRowMain;
+
+	
+     columnLayout mecPWHLayoutMain;
+     text -label "";
+     
+
+     rowLayout -numberOfColumns 2 -columnWidth2 200 400 -adj 1 -ad2 2 mecPWHRow1;
+     
+     //Beginning of first row
+     frameLayout -label "Binds" -labelAlign "center" -w 300 -h 150
+                 - marginHeight 10 -marginWidth 10
+                 -borderStyle "etchedIn" ;
+     columnLayout;
+     button -label "Load Binds" -c "textScrollList -e -ra mecPwhTslBound; mecPWHoldWork();";
+
+     //This row consists of clusters and quickSetHolds (buttons too)
+
+
+     //List of the Bound skins in the sceen
+     textScrollList -w 180 -numberOfRows 8 -sc "mecPWHClustSelect" mecPwhTslBound;
+     setParent mecPWHRow1;
+     
+     //Beginning of second row
+     
+     //frameLayout here with embedded rowLayout
+     frameLayout -label "Hold Quickset(s) (No Bind Selected)" -labelAlign "center"
+                 - marginHeight 13 -marginWidth 10 -w 400 -h 150
+                 -borderStyle "etchedIn" mecPwhFrmL2;
+     columnLayout;
+     text -label " " -w 400 -h 20;
+     rowLayout -numberOfColumns 2 -columnWidth2 200 100 mecPWHRow15;
+
+     textScrollList -w 200 -numberOfRows 8 -sc "mecPWHQsetSelect" mecPwhTslQSH;
+     setParent mecPWHRow15;
+
+     columnLayout;
+          
+     button -label "Create"-w 150 -c "mecPWHCreateSet";
+     button -label "Delete" -w 150 -c "mecPWHDeleteSet(0)";
+     button -label "Delete All" -w 150 -c "mecPWHDeleteSet(1)";
+     button -label "Delete All in Scene" -w 150 -c "mecPWHDeleteAll" ;
+     setParent mecPWHLayoutMain;        
+     
+     text -label " ";
+     text -label "Joints connected to (None Selected) bind." mecPwhTxtJoints;
+     //This Row has the joints and its buttons
+     rowLayout -numberOfColumns 2 -columnWidth2 200 150 -adj 1 mecPWHRow2;
+
+     //List of the joints in the selected bind
+     textScrollList -w 300 -h 200 -numberOfRows 9 -allowMultiSelection true mecPwhTslJoints;
+     setParent mecPWHRow2;
+
+     columnLayout;
+
+	text -l "" -h 50;	
+
+     button -label "Add" -c "mecPWHAddSet" -w 130 -ann "Won't be added if in another set (if exists else where).";
+     button -label "Add (w/ remove)" -w 130 -c "mecPWHAddSet2" -ann "Will be removed from other set then added (if exists else where).";
+     button -label "Remove from set" -w 130 -c "mecPWHRemoveSet";
+     button -label "Manual Add" -c "mecPWHManual" -w 130 -ann "Can select a joint normally and add it to the set.";
+     button -label "Manual Add (w/ remove)" -w 130 -c "mecPWHManualRem" -ann "Can select a joint normally and add it to the set";
+     setParent mecPWHLayoutMain;
+     
+     text -label " ";
+     frameLayout -label "Hold(s) SpreadSheet (No Quickset Selected)" -labelAlign "center"
+		-w 300 -h 250
+                 - marginHeight 13 -marginWidth 10
+                 -borderStyle "etchedIn" mecPWHflBBs;
+     paneLayout -cn "single" -w 300 -h 250 mecPWHClEd;
+     //scrollLayout -w 300 -h 250;
+     //columnLayout -w 300 -h 250 mecPWHClEd;
+
+     //this is going to be the layout for the spreadSheet It won't remain text
+     //  this is just for testing purposes.
+     
+
+     string $activeList = `selectionConnection -parent mecPWHClEd mecPWHEd`;
+
+     spreadSheetEditor  -parent mecPWHClEd -ko false -fal {"liw"} -ln true
+		-mainListConnection mecPWHEd mecPWHSse;
+
+     setParent mecPWHLayoutMain;
+
+} //end of mecPWHoldGUI
+
+
+//Get all the skinClusters in the scene and add it to the textScrollList it also
+//  reset all the other windows (A cluster must be selected in the textScrollList
+//  to have other info present.
+global proc mecPWHoldWork()
+{
+       //grab all the geometry in the scene
+       string $mecGeoScene[] = `ls -g`;
+       string $mecSkins[];
+       int $i = 0;
+       for($mecGeo in $mecGeoScene)
+       {
+              string $mecSkinName = `findRelatedSkinCluster $mecGeo`;
+              
+              //Checking to see if the object was smooth bound
+              // A set could be used here. (but it would show up in the outliner.
+              if( $mecSkinName != "" )
+              {
+                    $mecSkins[$i] = $mecSkinName + " (" + $mecGeo + ")";
+                    $i++;
+              } //end if
+
+       } // end for
+       
+       string $mecSkinsFinal [] = sort( $mecSkins );
+       
+       for($mecSkin in $mecSkinsFinal)
+       {
+              textScrollList -e -append $mecSkin mecPwhTslBound;
+       } // end for
+
+       //Clearing all the other textScrollLists (mecPwhTslQSH (quickSets), mecPwhTslJoints, and spreadSheet)
+       //  label text for each needs to be reset the the default too.
+       
+       //
+       textScrollList -e -ra mecPwhTslQSH;  //Quickset list
+       frameLayout -e -label "Hold Quickset(s) (No Bind Selected)" mecPwhFrmL2;
+
+       // reseting the joints area
+       textScrollList -e -ra mecPwhTslJoints;
+       text -e -label "Joints connected to (None Selected) bind." mecPwhTxtJoints;
+
+
+} // end mecPWHoldWork
+
+//This procdure files when a quickSet hold is selected
+global proc mecPWHQsetSelect()
+{
+       // getting the selectedQuickset
+       //string $mecAArray[] = `sets -q pwqsh_skinCluster1_One`;
+      string $mecPWHItem[] = `textScrollList -q -si mecPwhTslQSH`; // pwqsh_*_this
+      string $mecPWHBind[] = `textScrollList -q -si mecPwhTslBound`;  //pwqsh_this_*
+      string $mecPWHList[];
+      tokenize $mecPWHBind[0] " " $mecPWHList;
+      string $mecPWHName = "pwqsh_" + $mecPWHList[0] + "_" + $mecPWHItem[0];
+      
+      // Transfering info from the set to an array
+      string $mecAArray[] = `sets -q $mecPWHName`;
+
+      // Resetting the SpreadSheetEditor
+       selectionConnection -e -clr mecPWHEd;
+       //Taking the information from the set and entering it into the editor
+       for($mecAAA in $mecAArray)
+       {
+             selectionConnection -e -object $mecAAA mecPWHEd;
+
+       }
+       
+       //Changing layout name to reflect which quickSet is selected
+       string $mecName = "Hold(s) SpreadSheet (" + $mecPWHItem[0] + ")";
+       frameLayout -e -label $mecName mecPWHflBBs;
+
+} //end mecPWHQsetSelect
+
+// This procedure fires when a cluster is selected in the Bind window
+global proc mecPWHClustSelect()
+{
+       //Need to find what cluster is selected
+       string $mecSelected[] = `textScrollList -q -selectItem mecPwhTslBound`;
+       string $mecBindTok[];
+       tokenize $mecSelected[0] " " $mecBindTok;
+       //Need to change the context of the joints/influence list and the quickset that
+       //  have been created for that cluster (determined my naming convention.
+       
+       //Getting the joints for this bind
+       mecPwhTslQSH();
+       string $mecTemp2 = "Joints connected to " + $mecBindTok[1] + " bind.";
+       text -e -label $mecTemp2 mecPwhTxtJoints;
+       //Changing the labels for the effected header
+       string $mecTemp = "Hold Quickset(s) " + $mecBindTok[1];
+       frameLayout -e -label $mecTemp mecPwhFrmL2;
+
+       //here is where a function is called to see if there is any quicksets that connect
+       //   to the current bind
+       
+       //  CODE STILL NEEDED HERE.  Will be done when quick set can be generated.
+       //resetting the textScrollList
+       textScrollList -e -ra mecPwhTslQSH;
+       mecPwhSearch();
+       
+       //changing the name of the layout back to default
+       frameLayout -e -label "Hold(s) SpreadSheet (No Quickset Selected)" mecPWHflBBs;
+       
+       //clearing out the spreadSheet
+       selectionConnection -e -clr mecPWHEd;
+}
+
+//This will search though the scene for quickset for the selected bind
+global proc mecPwhSearch()
+{
+       
+
+       //getting all the sets in the scene.
+       string $mecPwhAllSets[] = `ls -set`;
+       
+       //getting the selected bind
+       string $mecSelected[] = `textScrollList -q -selectItem mecPwhTslBound`;
+       
+       //comparing the sets in the scene with the bind
+       for($mecPwhSet in $mecPwhAllSets)
+       {
+             if( `gmatch $mecPwhSet "pwqsh_*"` )
+             {
+                  //Getting here means that this is a quickSet hold.
+                  string $mecBindName[];
+                  tokenize $mecSelected[0] " " $mecBindName;
+                  
+                  string $mecHoldName[];
+                  tokenize $mecPwhSet "_" $mecHoldName;
+
+                  string $mecTemp = "*" + $mecBindName[0] + "*";
+                  if( `gmatch $mecPwhSet $mecTemp`)
+                  {
+                       textScrollList -e -append $mecHoldName[2] mecPwhTslQSH;
+                  } // end if
+             }  //end if
+       } //end for
+       
+       //adding the proper sets into the textScrollList
+}
+// Uppon selection of the cluster from the scrollList the joint of that bind are
+//   inserted into the other scrollList
+global proc mecPwhTslQSH()
+{
+       string $mecSelected[] = `textScrollList -q -selectItem mecPwhTslBound`;
+       string $mecItems[];
+       tokenize $mecSelected[0] " " $mecItems;
+
+
+       string $mecJointsTo[] = `skinCluster -q -inf $mecItems[0]`;
+       string $mecJointsTo2[] = `sort($mecJointsTo)`;
+
+       //Remove all the items in the scrollList
+       textScrollList -e -ra mecPwhTslJoints;
+
+	for( $mecObj in $mecJointsTo2 )
+       {
+
+                //Add new times to the scroll list;
+                textScrollList -e -append $mecObj mecPwhTslJoints;
+
+
+                /*
+		//Checking to see if item all ready exsists
+		string  $mcList[] = `textScrollList -q -ai mcTScrJoints`;
+	
+		//this value will tell say if the item exsits more than once.
+		int $onlyOne = true;
+
+		for( $mcItemOne in $mcList )
+		{
+			if( $mcItemOne == $mcObj )
+				$onlyOne = false;
+		}
+
+		if($onlyOne)
+			textScrollList -e -append $mcObj mcTScrJoints;
+                */
+       }
+}
+
+// Creates a set
+global proc mecPWHCreateSet()
+{
+       // prompt for name of set
+       string $result = `promptDialog 
+
+ 		-title "Name of Hold Quickset"
+
+ 		-message "Enter Name:"
+
+ 		-button "OK" -button "Cancel"
+
+ 		-defaultButton "OK" -cancelButton "Cancel"
+
+ 		-dismissString "Cancel"`;
+
+ 
+        string $mecPWHName;
+        string $mecPWHAnn;
+
+        string $mecPWHprompt = `promptDialog -query -text`;
+        int $mecPWHTest = false;
+
+        if(`gmatch $mecPWHprompt "*_*"`)
+        {
+             $mecPWHTest = true;
+             warning "Name of set can't have a underscore in it";
+        } // end if
+
+ 	if ($result == "OK" && $mecPWHprompt != "" && !$mecPWHTest )
+        {
+
+                // getting the name that was typed into the prompt
+ 		$mecPWHName = `promptDialog -query -text`;
+
+                //Getting the name of the bind
+                string $mecPWHClust[] = `textScrollList -q -si mecPwhTslBound`;
+
+                string $mecPWHFinal[];
+                tokenize $mecPWHClust[0] " " $mecPWHFinal;
+                $mecPWHAnn = "pwqsh_" + $mecPWHFinal[0] + "_" + $mecPWHName;
+                //Fix gotta tokenize the $mecPWHClust it has (object on it )
+
+                //check to make sure same name doesn't exsists
+                string $mecPWHAll[] = `ls`;
+                int $mecPWHTest = true;
+
+                for($mecPWHOne in $mecPWHAll)
+                {
+                     if( $mecPWHOne == $mecPWHAnn)
+                         $mecPWHTest = false;
+                } //end for
+
+                //Create the set.
+               
+               
+               //If statement isn't working corrently dups shouldn't be allowed.
+               if($mecPWHTest)
+                {
+                //This line needs work!!!
+                     sets -em -n $mecPWHAnn -text $mecPWHAnn;
+
+                     string $mecTemp = `sets -q -text $mecPWHAnn`;
+                     print ("Results: Quickset hold " + $mecTemp + " created.\n");
+                     //Add the name to the textScrollList
+                    textScrollList -e -append $mecPWHName -si $mecPWHName mecPwhTslQSH;
+                }
+                else
+                    warning "Name exsists in scene!";
+
+
+ 	} // end if
+        
+
+
+
+}
+
+//procedure to delete a set
+global proc mecPWHDeleteSet(int $mecValue)
+{
+      // if 0 delete just the one selected
+      // if 1 then delete all the sets in that cluster
+
+      
+      string $mecPWHItem[] = `textScrollList -q -si mecPwhTslQSH`; // pwqsh_*_this
+      string $mecPWHBind[] = `textScrollList -q -si mecPwhTslBound`;  //pwqsh_this_*
+      string $mecPWHList[];
+      tokenize $mecPWHBind[0] " " $mecPWHList;
+      string $mecPWHName = "pwqsh_" + $mecPWHList[0] + "_" + $mecPWHItem[0];
+      //Need to check if it there at start with if it is not just delete it from
+      //  the list.
+      string $mecScene[] = `ls -sets`;
+      int $mecIsIt = false;
+      for($mecItem in $mecScene)
+      {
+           if( $mecItem == $mecPWHName )
+               $mecIsIt = true;
+      } //end for
+      
+
+      if($mecValue == 0)
+      {
+           //print($mecPWHName);
+           //If set exists then delete it and remove the name from the scroll list
+           //  otherwise just delete the name from the scrollList
+           if($mecIsIt)
+           {
+              delete $mecPWHName;
+              textScrollList -e -ri $mecPWHItem mecPwhTslQSH;
+           }
+           else
+           {
+               textScrollList -e -ri $mecPWHItem mecPwhTslQSH;
+           } // end if
+
+      }
+      else
+      {
+          //Make sure to prompt before you do this!
+          string $mecResult = `confirmDialog -title "Confirm" 
+                 -message "This will delete all the quickset holds for this bind!!"
+                 -button "Yes" -button "No" -defaultButton "Yes"
+                 -cancelButton "No" -dismissString "No"`;
+
+
+
+          //You need to loop through all the item in the scrollList and do exactly what
+          //   you did above but to each item in the scrollList
+          
+          if($mecResult == "Yes")
+          {
+               //Deleting all the sets for this cluster.
+               string $mecListItems[] = `textScrollList -q -ai mecPwhTslQSH`;
+               string $mecPWHName2 = "pwqsh_" + $mecPWHList[0] + "_" + $mecPWHItem[0];
+               for($mecListItem in $mecListItems)
+               {
+                      string $mecPWHName2 = "pwqsh_" + $mecPWHList[0] + "_" + $mecListItem;          
+                      if( `gmatch $mecPWHName2 "pwqsh_*"` )
+                             delete $mecPWHName2;
+
+               }
+
+               textScrollList -e -ra mecPwhTslQSH;
+
+          }
+      }
+
+
+}
+
+
+//Deletes all the paint weigth quickset hold in the scene.
+global proc mecPWHDeleteAll()
+{
+       //Make sure to prompt before you do this!
+        string $mecResult = `confirmDialog -title "Confirm" 
+               -message "This will delete all the quickset holds in the scene!!"
+               -button "Yes" -button "No" -defaultButton "Yes"
+               -cancelButton "No" -dismissString "No"`;
+
+           //Much easier than above just find all the other deletes just find all the
+          //  sets with pwqsh in the beginning of the name.  Check to make sure they are
+          //  sets (even though the likelyhood that some other object will start with the
+          //  name pwqsh, I'm just making sure :)
+
+        if($mecResult == "Yes")
+        {
+              //deleting all paint weight quickset hold in the scene.
+              string $mecSetsIn[] = `ls -sets`;
+
+              for($mecSetIn in $mecSetsIn)
+              {
+                     if(`gmatch $mecSetIn "pwqsh_*"`)
+                                delete $mecSetIn;
+                     
+              }
+                     textScrollList -e -ra mecPwhTslQSH;
+              // You don't have to go though all the clusters because the quickset list is
+              //    generated when other skins are selected through their window.
+        }
+
+
+}
+
+// add selected joints in to a set (unless present in another set);
+global proc mecPWHAddSet()
+{
+      // get the joint in the scrollList
+      string $mecJoints[] = `textScrollList -q -si mecPwhTslJoints`;
+
+      string $mecPWHItem[] = `textScrollList -q -si mecPwhTslQSH`; // pwqsh_*_this
+      string $mecPWHBind[] = `textScrollList -q -si mecPwhTslBound`;  //pwqsh_this_*
+      string $mecPWHList[];
+      tokenize $mecPWHBind[0] " " $mecPWHList;
+      string $mecPWHName = "pwqsh_" + $mecPWHList[0] + "_" + $mecPWHItem[0];
+      
+
+      
+      // adding all the joints to the set
+      for($mecJoint in $mecJoints)
+      {
+           sets -add $mecPWHName $mecJoint;
+      }
+      
+      // This area may change is I decide the make all the quickSet part of One big set or
+      //     One big set will subDivision for each cluster.
+      //string $mecSets[] = `ls -set`;
+      
+      string $mecSets[] = `ls ("pwqsh_" + $mecPWHList[0] + "*")`;
+      
+      //Going through each set
+      for( $mecSet in $mecSets )
+      {
+           //See if it is a paint weight quickset hold
+           if(!`gmatch $mecSet $mecPWHName`)
+           {
+               //getting the intersection of the two sets
+                string $mecList[] = `sets -int $mecSet $mecPWHName`;
+
+               // removing all the item in this set that is in the current set that being
+               //    added to.
+
+               //Loop, kill all the dups >:(>
+               for($mecItem in $mecList)
+                      sets -rm $mecPWHName $mecItem;
+                      
+
+
+           }  // end if
+      }  //end for
+
+      //Resetting SpreadSheetEditor
+      mecPWHQsetSelect();
+}
+
+// add selected joint in to a set (if joint is present in another set it will get removed
+//      and entered into current set).
+global proc mecPWHAddSet2()
+{
+      // get the joint in the scrollList
+      string $mecJoints[] = `textScrollList -q -si mecPwhTslJoints`;
+
+      string $mecPWHItem[] = `textScrollList -q -si mecPwhTslQSH`; // pwqsh_*_this
+      string $mecPWHBind[] = `textScrollList -q -si mecPwhTslBound`;  //pwqsh_this_*
+      string $mecPWHList[];
+      tokenize $mecPWHBind[0] " " $mecPWHList;
+      string $mecPWHName = "pwqsh_" + $mecPWHList[0] + "_" + $mecPWHItem[0];
+      
+
+      
+      // adding all the joints to the set
+      for($mecJoint in $mecJoints)
+      {
+           sets -add $mecPWHName $mecJoint;
+      }
+      
+      // This area may change is I decide the make all the quickSet part of One big set or
+      //     One big set will subDivision for each cluster.
+
+      string $mecSets[] = `ls ("pwqsh_" + $mecPWHList[0] + "*")`;
+
+      //Going through each set
+      for( $mecSet in $mecSets )
+      {
+           //See if it is a paint weight quickset hold
+           if(!`gmatch $mecSet $mecPWHName`)
+           {
+               //getting the intersection of the two sets
+                string $mecList[] = `sets -int $mecSet $mecPWHName`;
+
+               // removing all the item in this set that is in the current set that being
+               //    added to.
+
+               //Loop, kill all the dups >:(>
+               for($mecItem in $mecList)
+                      sets -rm $mecSet $mecItem;
+
+           }  // end if
+      }  //end for
+
+      //Resetting SpreadSheetEditor
+      mecPWHQsetSelect();
+
+}
+
+//  This procedure will remove the selected Item from the set
+global proc mecPWHRemoveSet()
+{
+           
+
+      string $mecPWHItem[] = `textScrollList -q -si mecPwhTslQSH`; // pwqsh_*_this
+      string $mecPWHBind[] = `textScrollList -q -si mecPwhTslBound`;  //pwqsh_this_*
+      string $mecPWHList[];
+      tokenize $mecPWHBind[0] " " $mecPWHList;
+      string $mecPWHName = "pwqsh_" + $mecPWHList[0] + "_" + $mecPWHItem[0];
+      
+      string $mecJoints[] = `textScrollList -q -si mecPwhTslJoints`;
+      
+      for($mecJoint in $mecJoints)
+      {
+            sets -rm $mecPWHName $mecJoint;
+      }
+      
+      //Resetting SpreadSheetEditor
+      mecPWHQsetSelect();
+}
+
+// Procedure allows you to select in a scene which joints you want to select and add them to set.
+//    Only item in bind will be added to the set.
+global proc mecPWHManual()
+{
+      string $mecItems[] = `ls -sl`;
+      string $mecJoints[] = `textScrollList -q -ai mecPwhTslJoints`;
+
+      sets -name mecSI;
+      sets -name mecJoints -em;
+      
+      for($mecItem in $mecJoints)
+      {
+           sets -add mecJoints $mecJoints;
+      }
+
+      //making sure all items selected are in the bind
+      string $mecPWHAdd[] = `sets -int mecJoints mecSI`;
+
+      delete mecSI;
+      delete mecJoints;
+
+
+      string $mecPWHItem[] = `textScrollList -q -si mecPwhTslQSH`; // pwqsh_*_this
+      string $mecPWHBind[] = `textScrollList -q -si mecPwhTslBound`;  //pwqsh_this_*
+      string $mecPWHList[];
+      tokenize $mecPWHBind[0] " " $mecPWHList;
+      string $mecPWHName = "pwqsh_" + $mecPWHList[0] + "_" + $mecPWHItem[0];
+      
+
+      for($mecLoop in $mecPWHAdd)
+            sets -add $mecPWHName $mecLoop;
+
+      string $mecSets[] = `ls ("pwqsh_" + $mecPWHList[0] + "*")`;
+
+      //Going through each set
+      for( $mecSet in $mecSets )
+      {
+           //See if it is a paint weight quickset hold
+           if(!`gmatch $mecSet $mecPWHName`)
+           {
+               //getting the intersection of the two sets
+                string $mecList[] = `sets -int $mecSet $mecPWHName`;
+
+               // removing all the item in this set that is in the current set that being
+               //    added to.
+
+               //Loop, kill all the dups >:(>
+               for($mecItem in $mecList)
+                      sets -rm $mecPWHName $mecItem;
+
+           }  // end if
+      }  //end for
+
+      //Resetting SpreadSheetEditor
+      mecPWHQsetSelect();
+
+}
+
+// Same as the procedure above, however it will remove likes from other sets.
+global proc mecPWHManualRem()
+{
+
+      string $mecItems[] = `ls -sl`;
+      string $mecJoints[] = `textScrollList -q -ai mecPwhTslJoints`;
+
+      sets -name mecSI;
+      sets -name mecJoints -em;
+      
+      for($mecItem in $mecJoints)
+      {
+           sets -add mecJoints $mecJoints;
+      }
+
+      //making sure all items selected are in the bind
+      string $mecPWHAdd[] = `sets -int mecJoints mecSI`;
+
+      string $mecPWHItem[] = `textScrollList -q -si mecPwhTslQSH`; // pwqsh_*_this
+      string $mecPWHBind[] = `textScrollList -q -si mecPwhTslBound`;  //pwqsh_this_*
+      string $mecPWHList[];
+      tokenize $mecPWHBind[0] " " $mecPWHList;
+      
+      string $mecPWHName = "pwqsh_" + $mecPWHList[0] + "_" + $mecPWHItem[0];
+      
+
+
+      delete mecSI;
+      delete mecJoints;
+
+      for($mecLoop in $mecPWHAdd)
+            sets -add $mecPWHName $mecLoop;
+
+      
+      string $mecSets[] = `ls ("pwqsh_" + $mecPWHList[0] + "*")`;
+
+      //Going through each set
+      for( $mecSet in $mecSets )
+      {
+           //See if it is a paint weight quickset hold
+           if(!`gmatch $mecSet $mecPWHName`)
+           {
+               //getting the intersection of the two sets
+                string $mecList[] = `sets -int $mecSet $mecPWHName`;
+
+               // removing all the item in this set that is in the current set that being
+               //    added to.
+
+               //Loop, kill all the dups >:(>
+               for($mecItem in $mecList)
+                      sets -rm $mecSet $mecItem;
+
+           }  // end if
+      }  //end for
+
+      //Resetting SpreadSheetEditor
+      mecPWHQsetSelect();
+
+}
+
+global proc mecPWDGuiMe()
+{
+string $mecParent = `setParent -q`;
+frameLayout -l "Painting Weight Display" -w 450 -h 75 
+		-la "bottom" -bs "etchedIn" 
+		-cll 1 -cl 0 mecPWDFrame1;
+columnLayout -w 450 -h 75 mecPWDCol;
+rowLayout -w 600 -h 75 -nc 4 -cw4 150 150 300 25;
+checkBox -w 150 -h 25 -l "Show Wireframe"
+		-align "center" -v 1
+		-onc "artAttrCtx -e -showactive true artAttrSkinContext"
+		-ofc "artAttrCtx -e -showactive false artAttrSkinContext"
+		mecPWDShowW;
+
+checkBox -w 150 -h 25 -l "Color Feedback"
+		-align "center" -v 1
+		-onc "artAttrCtx -e -colorfeedback true artAttrSkinContext"
+		-ofc "artAttrCtx -e -colorfeedback false artAttrSkinContext"
+		mecPWDColorF;
+text -l "" -w 300;
+text -l "" -w 50;
+setParent mecPWDCol;
+text -l "" -h 5;
+
+rowLayout -w 300 -h 40 -nc 4 -columnWidth4 75 50 50 50 ;
+text -l "Max Color" -w 75 ;
+radioCollection  mecmcPWDRcontrol;
+radioButton -w 50  -sl
+		 -label "1" 
+		-align "center"
+		-data 1 -onc "artAttrCtx -e -colorrangeupper 1 artAttrSkinContext" 
+		mecPWDR1;
+radioButton -w 50  
+		 -label ".1" 
+		-align "center"
+		-data 2 -onc "artAttrCtx -e -colorrangeupper 0.1 artAttrSkinContext" 
+		mecPWDR2;
+
+radioButton -w 50 
+		 -label ".001" 
+		-align "center"
+		-data 3 -onc "artAttrCtx -e -colorrangeupper 0.001 artAttrSkinContext" 
+		mecPWDR3;
+
+setParent mecPWDCol;
+
+setParent $mecParent;
+
+}
+
+mcMainLayout();
+
+
+

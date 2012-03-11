@@ -1,0 +1,401 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davveys Gear Generator
+''    Author:  
+''    Last Updated: Apr 07, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4442.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+
+
+
+global proc DVY_GearBuild()
+ {
+	print ("\n Start of DVY_GearBuild procedure. © Davvey..\n"); 
+
+// ******************************************************************************** //	
+//	Global Variables
+	 
+	global string $TeethProfiles[], $Type[];
+	global string $Units;
+
+	global float $DVYUnit;
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Local Variables
+
+	float $Data[], $Pos[], $Profiles[], $Teeth[];
+	 
+	float $Pi, $m, $A, $GW, $PCD, $BD, $RD, $OD;
+	float $Ad, $Dd, $WH, $Angle, $Helix ;
+	float $Move, $HubMx, $BoreMx, $Bore, $HubT;
+	
+	 float $Test[];
+	 
+	int $N, $GTeeth[], $test[];
+	int $e, $E, $N, $i, $ID, $Idx, $j, $q;	
+	 
+	string $Groups[], $Temp[], $Temps[], $Tmp[], $Tmps[];
+	string $SetAttrN[] = {".sx", ".sy", ".sz"};
+
+	$Type = {"Gear_","Spur_", "Helix_", "DoubleHelix_", "HerringBoneHelix_", "Bevel_", "Worm_"};
+	 
+	 
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Set Scaling unit for Global units used.
+		
+	DVY_ScaleSet;
+	print ("Current units are " + $Units + " and Scale Factor $DVYUnit is " + $DVYUnit + "\n");
+	
+	
+//	Constants and "Static Data"
+	
+	$e = $E = 1;									// Used for Group Counts
+	
+	$Pi = (22.0/7.0) ;								//	Constant for Pi.
+	$m = $Data[0] = `optionMenu -q -v DVY_Mod`;		//	Module
+	$A = $Data[1] = 20;								//	Pressure Angle in degrees.
+		
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Calculated Data
+	
+	for ($i=1; $i<11; $i++)
+		{
+			$GTeeth[$i] = `optionMenu -q -v ("DVY_Option0" + $i)`;
+			if ($GTeeth[$i] > 0)
+				{ $q = $q + 1;}
+		}
+	
+		print ("Range of Gear Teeth to be set up is \n");
+		print $GTeeth;
+		print ("Quantity of Gears in Set is " + $q + "\n" );
+		
+		
+	$GW = $Data[2] = `intField -q -v GearWidthIntField`;	//	Gear Width
+	$Ad = $m;												//	Addendum
+	$Dd = 1.25 * $m;										//	Dedendum
+	$WH = $Ad + $Dd;										//	Tooth working height.
+	$p = ($m * $Pi);										//	Circular Pitch
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Print Results of Calculated Data
+/*		
+	print ("\nNumber of Teeth $N is " + $N);
+	print (" and Pressure Angle is " + $A + ". © Davvey..\n");
+	print ("\nModule $m is " + $m + ". © Davvey..\n");
+	print ("Circular Pitch $p is " + $p + ". © Davvey..\n");
+	print ("Gear Width is " + $GW + ". © Davvey..\n");
+*/	
+// -------------------------------------------------------------------------------- //
+
+// ******************************************************************************** //	
+	
+	$Idx = `radioButtonGrp -q -sl GearStyleRadioButton`;
+	
+	if (`radioButtonGrp -q -sl GearGrpRadioButton` == 2)
+		{// Use existing Group Node Section
+			// Load Group Node from TextField
+			$Groups[0] = `textField -q -tx SelectGrp01`;
+			
+			if (`textField -q -tx SelectGrp01` == "")
+				{
+					error "Oops! Please select and Existing Top Group Node and load it into GUI © Davvey..\n";
+				}// End of textfield context test
+				
+			if (`textField -q -tx SelectGrp01` != "")
+				{// Set Group to an existing Group Node
+					$Groups[0] = `textField -q -tx SelectGrp01`;
+				}
+						
+			// Test attributes exist and Gear Top Node of correct type.
+			if (`attributeExists "module" $Groups[0]`)
+				$Test[0] = `getAttr ($Groups[0] + ".module")`;
+				print ("$Test[0] is " + $Test[0] + "\n");
+				print ("$m is " + $m + "\n");
+				
+			if (`attributeExists "TypeOfGearGrp" $Groups[0]`)
+				$type = `getAttr ($Groups[0] + ".TypeOfGearGrp")`;
+				print ("$type is " + $type + "\n");
+			
+			if (($m == $Test[0]) && (($Type[$Idx] + "GearGrp") == $type))
+				{
+					print ("$Groups is " + $Groups[0] + "\n");
+					float $ReScale = `getAttr ($Groups[0] + ".ReScaleUnit")`;
+					scale $ReScale $ReScale $ReScale $Groups[0];
+					makeIdentity -apply true -t 1 -r 1 -s 1 -n 0;
+					
+
+				}// End of Test attributes exist and Gear Top Node for correct type.
+				else {// Generate new Top Node as Existing is a different type.
+						print "Using a new Group as Gear Mod or Gear Type is Different. © Davvey..\n";
+						while(`objExists ($Type[$Idx] + "GearMain_GrpN_" + $E)`)
+							 {	$E++; }
+								$Groups[0] = `group -em -name ($Type[$Idx] + "GearMain_GrpN_" + $E)`;
+									print ("$Groups is now " + $Groups[0] + "\n");
+					}//  End of Generate new Top Node as Existing is a different type.
+	
+		}// End of existing Group usage
+		
+	if (`radioButtonGrp -q -sl GearGrpRadioButton` == 1)
+		{// Generate and Use new Group Node
+			 while(`objExists ($Type[$Idx] + "GearMain_GrpN_" + $E)`)
+				  {
+					 $E++;	print ("$E is " + $E + "\n");
+				  }
+					$Groups[0] = `group -em -name ($Type[$Idx] + "GearMain_GrpN_" + $E)`;
+					print ("$Groups is now called " + $Groups[0] + "\n");
+		}// End of Generate and Use new Group Node
+	
+		
+	// Add Custom attributes to Top Group Node to allow type checking etc.
+	
+ 	if (!`attributeExists "NameOfGearGrp" $Groups[0]`) 
+	  	{
+			addAttr -ln NameOfGearGrp -dt "string" $Groups[0];
+			setAttr -l 1 -k 0 -type "string" ($Groups[0] + ".NameOfGearGrp") ($Type[$Idx] + "GearGrpN_" + $E);
+		}
+
+ 	if (!`attributeExists "TypeOfGearGrp" $Groups[0]`) 
+	  	{
+			addAttr -ln TypeOfGearGrp -dt "string" $Groups[0];
+			setAttr -l 1 -k 0 -type "string" ($Groups[0] + ".TypeOfGearGrp") ($Type[$Idx] + "GearGrp");
+		}
+		
+ 	if (!`attributeExists "GearType" $Groups[0]`) 
+	  	{
+			addAttr -ln GearType -at "short" $Groups[0];
+			setAttr -l 1 -k 0 ($Groups[0] + ".GearType") $Idx;
+		}
+		
+
+	if (!`attributeExists "module" $Groups[0]`) 
+		{
+			addAttr -ln module -at short $Groups[0];
+			setAttr -l 1 -k 0 ($Groups[0] + ".module") $m;
+		}
+				 
+	if (!`attributeExists "CircularPitch" $Groups[0]`) 
+	 	{
+			addAttr -ln CircularPitch -sn CrPitch -at double $Groups[0];
+			setAttr -l 1 -k 0 ($Groups[0] + ".CircularPitch") $p;
+		}
+		 
+	if (!`attributeExists "GroupNo" $Groups[0]`) 
+	 	{
+			addAttr -ln GroupNo -at short $Groups[0];
+			setAttr -l 1 -k 0 ($Groups[0] + ".GroupNo") $E;
+		}
+		
+		
+				
+	if (!`attributeExists "ScaleUnit" $Groups[0]`) 
+	 	{
+			addAttr -ln ScaleUnit -at double $Groups[0];
+			setAttr -l 1 -k 0 ($Groups[0] + ".ScaleUnit") $DVYUnit;
+		}
+		
+	if (!`attributeExists "ReScaleUnit" $Groups[0]`) 
+	 	{
+			addAttr -ln ReScaleUnit -at double $Groups[0];
+			setAttr -l 1 -k 0 ($Groups[0] + ".ReScaleUnit") (1/$DVYUnit);
+		}
+		
+	// End of add Custom attributes to Top Group Node to allow type checking etc.
+
+	// Find Count of Main Group Node in Use.
+		$ID = endString ($Groups[0], 1);
+		
+			$Data[20] = `getAttr ($Groups[0] + ".GroupNo")`;
+				print ("$Data[20] is " + $Data[20] + "\n");	
+/*				if  (`radioButtonGrp -q -sl GearGrpRadioButton` == 2)
+					{// Section to find value of last Gear Group Node used so far
+						if (($Data[20] == 1) && (`radioButtonGrp -q -sl GearGrpRadioButton` == 2))
+							{
+								select -r -hi ($Type[$Idx] + "GearMain_GrpN_" + (1));
+							}
+						if ($Data[20] > 1)
+							{
+								select -r -hi ($Type[$Idx] + "GearMain_GrpN_" + ($R-1));
+							}
+								
+				//				$Sel = `ls -sl`;
+				//				print "$Sel is \n";
+				//				print $Sel;
+								$sel = `ls -sl ($Type[$Idx] + "Gear_GrpN_*" )`;
+				//				print "$sel is \n";
+				//				print $sel;
+								int $No = $Data[21] = size ($sel);
+								print ("$Data[21] is " + $Data[21] + "\n");
+								string $GearN = $sel[$No-1];
+								$Data[22] = ` getAttr ($GearN + ".GearNo")`;
+								print ("Gear No is " + $Data[22] + "\n");
+					//			$Data[21] = $Data[22];
+								
+							}
+*/				
+			if (`radioButtonGrp -q -sl GearStyleRadioButton` == 1)
+				{
+					print " Building a Spur Gear Set. © Davvey..\n"; 
+					
+					for ($i=0; $i<$q; $i++)
+						{
+								$N = $GTeeth[$i+1];
+								$Temp = DVY_SpurGear ($Data, $N, $ID, $Idx, $Groups);
+								$Temps[$i+1] = $Temp[1];
+						}
+						
+					scale $DVYUnit $DVYUnit $DVYUnit $Groups[0];
+					makeIdentity -apply true -t 0 -r 0 -s 1 -n 0;
+	
+ 
+					 
+				}// End of Spur Gear Options
+		
+	 
+			if (`radioButtonGrp -q -sl GearStyleRadioButton` == 2)
+				{
+					print " Building a Helical Gear Set. © Davvey..\n";
+					$Data[3] = 15;		// Helix Angle										
+		
+					$Data[4] = `radioButtonGrp -q -sl GearHelixRadioButton`;	//	Helix direction  (1 = Rt, 2 =  Lf Hand)
+					$Data[5] = 0;		//	Double Helix style  (0 = Single, 1 = Double, 2 = HerringBone Double style).
+					 
+					for ($i=0; $i<$q; $i++)
+						{
+							$N = $GTeeth[$i+1];
+							$Temp = DVY_HelixGear ($Data, $N, $ID, $Idx, $Groups);
+							$Temps[$i+1] = $Temp[1];
+						}
+						
+					scale $DVYUnit $DVYUnit $DVYUnit $Groups[0];
+					makeIdentity -apply true -t 0 -r 0 -s 1 -n 0;
+					
+					
+				}// End of Helical Gear Options
+		
+		
+
+			if (`radioButtonGrp -q -sl GearStyleRadioButton` == 3)
+				{
+					print " Building a Double Helical Gear Set. © Davvey..\n"; 
+					$Data[3] = 15;		// Helix Angle										
+					$Data[4] = `radioButtonGrp -q -sl GearHelixRadioButton`;	//	Helix direction  (1 = Rt, 2 =  Lf Hand)
+					$Data[5] = 1;		// Double Helix style  (0 = Single, 1= Double, 2 = HerringBone Double style).
+					 
+					for ($i=0; $i<$q; $i++)
+						{
+							$N = $GTeeth[$i+1];
+							$Temp = DVY_HelixGear ($Data, $N, $ID, $Idx, $Groups);
+							$Temps[$i+1] = $Temp[1];
+						}
+						
+					scale $DVYUnit $DVYUnit $DVYUnit $Groups[0];
+					makeIdentity -apply true -t 0 -r 0 -s 1 -n 0;
+					
+				}// End of Double Helical Gear Options
+				
+
+		
+		
+		
+			if (`radioButtonGrp -q -sl GearStyleRadioButton` == 4)
+				{
+					float $Move[];
+					print " Building a HerringBone Gear Set. © Davvey..\n"; 
+					$Data[3] = 15;		// Helix Angle										
+					$Data[4] = `radioButtonGrp -q -sl GearHelixRadioButton`;	//	Helix direction  (1 = Rt, 2 =  Lf Hand)
+					$Data[5] = 2;		//	Double Helix style  (0 = Single, 1= Double, 2 = HerringBone Double style).
+					 
+					for ($i=0; $i<$q; $i++)
+						{
+							$N = $GTeeth[$i+1];
+							$Temp = DVY_HelixGear ($Data, $N, $ID, $Idx, $Groups);
+							$Temps[$i+1] = $Temp[1];
+						}
+						
+					scale $DVYUnit $DVYUnit $DVYUnit $Groups[0];
+					makeIdentity -apply true -t 0 -r 0 -s 1 -n 0;
+					
+				}// End of HerringBone Gear Options
+				
+	
+				
+				
+				
+				
+				
+//			DVY_GearDriver($Groups[0], $Idx, $ID);
+				
+/*				
+				for ($each in $SetAttrN)
+					{ setAttr -l 0 -k 0 ($Groups[0] + $each);}
+					
+					scale $DVYUnit $DVYUnit $DVYUnit $Groups[0];
+
+				for ($each in $SetAttrN)
+					{ setAttr -l 1 -k 0 ($Groups[0] + $each);}
+*/				
+				
+
+/*	 
+	if (($E > 1) && (`radioButtonGrp -q -sl GearConnectRadioButton` == 1))
+		{
+			for ($i=0; $i<$q; $i++)
+				{
+					 move -r 0 (($Move + $Move1) * -1) 0 $Groups[0];
+
+					
+		}
+*/
+	 
+	 
+}// End of DVY_GearBuild
+
+		
+
+		
+
+global proc DVY_GearSet()
+{
+	global string $Type[];
+	
+	//	$Type = {"Gear_","Spur_", "Helix_", "DoubleHelix_", "HerringBoneHelix_", "Bevel_", "Worm_"};
+
+	string $Groups[], $TempSel[];
+
+	int $ID, $Idx;
+	
+	$TempSel = `ls - sl`;
+	$Groups[0] =  $TempSel[0];
+	if ($Groups[0] == "")
+		{
+			error "OOps! Please select a Gear Group Top Node and try again";
+		}
+		else{
+				$Idx =  `getAttr ($Groups[0] + ".GearType")`;
+				$ID = `getAttr ($Groups[0] + ".GroupNo")`;
+				
+				DVY_GearDriver($Groups[0], $Idx, $ID);
+			}
+
+	
+}
+
+		
+
+		

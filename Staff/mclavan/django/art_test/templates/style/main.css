@@ -1,0 +1,63 @@
+input:required { background:yellow }
+
+.hsData{
+    background-color:yellow;   
+}
+#hsData{
+    background-color:yellow;   
+}
+.hsData{
+    background-color:yellow;   
+}
+hr {color:sienna;}
+p {
+    margin-left:20px;
+    color:#fff;
+}
+body {background:#333;}
+
+
+
+#hsKey{
+    font-size:12px;
+    font-style: italic;       
+}
+
+#hsVal{
+    font-size:16px;
+    color:#fff;
+}
+
+#td{
+    color:#fff;
+}
+
+legend{
+	color:#FFFFFF;
+	font-size:1.4em;
+	
+}
+
+label{
+	color: #2fff36;
+}
+
+.opt{
+	color: #ff414d;
+}
+
+.users{
+	color: #43ff37;
+}
+
+#uname{
+	text-shadow: 2px 1px 1px;
+	color: #675fff;
+	font-size: 1.2em;
+}
+
+
+h1 {
+	color: green;
+}
+

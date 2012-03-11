@@ -1,0 +1,49 @@
+
+
+/*
+This procedure makes a blend visiblity between to grouping of objects.
+Input:
+      $grp0 (string array) when the attribute hits 10 the items here will be invisible
+      $grp1 (string array) when the attribute hits 0 the items here will be invisible
+      $attr (string) The attribute that will control the objects visiblity.
+Output: 
+        none
+*/
+proc mecBlendVis(string $grp0[], string $grp1[], string $attr)
+{
+
+       // Create condition node.
+       string $utilZero = `shadingNode -asUtility condition`;
+       string $utilTen = `shadingNode -asUtility condition`;
+
+       //Tokenize the attr because I need the object seperate from the attribute
+       string $a[];
+       tokenize $attr "." $a;
+
+       // These are the connection setting for the geometry to be visible when the $attr is NOT 10.
+       connectAttr -force ($a[0]+".blend") ($utilZero + ".firstTerm");
+       // If first input is < 10;
+       setAttr ($utilZero + ".operation") 4;
+       setAttr ($utilZero + ".secondTerm") 10;
+       setAttr ($utilZero + ".colorIfTrueR") 1;
+       setAttr ($utilZero + ".colorIfFalseR") 0;
+
+       // This is connections and setting for the group that will be visible unless the $attr is 0.
+       // connect $attr upto condition statement input1. If input1 > 0 then visible
+       //connectAttr -force a.blend ($utilTen + ".firstTerm");
+       connectAttr -force ($a[0]+".blend") ($utilTen + ".firstTerm");
+       setAttr ($utilTen + ".operation") 2;
+       setAttr ($utilTen + ".secondTerm") 0;
+       setAttr ($utilTen + ".colorIfTrueR") 1;
+       setAttr ($utilTen + ".colorIfFalseR") 0;
+       
+       // Loop though all the object in the two groups
+       for($g0 in $grp0)
+              connectAttr -force ($utilZero + ".outColorR") ($g0 + ".v");
+       for($g1 in $grp1)
+              connectAttr -force ($utilTen + ".outColorR") ($g1 + ".v");
+
+}
+
+
+mecBlendVis( $mecBlend0 , $mecBlend1 , "a.blend");

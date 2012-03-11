@@ -1,0 +1,618 @@
+'''
+Production Modeling Toolset
+creator: Michael Corinella
+contact: www.MCorinella@Fullsail.com
+date Started: 06/23/2010
+how to Run:
+import proModTool
+proModTool.gui()
+	
+
+Script Idea:
+	A whole List of commonly used modeling tools in one convienient location
+	
+Main Objectives:
+	For the user to be able to easily locate and use common modeling tools
+	
+Extra Objectives:
+	Right-Click functionality, to be able to change button colors.
+	
+How the script works:
+	Use these tools all for polygon modeling.
+	
+*Acknowledgments:
+	The Production Modeling Toolset (A.K.A) The Money Brick was originally 
+	scripted by Dan Neufeldt (nerfsafetysquid.com).	
+	Callback function created by Nathan Horn inspired by pymel (Luma Studio)
+	EdgeLoop function created by Michael Clavan.
+'''
+
+import maya.cmds as cmds
+import maya.mel as mel
+
+scriptMRC = __name__ 
+clrWinMRC = "clrModToolset"
+winMRC = "ModToolset"
+wW = 95
+insW = 86
+spl2CW = ([1,41],[2,41])
+spl3CW = ([1,27],[2,28],[3,27])
+btnH = 15
+insBtnW = 82
+ffW = 18
+font = "smallPlainLabelFont"
+mel.eval( 'python("import sys")' )
+
+class Callback():
+	_callData = None
+	def __init__(self,func,*args,**kwargs):
+		self.func = func
+		self.args = args
+		self.kwargs = kwargs
+	
+	def __call__(self, *args):
+		Callback._callData = (self.func, self.args, self.kwargs)
+		mel.eval('global proc py_%s(){python("sys.modules[\'%s\'].Callback._doCall()");}'%(self.func.__name__, __name__))
+		try:
+			mel.eval('py_%s()'%self.func.__name__)
+		except RuntimeError:
+			pass
+		
+		if isinstance(Callback._callData, Exception):
+			raise Callback._callData
+		return Callback._callData 
+	
+	@staticmethod
+	def _doCall():
+		(func, args, kwargs) = Callback._callData
+		Callback._callData = func(*args, **kwargs)
+		
+def edgeLoop( weight=.1 ):
+	# Looping
+	# Use is selecting items in the scene properly!!!
+	# Split and get each individual edge.
+	selected = cmds.ls(sl=True)
+	edges = cmds.filterExpand(selected, ex=True, sm=32 )
+	
+	edgeHistory = []
+	for edge in edges:
+		cmds.select( edge, r=1)
+		cmds.SelectEdgeRingSp()
+		what = cmds.polySplitRing( ch=1, splitType=1, weight=.1, smoothingAngle=30, fixQuads=1 )
+		edgeHistory.extend(what)
+		cmds.setAttr( "%s.weight" %what[0], weight )	
+
+'''
+temp = lambda x : edgeLoop(.1)		
+temp( 2, 4 )
+'''
+
+"""
+def gui():		
+	cmds.window()
+	cmds.columnLayout()
+	cmds.button( label=".1", c=(lambda x : edgeLoop(.1)))
+	cmds.button( label=".5", c=(lambda x : edgeLoop(.5)) )
+	cmds.button( label=".9", c=(lambda x : edgeLoop(.9)) )
+	cmds.showWindow()
+
+
+def gui2():		
+	cmds.window()
+	cmds.columnLayout()
+	cmds.button( w=100, label=".1", c=Callback( edgeLoop, .1 ) )
+	cmds.button( w=100, label=".5", c=Callback( edgeLoop, .5 ) )
+	cmds.button( w=100, label=".9", c=Callback( edgeLoop, .9 ) )
+	cmds.showWindow()
+"""
+
+def crCub(*args):	
+	cmds.polyCube(w=1, d=1, h=1)
+
+def crCyl(*args):
+	cmds.polyCylinder(r=1, h=2, sx=12, sy=0, sz=0)
+	
+def crCurve(*args):
+	mel.eval("curveCVToolScript 4;")
+	
+def dlHis(*args):
+	cmds.delete(ch=True)
+	
+def frTrns(*args):
+	cmds.makeIdentity(a=True)
+	
+def cntPiv(*args):
+	cmds.xform(cp=True)
+	
+def nonMani(*args):
+	mel.eval('polyCleanupArgList 3 { "0","1","1","0","0","0","0","1","0","1e-005","0","1e-005","0","1e-005","0","1","0" };')
+
+def normDispl(*args):
+	chkNorm = cmds.checkBox("normsChck", q=True, v=True)
+	
+	if (chkNorm==1):
+		displ=1
+		
+	else:
+		displ=0
+	
+	cmds.polyOptions(dn=displ)
+		
+def normRev(*args):	
+	cmds.polyNormal(normalMode=0)
+
+def normUn(*args):
+	cmds.polyNormalPerVertex(ufn=True)
+	
+def normSoft(*args):
+	cmds.polySoftEdge(a=180)
+	
+def normHard(*args):
+	cmds.polySoftEdge(a=0)
+
+def combGeo(*args):
+	cmds.polyUnite()
+
+def sepGeo(*args):
+	cmds.polySeparate()
+	
+def mrg(*args):
+	mrgDis = cmds.floatField("mrgeField", q=True, v=True)
+	cmds.polyMergeVertex(d=mrgDis)
+	
+def minMrg(*args):
+	cmds.polyMergeVertex(d=.01)
+	
+def maxMrg(*args):
+	cmds.polyMergeVertex(d=1)
+	
+def ext(*args):
+	cmds.PolyExtrude()
+	
+def append(*args):
+	cmds.AppendToPolygonTool()
+	
+def split(*args):
+	cmds.SplitPolygonTool()
+
+def cut(*args):
+	cmds.CutPolygon()
+	
+def coll(*args):
+	cmds.PolygonCollapse()
+	
+def dlEd(*args):
+	cmds.polyDelEdge()
+	
+def bvl(*args):
+	off = cmds.floatField("bevelOff", q=True, v=True)
+	cmds.polyBevel(o=off, oaf=1, at=1, ws=1)
+	
+def cmfr(*args):
+	weight = cmds.floatField("chmfrWeight", q=True, v=True)
+	cmds.polyExtrudeVertex( d=1, w=weight)
+	cmds.DeleteVertex()
+	
+	#when undoing this needs to skip the delete vertex command 
+	#mel.eval("polyChamferVtx 1" + weight + "0;")
+	
+def extr(*args):
+	cmds.ExtractFace()
+	
+def dupFa(*args):	
+	cmds.DuplicateFace()
+	
+def dup(*args):
+	neg = cmds.checkBox("negChck", q=True, v=True)
+	mrge = cmds.checkBox("mrgChck", q=True, v=True)
+	dupAx = cmds.radioButtonGrp("axChck", q=True, sl=True)
+	selected = cmds.ls(sl=True)
+	print(mrge)
+	
+	if(dupAx==1):
+		scaD = ".scaleX"
+	if(dupAx==2):
+		scaD = ".scaleY"
+	if(dupAx==3):
+		scaD = ".scaleZ"
+		
+	if(neg==1):
+		scaVal = -1
+	else:
+		scaVal = 1
+	
+	newDup = cmds.duplicate(rr=True)
+	cmds.setAttr(newDup[0] + scaD, scaVal)
+		
+	if (mrge==1):
+		cmds.polyUnite(selected, newDup[0])
+		cmds.polyMergeVertex(d=1)	
+	else:	
+		None
+	#cmds.polyMirrorFace(ws=1, direction=dirr, mergeMode=mm, mt=.01)
+
+def ins(*args):
+	negIns = cmds.checkBox("negIns", q=True, v=True)
+	insAx = cmds.radioButtonGrp("insAx", q=True, sl=True)
+	
+	if(insAx==1):
+		scaI = ".scaleX"
+	if(insAx==2):
+		scaI = ".scaleY"
+	if(insAx==3):
+		scaI = ".scaleZ"
+	
+	if(negIns==1):
+		scaVal = -1
+	else:
+		scaVal = 1
+		
+	newIns = cmds.instance()
+	#print(newIns)
+	cmds.setAttr(newIns[0] + scaI, scaVal)
+	
+#deformation Functions
+def latt(*args):
+	cmds.lattice(divisions=[2,2,2], objectCentered=True, ldv=[2,2,2])
+	
+def sculpt(*args):
+	cmds.SculptGeometryTool()
+	
+def soft(*args):
+	mel.eval("performSoftMod 0 0 0 { 0.0, 0.0, 0.0 }; ")
+	
+#selection Functions
+def mveNorm(*args):
+	cmds.MoveNormalTool()
+	
+def transSett(*args):
+	sttng = cmds.radioButtonGrp("transSetts", q=True, sl=True)
+	
+	if (sttng==1):
+		trans = 1
+	else:
+		trans = 2
+	
+	cmds.manipMoveContext("Move", e=True, mode=trans)
+
+def rotSett(*args):
+	sttng = cmds.radioButtonGrp("rottSetts", q=True, sl=True)
+
+	if (sttng==1):
+		rots = 0
+	else:
+		rots = 1
+	
+	cmds.manipRotateContext("Rotate", e=True, mode=rots)
+	
+def pntSel(*args):
+	cmds.ArtPaintSelectTool()
+	
+def selEdge(*args):
+	cmds.ConvertSelectionToEdges()
+	
+def selVert(*args):
+	cmds.ConvertSelectionToVertices()
+	
+def selFace(*args):
+	cmds.ConvertSelectionToFaces()
+	
+def selUV(*args):
+	cmds.ConvertSelectionToUVs()
+	
+def smth(*args):
+	div = cmds.intField("smoothField", q=True, v=True)
+	selected = cmds.ls(sl=True)
+	for sel in selected:
+		cmds.polySmooth(sel, dv=div, ksb=1)
+	
+def delSmooths(*args):
+	cmds.select("*" + "polySmoothFace" + "*")
+	mel.eval("doDelete;")
+	cmds.select(cl=True)
+	"""
+	for sel in cmds.ls(sl=True):
+		shapes = cmds.listRelatives(sel, shapes=True )
+		for shape in shapes:
+			curShape = cmds.listConnections(shape, type="polySmoothFace" )
+			if( curShape ):
+				cmds.delete(curShape)
+	"""
+def tri(*args):
+	cmds.Triangulate()
+	
+#Texturing Functions
+def proj(*args):
+	selected = cmds.ls(sl=True)
+	projDir = cmds.radioButtonGrp("projAx", q=True, sl=True)
+	faceNum = cmds.polyEvaluate(f=True)
+
+	if(projDir==1):
+		dirVar = "x"
+	if(projDir==2):
+		dirVar = "y"
+	if(projDir==3):
+		dirVar = "z"
+	cmds.polyProjection(selected[0] + ".f" + "[0:" + str(faceNum)+ "]", type="Planar", ibd=True, md=dirVar, ch=True)
+	
+def layUV(*args):
+	mel.eval("performPolyLayoutUV 0;")
+	
+def shell(*args):
+	mel.eval("polySelectBorderShell 0;")
+	
+def shellBord(*args):
+	mel.eval("polySelectBorderShell 1;")
+	
+def relx(*args):
+	cmds.untangleUV(r="uniform", pb=1, ps=0, pu=0, rt=0, mri=5)
+
+def unfld(*args):
+	cmds.unfold(i=5000, ss=0.001, gb=0, gmb=0.5, pub=0, ps=0, oa=0, us=False)
+
+#color editing Window	
+def clrChanger(*args):
+	colorVal = cmds.colorSliderButtonGrp("clrButton", q=True, rgb=True)
+	return colorVal
+	
+def clrWind(*args):
+	if (cmds.window(clrWinMRC, q=True, ex=True)):
+		cmds.deleteUI(clrWinMRC)
+	if(cmds.windowPref(clrWinMRC,q=True, ex=True)):
+		cmds.windowPref(clrWinMRC, r=True)
+		
+	cmds.window(clrWinMRC, t="Color Picker", w=520, tlb=1)
+	cmds.columnLayout("clrLayout")
+	cmds.colorSliderButtonGrp("clrButton",  label="Button Color", buttonLabel="Apply", bc=clrChanger, rgb=(1, 0, 0), columnWidth=(5, 30))
+	cmds.colorSliderButtonGrp("clrButton", q=True, rgb=True)
+	cmds.showWindow(clrWinMRC)	
+
+import os.path
+curPath = os.path.split(__file__)[0]
+imgPath = lambda x : os.path.join( curPath, "icons", x )
+
+# cmds.image( i = imgPath( "promodToollogo.png" ) )
+
+
+
+def gui():
+	if (cmds.window(winMRC, q=True, ex=True)):
+		cmds.deleteUI(winMRC)
+	if(cmds.windowPref(winMRC,q=True, ex=True)):
+		cmds.windowPref(winMRC, r=True)
+	#colorVar = cmds.colorSliderButtonGrp("clrButton", q=True, rgb=True)
+	cmds.window(winMRC, tlb=1, tlc=[50,0], w=wW)
+	winH = 36 + 112 + 225 + 113 + 66 + 156 + 69 + 27
+	cmds.window(winMRC,e=True,w=wW)
+	cmds.columnLayout("mainLayout", w=wW)
+	cmds.image(w=80, h=42, i = imgPath( "promodToollogo.png" ) )
+	
+	#geometry Frame
+	cmds.frameLayout("geoFrame", label="Geometry", labelAlign="top", bs="etchedIn", cll=1, w=insW, fn=font)
+	cmds.rowColumnLayout(nc=3, cw=spl3CW)
+	cmds.button(l="cub", h=btnH, c=crCub)
+	cmds.popupMenu()
+	cmds.menuItem(l="add color", c=clrWind)
+	cmds.button(l="cyl", h=btnH, c=crCyl)
+	cmds.button(l="crv", h=btnH, c=crCurve)
+	
+	#cleanup Frame
+	cmds.setParent("mainLayout")
+	cmds.frameLayout("cleanFrame", label="Cleanup", labelAlign="top", bs="etchedIn", cll=1, w=insW, fn=font)
+	cmds.columnLayout("cleanColumn", w=insW)
+	cmds.rowColumnLayout("cleanRowColumn",nc=2, cw=spl2CW )
+	cmds.button(l="delhis", h=btnH, c=dlHis)
+	cmds.button(l="frztrs", h=btnH, c=frTrns)
+	cmds.setParent("cleanColumn")
+	cmds.columnLayout(w=insW)
+	cmds.button(l="center pivot", w=insBtnW, h=btnH, c=cntPiv)
+	cmds.button(l="cln non-mani", w=insBtnW, h=btnH, c=nonMani)
+	cmds.text("        normals", h=btnH)
+	#cmds.setParent("cleanColumn")
+	cmds.rowColumnLayout(nc=2, cw=([1,47],[2,35]))
+	cmds.checkBox("normsChck", l="on/off", v=1)
+	cmds.button(l="apply", h=btnH, c=normDispl, w=insBtnW)
+	cmds.setParent("cleanColumn")
+	cmds.rowColumnLayout(nc=2, cw=spl2CW)
+	cmds.button(l="revrse", w=insBtnW, h=btnH, c=normRev)
+	cmds.button(l="unlock", w=insBtnW, h=btnH, c=normUn)
+	cmds.button(l="soft", w=insBtnW, h=btnH, c=normSoft)
+	cmds.button(l="hard", w=insBtnW, h=btnH, c=normHard)
+	cmds.setParent("cleanColumn")
+	
+	#Editing Frame
+	cmds.setParent("mainLayout")
+	cmds.frameLayout("editFrame", label="Editing", labelAlign="top", bs="etchedIn", cll=1, w=insW, fn=font)
+	cmds.columnLayout("editColumn", w=insW)
+	cmds.rowColumnLayout("editRowColumn",nc=2, cw=spl2CW )
+	cmds.button(l="comb", h=btnH, c=combGeo)
+	cmds.button(l="sep", h=btnH, c=sepGeo)
+	cmds.button(l="merge", h=btnH, c=mrg)
+	cmds.floatField("mrgeField", v=.01, h=ffW)
+	cmds.button(l="min", h=btnH, c=minMrg)
+	cmds.button(l="max", h=btnH, c=maxMrg)
+	cmds.setParent("editColumn")
+	cmds.columnLayout(w=insW)
+	cmds.button(l="extrude", w=insBtnW, h=btnH, c=ext)
+	cmds.button(l="append", w=insBtnW, h=btnH, c=append)
+	cmds.rowColumnLayout(nc=2, cw=spl2CW )
+	cmds.button(l="split", h=btnH, c=split)
+	cmds.button(l="cut", h=btnH, c=cut)
+	cmds.setParent("editColumn")
+	cmds.columnLayout(w=insW)
+	cmds.text("    'speed loops'", h=btnH)
+	cmds.rowColumnLayout(nc=3, cw=spl3CW)
+	cmds.button(l="0.1", h=btnH, c=Callback( edgeLoop, .1 ))
+	cmds.button(l="0.5", h=btnH, c=Callback( edgeLoop, .5 ))
+	cmds.button(l="0.9", h=btnH, c=Callback( edgeLoop, .9 ))
+	cmds.setParent("editColumn")
+	cmds.rowColumnLayout(nc=2, cw=spl2CW )
+	cmds.button(l="collaps", h=btnH, c=coll)
+	cmds.button(l="dl edg", h=btnH, c=dlEd)
+	cmds.button(l="bevel", h=btnH, c=bvl)
+	cmds.floatField("bevelOff", v=.200, h=ffW)
+	cmds.button(l="chmfr", h=btnH, c=cmfr)
+	cmds.floatField("chmfrWeight", v=.250, h=ffW)
+	cmds.setParent("editColumn")
+	cmds.columnLayout(w=insW)
+	cmds.button(l="extract", w=insBtnW, h=btnH, c=extr)
+	cmds.button(l="duplicate faces", w=insBtnW, h=btnH, c=dupFa)
+	
+	#duplicating Frame
+	cmds.setParent("mainLayout")
+	cmds.frameLayout("dupFrame", label="Duplicating", labelAlign="top", bs="etchedIn", cll=1, w=insW, fn=font)
+	cmds.columnLayout("dupLayout", w=insW)
+	cmds.button(l="mirror", w=insBtnW, h=btnH, c=dup)
+	cmds.rowColumnLayout(nc=3, cw=([1,20],[2,18],[3,45]))
+	cmds.checkBox("negChck", l="", w=8, v=1)
+	cmds.checkBox("mrgChck", l="", w=8, v=1)
+	cmds.radioButtonGrp("axChck", nrb=3, cw=([1,14],[2,14],[3,14]), h=btnH, sl=1)
+	cmds.setParent("dupLayout")
+	cmds.rowColumnLayout(nc=5, cw=([1,20],[2,22],[3,14],[4,14],[5,10]))
+	cmds.text("neg", h=btnH)
+	cmds.text("mrg", h=btnH)
+	cmds.text("x", h=btnH)
+	cmds.text("y", h=btnH)
+	cmds.text("z", h=btnH)
+	cmds.setParent("dupLayout")
+	cmds.columnLayout(w=insW)
+	cmds.button(l="instance", w=insBtnW, h=btnH, c=ins)
+	cmds.rowColumnLayout(nc=3, cw=([1,10],[2,27],[3,61]))
+	cmds.text(" ")
+	cmds.checkBox("negIns", l="")
+	cmds.radioButtonGrp("insAx", nrb=3, cw=([1,14],[2,14],[3,14]), h=btnH, sl=1)
+	cmds.setParent("dupLayout")
+	cmds.rowColumnLayout(nc=5, cw=([1,8],[2,32],[3,14],[4,14],[5,10]))
+	cmds.text(" ", h=btnH)
+	cmds.text("neg", h=btnH)
+	cmds.text("x", h=btnH)
+	cmds.text("y", h=btnH)
+	cmds.text("z", h=btnH)
+	
+	#deformation Frame
+	cmds.setParent("mainLayout")
+	cmds.frameLayout("defFrame", label="Deform", labelAlign="top", bs="etchedIn", cll=1, w=insW, fn=font)
+	cmds.columnLayout("defLayout", w=insW)
+	cmds.button(l="lattice", w=insBtnW, h=btnH, c=latt)
+	cmds.button(l="sculpt brush", w=insBtnW, h=btnH, c=sculpt)
+	cmds.button(l="soft mod", w=insBtnW, h=btnH, c=soft)
+	
+	#selection Frame
+	cmds.setParent("mainLayout")
+	cmds.frameLayout("selFrame", label="Selection", labelAlign="top", bs="etchedIn", cll=1, w=insW, fn=font)
+	cmds.columnLayout("defLayout", w=insW)
+	cmds.button(l="move normal", w=insBtnW, h=btnH, c=mveNorm)
+	cmds.text("      translation", h=btnH)
+	cmds.radioButtonGrp("transSetts", nrb=2, l1="locl", l2="wrld", cw=([1,40],[2,40]), h=btnH, sl=2, cc=transSett)
+	cmds.text("        rotation", h=btnH)
+	cmds.radioButtonGrp("rottSetts", nrb=2, l1="locl", l2="wrld", cw=([1,40],[2,40]), h=btnH, sl=1, cc=rotSett)
+	cmds.button(l="paint selection", w=insBtnW, h=btnH, c=pntSel)
+	cmds.text("convert selection", h=btnH)
+	cmds.rowColumnLayout(nc=2, cw=spl2CW )
+	cmds.button(l="edges", h=btnH, c=selEdge)
+	cmds.button(l="verts", h=btnH, c=selVert)
+	cmds.button(l="faces", h=btnH, c=selFace)
+	cmds.button(l="uv's", h=btnH, c=selUV)
+	
+	#resolution Frame
+	cmds.setParent("mainLayout")
+	cmds.frameLayout("resFrame", label="Resolution", labelAlign="top", bs="etchedIn", cll=1, w=insW, fn=font)
+	cmds.columnLayout("resLayout", w=insW)
+	cmds.rowColumnLayout(nc=2, cw=spl2CW )
+	cmds.button(l="smooth", h=btnH, c=smth)
+	cmds.intField("smoothField", v=2, h=ffW)
+	cmds.columnLayout(w=insW)
+	cmds.setParent("resLayout")
+	cmds.button(l="delete smooths", w=insBtnW, h=btnH, c=delSmooths)
+	cmds.button(l="triangulate", w=insBtnW, h=btnH, c=tri)
+	
+	cmds.setParent("mainLayout")
+	cmds.frameLayout("uvFrame", label="Texturing", labelAlign="top", bs="etchedIn", cll=1, w=insW, fn=font)
+	cmds.columnLayout("uvLayout", w=insW)
+	cmds.button(l="project planar", w=insBtnW, h=btnH, c=proj)
+	cmds.radioButtonGrp("projAx", nrb=3, cw=spl3CW, h=btnH, la3=["X","Y","Z"], sl=1)
+	cmds.button(l="layout", w=insBtnW, h=btnH, c=layUV)
+	cmds.button(l="select shell", w=insBtnW, h=btnH, c=shell)
+	cmds.button(l="shell border", w=insBtnW, h=btnH, c=shellBord)
+	cmds.rowColumnLayout(nc=2, cw=spl2CW )
+	cmds.button(l="relax", w=insBtnW, h=btnH, c=relx)
+	cmds.button(l="unfold", w=insBtnW, h=btnH, c=unfld)
+	
+	cmds.showWindow(winMRC)
+	
+	"""
+	#window size query
+	geoFrame = cmds.frameLayout("geoFrame", q=True, h=True)
+	cleanFrame = cmds.frameLayout("cleanFrame", q=True, h=True)
+	editFrame = cmds.frameLayout("editFrame", q=True, h=True)
+	dupFrame = cmds.frameLayout("dupFrame", q=True, h=True)
+	defFrame = cmds.frameLayout("defFrame", q=True, h=True)
+	selFrame = cmds.frameLayout("selFrame", q=True, h=True)
+	resframe = cmds.frameLayout("resFrame", q=True, h=True)
+	
+	print(geoFrame)
+	print(cleanFrame)
+	print(editFrame)
+	print(dupFrame)
+	print(defFrame)
+	print(selFrame)
+	print(resframe)
+	"""
+	#winH = 36 + 112 + 225 + 113 + 66 + 156 + 69 + 27
+	#winH = geoFrame + cleanFrame + editFrame + dupFrame + defFrame + selFrame + resframe + 27
+	#cmds.window(winMRC, e=True, h=winH)
+
+#runs the gui function	
+
+"""
+cmds.popupMenu()
+cmds.menuItem(l="change button color")
+"""
+"""
+def selFrameSize(*args):
+	selCol = cmds.frameLayout("selFrame", q=True, cl=True)
+	winH = 36 + 112 + 225 + 113 + 66 + 156 + 69 + 27
+	print(winH)
+	if (selCol==1):
+		winH = 36 + 112 + 225 + 113 + 66 - 156 + 69 + 27 + 178
+		print("minus")
+		print(winH)
+	else:
+		print("plus")
+		winH = 36 + 112 + 225 + 113 + 66 + 156 + 69 + 27
+		print(winH)
+		
+	cmds.window(winMRC, e=True, h=winH)
+
+def resFrameSize(*args):
+	resCol = cmds.frameLayout("resFrame", q=True, cl=True)
+	selCol = cmds.frameLayout("selFrame", q=True, cl=True)
+	winH = 36 + 112 + 225 + 113 + 66 + 156 + 69 + 27
+	print(winH)
+	if (resCol==1):
+		winH = 36 + 112 + 225 + 113 + 66 + 156 - 69 + 27 + 90
+		print("resmin")
+	elif(resCol==0):
+		print("resplus")
+		winH = 36 + 112 + 225 + 113 + 66 + 156 + 69 + 27
+		
+	if (selCol==1):
+		winH = 36 + 112 + 225 + 113 + 66 - 156 + 69 + 27 + 178
+		print("selmin")
+	elif(selCol==0):
+		print("selplus")
+		winH = 36 + 112 + 225 + 113 + 66 + 156 + 69 + 27
+		
+	cmds.window(winMRC, e=True, h=winH)
+"""	
+"""
+for sel in cmds.ls(sl=True):
+	shapes = cmds.listRelatives(sel, shapes=True )
+	for shape in shapes:
+		curShape = cmds.listConnections(shape, type="polySmoothFace" )
+		if( curShape ):
+			cmds.delete(curShape)
+"""
+
+
+

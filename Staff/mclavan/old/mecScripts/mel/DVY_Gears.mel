@@ -1,0 +1,886 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davveys Gear Generator
+''    Author:  
+''    Last Updated: Apr 07, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4442.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+///////////////////////////////////////////////////////////////////////////////
+/*			
+				
+	Copyright © 2006 DVY_Gears. All rights reserved davvey@ntlworld.com
+
+						- DVY_Gears -
+///////////////////////////////////////////////////////////////////////////////
+						
+//	DVY_Gears;
+//	Description and Usage Section
+
+//	Installation	
+
+	Just install scripts in any Maya script path and install
+	Icon in May\\Prefs\Icons directory (to use with any Shelf button)
+
+
+//	Description Section
+
+	These Scripts will nuild Dimensional accurate Metric Gears using the
+	relevant ISO Standards and the GUI will show the English Equivalent
+	during the setting up of the vrious options
+
+// Usage Section
+
+	Choose the number of teeth, type and material for the gears. It may not
+	be possible to achieve target speed ratios precisely because gears must,
+	of course, have an integer number of teeth and also because gears in
+	catalogues must be chosen from a preferred list of numbers of teeth. 
+	
+	The preferred standard gear teeth numbers are:
+	
+	12 13 14 15 16 18 20 22 24 25 28 30
+	32 34 38 40 45 50 54 60 64 70 72 75
+	80 84 90 96 100 120 140 150 180 200 220 250
+	
+	Many catalogues display a more comprehensive range than this but many
+	sizes will not be readily available 'off-the-shelf'. The range of
+	available sizes will depend upon the gear module (m). Generally the
+	lower the module, the greater the range of gear teeth sizes available.
+	
+	The preferred standard module sizes are:-
+	
+	0.5, 0.8, 1, 1.2 5, 1.5, 2, 2.5, 3, 4, 5, 6
+	
+	The full range which this script can produce includes Series 1 and 2
+	which is extracted from JIS B 1701-1973 Standards.
+	
+		0.1, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60,
+		0.70, 0.8, 0.90, 1.00, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 8, 9,
+		10, 11, 12, 14, 16, 18, 20, 22, 25, 28, 32, 36, 40, 45, 50,
+	
+	Large speed ratios are achieved in several stages, choosing the number
+	of teeth for each gear so that the overall reduction is as close to
+	target as is possible.
+	
+	Example
+	
+	Choose the type (Spur, Single Helical, Double Helical etc.) and select
+	Module (metric size). Then set Gear width. Select Teeth per Gear to a
+	maximum of Ten (more can be added afterwards). Choose New Group (default)
+	or add to existing Group.
+	
+	If adding to existing Group select Top Node and load into UI textField.
+	
+	Once Gear Groups are built select Gear Group Top Node and press "Rig Gears"
+	Button. After Rigging Gear Groups can not be added to.
+	
+	After Rigging select the Gear Groups Top Node and to rotate Gear 2 set
+	angle of rotation using the Channel Box attribute ".RotateGrp_2".
+	Repeat for each other Gear if required. 
+	Default speed of roation is 1 RPM for Gear_1 and to adjust set attribute 
+	".RotateSpeed" to desired RPM.
+	
+	To connect one Gear Group to another Select the Gear to be used as a
+	Driver first then select the Shaft to be driven (this must be the first 
+	Gear Shaft in that Group). Press "Connect Gear" Button.
+	Shafts do not have to be in line before connecting and can the Gear Group's
+	Top Node can still be moved afterwards.
+	
+	This will connect the rotateX of the driver shaft to the rotateX of the
+	driven shaft and add an attribute named ". Rotation" to the Driven Group
+	Top Node. This can be set to 1, 0 or -1 forward, off and reverse.
+	
+	
+	3.1 Example  
+	
+	To llustrate the choice of teeth numbers consider a 30:1 target reduction.
+	Alternative solutions are:
+	
+	(72/12)(60/12) reduction, R = 30
+	(72/13)(72/13) reduction, R = 30.67 - (2.2% error, closest to equal sharing)
+	(72/13)(70/13) reduction, R = 29.82 - (0.6% error, very near to equal sharing)
+	
+	This achieved by running the GUI twice with Option to link shafts set for
+	second run of GUI.
+	
+	It should be noted that although in this example the target ratio was
+	attainable exactly, this will not always be so. Also it may be observed
+	that whilst a common module size is required for pinion and wheel gears
+	in each meshing gear pair, they need not be the same at each reduction
+	stage. The changing speeds and torques at each stage may mean that a
+	different module size is desirable from strength and gear size
+	considerations.
+		
+	A Chain of Muliple gears can be set up to achieve any desired ratio if required
+
+	Note:- The Scale of the Gears will be adjusted to set correct Gear Size relevant
+	to the correct size for the Users Maya Unit settings i.e mm, cm, m, in, ft, yd.
+
+*/
+	
+//////////////////////////////////////////////////////////////////////////
+//					DVY_Gears Procedure
+//////////////////////////////////////////////////////////////////////////
+
+	
+//============================================================================
+//	GLOBAL VARIABLES
+//============================================================================
+	global int $DVYDebug;
+
+// Integer Flag that allows print statements to be output to
+// message field for tracking purposes.
+		
+//============================================================================
+
+global proc DVY_Gears()
+{
+	global string $TeethProfiles[], $Type[];
+	
+	global string $Title[], $TitleN[], $IField[], $FField[], $Option[];
+	global int $Teeth[];
+	global float $Module[];
+	
+		$Teeth = {12, 13, 14, 15, 16, 18, 20, 22, 24, 25, 28, 30, 32, 34, 36, 38,
+				  40, 42, 44, 45, 46, 48, 50, 55, 56, 60, 64, 65, 70, 72, 74, 75,
+				  80, 84, 85, 88, 90, 92, 95, 96, 100, 108, 110, 120, 127, 128, 130,
+				  140, 144, 150, 152, 160, 168, 180, 200, 220, 250}; 
+		
+		$Module = {0.1, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60,
+					0.70, 0.8, 0.90, 1.00, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 8, 9,
+					10, 11, 12, 14, 16, 18, 20, 22, 25, 28, 32, 36, 40, 45, 50};
+
+	int $a = $b = $c = 0;
+	
+	// Integer setting used for GUI formLayout section
+	
+	int $H = 5; 	$H1 = $H + 18;
+	int $L = 5;		$L1 = ($L + 70);	$L2 = $L1 + 105; 	$L3 = $L2 + 65; 	$L4 = $L3 + 65;
+	int $i = 0;		$j = $k = 1; $l = 2;
+	
+	//	Check for any "Window History" and delete if it exists.
+	 	if (`windowPref -exists DVY_GearsWindow`)
+			{ windowPref -edit -topLeftCorner 125 700 -widthHeight 480 775 DVY_GearsWindow;}
+	
+	//Check for multiple similar windows.
+		if (`window -q -ex DVY_GearsWindow`) deleteUI DVY_GearsWindow;
+	//Build window.
+		window -w 480 -h 775 -mnb 1 -mxb 0 -sizeable 1  -title "Davvey's Gear Generator ver 1.0.3" DVY_GearsWindow;
+	
+	//Build 'Edit' menu.
+	
+	string $menuBarLayout = `menuBarLayout`;
+		menu -label "File"; 
+ 			menuItem -label "Close" -command "deleteUI DVY_GearsWindow";		
+		menu -label "About"; 
+	 		menuItem -label "About Gear Generator" -command "DVY_AboutGearsWin;";
+			
+	setParent..;
+
+	// Create Main Layout column
+			
+	string $MainPanel = `columnLayout -width 475 -adj 1 -cat "both" 5 -cal "center" "Main Panel"`;
+	
+	string $GTitle = `columnLayout -width 531 -adj 1 -cal "center" "Title"`;
+		iconTextStaticLabel -w 360 -h 50 -st "iconOnly" -i1 "DavveyLogo.xpm" GIMage00 ;		
+
+		text -height 3 -label " " ;	//Spacer
+		separator -height 5 -style "double" ;
+		text -bgc .5 .5 1 -height 20 -align "center" -font "boldLabelFont" -label "Davvey's Gear Generator.";
+		separator -height 5 -style "double";
+		text -height 3  -label " " ;	//Spacer
+		
+	string $GTabs = `tabLayout -width 435 -imw 1 -imh 1 "Tabs"`;
+	
+	string $TitleC1 = `columnLayout -width 425 -adj 1 -cal "center" "Setup Gears"`;
+	
+		text -height 3 -label " " ;	//Spacer
+		separator -height 5 -style "double" ;
+		text -bgc 1 1 0.85 -height 2 -align "left" -label "";
+		text -bgc 1 1 0.85 -height 15 -align "left" 
+			-label " Fill in Fields as Required then press `Build` Button. Select Module First then select Gear Tooth";
+		text -bgc 1 1 0.85 -height 15 -align "left" -label " Design. Then set Teeth for each Gear. The GUI will calc ratio between each Gear pair and";
+		text -bgc 1 1 0.85 -height 15 -align "left" -label " and the overal Gear Ratio. If req any later Gear Sets can be connected to any existing Gear.";
+		text -bgc 1 1 0.85 -height 2 -align "left" -label "";
+		
+		separator -bgc 1 1 0.85 -height 5 -style "double";
+		text -height 2 -label " " ;	//Spacer
+		
+		string $GSSlot = `rowColumnLayout -enable 1 -nc 7
+						-cw 1 70 -cal 1 "center" -cat 1 "both" 1
+						-cw 2 86 -cal 2 "center" -cat 2 "both" 1
+						-cw 3 43 -cal 3 "right" -cat 3 "both" 1
+						-cw 4 15 -cal 4 "left" -cat 4 "both" 1
+						-cw 5 48 -cal 5 "left" -cat 5 "both" 1
+						-cw 6 15 -cal 6 "left" -cat 6 "both" 1
+						-cw 7 175 -cal 7 "center" -cat 7 "both" 1
+					"GSSlotCol"`;
+	
+		text -height 15 -label " Gear Module";
+		text -height 15 -label "Diam. Pitch Equiv.";
+		
+		text -height 15 -align "right" -label "  Gear";
+		text -height 15 -label "";
+		text -height 15 -label "Width";
+		text -height 15 -label "";
+		
+		text -height 15 -label "Gear Style" -align "center";		
+		
+		optionMenu -width 70 -cc ("DVY_GearCallback(0)") DVY_Mod;
+				menuItem -l "Module";
+				menuItem -l $Module[$a++];	menuItem -l $Module[$a++];		menuItem -l $Module[$a++];
+				menuItem -l $Module[$a++];	menuItem -l $Module[$a++];		menuItem -l $Module[$a++];
+				menuItem -l $Module[$a++];	menuItem -l $Module[$a++];		menuItem -l $Module[$a++];
+				menuItem -l $Module[$a++];	menuItem -l $Module[$a++];		menuItem -l $Module[$a++];
+				menuItem -l $Module[$a++];	menuItem -l $Module[$a++];		menuItem -l $Module[$a++];
+				menuItem -l $Module[$a++];	menuItem -l $Module[$a++];		menuItem -l $Module[$a++];
+				menuItem -l $Module[$a++];	menuItem -l $Module[$a++];		menuItem -l $Module[$a++];
+				menuItem -l $Module[$a++];	menuItem -l $Module[$a++];		menuItem -l $Module[$a++];
+				menuItem -l $Module[$a++];	menuItem -l $Module[$a++];		menuItem -l $Module[$a++];
+				menuItem -l $Module[$a++];	menuItem -l $Module[$a++];		menuItem -l $Module[$a++];
+				menuItem -l $Module[$a++];	menuItem -l $Module[$a++];		menuItem -l $Module[$a++];
+				menuItem -l $Module[$a++];	menuItem -l $Module[$a++];		menuItem -l $Module[$a++];
+				menuItem -l $Module[$a++];	menuItem -l $Module[$a++];		menuItem -l $Module[$a++];
+				menuItem -l $Module[$a++];	menuItem -l $Module[$a++];
+					
+					
+				floatField -editable false -pre 3 EnglishModFloatField;
+				
+				intField -editable false -minValue 1 -value 25 -cc "DVY_GearCallback(12)" GearWidthIntField;
+				
+				text -height 20 -width 10 -label "mm.";
+		
+				floatField -editable false -pre 2 -value 1 EngGearWidthFloatField;
+				
+				text -height 20 -width 10 -label "ins.";
+				
+				radioButtonGrp  -height 15 -nrb 2 -select 1 -label "" 
+						-cl3 "left" "left" "left"
+						-columnWidth3 1 85 90 
+						-labelArray2 "Hubbed Style" "Straight Side" 
+					GearHubRadioButton;	
+				
+				
+	setParent..;		
+	
+		separator -height 6 -style "double" ;
+					
+			radioButtonGrp  -height 15 -nrb 4 -select 1 -label " Gear Type" 
+							-cl5 "left" "left" "left" "left" "left"
+							-columnWidth5 65 50 60 95 85 
+							-labelArray4 "Spur" "Helical" "Double Helical" "HerringBone"
+							
+							-onCommand1 "radioButtonGrp -edit -enable false GearHelixRadioButton;"
+							-onCommand2 "radioButtonGrp -edit -enable true GearHelixRadioButton;"
+							-onCommand3 "radioButtonGrp -edit -enable true GearHelixRadioButton;"
+							-onCommand4 "radioButtonGrp -edit -enable true GearHelixRadioButton;"
+						GearStyleRadioButton;	
+		
+		separator -height 5 -style "single" ;
+		text -height 2 -label " " ;	//Spacer
+		
+	
+			radioButtonGrp -enable false -height 15 -nrb 2 -select 1 -label " Helix Direction " 
+				-ann "The First Gear will be set to the correct Hand and next gear will be reveresed to set up meshing"
+						-cl3 "left" "left" "left"
+						-columnWidth3 85 95 95 
+						-labelArray2 "Right Handed" "Left Handed" 
+					GearHelixRadioButton;	
+			
+		separator -height 6 -style "double" ;
+		text -height 2 -label " " ;	//Spacer
+				
+	frameLayout -bv true -bs "in" -width 410 -mh 3 -mw 3 -labelVisible false -collapsable false ;
+	
+		// Title and Info Section for the "Main Column Setup" tab. 
+		
+//	string $TitleC2 = `columnLayout -width 400 -adj 1 -cal "center" "Title"`;
+
+ 	string $form = `formLayout -numberOfDivisions 200  "GearForm"`;
+	
+		$Title[1] = `text -height 20 - label "Gear No :- "`;
+		$Title[2] = `text -height 20 - label "No. of Teeth :- "`;
+		$Title[3] = `text -height 20 - label "    PCD"`;
+		$Title[4] = `text -height 20 - label "    Ratio"`;
+		$Title[5] = `text -height 20 - label " Final Ratio"`;
+		
+		$TitleN[1] =  `text -height 20 - label "Gear No. 1"`;	$TitleN[2] =  `text -height 20 - label "Gear No. 2"`;
+		$TitleN[3] =  `text -height 20 - label "Gear No. 3"`;	$TitleN[4] =  `text -height 20 - label "Gear No. 4"`;
+		$TitleN[5] =  `text -height 20 - label "Gear No. 5"`;	$TitleN[6] =  `text -height 20 - label "Gear No. 6"`;
+		$TitleN[7] =  `text -height 20 - label "Gear No. 7"`;	$TitleN[8] =  `text -height 20 - label "Gear No. 8"`;
+		$TitleN[9] =  `text -height 20 - label "Gear No. 9"`;	$TitleN[10] =  `text -height 20 - label "Gear No. 10"`;
+	
+		$a = 0;
+		
+		optionMenu -width 110 -cc ("DVY_GearCallback(1)") DVY_Option01;
+				menuItem -l "No. of Teeth";
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++]; 
+					
+		$a = 0;
+					
+		optionMenu -width 110 -cc ("DVY_GearCallback(2)") DVY_Option02;
+				menuItem -l "No. of Teeth";
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++]; 
+	
+		$a = 0;
+					
+		optionMenu -width 110 -cc ("DVY_GearCallback(3)") DVY_Option03;
+				menuItem -l "No. of Teeth";
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++]; 
+	
+		$a = 0;
+					
+		optionMenu -width 110 -cc ("DVY_GearCallback(4)") DVY_Option04;
+				menuItem -l "No. of Teeth";
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++]; 
+	
+		$a = 0;
+					
+		optionMenu -width 110 -cc ("DVY_GearCallback(5)") DVY_Option05;
+				menuItem -l "No. of Teeth";
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++]; 
+	
+		$a = 0;
+					
+		optionMenu -width 110 -cc ("DVY_GearCallback(6)") DVY_Option06;
+				menuItem -l "No. of Teeth";
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++]; 
+	
+		$a = 0;
+					
+		optionMenu -width 110 -cc ("DVY_GearCallback(7)") DVY_Option07;
+				menuItem -l "No. of Teeth";
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++]; 
+	
+		$a = 0;
+					
+		optionMenu -width 110 -cc ("DVY_GearCallback(8)") DVY_Option08;
+				menuItem -l "No. of Teeth";
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++]; 
+	
+		$a = 0;
+					
+		optionMenu -width 110 -cc ("DVY_GearCallback(9)") DVY_Option09;
+				menuItem -l "No. of Teeth";
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++]; 
+	
+		$a = 0;
+					
+		optionMenu -width 110 -cc ("DVY_GearCallback(10)") DVY_Option010;
+				menuItem -l "No. of Teeth";
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];  	menuItem -l $Teeth[$a++];	menuItem -l $Teeth[$a++];
+			   	menuItem -l $Teeth[$a++]; 
+
+		$a = 0;
+
+		$FField[1] = `floatField -pre 1 -height 20 -width 50`;	$FField[2] = `floatField -pre 1 -height 20 -width 50`;
+		$FField[3] = `floatField -pre 1 -height 20 -width 50`;	$FField[4] = `floatField -pre 1 -height 20 -width 50`;
+		$FField[5] = `floatField -pre 1 -height 20 -width 50`;	$FField[6] = `floatField -pre 1 -height 20 -width 50`;
+		$FField[7] = `floatField -pre 1 -height 20 -width 50`;	$FField[8] = `floatField -pre 1 -height 20 -width 50`;
+		$FField[9] = `floatField -pre 1 -height 20 -width 50`;	$FField[10] = `floatField -pre 1 -height 20 -width 50`;
+	
+		
+		$FField[11] = `floatField -pre 2 -height 20 -width 50`;	$FField[12] = `floatField -pre 2 -height 20 -width 50`;
+		$FField[13] = `floatField -pre 2 -height 20 -width 50`;	$FField[14] = `floatField -pre 2 -height 20 -width 50`;	
+		$FField[15] = `floatField -pre 2 -height 20 -width 50`;	$FField[16] = `floatField -pre 2 -height 20 -width 50`;	
+		$FField[17] = `floatField -pre 2 -height 20 -width 50`;	$FField[18] = `floatField -pre 2 -height 20 -width 50`;	
+		$FField[19] = `floatField -pre 2 -height 20 -width 50`;
+		
+		
+		$FField[20] = `floatField -pre 2 -height 20 -width 50`;
+	
+	formLayout -edit -enable false
+		
+			-attachForm $Title[1]	"top"	($H + ($H1 * $i))			-attachForm $Title[1]	"left"	$L
+						
+			-attachForm $Title[2]	"top"	($H + ($H1 * $i))			-attachForm $Title[2]	"left"	$L1
+			-attachForm $Title[3]	"top"	($H + ($H1 * $i))			-attachForm $Title[3]	"left"	$L2
+			-attachForm $Title[4]	"top"	($H + ($H1 * $i))			-attachForm $Title[4]	"left"	$L3
+			-attachForm $Title[5]	"top"	($H + ($H1 * $i++))			-attachForm $Title[5]	"left"	$L4
+	
+			-attachForm $TitleN[1]	"top"	($H + ($H1 * $i++))			-attachForm $TitleN[1]	"left"	$L
+			-attachForm $TitleN[2]	"top"	($H + ($H1 * $i++))			-attachForm $TitleN[2]	"left"	$L
+			-attachForm $TitleN[3]	"top"	($H + ($H1 * $i++))			-attachForm $TitleN[3]	"left"	$L
+			-attachForm $TitleN[4]	"top"	($H + ($H1 * $i++))			-attachForm $TitleN[4]	"left"	$L
+			-attachForm $TitleN[5]	"top"	($H + ($H1 * $i++))			-attachForm $TitleN[5]	"left"	$L
+			-attachForm $TitleN[6]	"top"	($H + ($H1 * $i++))			-attachForm $TitleN[6]	"left"	$L
+			-attachForm $TitleN[7]	"top"	($H + ($H1 * $i++))			-attachForm $TitleN[7]	"left"	$L
+			-attachForm $TitleN[8]	"top"	($H + ($H1 * $i++))			-attachForm $TitleN[8]	"left"	$L
+			-attachForm $TitleN[9]	"top"	($H + ($H1 * $i++))			-attachForm $TitleN[9]	"left"	$L
+			-attachForm $TitleN[10]	"top"	($H + ($H1 * $i++))			-attachForm $TitleN[10]	"left"	$L
+			
+			-attachForm DVY_Option01	"top"	($H + ($H1 * $j++))		-attachForm DVY_Option01	"left"	$L1
+			-attachForm DVY_Option02	"top"	($H + ($H1 * $j++))		-attachForm DVY_Option02	"left"	$L1
+			-attachForm DVY_Option03	"top"	($H + ($H1 * $j++))		-attachForm DVY_Option03	"left"	$L1
+			-attachForm DVY_Option04	"top"	($H + ($H1 * $j++))		-attachForm DVY_Option04	"left"	$L1
+			-attachForm DVY_Option05	"top"	($H + ($H1 * $j++))		-attachForm DVY_Option05	"left"	$L1
+			-attachForm DVY_Option06	"top"	($H + ($H1 * $j++))		-attachForm DVY_Option06	"left"	$L1
+			-attachForm DVY_Option07	"top"	($H + ($H1 * $j++))		-attachForm DVY_Option07	"left"	$L1
+			-attachForm DVY_Option08	"top"	($H + ($H1 * $j++))		-attachForm DVY_Option08	"left"	$L1
+			-attachForm DVY_Option09	"top"	($H + ($H1 * $j++))		-attachForm DVY_Option09	"left"	$L1
+			-attachForm DVY_Option010	"top"	($H + ($H1 * $j++))		-attachForm DVY_Option010	"left"	$L1
+			
+			-attachForm $FField[1]	"top"	($H + ($H1 * $k++))		-attachForm $FField[1]	"left"	$L2
+			-attachForm $FField[2]	"top"	($H + ($H1 * $k++))		-attachForm $FField[2]	"left"	$L2
+			-attachForm $FField[3]	"top"	($H + ($H1 * $k++))		-attachForm $FField[3]	"left"	$L2
+			-attachForm $FField[4]	"top"	($H + ($H1 * $k++))		-attachForm $FField[4]	"left"	$L2
+			-attachForm $FField[5]	"top"	($H + ($H1 * $k++))		-attachForm $FField[5]	"left"	$L2
+			-attachForm $FField[6]	"top"	($H + ($H1 * $k++))		-attachForm $FField[6]	"left"	$L2
+			-attachForm $FField[7]	"top"	($H + ($H1 * $k++))		-attachForm $FField[7]	"left"	$L2
+			-attachForm $FField[8]	"top"	($H + ($H1 * $k++))		-attachForm $FField[8]	"left"	$L2
+			-attachForm $FField[9]	"top"	($H + ($H1 * $k++))		-attachForm $FField[9]	"left"	$L2
+			-attachForm $FField[10]	"top"	($H + ($H1 * $k++))		-attachForm $FField[10]	"left"	$L2
+			
+			-attachForm $FField[11]	"top"	($H + ($H1 * $l++))		-attachForm $FField[11]	"left"	$L3
+			-attachForm $FField[12]	"top"	($H + ($H1 * $l++))		-attachForm $FField[12]	"left"	$L3
+			-attachForm $FField[13]	"top"	($H + ($H1 * $l++))		-attachForm $FField[13]	"left"	$L3
+			-attachForm $FField[14]	"top"	($H + ($H1 * $l++))		-attachForm $FField[14]	"left"	$L3
+			-attachForm $FField[15]	"top"	($H + ($H1 * $l++))		-attachForm $FField[15]	"left"	$L3
+			-attachForm $FField[16]	"top"	($H + ($H1 * $l++))		-attachForm $FField[16]	"left"	$L3
+			-attachForm $FField[17]	"top"	($H + ($H1 * $l++))		-attachForm $FField[17]	"left"	$L3
+			-attachForm $FField[18]	"top"	($H + ($H1 * $l++))		-attachForm $FField[18]	"left"	$L3
+			-attachForm $FField[19]	"top"	($H + ($H1 * $l))		-attachForm $FField[19]	"left"	$L3
+			
+			-attachForm $FField[20]	"top"	($H + ($H1 * $l))		-attachForm $FField[20]	"left"	$L4
+		
+		$form;
+ 	
+	setParent..;
+	setParent..;
+
+		text -label "" -height 5;
+	
+		
+	setParent $GTabs;
+	
+//	frameLayout -bv true -bs "in" -width 410 -mh 5 -mw 10 -labelVisible false -collapsable false "Help and Info" ;
+	
+	setParent $MainPanel;	
+
+// Build it.
+
+	frameLayout -cll 0 -vis 1 -lv 0 -label "Build" -la "center" -bs "out" "Help and Info" ;;
+	
+		columnLayout -adj 1 -cat "both" 1 -cal "center" ;
+			separator -h 2 -style "none";
+			
+			radioButtonGrp  -height 15 -nrb 3 -select 1 -label " Group Setup Options:-" 
+							-cl4 "right" "left" "left" "left"
+							-columnWidth4 120 80 100 120
+							-labelArray3 "New Group" "Exisitng Group"  "Clear Selected Group Field"
+							-onCommand1 "textField -edit -enable false SelectGrp01; button -edit -enable false SelectGrpGear;"
+							-offCommand1  ""
+							
+							-onCommand2 "textField -edit -enable true SelectGrp01; button -edit -enable true SelectGrpGear;"
+							-offCommand2  "textField -edit -enable false -tx \"\" SelectGrp01; button -edit -enable false SelectGrpGear;"
+
+							-onCommand3  "textField -edit  -tx \"\" -enable false SelectGrp01; button -edit -enable false SelectGrpGear; radioButtonGrp -edit -sl 1 GearGrpRadioButton;"
+							
+						GearGrpRadioButton;	
+			
+			rowColumnLayout -nc 2
+					-cw 1 250 -cal 1 "center" -cat 1 "both" 5
+					-cw 2 210 -cal 2 "center" -cat 2 "both" 5;
+			
+				textField -width 150 -enable true -editable false SelectGrp01;
+				button -enable false -height 25 -bgc  0.7 1 0.7 -label "Load Group Top Node to Use"
+					-command "$TempSel = `ls - sl`; textField -edit -text $TempSel SelectGrp01;"	
+					SelectGrpGear;	
+				
+	setParent..;
+	
+			separator -h 5 -style "none";
+	
+			columnLayout -adj 1 -cat "both" 5 -cal "center" ;
+			
+				button -enable false -height 25 -bgc 0.7 0.7 1 -label "Build"
+					-command " print \"\\n Building Gears as Required Davvey © 2006..\\n\"; DVY_GearBuild;"
+					GearBuilder;	
+				
+			separator -h 2 -style "none";
+
+			rowColumnLayout -nc 2
+					-cw 1 250 -cal 1 "left" -cat 1 "both" 5
+					-cw 2 200 -cal 2 "center" -cat 2 "both" 5;
+		
+			text -align "left" -label " Select Top Node to Rig Gears and Press Button.\n (once Rigged Gear Group cannot be added to.";
+				
+							button -height 25 -bgc 1 0.7 0.7 -label "Rig Gears"
+					-command " print \"\\n Rigging Gears as Required Davvey © 2006..\\n\"; DVY_GearSet;"
+					GearRigger;	
+
+	
+	setParent..;
+
+			
+			separator -h 2 -style "none";
+			separator -h 5 -style "single";
+			separator -h 5 -style "none";
+
+			radioButtonGrp  -height 15 -nrb 3 -select 1 -label " Connect Options:-" 
+							-cl4 "right" "left" "left" "left"
+							-columnWidth4 100 50 90 70 
+							-labelArray3 "None" "1st Gear Set" "Other Set" 
+							
+							-onCommand3 "textField -edit -enable true Select01; button -edit -enable true SelectGear;"
+							-offCommand3  "textField -edit -enable false -tx \"\" Select01; button -edit -enable false SelectGear;"
+						GearConnectRadioButton;	
+			
+	//		separator -h 2 -style "none";
+			
+	setParent..;
+	
+			text -align "left" 
+				-label "  Select Group Node of Gear to Connect to and Press Button to load it then Connect Sets." 
+				;
+		//	separator -h 2 -style "none";
+			
+	
+		rowColumnLayout -nc 2
+					-cw 1 250 -cal 1 "center" -cat 1 "both" 5
+					-cw 2 190 -cal 2 "center" -cat 2 "both" 5;
+			
+				textField -width 150 -enable false -editable false Select01;
+				button -enable true -height 25 -bgc  0.7 1 0.7 -label "Connect Gears"
+					-command "$TempSel = `ls - sl`; DVY_GearConnect;"	
+					SelectGear;	
+				
+				
+	
+				separator -h 5 -style "none";
+
+	setParent..;		
+	
+//Show the DVY_Screws UI Window.
+	
+	
+ 	showWindow DVY_GearsWindow;
+	
+}// End of DVY_Gears Global procedure.
+
+global proc DVY_GearCallback(int $T)
+{
+	
+// ******************************************************************************** //	
+//	Global Variables
+	 
+	global string $Title[], $TitleN[], $IField[], $FField[], $Option[];
+	
+	global float $Data[], $Module[];
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Local Variables
+	 
+	string $Temp[], $Temps[], $Shader[], $Tooth[]; 
+	string $CurSel[], $GearGrp[], $Gears[];	// string $PCurveC;	
+	int $e, $E, $N, $i, $j, $R;	
+	float $Pi, $m, $A, $GW, $PCD, $BD, $RD, $OD;
+	float $Ad, $Dd, $Pd, $WH, $Angle, $Helix ;
+	float $Pos[], $Profiles[];
+	float $Move, $HubMx, $BoreMx, $Bore, $HubT;
+	
+	float $mod = 0;
+	float $Ratios[];
+	string $ModS = `optionMenu -q -v DVY_Mod`;
+
+	if ($ModS == "Module") { $mod = 0;}
+	if ($ModS != "Module") {$mod = `optionMenu -q -v DVY_Mod`;}
+	
+		
+	print ("$mod is " + $mod + "\n");
+	
+	
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+	int $GearM[];
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+	
+	if ($mod > 0)	
+		{
+			$Pd = 25.4 / $mod;
+			
+			print ("$Pd is " + $Pd + "\n");
+			intField -edit -enable true -editable true GearWidthIntField;
+			floatField -edit -value $Pd EnglishModFloatField;							
+			formLayout -edit -enable true GearForm;
+			
+			if ($T == 12)
+				{
+					$EngGW = `intField -q -v GearWidthIntField`/25.4;
+					floatField -edit -value $EngGW EngGearWidthFloatField;
+				}
+		//	button -edit -enable true GearBuilder;
+		}
+		
+	if ($ModS == "Module") 
+		{
+			intField -edit -enable false -editable false GearWidthIntField;
+			formLayout -edit -enable false GearForm;
+			button -edit -enable false GearBuilder;
+		}
+		
+	string $Test = `optionMenu -q -v DVY_Option01`;
+		
+	if (($ModS != "Module") && ($Test != "No. of Teeth"))
+		{
+			button -edit -enable true GearBuilder;
+		}
+		
+	if ($Test == "No. of Teeth")
+		{
+			button -edit -enable false GearBuilder;
+			
+		}
+	
+	
+	for ($c=0; $c<11; $c++)	{$Ratios[$c] = 1;}
+	
+	if ($mod > 0)
+		{
+			for ($t=1; $t<11; $t++)
+				{
+				string $GearS = `optionMenu -q -v ("DVY_Option0" + $t)`;
+					if ($GearS != "No. of Teeth")
+						{
+						if ($mod > 0)
+							{
+								$GearM[$t] = `optionMenu -q -v ("DVY_Option0" + $t)`;
+								$PCD = ($GearM[$t] * $mod);		//	Pitch Circle Diameter 
+								floatField -edit -value $PCD $FField[$t];
+								if ($t > 1)
+								{
+									$Ratio = (`floatField -q -value $FField[$t-1]`/`floatField -q -value $FField[$t]`);
+									floatField -edit -value $Ratio $FField[$t+9];
+									
+									 for ($r = 11; $r<21; $r++)
+									 	{
+											if (`floatField -q -value $FField[$r]` > 0)
+												{  $Ratios[$r-10] = `floatField -q -value $FField[$r]`;}
+												  else {  $Ratios[$r-10] = 1;}
+									 	}
+									
+										$Ratios[0] = ($Ratios[1] * $Ratios[2] * $Ratios[3] * $Ratios[4]
+												* $Ratios[5] * $Ratios[6] * $Ratios[7]* $Ratios[8] * $Ratios[9]);
+																				 
+										//	print ("$Ratios[0] is " + $Ratios[0] + "\n");
+											floatField -edit -value $Ratios[0] $FField[20];
+									}	
+								}
+						}
+						else if ($GearS == "No. of Teeth")
+							{ 	
+								$PCD = 0;
+								floatField -edit -value $PCD $FField[$t];	
+								floatField -edit -value $PCD $FField[$t+9];
+						}	
+				}
+		}
+		else {print "Oops please select Gear Module value first. © Davvey 2006\n";}
+	
+	
+}// End of DVY_GearCallback global procedure.
+
+
+
+
+global proc DVY_AboutGearsWin()
+ {
+	global float $DVYTol;
+	if ((`window -ex DavveyAboutGearsWindow`) == true) 
+		{
+			deleteUI DavveyAboutGearsWindow;
+		}
+		if (`windowPref -ex DavveyAboutGearsWindow`) windowPref -remove DavveyAboutGearsWindow;
+		window -t " About:-  Davvey's Gear Generator." -width 425 -height 300 -sizeable 0 DavveyAboutGearsWindow;
+		//Build 'Edit' menu.
+	
+	string $menuBarLayout = `menuBarLayout -height 20`;
+		menu -label "File"; 
+ 			menuItem -label "Close" -command "deleteUI DavveyAboutGearsWindow";		
+
+	setParent;
+	setParent;
+
+		columnLayout -adjustableColumn true -columnAttach "both" 5 -columnWidth 350; 
+	
+		text -height 2 -label " " ;	//Spacer
+		separator -height 10 -style "double" ;
+			text -bgc 0.5 0.5 1 -height 20 -align "center" -fn "boldLabelFont" -l "Davvey's Gear Generator..";
+			text -bgc 0.5 0.5 1 -height 20 -align "center" -fn "boldLabelFont" -l "copyright (c) 2006 Dave Lake..";
+		separator -height 8 -style "double" ;
+		text -height 2 -label " " ;	//Spacer
+		
+	frameLayout -cl 0 -label "" -labelAlign "center" -borderStyle "etchedOut";
+		columnLayout -adjustableColumn true -columnAttach "both" 2 -columnWidth 250; 
+		
+		text -bgc 1 1 0.8 -height 5 -align "left" -l " ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -fn "boldLabelFont" -l "  Special Thanks:- ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -fn "plainLabelFont" -l "  Thanks to my wife Jan for her support and patience during the time";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "   its taken to learn Maya and how to write these scripts.";
+		text -bgc 1 1 0.8 -height 10 -align "left" -l " ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "  Also dedicated to Jackie and Joanna (my expensive pride and joys!!)";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "  Finally these Collected works are dedicated to the memory of Darryl.";
+		text -bgc 1 1 0.8 -height 5 -align "left" -l " ";
+		setParent ..;	
+		setParent ..;	
+		text -align "center" -l "email :- Davvey@ntlworld.com";
+		text -align "center" -l "website :- www..............";
+	setParent ..; 
+
+	showWindow DavveyAboutGearsWindow;
+	
+}// End of DVY_AboutGearsWin Procedure
+
+ 

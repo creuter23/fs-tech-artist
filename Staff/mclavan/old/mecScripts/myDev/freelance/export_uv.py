@@ -1,0 +1,833 @@
+'''
+Exporter
+
+
+How to Run:
+
+import maya.cmds as cmds
+import export
+
+info = export.Exporter(cmds.ls(sl=True)[0])
+# Both of these will prompt you where to save the file.
+info.asciiWrite()
+info.binaryWrite()
+
+'''
+
+
+import maya.cmds as cmds
+import maya.mel as mel
+import struct
+
+
+mel.eval( 'python("import sys")' )
+
+
+class Callback():
+	_callData = None
+	def __init__(self,func,*args,**kwargs):
+		self.func = func
+		self.args = args
+		self.kwargs = kwargs
+	
+	def __call__(self, *args):
+		Callback._callData = (self.func, self.args, self.kwargs)
+		mel.eval('global proc py_%s(){python("sys.modules[\'%s\'].Callback._doCall()");}'%(self.func.__name__, __name__))
+		try:
+			mel.eval('py_%s()'%self.func.__name__)
+		except RuntimeError:
+			pass
+		
+		if isinstance(Callback._callData, Exception):
+			raise Callback._callData
+		return Callback._callData 
+	
+	@staticmethod
+	def _doCall():
+		(func, args, kwargs) = Callback._callData
+		Callback._callData = func(*args, **kwargs)
+		
+		
+class Vertex( object ):
+	def __init__( self, vertex ):
+		'''
+		object.vtx[0]
+		'''
+		# entire name of the vector object.vtx[0]
+		self.name = vertex
+		self.idNum = Vertex.getIDNum( vertex )
+		self.pos = Vertex.getVtxPos( vertex )
+		self.uvs = Vertex.getAllUVsCoords( vertex ) 
+		self.uvMaps = Vertex.getUVSets( vertex ) 
+		# self.normals = Vertex.getFaceNormals( vertex )
+		self.vtxFace, self.normals = Vertex.getFaceNormals( vertex )
+		# Do I need to record a three normals?
+	
+	def printInfo(self):
+		strNums = lambda x: [ str(num) for num in x ]
+		
+		line = "%s Vertex: %s ID: %s %s\n" %("-"*20, self.name, self.idNum, "-"*20)
+		line += "Pos: %s\n" %", ".join(strNums(self.pos))
+		line += "Normals: FacesVertex: %s\n" %(len(self.normals))
+		'''
+		for i, normal in enumerate(self.vtxFace):
+			line += "FaceVertex: %s Normals: %s\n" %(normal, ", ".join(strNums(self.normals[i])))
+		
+		'''
+		for key, normal in self.normals.items():
+			line += "FaceVertex: %s Normals: %s\n" %(key, ", ".join(strNums(normal)))
+
+		line += "NumUVsMaps: %s UVMaps: %s\n" %(len(self.uvs),", ".join(self.uvMaps))
+		for i, uv in enumerate(self.uvs):
+			line += "UVmap: %s UVs: %s\n%s\n" %(self.uvMaps[i], len(uv)/2 , ", ".join(strNums(uv)))
+		print(line)
+		
+	@staticmethod
+	def getFaceNormals( vertex ):
+		# vertex normal name
+		fvtx = cmds.polyListComponentConversion( vertex, fv=True, tvf=True )
+		allFvtx = cmds.filterExpand( fvtx, expand=True, sm=70 )	
+		
+		# Face index
+		# vtxFaces = Vertex.getFaceVertexIndex(allFvtx)
+		'''
+		# There could be duplicate tags, so the dictionary will over write data!
+		tempNormals = {}
+		
+		for i, curFvtx in enumerate(allFvtx):
+			normalCoords = cmds.polyNormalPerVertex( curFvtx, q=True, xyz=True )
+			curFace = vtxFaces[i]
+			tempNormals[curFvtx] = normalCoords
+		return tempNormals
+		'''
+		# normals = []
+		normals = {}
+		for i, curFvtx in enumerate(allFvtx):
+			normalCoords = cmds.polyNormalPerVertex( curFvtx, q=True, xyz=True )
+			# curFace = vtxFaces[i]
+			
+			normals[curFvtx] = normalCoords
+			# normals.append( normalCoords )		
+		return allFvtx, normals
+		
+		
+	@staticmethod
+	def getFaceVertexIndex(faceVtxs ):
+		faces = []		
+		for faceVtx in faceVtxs:
+			pieces = faceVtx.split('[')
+			face = int(pieces[-1][:-1])
+			faces.append(face)
+		return faces
+		
+	def getNormalCoords(self, faceID ):
+		return self.normals[faceID]
+		
+	@staticmethod
+	def getUVSets( vertex ):
+		return cmds.polyUVSet(vertex, query=True, allUVSets=True)
+		
+	@staticmethod
+	def getAllUVsCoords( vertex ):
+		
+		uvSets = Vertex.getUVSets(vertex)
+		currUVSet = cmds.polyUVSet( vertex, q=True, currentUVSet=True )[0]
+
+		totalUVs = []
+		for uvSet in uvSets:
+			# Set uv to this current uvSet. 
+			cmds.polyUVSet( vertex, currentUVSet=True, uvSet=uvSet ) 			
+			
+			# getting a list of the coords
+			uvCoords = Vertex.getCurrentCoords( vertex )
+			totalUVs.append(uvCoords)
+		
+		# Returns the current set back to its orginal
+		cmds.polyUVSet( vertex, currentUVSet=True, uvSet=currUVSet)	
+		
+		return totalUVs
+		
+	
+	@staticmethod
+	def getCurrentCoords( vertex ):
+		uv = cmds.polyListComponentConversion( vertex, fv=True, tuv=True )
+		if( uv ):
+			uvAll = cmds.filterExpand( uv, expand=True, sm=35 )
+			uvCoords = cmds.polyEditUV( uvAll , q=True )		
+			return uvCoords
+		else:
+			return []
+		
+	@staticmethod
+	def getCurrentUVMaps( vertex ):
+		uv = cmds.polyListComponentConversion( vertex, fv=True, tuv=True )
+		uvAll = cmds.filterExpand( uv, expand=True, sm=35 )
+		
+		return uvAll
+		
+	@staticmethod
+	def getIDNum( vertex ):
+		'''
+		Get the id number out of the vertex string.
+		Will take anything with the naming convention 'obj.vtx[0]'
+		This method argument can be a list of vertex.
+		
+		returns a vertex id(int) or a list of vertex id(int) numbers.
+		'''
+		
+		if(type(vertex) is list):
+			idNums = []
+			for vert in vertex:
+				pieces = vert.split( "[" )
+				idNum = pieces[-1][:-1]
+				idNums.append(int(idNum))
+			return idNums
+				
+		else:
+			pieces = vertex.split( "[" )  # ['obj.vtx', '0]']
+			idNum = pieces[-1][:-1]
+			return int(idNum)
+
+	# Couple of static member classes could be handy here.
+	@staticmethod 
+	def getVtxPos( vertex ):
+		'''
+		Given the obj.vtx[0] it will return the vertex current postion 
+		'''		
+		return cmds.pointPosition( vertex, w=True )
+	
+'''
+from freelance import hashTest
+reload(hashTest)
+
+selectedVtx = cmds.ls(sl=True)
+totalVtx = cmds.filterExpand( selectedVtx, expand=True, sm=31 )
+for vtx in totalVtx:
+	tempVtx = hashTest.Vertex(vtx)
+	tempVtx.printOut()
+
+
+tempVtx1 = hashTest.Vertex('pCube2.vtx[0]')
+tempVtx2.normals
+tempVtx1.printOut()
+tempVtx2 = hashTest.Vertex('pCube1.vtx[1]')
+tempVtx2.printOut()
+'''
+
+
+		
+class Exporter(object):
+	'''
+	Include the starting object of the heirarchy the user wishes to export.
+	
+	'''
+	
+	def __init__(self, startObj):
+		self.startObj = startObj	
+		self.nodes = []
+		self.info = {}
+		self.slide( startObj )
+		
+		# Reversing the order of the list
+		self.nodes.reverse()
+	
+
+	def binaryWrite(self):
+		
+		# Open a file dialog
+		filePath = cmds.fileDialog( m=1 )
+		
+		if(filePath):
+			fileInfo = open(filePath, 'wb')
+		
+			fileInfo.write( "csg" )
+			
+			for node in self.nodes:
+				binData = self.info[node].binaryInfo()
+				for bin in binData:
+					fileInfo.write(bin)
+				# node.asciiInfo()
+			# Call other function to return binary info.
+		
+			fileInfo.close()
+
+	def asciiWrite(self):
+		
+		# Open a file dialog
+		filePath = cmds.fileDialog( m=1 )
+		
+		if(filePath):
+			fileInfo = open(filePath, 'w')
+		
+			fileInfo.write( "csg\n" )
+			
+			for node in self.nodes:
+				asciiData = self.info[node].asciiInfo()
+				fileInfo.write(asciiData)
+				fileInfo.write('\n')
+			# Call other function to return binary info.
+		
+			fileInfo.close()
+		
+	
+	def printInfo(self):
+		# print out all the items of the list in order
+		for i,node in enumerate(self.nodes):
+			print("-"*60)
+			# print("Item: %s NodeName: %s" %(i, node))
+			print( self.info[node].asciiInfo() )
+			print("-"*60)
+
+	
+	def slide(self, objects):
+		self.nodes.append(objects)
+		if( Node.confirmType(objects) == 0 ): # Transform
+			self.info[objects] = Transform(objects)
+		elif( Node.confirmType(objects) == 1): # Group
+			# self.info[objects] = Group(objects)
+			self.info[objects] = Transform(objects)			
+		else:	# Shape
+			self.info[objects] = Shape(objects)
+
+		# newObjects = cmds.listRelatives(objects, c=1, type="transform" )
+		newObjects = cmds.listRelatives(objects, c=1 )
+
+		if( not newObjects ):
+			return objects
+
+		if( newObjects ):
+			for obj in newObjects:
+				self.slide(obj)
+
+class Node(object):
+	def __init__(self, nodeName):
+		self.nodeName = nodeName
+		self.nameLen = len( nodeName )
+		self.nodeType = Node.confirmType(self.nodeName)
+	
+	def printInfo(self):
+		print( "NodeName: %s NameLength: %s NodeType: %s" %(self.nodeName, self.nameLen, self.nodeType) )
+
+	
+	@staticmethod
+	def confirmType(nodeName):
+		'''
+		Determines which type of node it is transform, group, or shape.
+		'''
+		curType = cmds.objectType( nodeName )
+		nodeId = 000
+		if( curType == "mesh"):
+			nodeId = 002 #"shape"
+		elif( curType == "transform" ):  
+			#and it doesn't have a shape node
+			nodeId = 001 #"group"
+			children = cmds.listRelatives(nodeName, c=True )
+			shapeChild = False
+			for child in children:
+				if( cmds.objectType(child, isType="mesh") ):
+					shapeChild = True
+			
+			if( shapeChild ):  
+				#transform has a shape node
+				nodeId = 000 #Transform	
+			
+		return nodeId
+
+				
+class Shape(Node):
+	# It will be a leaf.  
+	def __init__(self, nodeName):
+		'''
+		Inherited from Node class
+		self.nodeName 
+		self.nameLen
+		self.nodeType 	
+		'''
+		Node.__init__(self, nodeName)
+		self.faces = Shape.getFaces(nodeName)
+		self.facesData = []
+		for face in self.faces:
+			self.facesData.append( PolyFace(face) )
+			
+		self.numFaces = len(self.faces)
+		self.windingOrder = Shape.getWindingOrder(self.nodeName)
+		# self.pos = Shape.getPositions(self.nodeName)
+		self.pos = []
+		# self.normals = Vertex.getFaceNormals(self.nodeName)
+		self.normals = []
+		self.sets = Vertex.getUVSets(self.nodeName)
+		# self.uvs = Vertex.getAllUVsCoords(self.nodeName)
+		self.uvs = {}
+		self.fileInfo = {}
+		
+		for uvSet in self.sets:
+			self.uvs[uvSet] = []
+			self.fileInfo[uvSet] = []
+
+		# Gets the coord, normal, and uv information.
+		self.getData()
+		# Gets the shader info for the face.
+		self.getShaderInfo()
+		
+	def getData(self):
+		for face in self.facesData:
+			self.pos.extend( face.vertexCoords )
+			print("Face: %s Normal: %s" %(face, face.normals))
+			self.normals.extend( face.normals )
+			for uvSet, uv in face.uvs.items():
+				self.uvs[uvSet].extend(uv)		
+		
+	def getShaderInfo(self):
+		# What material is connected to this shapeNode
+		# shapeNode.ShaderMaterial
+		# cmds.getAttr( "pCubeShape6.ShaderMaterial", asString=True )
+		if( cmds.objExists( "%s.ShaderMaterial" %self.nodeName) ):
+			# self.material = cmds.getAttr( "%s.ShaderMaterial" %self.nodeName, asString=True)
+			self.material = cmds.getAttr( "%s.ShaderMaterial" %self.nodeName)
+		else:
+			self.material = ""
+				
+		for i, uvSet in enumerate(self.sets):
+			# cmds.uvLink( query=True, uvSet='pCubeShape2.uvSet[0].uvSetName' )
+			files = cmds.uvLink( query=True, uvSet='%s.uvSet[%s].uvSetName' %(self.nodeName, i) )
+			if(files):
+				self.fileInfo[uvSet] = [cmds.getAttr( "%s.fileTextureName" %curFile) for curFile in files ]
+	@staticmethod
+	def getPositions( shape ):
+		'''
+		Starting from index 0.  This function will return the positions of each vertex.
+		'''
+		# Getting all the vertex in the system.
+		verts = cmds.polyListComponentConversion( shape, tv=1 )
+		allVerts = cmds.filterExpand( verts, expand=True, sm=31 )
+		
+		positions = [ Vertex.getVtxPos(vert) for vert in allVerts ]
+		return positions
+
+	@staticmethod
+	def getWindingOrder( shape ):
+		
+		# I need to get each face seperate
+		# Lets go face zero up.
+		faces = cmds.polyListComponentConversion( shape, tf=1 )
+		allFaces = Shape.getFaces(shape)
+
+		fullWindingOrder = []
+		for face in allFaces:
+			windingOrder = PolyFace.findWindingOrder(face)
+			windingID =  Vertex.getIDNum(windingOrder)
+			fullWindingOrder.extend( windingID )
+	
+		return fullWindingOrder
+		
+	@staticmethod
+	def getFaces( shape ):
+		faces = cmds.polyListComponentConversion( shape, tf=1 )
+		allFaces = cmds.filterExpand( faces, expand=True, sm=34 )
+		return allFaces	
+	
+	def binaryInfo(self):
+		'''
+		Returns binary bytes
+		NodeType NameLen NodeName
+		NumFaces WindingOrder
+		'''
+		
+		binData = []
+		
+		# Node type
+		# strNums = lambda x: [ str(num) for num in x ]
+		binData.append(struct.pack('i', self.nodeType))
+		# Node Name Length
+		binData.append(struct.pack('i', self.nameLen))
+		# Node Name
+		binData.append(struct.pack('%ss' %(self.nameLen), self.nodeName.encode('ascii')))
+		
+		# Number Tris
+		binData.append(struct.pack('i', self.numFaces))
+		# Winding Order
+		for wind in self.windingOrder:
+			binData.append(struct.pack( 'i' , wind ))
+			
+		# Num Verts
+		binData.append(struct.pack('i', self.numFaces * 3))
+				
+		# Vert Positions
+		for i, pos in enumerate(self.pos):
+			# Writing the vert data
+			binData.append( struct.pack('3f', pos[0], pos[1], pos[2]) )		
+	
+						
+		# Num Normals
+		binData.append(struct.pack('i', self.numFaces * 3))
+		# Normals
+		for i, normal in enumerate(self.normals):
+			# Writing the vert data
+			binData.append( struct.pack('3f', normal[0], normal[1], normal[2]) )	
+
+		# Num UV sets
+		binData.append(struct.pack('i', len(self.sets)))
+		
+		# --- Depending of how many uvs
+		fileNum = 0
+		for uvSet in self.sets:
+
+			# Num UVs
+			binData.append(struct.pack('i', self.numFaces * 3))
+			fileNum += len(self.fileInfo[uvSet])
+			
+			for uv in self.uvs[uvSet]:
+				if(uv):
+					binData.append(struct.pack('2f', uv[0], uv[1]))
+				else:
+					binData.append(struct.pack('2f', -1.0, -1.0))
+
+		
+		# MaterialType
+		binData.append(struct.pack('i', self.material))
+		
+		 
+		# How many files:
+		binData.append(struct.pack('i', fileNum ))
+			
+		# Materials
+		
+		fileStuff = []
+		for i, uvSet in enumerate(self.sets):
+
+			if( self.fileInfo[uvSet] ):
+				for fInfo in self.fileInfo[uvSet]:
+					binData.append( struct.pack("i", i) )
+					binData.append( struct.pack("i", len(fInfo) ))
+					data = struct.pack("%ss" %len(fInfo), fInfo.encode('ascii'))
+					binData.append( data )
+
+					
+		return binData
+		
+	def asciiInfo(self):
+		'''
+		Returns binary bytes
+		NodeType NameLen NodeName
+		NumFaces WindingOrder
+		'''
+		
+		line = ""
+		
+		# Node type
+		strNums = lambda x: [ str(num) for num in x ]
+		line += "NodeType: %s NameLen: %s ObjectName: %s\n" %(self.nodeType, self.nameLen, self.nodeName)
+		# Node Name Length
+		# Node Name
+		
+		line += "Faces: %s WindingOrder: %s \n" %(self.numFaces, " ".join(strNums(self.windingOrder)))
+		# Number Tris
+		# Winding Order
+			
+		line += "NumCoords: %s Coords: " %(self.numFaces*3)
+		# Num Verts
+				
+		# Vert Positions
+		for i, pos in enumerate(self.pos):		
+			line += " %s " %" ".join(strNums(pos))
+			
+			
+		line += "\nNumNormals: %s Normals: " %(self.numFaces*3)
+
+		# Num Normals
+		# Normals
+		for i, normal in enumerate(self.normals):
+			# Writing the vert data
+			# line += " %s " %(" ".join(strNums(self.normals)))
+			line += " %s %s %s " %(normal[0], normal[1], normal[2])
+				
+		line += "\nUVSets: %s\n" %" ".join(self.sets)	
+		
+		# Num UV sets
+
+		# --- Depending of how many uvs
+		fileNum = 0
+		for uvSet in self.sets:
+
+			# line += "UVNum: %s UVCoords: " %uvSet
+			# Num UVs
+			fileNum += len(self.fileInfo[uvSet])
+			
+			# loop
+			# for key, uv in self.uvs[uvSet].items():
+			for uv in self.uvs[uvSet]:
+				if(uv):
+					line += " %s " %" ".join(strNums(uv))
+				else:
+					line += " -1.0 -1.0 ".join(strNums(uv))
+			# UVs
+			line += "\n"
+		
+		# MaterialType
+		line += "Material: %s FileNum: %s " %(self.material, fileNum)
+		
+		# Files
+		fileStuff = []
+		for i, uvSet in enumerate(self.sets):
+
+			if( self.fileInfo[uvSet] ):
+				for fInfo in self.fileInfo[uvSet]:
+					line += " UVSet: %s NameLen: %s FilePath: %s " %(i, len(fInfo), fInfo)
+					
+		return line			
+		
+		
+class PolyFace( object ):
+	def __init__( self, face ):
+		'''
+		This class will contain 3 Vertex Class (triangle) and the winding order
+		'''
+		self.name = face
+		# Face ID
+		self.faceID  = self.getFaceID()
+		self.vertex = []
+		self._getVertex()
+		
+		self.numOfVertex = len(self.vertex)
+		# Remember the order of these vertex line up with the Vertex Object held in
+		# self.vertex
+		self.windingOrder = PolyFace.findWindingOrder(self.name)
+		
+		self.vertexCoords = []
+		self.getVertexCoords()
+		
+		# This will be according to the face we're currently recording.
+		self.normals = []
+		self.vtxFaceNames = self.getNormals()
+		
+		# http://xyz2.net/mel/mel.005.htm
+		
+		self.uvSets = cmds.polyUVSet(self.name, query=True, allUVSets=True)
+		self.uvs = {}
+		self.getUVs()
+
+		# UV sets
+		# UVs
+
+
+	def getUVs(self):
+		
+		# Getting current uvset
+		currUVSet = cmds.polyUVSet( self.name, q=True, currentUVSet=True )[0]
+		
+		for i, uvSet in enumerate(self.uvSets):
+			self.uvs[uvSet] = []
+			# Setting uvSet temp
+			cmds.polyUVSet( self.name, currentUVSet=True, uvSet=uvSet )
+			
+			# Get uv maps
+			uvMaps = cmds.polyListComponentConversion( self.name, ff=1, tuv=1 )
+			# verts = PolyFace.findWindingOrder(self.name)
+			
+			# print(self.vtxFaceNames)
+			# cmds.polyListComponentConversion('pPlane2.vtxFace[2][1]', tuv=1 )
+
+			if( uvMaps ):
+				# uvMaps = cmds.filterExpand( uvMaps, expand=True, sm=35 )	
+				uvMaps = [cmds.polyListComponentConversion(vtxFace, tuv=1 ) for vtxFace in self.vtxFaceNames ]	
+
+				# Check to make sure there are uv's on this face.				
+				for uvMap in uvMaps:
+					# Get my uvValues 
+					uvCoords = cmds.polyEditUV( uvMap, q=True )
+					self.uvs[uvSet].append(uvCoords)
+			
+		# Returning to orginal uvSet	
+		cmds.polyUVSet( self.name, currentUVSet=True, uvSet=currUVSet)	
+		
+    # def _getNormals(self):
+
+	def getNormals(self):
+# These could give back incorrect order
+# Compared to the face's winding order.
+		# Current vertexFace for this face
+		vfs = cmds.polyListComponentConversion( self.name,  tvf=1 ) # ff=1,
+		vfs = cmds.filterExpand(vfs, expand=True, sm=70)		
+		print(vfs)
+		print(cmds.polyInfo( self.name, faceNormals=True ))
+		for curVfs in vfs:
+			for vert in self.vertex:
+				if( vert.normals.has_key(curVfs) ):
+					self.normals.append( vert.normals[curVfs] )
+					
+		return vfs
+	    
+	        
+	def getVertexCoords(self):        
+		for vert in self.vertex:
+			self.vertexCoords.append( vert.pos )
+			# self.vertexCoords.append(Vertex.getCurrentCoords(vert))
+		    
+	    
+	def getFaceID(self):
+		pieces = self.name.split('[')  # "object.f[0]"
+		faceID = pieces[-1][:-1]
+		return int(faceID)            
+	
+	def _getVertex( self ):
+		# verts = cmds.polyListComponentConversion( self.name, ff=1, tv=1 )
+		# allVerts = cmds.filterExpand( verts, sm=31, expand=True )
+		
+		allVerts = PolyFace.findWindingOrder(self.name)
+		for vtx in allVerts:
+			self.vertex.append( Vertex(vtx) )
+		
+		
+	
+	@staticmethod
+	def getNumOfVertex(face):
+		vertex = cmds.polyListComponentConversion( face, tv=True )
+		allVerts = cmds.filterExpand( vertex, sm=31, expand=True )
+		return len(allVerts)
+
+	@staticmethod
+	def findWindingOrder(face):
+		faceInfo = cmds.polyInfo(face, fv=1 )[0]
+		print(faceInfo)
+		pieces = faceInfo.split()	# -1, -2, -3
+		allVerts = []
+		for i in range( 2 , len(pieces) ):
+			allVerts.append( "%s.vtx[%s]" %(face.split(".")[0], pieces[i]))
+		print(allVerts)
+		'''
+		# Converts faces into verts (the are return in the proper winding order
+		vertex = cmds.polyListComponentConversion( face, tv=True )
+		# if any of the verts of compressed into ranges the will be expanded.
+		allVerts = cmds.filterExpand( vertex, sm=31, expand=True )
+		'''
+		return allVerts
+
+		
+
+	def getWindingOrder(self):
+		return self.windingOrder
+		
+
+	
+class Transform(Node):
+	'''
+	The Transform class represents a name and position of a transform node and its children.
+	A Tranform node name is required to initilize the object.
+	
+	Inherits the Node class:
+	
+	'''
+	def __init__(self, nodeName):
+		Node.__init__(self, nodeName)
+		self.children = cmds.listRelatives( self.nodeName, c=True )
+		self.numChildren = None
+		if( self.children ):
+			self.numChildren = len( self.children )
+		self.pos = self._getPos()
+
+	def binaryInfo(self):
+		'''
+		Returns the binary data for the transforms.
+		'''
+		binData = []
+		
+		# Node type
+		# strNums = lambda x: [ str(num) for num in x ]
+		# line += "NodeType: %s NameLen: %s ObjectName: %s\n" %(self.nodeType, self.nameLen, self.nodeName)
+		binData.append(struct.pack('i', self.nodeType))
+		# Node Name Length
+		binData.append(struct.pack('i', self.nameLen))
+		# Node Name
+		binData.append(struct.pack('%ss' %(self.nameLen), self.nodeName.encode('ascii')))
+		
+		binData.append(struct.pack( '3f', self.pos[0], self.pos[1], self.pos[2]))		
+
+		return binData
+
+	def asciiInfo(self):
+		'''
+		Reflects the binary information of the transform into ascii form.
+		Returns a string.
+		
+		'''
+		strNums = lambda x: [ str(num) for num in x ]	
+		line = "NodeType: %s NameLength: %s NodeName: %s \n" %( self.nodeType, self.nameLen, self.nodeName,)
+		line += "Coords: %s\n" %(" ".join(strNums(self.pos)))
+		return line	
+	
+
+	def _getPos(self):
+		return cmds.xform( self.nodeName, q=True, ws=True, piv=True)[0:3]
+		
+	def printInfo(self):
+		'''
+		Prints out info based on the transform node.
+		'''
+		print(self.asciiInfo())
+		
+class Group(Node):
+	# If its a leaf and not a shape node then its a group
+	def __init__(self, nodeName):
+		Node.__init__(self, nodeName)
+		self.children = cmds.listRelatives( self.nodeName, c=True )
+		self.numChildren = None
+		if( self.children ):
+			self.numChildren = len( self.children )
+		self.pos = self._getPos()
+
+	def binaryInfo(self):
+		binData = []
+		
+		# Node type
+		binData.append(struct.pack('i', self.nodeType))
+		# Node Name Length
+		binData.append(struct.pack('i', self.nameLen))
+		# Node Name
+		binData.append(struct.pack('%ss' %(self.nameLen), self.nodeName.encode('ascii')))
+		
+		binData.append(struct.pack( '3f', self.pos[0], self.pos[1], self.pos[2]))		
+
+		return binData
+
+	def asciiInfo(self):
+		strNums = lambda x: [ str(num) for num in x ]	
+		line = "NodeType: %s NameLength: %s NodeName: %s \n" %( self.nodeType, self.nameLen, self.nodeName,)
+		line += "Position: %s\n" %(" ".join(strNums(self.pos)))
+		return line
+
+	def _getPos(self):
+		return cmds.xform( self.nodeName, q=True, ws=True, piv=True)[0:3]
+		
+
+	def printInfo(self):
+		'''
+		Prints out information about the group.
+		'''
+		print(self.asciiInfo())
+		
+
+'''
+How to use:
+
+import hashTest
+reload( hashTest)
+
+# Create a tabel based on the first selected object. 
+results = hashTest.HashTest(cmds.ls(sl=1)[0])
+
+# Node base class has the main guts.
+# There exists a static method to confirm if the node is a transform, group, or a shape
+hashTest.Node.confirmType('a')
+
+# nodes is a public member of the HashTest class, containing the names and order of the dataStructure.
+results.nodes
+
+# Each class will print its info out.
+results.printInfo()
+
+
+# info dictionary contains all the vita information for the node i.e its type, name, name length, etc...
+# the __dict__ will show you all data contained in the instance.
+results.info['group1'].__dict__
+
+'''

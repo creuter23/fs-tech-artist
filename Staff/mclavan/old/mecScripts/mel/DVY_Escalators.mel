@@ -1,0 +1,427 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davveys Escalator Generator
+''    Author:  
+''    Last Updated: Jul 21, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4632.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+///////////////////////////////////////////////////////////////////////////////
+/*			
+				
+	Copyright © 2006 DVY_Escalators. All rights reserved davvey@ntlworld.com
+
+						- DVY_Escalators -
+///////////////////////////////////////////////////////////////////////////////
+Note:- Any Duplicate files contained in any of my script packs can be used.
+Just ensure you copy the latest version of any file.
+These script packs are being built up using some common utility type scripts
+which are shared across more than one pack.						
+						
+	DVY_Escalators;
+	Description and Usage Section
+	
+	Installation	
+
+	Just install scripts in any Maya script path and install
+	Icon and Image files in May\\Prefs\Icons directory
+						
+	Description	
+	
+	Usage
+
+	Type DVY_Escalators in command line or middle mouse drag it to a shelf.
+	There is an Icon file supplied to use with the Shelf Button.
+	
+	Description	
+
+	This script calls a GUI where relevant Info can be entered to generate
+	a dimensionally accurate set of Escalator or Flat WalkWay.
+	
+	The Scripts will build a set of Escalator or a moving Flat Walkway.
+	
+	There are various options that can be selected and Data fields to enter
+	various sizes. These are Floor Height, Length and Tread Width.
+	The Diagram on front help section shows relevant dimensions.
+	The Floor Height is from flat section at bottom of Escalator to flat section
+	at Top of Escaltor. The Length is from centreline of lower curved section
+	of Escalator to same at Top Section. This Length includes two 1000 mm straight
+	sections of steps so 6000 mm equates to 2 x 1000 mm straight sections and
+	approximately 4000 mm of angled step section. The recommended angle for
+	Escalators is approximately 30 degrees and these scripts will build Escalators
+	beteen 20 and 50 degrees but appearance may have errors at the extreme angles.
+	The overall width of the Escalator is Tread Width plus 200 mm. The HandRail
+	height of approximately 925 mm and width 100 mm are fixed along with the
+	1000 mm flat sections. 
+	
+	After building the Escalator the script will rig the Steps and Both HandRails
+	to move as per a real escalator. The default direction is down but this can
+	be changed along with the speed by adjusting an attribute named `SpeedAdjust`
+	located on the Group Top Node called `Escalator_Main_GrpN_`. Set it negative
+	to change direction and zero will stop the Escalator travelling. Increase or
+	decrease the default value of 5 to adjust speed and the range is +/- 50.
+	
+	The Escalator groups are arranged to allow positioning of the completed
+	Escalator by rotating and translating the Group Top Node called
+	`Escalator_Main_GrpN_`. The Motion Path Curves etc are parent Constrained
+	to this top node. If Required once position is set the Three Group Nodes can
+	be grouped together to clean up HyperGraph but this node must not be moved
+	once grouped or double transform will occur.
+	
+	The Script will add a simple Stainless Steel Shader to all parts except the
+	HandRail Supports which can be set to Glass or Stainless.
+
+	After building the Escalators the script will lock off unused attributes and
+	leave the Main group Translate and Rotate Nodes unlocked and keyable.
+
+	Note:- The Scale of the Escalators or Walkway will be adjusted to set correct
+	size relevant to the correct size for the Users Maya Unit settings 
+	i.e mm, cm, m, in, ft, yd.
+	
+
+*/
+	
+//////////////////////////////////////////////////////////////////////////
+//					DVY_Escalators Procedure
+//////////////////////////////////////////////////////////////////////////
+
+	
+//============================================================================
+//	GLOBAL VARIABLES
+//============================================================================
+	global int $DVYDebug;
+
+// Integer Flag that allows print statements to be output to
+// message field for tracking purposes.
+		
+//============================================================================
+
+global proc DVY_Escalators()
+{
+	global string $Type[];
+	
+	global string $Title[], $TitleN[], $IField[], $FField[], $Option[];
+
+	string $EscalatorMaterial[] = {"Glass", "Steel"};
+	
+//	source DVY_EscalatorBuild; 
+	
+	int $a = $b = $c = 0;
+	
+	//	Check for any "Window History" and delete if it exists.
+	 	if (`windowPref -exists DVY_EscalatorsWindow`)
+			{ windowPref -edit -topLeftCorner 100 650 -widthHeight 495 660 DVY_EscalatorsWindow;}
+	
+	//Check for multiple similar windows.
+		if (`window -q -ex DVY_EscalatorsWindow`) deleteUI DVY_EscalatorsWindow;
+	//Build window.
+		window -w 495 -h 660 -mnb 1 -mxb 0 -sizeable 1 -title "Davvey's Escalator Generator ver 1.2.0" DVY_EscalatorsWindow;
+	
+	//Build 'Edit' menu.
+	
+	string $menuBarLayout = `menuBarLayout`;
+		menu -label "File"; 
+ 			menuItem -label "Close" -command "deleteUI DVY_EscalatorsWindow";		
+		menu -label "About"; 
+	 		menuItem -label "About Escalator Generator" -command "DVY_AboutEscalatorsWin;";
+			
+	setParent..;
+
+	// Create Main Layout column
+			
+	string $MainPane = `paneLayout -configuration "horizontal2" -paneSize 1 100 89`;
+	string $MainPanel = `columnLayout -width 490 -adj 1 -cat "both" 2 -cal "center" "Main Panel"`;
+	
+	// Title and Info Section for the "Main Column Setup" tab. 
+		
+	columnLayout -width 531 -adj 1 -cal "center" "Title";
+		iconTextStaticLabel -w 360 -h 50 -st "iconOnly" -i1 "DavveyLogo.xpm" IMage ;		
+
+		text -height 3 -label " " ;	//Spacer
+		separator -height 5 -style "double" ;
+		text -bgc .5 .5 1 -height 20 -align "center" -font "boldLabelFont" -label "Davvey's Escalator Generator.";
+		separator -height 5 -style "double";
+		text -height 3  -label " " ;	//Spacer
+		
+	string $Tabs = `tabLayout -width 488  -imw 1 -imh 1 "Tabs"`;
+	
+	frameLayout -bv true -bs "in" -width 485 -height 535  -mh 2 -mw 2 -collapsable false -collapse false 
+							-labelVisible false -label "Escalators Options" Escalators;
+	
+	string $TitleC1 = `columnLayout -width 484 -adj 1 -cal "center" "Setup Escalators"`;
+	
+		separator -height 5 -style "none" ;
+		
+			radioButtonGrp  -height 20 -nrb 3 -sl 1 -label " Escalator Type :-" 
+							-cl3 "right" "left" "left"
+							-columnWidth3 50 10 100
+							-labelArray3 "Help" "Escalators" "WalkWays" 
+			
+							-onCommand1 "frameLayout -edit -collapse false HelpEscalatorFrame;"
+							-offCommand1 "frameLayout -edit -collapse true HelpEscalatorFrame;"
+							
+							-onCommand2 "frameLayout -edit -collapse false EscalatorFrame;"
+							-offCommand2 "frameLayout -edit -collapse true EscalatorFrame;"
+							
+							-onCommand3 "frameLayout -edit -collapse false WalkWayFrame;"
+							-offCommand3 "frameLayout -edit -collapse true WalkWayFrame;"
+							
+						EscalatorTypeRadioButton;	
+			
+		separator -height 10 -style "double";
+			
+		text -height 2 -label " " ;	//Spacer
+		text -height 15 -font "boldLabelFont" -align "center" -label " Help " ;	//Spacer
+		text -height 2 -label " " ;	//Spacer
+		
+	frameLayout -bv true -bs "in" -width 483 -mh 3 -mw 3 -collapsable true -collapse false 
+							-labelVisible false -label "Help Options" HelpEscalatorFrame;
+		
+		columnLayout -width 480 -adj 1 -cal "center";
+		
+		text -height 3 -label " " ;	//Spacer
+		separator -height 5 -style "double" ;
+		text -bgc 1 1 0.85 -height 2 -align "left" -label "";
+		text -bgc 1 1 0.85 -height 15 -align "left" -label " Fill in Fields as Required then press `Build` Button. Use default values to test. The ideal angle";
+		text -bgc 1 1 0.85 -height 15 -align "left" -label " for the steps is 30 degerees, script should work between 20 and 50 degrees. Both Escalators ";
+		text -bgc 1 1 0.85 -height 15 -align "left" -label " and WalkWays are available. The GUI will calculate english equivalent sizes for each field.";
+		text -bgc 1 1 0.85 -height 15 -align "left" -label " See Help Tab for detailed Help and explanation of various options. ";
+		text -bgc 1 1 0.85 -height 2 -align "left" -label "";
+		separator -bgc 1 1 0.85 -height 5 -style "double";
+		text -height 5 -label " " ;	//Spacer
+		separator -h 5 -style "none";
+		
+		iconTextStaticLabel -w 320 -h 260 -st "iconOnly" -i1 "DVY_Escalator_0.xpm" EscIMage_01 ;
+
+	setParent..;
+	setParent..;
+	
+		separator -height 10 -style "double";
+			
+			text -height 2 -label " " ;	//Spacer
+			text -height 15 -font "boldLabelFont" -align "center" -label " Escalator Options " ;	//Spacer
+			text -height 2 -label " " ;	//Spacer
+		
+	frameLayout -bv true -bs "in" -width 483 -mh 3 -mw 3 -collapsable true -collapse true 
+							-labelVisible false -label "Straight Escalators Options" EscalatorFrame;
+		
+	columnLayout -width 480 -adj 1 -cal "center";
+	
+		rowColumnLayout -enable 1 -nc 2
+					-cw 1 220 -cal 1 "center" -cat 1 "both" 2
+					-cw 2 220 -cal 2 "center" -cat 2 "both" 2;
+		
+				text -height 15 -align "right" -label "mm         inches         ";
+				text -height 15 -align "right" -label "mm         inches         ";
+				
+			floatFieldGrp -nf 2 -pre 2 -label " Floor Height " -en2 0
+						-cw3 85 65 65 -ct3 "both" "both" "both"
+						-v1 2500 -v2 98.43
+						-cc "floatFieldGrp -e -v2 (#1/25.4) EscFloatFieldGrp_001; DVY_EscalatorsCallback(1);"
+					 EscFloatFieldGrp_001;
+			
+			floatFieldGrp -nf 2 -pre 2 -label " Length " -en2 0
+						-cw3 85 65 65 -ct3 "both" "both" "both"
+						-v1 6000 -v2 236.22
+						-cc "floatFieldGrp -e -v2 (#1/25.4) EscFloatFieldGrp_002; DVY_EscalatorsCallback(1);"
+					 EscFloatFieldGrp_002;
+			
+			floatFieldGrp -nf 2 -pre 2 -label " Tread Width " -en2 0
+						-cw3 85 65 65 -ct3 "both" "both" "both"
+						-v1 1000 -v2 39.37
+						-cc "floatFieldGrp -e -v2 (#1/25.4) EscFloatFieldGrp_003;"
+					 EscFloatFieldGrp_003;
+			
+			floatFieldGrp -nf 3 -pre 1 -label " approx. Angle" -en1 0 -en2 0 -en3 0
+						-cw4 80 45 45 45 
+						-ct4 "both" "both" "both" "both" 
+						-v1 32.0 -v2 20 -v3 50 
+					EscFloatFieldGrp_004;
+			
+		separator -h 10 -style "none";
+		separator -h 10 -style "none";
+		text -height 15 -align "right"  -label " Select Side Panel Material  " ;
+				
+			$a = 0;	
+				optionMenu -width 130 -cc "" DVY_EscPanelOption;
+					menuItem -l "SidePanel Material                  ";
+					menuItem -l $EscalatorMaterial[$a++];
+					menuItem -l $EscalatorMaterial[$a++];
+				
+		separator -h 40 -style "none";
+		
+	setParent $TitleC1;
+	columnLayout -width 460 -adj 1 -cal "center";
+	
+		text -height 2 -label " " ;	//Spacer
+		text -height 15 -font "boldLabelFont" -align "center" -label " WalkWay Options " ;	//Spacer
+		text -height 2 -label " " ;	//Spacer
+		
+	columnLayout -width 460 -adj 1 -cal "center";
+		
+	frameLayout -bv true -bs "in" -width 410 -mh 3 -mw 3 -collapsable true -collapse true 
+							-labelVisible false -label " WalkWay Options" WalkWayFrame;
+	
+	columnLayout -width 480 -adj 1 -cal "center";
+	
+		rowColumnLayout -enable 1 -nc 2
+					-cw 1 220 -cal 1 "center" -cat 1 "both" 2
+					-cw 2 220 -cal 2 "center" -cat 2 "both" 2;
+		
+				text -height 15 -align "right" -label "mm         inches         ";
+				text -height 15 -align "right" -label "mm         inches         ";
+				
+			floatFieldGrp -nf 2 -pre 2 -label " Length " -en2 0
+						-cw3 85 65 65 -ct3 "both" "both" "both"
+						-v1 6000 -v2 236.22
+						-cc "floatFieldGrp -e -v2 (#1/25.4) EscFloatFieldGrp_101;"
+					 EscFloatFieldGrp_101;
+			
+			floatFieldGrp -nf 2 -pre 2 -label " Tread Width " -en2 0
+						-cw3 85 65 65 -ct3 "both" "both" "both"
+						-v1 1000 -v2 39.37
+						-cc "floatFieldGrp -e -v2 (#1/25.4) EscFloatFieldGrp_102;"
+					 EscFloatFieldGrp_102;
+			
+//	setParent..;
+	
+		separator -h 10 -style "none";
+		separator -h 10 -style "none";
+		text -height 15 -align "right"  -label " Select Side Panel Material  " ;
+				
+			$a = 0;	
+				optionMenu -width 130 -cc "" DVY_WWayPanelOption;
+					menuItem -l "SidePanel Material                  ";
+					menuItem -l $EscalatorMaterial[$a++];
+					menuItem -l $EscalatorMaterial[$a++];
+				
+		separator -h 40 -style "none";
+		
+	setParent..;	
+	setParent $Tabs;	
+	
+//////////////////////////////////////////////////////////////////////////////////
+//					Help and Info Tab.
+//////////////////////////////////////////////////////////////////////////////////	
+// Tab Layout for Help and Info Tab
+	
+	columnLayout -adj 1 "Help and Info ";
+
+		string $HelpM = `frameLayout -height 420 -labelVisible 0 -label "Help & Info" -bs "in" "Help"`;
+	
+			columnLayout -adj 1 ;
+			
+				text -height 5 -label "";
+				separator -h 10 -style "double";
+				text -bgc 0.7 1 0.7  -height 20 -align "center" -label "Help Section ";
+				
+				separator -h 10 -style "double";
+				text -height 5 -label "";
+		
+				scrollField -height 350 -bgc 1 1 0.85 -wordWrap true -editable false
+					-text "This script calls a GUI where relevant Info can be entered to generate a dimensionally accurate set of Escalators or a travelling WalkWay. \n\nThese scripts will take quite a long time to execute when building the parts due to number of items required to build either an Escalator or a WalkWay. \n\nThere are various options that can be selected and Data fields to enter various sizes. \n\nThese are Floor Height, Length and Tread Width. The Diagram on front help section shows relevant dimensions. The Floor Height is from flat section at bottom of Escalator to flat section at Top of Escaltor. The Length is from centreline of lower curved section of Escalator to same at Top Section. This Length includes two 1000 mm straight sections of steps so 6000 mm equates to 2 x 1000 mm straight sections and approximately 4000 mm of angled step section. The recommended angle for Escalators is approximately 30 degrees and these scripts will build Escalators between 20 and 50 degrees but appearance may have errors at the extreme angles. The overall width of the Escalator is Tread Width plus 200 mm. The HandRail height of approximately 925 mm and width 100 mm are fixed along with the 1000 mm flat sections. \n\nAfter building the Escalator there will be a Hi and LoRes version of all moving parts arranged in two seperate layers and the script will rig the Steps and Both HandRails to move as per a real Escalator or WalkWay. The default direction is down but this can be changed along with the speed by adjusting an attribute named `SpeedAdjust` located on the Group Top Node called `Escalator_Main_GrpN_`. Set it negative to change direction and zero will stop the Escalator travelling. Increase or decrease the default value of 5 to adjust speed and the range is +/- 50. \n\nThe Escalator groups are arranged to allow positioning of the completed Escalator by rotating and translating the Group Top Node called `Escalator_Main_GrpN_`. The Motion Path Curves etc are parent Constrained to this top node. If Required once position is set the Three Group Nodes can be grouped together to clean up HyperGraph but this node must not be moved once grouped or double transform will occur. The Script will add a simple Stainless Steel Shader to all parts except the HandRail Supports which can be set to Glass or Stainless. \n\n Note:- The Scale of the Escalators will be adjusted to set correct size relevant to the correct size for the Users Maya Unit settings i.e mm, cm, m, in, ft, yd.\n";				
+				text -height 5 -label "";
+	
+		setParent..;
+	setParent $MainPane;	
+	setParent $MainPanel;
+	
+	setParent..;
+	
+// Build it.
+
+	frameLayout -cll 0 -vis 1 -lv 0 -label "Build" -la "center" -bs "out";
+	
+	columnLayout -enable 1 -adj 1 -cat "left" 1 -cal "center" ;
+		
+		separator -h 5 -style "none";
+
+		button -height 40 -bgc 0.7 0.7 1 -label "Build Escalators"
+			-command " print \"\\n Building Escalators as Required Davvey © 2006..\\n\"; DVY_EscalatorBuild;"
+				Escalator_Builder;	
+
+		separator -h 10 -style "none";
+
+	setParent..;		
+	
+//Show the DVY_Escalators UI Window.
+	
+ 	showWindow DVY_EscalatorsWindow;
+	
+}// End of DVY_Escalators Global procedure.
+
+ 
+// -------------------------------------------------------------------------------- //
+
+global proc DVY_EscalatorsCallback (int $S)
+{
+	float $Ht = `floatFieldGrp -q -v1 EscFloatFieldGrp_001`;
+	float $Len = `floatFieldGrp -q -v1 EscFloatFieldGrp_002` - 2000;
+	float $Ang = `atand($Ht/$Len)`;
+	floatFieldGrp -e -v1 $Ang EscFloatFieldGrp_004;
+	
+//	print ("$Ht is " + $Ht + "\n");
+//	print ("$Len is " + $Len + "\n");
+//	print ("$Ang is " + $Ang + "\n");
+	
+		
+}// End of DVY_EscalatorsCallback Procedure
+
+// -------------------------------------------------------------------------------- //
+
+global proc DVY_AboutEscalatorsWin()
+ {
+	global float $DVYTol;
+	if ((`window -ex DavveyAboutEscalatorsWindow`) == true) 
+		{
+			deleteUI DavveyAboutEscalatorsWindow;
+		}
+		if (`windowPref -ex DavveyAboutEscalatorsWindow`) windowPref -remove DavveyAboutEscalatorsWindow;
+		window -t " About:-  Davvey's Escalator Generator." -width 425 -height 300 -sizeable 0 DavveyAboutEscalatorsWindow;
+		//Build 'Edit' menu.
+	
+	string $menuBarLayout = `menuBarLayout -height 20`;
+		menu -label "File"; 
+ 			menuItem -label "Close" -command "deleteUI DavveyAboutEscalatorsWindow";		
+
+	setParent;
+	setParent;
+
+		columnLayout -adjustableColumn true -columnAttach "both" 5 -columnWidth 350; 
+	
+		text -height 2 -label " " ;	//Spacer
+		separator -height 10 -style "double" ;
+			text -bgc 0.5 0.5 1 -height 20 -align "center" -fn "boldLabelFont" -l "Davvey's Escalator Generator..";
+			text -bgc 0.5 0.5 1 -height 20 -align "center" -fn "boldLabelFont" -l "copyright (c)2006 Dave Lake..";
+		separator -height 8 -style "double" ;
+		text -height 2 -label " " ;	//Spacer
+		
+	frameLayout -cl 0 -label "" -labelAlign "center" -borderStyle "etchedOut";
+		columnLayout -adjustableColumn true -columnAttach "both" 2 -columnWidth 250; 
+		
+		text -bgc 1 1 0.8 -height 5 -align "left" -l " ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -fn "boldLabelFont" -l "  Special Thanks:- ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -fn "plainLabelFont" -l "  Thanks to my wife Jan for her support and patience during the time";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "   its taken to learn Maya and how to write these scripts.";
+		text -bgc 1 1 0.8 -height 10 -align "left" -l " ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "  Also dedicated to Jackie and Joanna (my expensive pride and joys!!)";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "  Finally these Collected works are dedicated to the memory of Darryl.";
+		text -bgc 1 1 0.8 -height 5 -align "left" -l " ";
+		setParent ..;	
+		setParent ..;	
+		text -align "center" -l "email :- Davvey@ntlworld.com";
+		text -align "center" -l "website :- www..............";
+	setParent ..; 
+
+	showWindow DavveyAboutEscalatorsWindow;
+	
+}// End of DVY_AboutEscalatorsWin Procedure
+
+ 

@@ -1,0 +1,66 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davvey\'s Chain & Sprocket Generator
+''    Author:  
+''    Last Updated: Jan 15, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4463.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+///////////////////////////////////////////////////////////////////////////////
+/*			
+				
+	Copyright © 2006 DVY_ChainDriver. All rights reserved davvey@ntlworld.com
+
+						- DVY_ChainDriver -
+///////////////////////////////////////////////////////////////////////////////
+						
+//	DVY_ChainSet;
+//	Description and Usage Section
+
+//	Installation	
+		
+	Script is part of Davvey's Chain Generator script pack.
+	
+	It is called to initiate rigging of Chain and Sprockets to set up
+	drive for group. The script checks correct node is selected and then
+	calls DVY_ChainDRiver procedure to complete the rigging.
+
+*/
+	
+//////////////////////////////////////////////////////////////////////////
+//					DVY_ChainSet Procedure
+//////////////////////////////////////////////////////////////////////////
+
+global proc DVY_ChainSet()
+{
+	global string $Type[];
+	
+	//	$Type = {"Sprocket_","Spur_", "Helix_", "DoubleHelix_", "HerringBoneHelix_", "Bevel_", "Worm_"};
+
+	string $Groups[], $TempSel[];
+
+	int $ID, $Idx;
+	
+	$TempSel = `ls - sl`;
+	$Groups[0] =  $TempSel[0];
+	if ($Groups[0] == "")
+		{
+			error "OOps! Please select the Chain Sprocket Group Top Node and try again";
+		}
+		else{
+				$Idx = 0;// `getAttr ($Groups[0] + ".Type")`;
+				$ID = `getAttr ($Groups[0] + ".Grp_No_")`;
+				print $ID;
+				
+				DVY_ChainDriver($Groups[0], $Idx, $ID);
+			}
+
+	
+}

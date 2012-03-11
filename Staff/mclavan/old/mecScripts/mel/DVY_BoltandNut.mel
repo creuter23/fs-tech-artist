@@ -1,0 +1,636 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davveys Nut and Bolt Generator
+''    Author:  
+''    Last Updated: Jan 29, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4402.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+	
+//	DVY_BoltandNut;
+
+/*
+/////////////////////////////////////////////////////////////////////////////			
+				
+	Copyright © 2006 DVY_BoltandNut. All rights reserved davvey@ntlworld.com
+
+						- DVY_BoltandNut -
+///////////////////////////////////////////////////////////////////////////////
+
+
+	
+	
+///////////////////////////////////////////////////////////////////////////////
+//					DVY_BoltandNut Procedure
+////////////////////////////////////////////////////////////////////////////////
+*/
+
+global proc DVY_BoltandNut()
+{
+	 
+	global float $ThreadDiam[], $ThreadPitch[], $ThreadPitchF[];
+	global float $NutFlat[], $NutCorners[], $NutHeight[], $LockNutHeight[], $NyLocNutHeight[];
+	global float $BoltHead[], $WasherOutDiam[], $WasherThick[], $WasherSpODiam[];
+	global float $ThreadLength[], $ThreadLengthL[];
+	global string $Tabs[];
+	
+	float $THData[], $Pos[];
+	float $Lead, $Turns, $TurnsEach, $BoltLength;
+	float $XMax, $XMin, $YMax, $YMin;
+	float $P, $h, $TD, $PCD, $RD; 
+	
+	int $a, $b, $c, $e, $i, $j, $k, $N;
+	
+	string $ThreadType[], $Profiles[], $ThreadName[], $Temp[], $Temps[];
+	string $Barrel[], $Bolt[], $Nut[], $Hole[];
+	string $Thread, $Name;
+	string $BNMaterial[] = {"Steel", "Stainless", "Black", "Aluminium", "Brass", "Copper"};
+	
+	int $K = 0; int $S = 0; int $D = 0;
+	
+// ******************************************************************************** //	
+//	Constants and "Static Data"
+	
+	$ThreadType = {"Nut", "LockNut", "NyLocNut", "Hole",
+				   "HexHead", "SlotHead", "CrossHead", "SocketHead", "SetScrew", "Stud",
+				   "Washer", "SpringWasher"};
+	
+	$ThreadDiam =	  {1.60, 2.00, 2.50, 3.00, 4.00, 5.00, 6.00,  7.00,  8.00, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 22.0, 24.0, 30.0, 36.0, 42.0, 48.0, 56.0, 64.0, 72.0, 80.0, 90.0, 100.0};
+	$ThreadPitch =	  {0.35, 0.40, 0.45, 0.50, 0.70, 0.80, 1.00,  1.00,  1.25, 1.50, 1.75, 2.00, 2.00, 2.50, 2.50, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 5.50, 6.00, 6.00, 6.00, 6.00, 6.00};
+	$ThreadPitchF =	  {0.30, 0.30, 0.40, 0.40, 0.60, 0.60, 1.00,  1.00,  1.00, 1.25, 1.25, 1.50, 1.50, 1.50, 1.50, 1.50, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 5.00, 5.00, 2.00};
+	
+	$ThreadLength =   {6.00, 6.00, 10.0, 12.0, 14.0, 16.0, 18.0,  20.0,  22.0, 26.0, 30.0, 34.0, 38.0, 42.0, 44.0, 46.0, 48.0, 60.0, 70.0, 85.0, 96.0,  115, 130,  140,  160,  180,  200};
+	$ThreadLengthL =  {12.0, 12.0, 12.0, 12.0, 14.0, 22.0, 24.0,  26.0,  28.0, 32.0, 36.0, 40.0, 44.0, 48.0, 52.0, 54.0, 56.0, 66.0, 80.0, 95.0, 105.0, 125, 140,  150,  170,  190,  220};	
+	$BoltHead = 	  {1.35, 1.45, 1.60, 2.00, 2.80, 3.50, 4.00,  5.00,  5.50, 6.50, 7.50, 9.00, 10.0, 11.0, 12.5, 14.5, 18.0, 20.0, 25.0, 30.0, 32.0, 35.0, 40.0, 45.0, 48.0, 50.0, 55.0};
+		
+	$NutFlat =		  {3.00, 4.00, 5.00, 5.50, 7.00, 8.00, 10.00, 11.00, 13.0, 17.00, 19.00, 22.0, 24.00, 27.00, 30.00, 33.0, 36.00, 46.00, 55.00, 62.00, 70.00, 81.00, 92.00,  110.00, 130.00, 150.00, 170.0};
+	$NutCorners =	  {3.46, 4.62, 5.78, 6.35, 8.08, 9.24, 11.55, 12.71, 15.0, 19.63, 21.94, 25.4, 27.71, 31.78, 34.64, 38.1, 41.57, 53.11, 63.51, 71.59, 80.83, 92.37, 106.23, 127.01, 150.11, 173.21, 196.3};
+	
+	$NutHeight =	  {1.60, 1.60, 2.00, 2.40, 3.20, 4.00, 5.00,  5.50,  6.50, 8.00, 10.0, 11.0, 13.0, 15.0, 16.0, 18.0, 20.0, 24.0, 30.0, 35.0, 40.0, 46.0, 51.0, 56.0, 62.0, 70.0, 70.0};
+	$LockNutHeight =  {1.20, 1.20, 1.60, 1.80, 2.20, 2.70, 3.20,  3.50,  4.00, 5.00, 6.00, 7.00, 8.00, 9.00, 10.0, 14.0, 15.0, 18.0, 24.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 60.0};
+	$NyLocNutHeight = {2.00, 2.00, 3.00, 4.00, 5.00, 5.00, 6.00,  7.00,  8.00, 10.0, 12.0, 14.0, 16.0, 18.5, 20.0, 23.0, 25.0, 30.0, 36.0, 42.0, 48.0, 55.0, 60.0, 67.0, 75.0, 82.0, 82.0};
+
+	$WasherOutDiam =  {4.00, 5.00, 6.50, 7.00, 9.00, 10.5, 12.5,  14.0,  17.0, 21.0, 24.0, 27.0, 30.0, 34.0, 37.0, 43.0, 46.0, 56.0, 62.0, 70.0, 80.0, 90.0, 105,  136,  160,  185,  205};
+	$WasherThick = 	  {0.30, 0.30, 0.50, 0.60, 0.80, 1.00, 1.60,  1.60,  1.60, 2.00, 2.50, 2.50, 3.00, 3.00, 3.00, 4.00, 4.00, 5.00, 6.00, 6.50, 7.00, 7.50, 8.00, 9.00, 10.0, 12.0, 13.0};
+	$WasherSpODiam =  {4.00, 4.50, 5.50, 6.00, 8.00, 10.0, 11.0,  13.0,  15.0, 18.0, 20.5, 24.5, 26.0, 31.0, 33.0, 36.0, 42.0, 50.0, 60.0, 67.0, 75.0, 85.0, 100,  130,  155,  180,  200};
+	
+	$ThreadName =	  {"1_6", "2", "2_5", "3", "4", "5", "6", "7", "8", "10", "12", "14", "16", "18",
+						"20", "22", "24", "30", "36", "42", "48", "56", "64", "72", "80", "90", "100"};
+
+
+
+	//	Check for any "Window History" and delete if it exists.
+	 	if (`windowPref -exists DVY_BoltandNutWindow`)
+			{ windowPref -edit -topLeftCorner 125 700 -widthHeight 530 695 DVY_BoltandNutWindow;}
+	
+	//Check for multiple similar windows.
+		if (`window -q -ex DVY_BoltandNutWindow`) deleteUI DVY_BoltandNutWindow;
+		
+	//Build window.
+		window -w 530 -h 695 -mnb 1 -mxb 0 -sizeable 1  -title "Davvey's Nut and Bolt Generator ver 1.5" DVY_BoltandNutWindow;
+	
+	//Build 'Edit' menu.
+	
+	string $menuBarLayout = `menuBarLayout`;
+		menu -label "File"; 
+ 			menuItem -label "Close" -command "deleteUI DVY_BoltandNutWindow";		
+		menu -label "About"; 
+	 		menuItem -label "About Nut and bolt Generator" -command "DVY_AboutNutWin;";		
+
+	// Create Main Layout column
+	string $MainPanel = `columnLayout -width 528 -adj 1 -cal "center" "Main Panel"`;
+
+	// Title and Info Section for the "Main Column Setup" tab. 
+		
+	string $Title = `columnLayout -width 526 -adj 1 -cal "center" "Title"`;
+	
+		text -height 5 -label " " ;	//Spacer
+		separator -height 5 -style "double" ;
+		text -bgc .5 .5 1 -height 20 -align "center" -font "boldLabelFont"
+			-label "Davvey's Nut, Bolt and Washer Generator.";
+		separator -height 5 -style "double";
+		text -height 5 -label " " ;	//Spacer
+	
+	setParent $MainPanel;	
+		
+	// Tab Layout for various Wheels
+	
+	$Tabs[0] = `tabLayout -imw 1 -imh 1 "Intial Options"`;
+				
+	//Create Options Tab
+	
+	string $Options = `frameLayout -height 525 -labelVisible 0 -label "Options" -la "center" -bs "in" " Set Up "`;
+	
+	string $OptionsCol =  `columnLayout -enable 1 -adj 1 -cat "left" 5 -cal "left" "OptionsCol"`;	
+
+		separator -h 2 -bgc 0.7 1 0.7 -style "none";
+		text -height 20 -bgc 0.7 1 0.7  -align "left" -label " Select Thread Diameter (mm) and Thread style. Then select each option Required";
+		separator -h 2 -bgc 0.7 1 0.7 -style "none";
+		
+	separator -h 10 -style "double";
+	text -height 2 -label "";
+	
+	string $DiamSel = `rowColumnLayout -enable 1 -nc 3
+						-cw 1 135 -cal 1 "center" -cat 1 "both" 10
+						-cw 2 160 -cal 2 "center" -cat 2 "both" 1
+						-cw 3 120 -cal 3 "center" -cat 3 "both" 15
+					"DiameterCol"`;
+	
+	text -height 15 -align "center" -label " Diameter Required (mm)";
+	text -height 15 -align "center" -label " Thread Pitch Type";
+	text -height 15 -align "center" -label " Thread Pitch (mm)";
+	text -height 5 -label "";
+	text -height 5 -label "";
+	text -height 5 -label "";
+	
+		optionMenu -width 110 -cc ("DVY_Callback") DVY_DiamOption;
+					menuItem -l "Diameter ";
+		    			menuItem -l ($ThreadDiam[0] + " mm");
+		    			menuItem -l ($ThreadDiam[1] + ".0 mm");
+		    			menuItem -l ($ThreadDiam[2] + " mm");
+		    			menuItem -l ($ThreadDiam[3] + ".0 mm");
+		    			menuItem -l ($ThreadDiam[4] + ".0 mm");
+		    			menuItem -l ($ThreadDiam[5] + ".0 mm");
+		    			menuItem -l ($ThreadDiam[6] + ".0 mm");
+		    			menuItem -l ($ThreadDiam[7] + ".0 mm");
+		    			menuItem -l ($ThreadDiam[8] + ".0 mm");
+		    			menuItem -l ($ThreadDiam[9] + " mm");
+		    			menuItem -l ($ThreadDiam[10] + " mm");
+		    			menuItem -l ($ThreadDiam[11] + " mm");
+		    			menuItem -l ($ThreadDiam[12] + " mm");
+		    			menuItem -l ($ThreadDiam[13] + " mm");
+		    			menuItem -l ($ThreadDiam[14] + " mm");
+		    			menuItem -l ($ThreadDiam[15] + " mm");
+		    			menuItem -l ($ThreadDiam[16] + " mm");
+		    			menuItem -l ($ThreadDiam[17] + " mm");
+		    			menuItem -l ($ThreadDiam[18] + " mm");
+		    			menuItem -l ($ThreadDiam[19] + " mm");
+		    			menuItem -l ($ThreadDiam[20] + " mm");
+		    			menuItem -l ($ThreadDiam[21] + " mm");
+		    			menuItem -l ($ThreadDiam[22] + " mm");
+		    			menuItem -l ($ThreadDiam[23] + " mm");
+		    			menuItem -l ($ThreadDiam[24] + " mm");
+		    			menuItem -l ($ThreadDiam[25] + " mm");
+		    			menuItem -l ($ThreadDiam[26] + " mm");
+					
+				
+			radioButtonGrp -h 20 -nrb 2 -label "" -enable true
+							-cw3 1 75 65 
+							-cl3 "right" "left" "left" 
+							-la2 "Standard" "Fine"
+							-ann "Note: - Below 8 mm Fine Thread Pitch is not to offical DIN Standards"
+							-on1 "DVY_Callback;" 
+							-of1 "" 
+							-on2 "DVY_Callback;" 
+							-of2 "" 
+						"ThreadStyleRadioGrp";
+		
+	
+			floatField -editable false -precision 2 "PitchIntField";
+		
+	setParent..;
+	
+	separator -h 10 -style "in";
+	
+	
+// Int Slider Group for Quantity of Groups Required
+	
+		intSliderGrp -cal 1 "right" -cal 2 "center" -cal 3 "right"
+					-adjustableColumn 3
+					-columnWidth3 120 50 150
+					-label " No. of Sets Required :-" 
+					-field true
+					-minValue 1 
+					-maxValue 100
+					-step 1
+					-value 1
+				ItemsReqSliderGrp;
+		
+		separator -h 10 -style "double";
+			 
+			text -height 5 -bgc 1 1 0.85 -label "";
+			text -height 15 -bgc 1 1 0.85 -align "left"
+				-label " Note:- Select Parts required in each Set. Each set will be set up with same items.";
+			text -height 15 -bgc 1 1 0.85 -align "left" -font "boldLabelFont"
+				-label " If different items required in a Set run again to suit.";
+			text -height 5 -bgc 1 1 0.85 -label "";
+		
+		separator -h 10 -style "double";
+		text -height 5-label "";
+		
+		string $BoltSel = `rowColumnLayout -enable 1 -nc 3
+							-cw 1 120 -cal 1 "center" -cat 1 "both" 1
+							-cw 2 305 -cal 2 "center" -cat 2 "both" 1
+							-cw 3 75 -cal 3 "center" -cat 3 "both" 1
+							
+						"BoltType"`;
+	
+			checkBox -enable true -width 110 -label " Bolt and Style Req:-" -align "left" 
+						-onCommand "radioButtonGrp -edit -enable true BoltStyleCheck;"
+						-offCommand	"radioButtonGrp -edit -enable false BoltStyleCheck;\ radioButtonGrp -edit -en4 false BoltStyleCheck;\ radioButtonGrp -edit -enable false BoltHeadStyleCheck;\ radioButtonGrp -edit -enable false BoltHeadStyle01Check;\ radioButtonGrp -edit -enable false StudStyleCheck;"
+							BoltOptionCheck;
+			
+				radioButtonGrp -enable false -height 20 -nrb 4 -label "" -en4 false
+								-cl5 "left" "left" "left" "left" "left"
+								-columnWidth5 1 67 75 105 55 
+								-labelArray4 "Standard" "Full Thread" "Screw (No Head)" "Stud"
+								
+							-onCommand1 "radioButtonGrp -edit -enable true BoltHeadStyleCheck;\ radioButtonGrp -edit -enable true BoltHead01StyleCheck;\ radioButtonGrp -edit -enable true BoltHeadStyle01Check;" 
+							-offCommand1 "radioButtonGrp -edit -enable false BoltHeadStyleCheck;\ radioButtonGrp -edit -enable false BoltHead01StyleCheck;\ radioButtonGrp -edit -enable false BoltHeadStyle01Check;" 
+							
+							-onCommand2  "radioButtonGrp -edit -enable true BoltHeadStyleCheck;\ radioButtonGrp -edit -enable true BoltHead01StyleCheck;\ radioButtonGrp -edit -enable true -sl 1 BoltHeadStyle01Check;"
+							-offCommand2 "radioButtonGrp -edit -enable false BoltHeadStyleCheck;\ radioButtonGrp -edit -enable false BoltHead01StyleCheck;\ radioButtonGrp -edit -enable false BoltHeadStyle01Check;"
+							
+							-onCommand3 "radioButtonGrp -edit -enable false BoltHeadStyleCheck;\ radioButtonGrp -edit -enable false BoltHead01StyleCheck;\ radioButtonGrp -edit -enable true -sl 1 BoltHeadStyle01Check;" 
+							-offCommand3 "radioButtonGrp -edit -enable false BoltHeadStyleCheck;\ radioButtonGrp -edit -enable false BoltHead01StyleCheck;\ radioButtonGrp -edit -enable false BoltHeadStyle01Check;"
+							
+							-onCommand4 "radioButtonGrp -edit -enable false BoltHeadStyleCheck;\ radioButtonGrp -edit -enable false BoltHead01StyleCheck;\ radioButtonGrp -edit -enable true StudStyleCheck;"
+							-offCommand4 "radioButtonGrp -edit -enable false BoltHeadStyleCheck;\ radioButtonGrp -edit -enable false BoltHead01StyleCheck;\ radioButtonGrp -edit -enable false StudStyleCheck;"
+						BoltStyleCheck;	
+				
+				$a = 0;
+				optionMenu -width 110  DVY_BoltOption;
+					menuItem -l "Material";
+		    			menuItem -l $BNMaterial[$a++];
+		    			menuItem -l $BNMaterial[$a++];
+		    			menuItem -l $BNMaterial[$a++];
+		    			menuItem -l $BNMaterial[$a++];
+		    			menuItem -l $BNMaterial[$a++];
+		    			menuItem -l $BNMaterial[$a++];
+	
+		setParent..;
+				
+			separator -h 15 -style "in";
+
+				
+		string $BoltSel01 = `rowColumnLayout -enable 1 -nc 3
+					-cw 1 100 -cal 1 "center" -cat 1 "both" 1
+					-cw 2 276 -cal 2 "center" -cat 2 "both" 1
+					-cw 3 65 -cal 3 "center" -cat 3 "both" 1
+				"BoltType1"`;
+
+		text -height 20 -label "Select Head Req:-";
+			
+					radioButtonGrp -enable false -height 20 -nrb 4 -label "" 
+									-cl5 "left" "left" "left" "left" "left"
+									-columnWidth5 1 64 67 52 80
+									-labelArray4 "Hexagon" "PanHead" "Coach" "CheeseHead"  
+							-onCommand1 "radioButtonGrp -edit -enable false BoltHeadStyle01Check;"
+							-offCommand1 "radioButtonGrp -edit -enable true BoltHeadStyle01Check;"
+							
+							-onCommand2 "radioButtonGrp -edit -enable true -sl 1 BoltHeadStyle01Check;"
+							-offCommand2 "radioButtonGrp -edit -enable true BoltHeadStyle01Check;"
+							
+							-onCommand3 "radioButtonGrp -edit -enable false BoltHeadStyle01Check;"
+							-offCommand3 "radioButtonGrp -edit -enable true BoltHeadStyle01Check;"
+							
+							-onCommand4 "radioButtonGrp -edit -enable true -sl 1 BoltHeadStyle01Check;"
+							-offCommand4 "radioButtonGrp -edit -enable true BoltHeadStyle01Check;"
+						BoltHeadStyleCheck;	
+					
+					radioButtonGrp -enable false -height 20 -nrb 1 -label "" -shareCollection BoltHeadStyleCheck
+									-cl2 "left" "left" 
+									-columnWidth2 1 65
+									-label1 "Socket"
+									-onCommand1 "radioButtonGrp -edit -enable false BoltHeadStyle01Check;"
+									-offCommand1  "radioButtonGrp -edit -enable true BoltHeadStyle01Check;"
+							BoltHead01StyleCheck;	
+
+				
+			text -height 20 -label "Select Type of Drive Slot:-";
+			
+					radioButtonGrp -enable false -height 20 -nrb 4 -label "" 
+									-cl5 "left" "left" "left" "left" "left"
+									-columnWidth5 1 64 66 56 65
+									-labelArray4 "None" "Socket" "Slotted" " X Slot"
+								BoltHeadStyle01Check;	
+
+			text -height 20 -label "";
+			text -height 20 -label "Select Type of Stud Req:-";
+
+					radioButtonGrp -enable false -height 20 -nrb 3 -label "" 
+									-cl4 "left" "left" "left" "left" 
+									-columnWidth4 1 72 80 90 
+									-labelArray3 "Single End" "Full Thread"  "Double Ended"
+								StudStyleCheck;	
+	
+	setParent..;
+
+		separator -h 15 -style "in";
+		
+		string $NutSel = `rowColumnLayout -enable 1 -nc 3
+							-cw 1 122 -cal 1 "center" -cat 1 "both" 1
+							-cw 2 305 -cal 2 "center" -cat 2 "both" 1
+							-cw 3 75 -cal 3 "center" -cat 3 "both" 1
+						"NutType"`;
+		
+			checkBox -enable true -label "Nut and Style Req:-" -align "left" 
+						-onCommand "radioButtonGrp -edit -enable true NutStyleCheck;\ radioButtonGrp -edit -enable true NutStyle01Check;"
+						-offCommand	"radioButtonGrp -edit -enable false NutStyleCheck;\ radioButtonGrp -edit -enable false NutStyle01Check;"
+					NutOptionCheck;	
+			
+				radioButtonGrp -enable false -height 20 -nrb 3 -label "" 
+								-cl4 "left" "left" "left" "left" 
+								-columnWidth4 1 72 135 70
+								-labelArray3 "Standard" "Standard and LockNut" "NyLocNut" 
+						NutStyleCheck;
+				
+				$a = 0;
+				optionMenu -width 110  DVY_NutOption;
+					menuItem -l "Material";
+		    			menuItem -l $BNMaterial[$a++];
+		    			menuItem -l $BNMaterial[$a++];
+		    			menuItem -l $BNMaterial[$a++];
+		    			menuItem -l $BNMaterial[$a++];
+		    			menuItem -l $BNMaterial[$a++];
+		    			menuItem -l $BNMaterial[$a++];
+						
+		text -height 20 -label "";
+		
+				radioButtonGrp -enable false -height 20 -nrb 4 -label "" -shareCollection NutStyleCheck
+								-cl5 "left" "left" "left" "left" "left"
+								-columnWidth5 1 72 80 55 70 
+								-labelArray4 "Flanged" "DomeHead" "Wing" "Castellated"
+						NutStyle01Check;	
+				
+	
+	setParent..;
+
+		separator -h 15 -style "in";
+		
+		string $WasherSel = `rowColumnLayout -enable 1 -nc 3
+							-cw 1 128 -cal 1 "center" -cat 1 "both" 1
+							-cw 2 300 -cal 2 "center" -cat 2 "both" 1
+							-cw 3 75 -cal 3 "center" -cat 3 "both" 1
+						"WasherType"`;
+	
+			checkBox -enable true -label "Washer and Style Req:-" -align "left" 
+							-onCommand "radioButtonGrp -edit -enable true WasherStyleCheck;"
+							-offCommand	"radioButtonGrp -edit -enable false WasherStyleCheck;"
+					WasherOptionCheck;	
+			
+					radioButtonGrp -enable false -height 20 -nrb 4 -label "" 
+									-cl5 "left" "left" "left" "left" "left"
+									-columnWidth5 1 62 62 68 110
+									-labelArray4 "1 x Plain" "2 x Plain" "1 x Spring" "Spring and Plain"
+								WasherStyleCheck;	
+					
+				$a = 0;
+				optionMenu -width 110  DVY_WasherOption;
+					menuItem -l "Material";
+		    			menuItem -l $BNMaterial[$a++];
+		    			menuItem -l $BNMaterial[$a++];
+		    			menuItem -l $BNMaterial[$a++];
+		    			menuItem -l $BNMaterial[$a++];
+		    			menuItem -l $BNMaterial[$a++];
+		    			menuItem -l $BNMaterial[$a++];
+
+	
+	setParent..;
+
+		separator -h 15 -style "in";
+	
+				checkBox -enable true -label "Dummy Threaded Hole if Required " -align "left" 
+						-onCommand "intFieldGrp -edit -enable true HoleLength;"
+						-offCommand	"intFieldGrp -edit -enable false HoleLength;"
+					HoleOptionCheck;	
+				
+		separator -h 10 -style "double";
+			text -height 5 -bgc 1 0.75  0.75 -label "";
+			text -height 30-bgc 1 0.75  0.75  -font "boldLabelFont"
+				-label " Minimum Bolt & Hole Length is 2 x Diam. But should exceed recommended\n Thread length (Thread Length is auto calculated to DIN Standards) :- ";
+		text -height 2 -bgc 1 0.75  0.75 -label "";
+		separator -h 10 -style "double";
+		text -height 5 -label "";
+		
+	string $DataSel = `rowColumnLayout -enable 1 -nc 2
+							-cw 1 310 -cal 1 "center" -cat 1 "both" 1
+							-cw 2 110 -cal 2 "center" -cat 2 "both" 15
+						"DataFielCol"`;
+
+		
+		intFieldGrp -nf 1 -adj 0
+					-label "Bolt Length Required (Min is 2 x Diameter) :- " 
+					-cw2 240 70 
+					-cl2 "right" "left"						
+					-co2 2 2
+					-value1 0 
+				"BoltLength";
+		
+	text -height 30 -align "center" -label "Recommended\n Thread Length "; 
+
+		 intFieldGrp -enable false -nf 1 -adj 0
+			 		-label "Depth of Thread for Hole (Min is 2 x Diameter) :- " 
+				 	-cw2 240 70 
+					-cl2 "right" "left"						
+					-co2 2 2
+					-value1 0
+				"HoleLength";
+		 
+		 intField -editable false -width 70 -value 0 "ThreadLength";
+		 
+	setParent..;
+	
+		text -height 5 -label "";
+		separator -h 10 -style "in";
+		text -height 5-label "";
+	
+	setParent $Tabs[0];
+	
+
+
+//////////////////////////////////////////////////////////////////////////////////
+//					Bolt Set Up.
+//////////////////////////////////////////////////////////////////////////////////	
+	$Tabs[1] = `columnLayout -adj 1 "Help and Info "`;
+
+	string $GearM = `frameLayout -height 515 -labelVisible 0 -label "Help" -bs "in" "Gear"`;
+
+	columnLayout -adj 1 ;
+	
+		text -height 5-label "";
+		separator -h 10 -style "double";
+		text -bgc 0.7 1 0.7  -height 20 -align "center" -label "Help Section ";
+		
+		separator -h 10 -style "double";
+		text -height 5-label "";
+
+		scrollField -height 375 -bgc 1 1 0.85 -wordWrap true -editable false
+		-text "To use this these scripts \n\n	Select Diameter required. Standard Pitch is the only one currently available. Then select quantiy to be produced. \nEach `Set` produced will contain the same group of items. \n \nIf other `Groups` of items required re-run to suit needs. Currently the Option to set up studs is not functioning. \n \nIf you require a `Threaded Hole` to fit in a surface then run script as required and create a plain hole of the correct thread diameter and place the `Dummy Hole` inside it. \n\nEach Thread has had a smoothing action applied to the Polygon section but it is set at `Zero` subdivision Levels until smoothing is required. \n\nEach Threaded item has been setup that when moved in the `Y` axis the item will Rotate in `Y` axis at a rate to match the pitch of the thread" ;	
+			
+	
+		text -height 5-label "";
+
+
+		setParent $Tabs[0];
+
+	setParent $MainPanel;	
+	
+
+	// Build it.
+
+	frameLayout -cll 0 -vis 1 -lv 0 -label "Build" -la "center" -bs "out";
+	
+	columnLayout -enable 1 -adj 1 -cat "left" 1 -cal "center" ;
+		
+		separator -h 5 -style "none";
+
+		button -height 40 -bgc 0.7 0.7 1 -label "Build" -command " print \"\\n Building Nuts and Bolts as Required Davvey © 2006..\\n\"; DVY_NutandBoltBuild;"
+				Tank_Builder;	
+
+		separator -h 10 -style "none";
+
+	setParent..;		
+	
+	//Show the DVY_BoltandNut UI Window.
+	
+	showWindow DVY_BoltandNutWindow;
+
+		
+}
+
+ 
+//-----------------------------------------------------------------
+
+global proc DVY_Callback ()
+{
+	
+	global float $ThreadLength[], $ThreadLengthL[], $ThreadPitch[], $ThreadPitchF[];
+	string $name = `optionMenu -q -v DVY_DiamOption`;
+	float $length, $TLength;
+	string $buffer[];
+	global int $SIZE;
+ 	$numTokens = `tokenize $name " " $buffer`;
+	
+	if ($buffer[0] == "1.6") {$length = 7; $SIZE = 0;}
+	if ($buffer[0] == "2.0") {$length = 8; $SIZE = 1;}
+	if ($buffer[0] == "2.5") {$length = 11; $SIZE = 2;}
+	if ($buffer[0] == "3.0") {$length = 14; $SIZE = 3;}
+	if ($buffer[0] == "4.0") {$length = 16; $SIZE = 4;}
+	if ($buffer[0] == "5.0") {$length = 18; $SIZE = 5;}
+	if ($buffer[0] == "6.0") {$length = 20; $SIZE = 6;}
+	if ($buffer[0] == "7.0") {$length = 22; $SIZE = 7;}
+	if ($buffer[0] == "8.0") {$length = 24; $SIZE = 8;}
+	if ($buffer[0] == "10") {$length = 28; $SIZE = 9;}
+	if ($buffer[0] == "12") {$length = 32; $SIZE = 10;}
+	if ($buffer[0] == "14") {$length = 36; $SIZE = 11;}
+	if ($buffer[0] == "16") {$length = 40; $SIZE = 12;}
+	if ($buffer[0] == "18") {$length = 45; $SIZE = 13;}
+	if ($buffer[0] == "20") {$length = 48; $SIZE = 14;}
+	if ($buffer[0] == "22") {$length = 46; $SIZE = 15;}
+	if ($buffer[0] == "24") {$length = 50; $SIZE = 16;}
+	if ($buffer[0] == "30") {$length = 65; $SIZE = 17;}
+	if ($buffer[0] == "36") {$length = 75; $SIZE = 18;}
+	if ($buffer[0] == "42") {$length = 85; $SIZE = 19;}
+	if ($buffer[0] == "48") {$length = 96; $SIZE = 20;}
+	if ($buffer[0] == "56") {$length = 115; $SIZE = 21;}
+	if ($buffer[0] == "64") {$length = 130; $SIZE = 22;}
+	if ($buffer[0] == "72") {$length = 140; $SIZE = 23;}
+	if ($buffer[0] == "80") {$length = 160; $SIZE = 24;}
+	if ($buffer[0] == "90") {$length = 180; $SIZE = 25;}
+	if ($buffer[0] == "100") {$length = 200; $SIZE = 26;}
+	
+	
+	$Tlength = $ThreadLength[$SIZE];
+	$Pitch = $ThreadPitch[$SIZE];
+	
+	if (`radioButtonGrp -q -sl ThreadStyleRadioGrp` == 1)
+		{
+			print " with a Coarse Thread";
+			$Pitch = $ThreadPitch[$SIZE];
+
+		}
+	if (`radioButtonGrp -q -sl ThreadStyleRadioGrp` == 2)
+		{
+			print " with a Coarse Thread";
+			$Pitch = $ThreadPitchF[$SIZE];
+
+		}
+		
+	print ( "Diameter selected is " + $buffer[0] + "mm and Pitch is " + $Pitch + " and Min. recommended Thread Length is " + $Tlength + "mm © Davvey..\n");
+	
+	intFieldGrp -edit -value1 $length BoltLength;
+	intFieldGrp -edit -value1 $length HoleLength;
+	intField -edit -value $Tlength ThreadLength;
+
+	floatField -edit -value $Pitch PitchIntField;
+	
+}
+
+global proc string DVY_Spiral( float $ht, float $radius, float $numRounds )
+//
+//	Description:
+//		This proc creates a spiral centred about the origin, with a specific
+//		height, radius and number of rounds/turns/cycles.
+//
+//		This is done by creating a cylinder of the correct size, then
+//		creating a curve-on-surface on the cylinder (which is in
+//		the form of a spiral), then duplicating the curve-on-surface
+//		to get a 3D spiral.
+//
+{
+	string $cylinder[] = `cylinder -ch off -ax 0 1 0 -p 0 0 0 -r 1.0 -hr 1.0`;
+	scale $radius $ht $radius $cylinder[0];
+	string $cos = `curveOnSurface -d 1 -uv 0.0 0.0 -uv 1.0 ($numRounds*8.0) $cylinder[0]`;
+	string $duplicatedCrv[] = `duplicateCurve -ch off $cos`;
+
+	delete $cos;
+	delete $cylinder[0];
+
+	return $duplicatedCrv[0];
+}
+
+global proc DVY_AboutNutWin()
+ {
+	global float $DVYTol;
+	if ((`window -ex DavveyAboutNutWindow`) == true) 
+		{
+			deleteUI DavveyAboutNutWindow;
+		}
+	window -t " About:-  Davvey's Nut and Bolt Generator." -w 400 -h 300 -sizeable 0 DavveyAboutNutWindow;
+		//Build 'Edit' menu.
+	
+	string $menuBarLayout = `menuBarLayout -height 20`;
+		menu -label "File"; 
+ 			menuItem -label "Close" -command "deleteUI DavveyAboutNutWindow";		
+
+
+	setParent;
+	setParent;
+
+		columnLayout -adjustableColumn true -columnAttach "both" 5 -columnWidth 300; 
+	
+		text -height 2 -label " " ;	//Spacer
+		separator -height 10 -style "double" ;
+			text -bgc 0.5 0.5 1 -height 20 -align "center" -fn "boldLabelFont" -l "Davvey's Nut and Bolt Generator..";
+			text -bgc 0.5 0.5 1 -height 20 -align "center" -fn "boldLabelFont" -l "copyright (c) 2006 Dave Lake..";
+		separator -height 8 -style "double" ;
+		text -height 2 -label " " ;	//Spacer
+		
+	frameLayout -cl 0 -label "" -labelAlign "center" -borderStyle "etchedOut";
+		columnLayout -adjustableColumn true -columnAttach "both" 2 -columnWidth 250; 
+		
+		text -bgc 1 1 0.8 -height 5 -align "left" -l " ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -fn "boldLabelFont" -l "  Special Thanks:- ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -fn "plainLabelFont" -l "  Thanks to my wife Jan for her support and patience during the time";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "   its taken to learn Maya and how to write these scripts.";
+		text -bgc 1 1 0.8 -height 10 -align "left" -l " ";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "  Also dedicated to Jackie and Joanna (my expensive pride and joys!!)";
+		text -bgc 1 1 0.8 -height 20 -align "left" -l "  Finally these collected works are dedicated to the memory of Darryl.";
+		text -bgc 1 1 0.8 -height 5 -align "left" -l " ";
+		setParent ..;	
+		setParent ..;	
+		text -align "center" -l "email :- Davvey@ntlworld.com";
+		text -align "center" -l "website :- www..............";
+	setParent ..; 
+
+	showWindow DavveyAboutNutWindow;
+	
+}

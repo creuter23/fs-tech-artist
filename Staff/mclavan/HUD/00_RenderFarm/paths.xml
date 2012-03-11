@@ -1,0 +1,8 @@
+<paths>
+    <path name="nuke">"C:\Program Files\Nuke6.2v1\Nuke6.2.exe"</path>
+    <path name="maya">"C:\Program Files\Autodesk\Maya2011\bin\maya.exe"</path>
+    <path name="base">C:\Users\mclavan\Dropbox\00_projects\HUD\00_RenderFarm</path>
+    <path name="output">C:\Users\mclavan\Dropbox\00_projects\HUD\00_RenderFarm\jobs</path>
+<paths>
+
+<!-- nuke.Root()['name'].value() -->

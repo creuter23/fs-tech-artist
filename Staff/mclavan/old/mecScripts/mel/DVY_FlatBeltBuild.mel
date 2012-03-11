@@ -1,0 +1,201 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Davvey\'s Belt  & Pulley Generator
+''    Author:  
+''    Last Updated: Feb 02, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4509.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+
+//////////////////////////////////////////////////////////////////////////////////////
+//	Title Section
+
+//						-  DVY_BeltBuild -
+
+
+//////////////////////////////////////////////////////////////////////////////////////
+//	Description and Usage Section
+/*
+
+	Called by DVY_Pulleys to build various styles of Flat Pulleys and 
+	then add basic Shaders to each part if required.
+		
+	The Flat Pulleys can be Full, Half or Split and Plain, Single or Double ended 
+	Flanged in style. 	
+	
+	All Pulleys are produced to Metric Size / Scale and is correctly set to suit Maya's
+	user preferences settings.
+
+
+*/		
+//////////////////////////////////////////////////////////////////////////////////////
+
+global proc DVY_FlatBeltBuild()
+{
+
+	print "Start of DVY_FlatPulleyBuild procedure. © Davvey..\n";
+	
+	string $Sel[] = `ls -sl`;
+	
+	if ($Sel[0] == "")
+		{ error "OOps!! Please select Pulley Group Top Node and Try again © Davvey..\n"; }
+	
+		
+// ******************************************************************************** //	
+//	Global Variables
+	
+	global string $Units;
+
+	global float $DVYUnit;
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Local Variables
+	
+	string $Temp[], $Temps[], $DVYFlatCurve, $Groups[], $DVYFlat[], $Material;
+	string $PuName, $PuGroup[], $Pulley[], $PulleyGrp[], $Shader[], $Selected[];
+	int $PType, $PStyle;
+	
+	int $a, $b, $c, $E, $i, $j, $k, $q, $Rot, $S, $T, $t;
+	
+	float $BTh, $ShD, $OD, $Width, $FlOD, $FlThick;
+	float $Pos[];
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Constants and "Static Data"
+	$e = $E = 1;
+	
+	$Selected[0] = $Sel[0];
+	print $Selected;
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Set Scaling unit for Global units used.
+		
+	DVY_ScaleSet;
+	print ("Current units are " + $Units + " and Scale Factor $DVYUnit is " + $DVYUnit + "\n");
+	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+//	Create Shaders for Gear Parts.
+/*	
+	string $SHName = `optionMenu -q -v DVY_FlatMaterial`;
+	$SHName = ($SHName + "_SH");
+	int $Sh = `optionMenu -q -sl DVY_FlatMaterial`;
+		print $SHName;
+	if ($Sh > 1)
+		{
+			$s = $Sh + 19;
+			if(!`objExists $SHName`)
+				{
+					$Shader[0] = `DVY_Shaders($s)`; 
+			 	}	
+		
+				$Shader[0] = $SHName;
+		}
+
+	print "$Shaders are \n";
+		print $Shader;
+*/	
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+// Generate and Use new Group Node
+	
+	$BTh = `floatField -q -v BFloatField_0`;
+	$Width = `floatField -q -v BFloatField_05`;
+
+		if ($BTh == 0)
+			{	error "Please enter Belt Thickness © Davvey..\n";	}
+			
+	print ("Belt Thickness is " + $BTh + "\n");
+
+	$PuName = "Flat_Belt_";
+	
+	 while(`objExists ($PuName + "MainBelt_GrpN_" + $E)`)
+		  {
+			 $E++;	print ("$E is " + $E + "\n");
+		  }
+			$PuGroup[0] = `group -em -name ($PuName + "MainBelt_GrpN_" + $E)`;
+			print ("Group is called " + $PuGroup[0] + "\n");
+
+/*
+		if (!`attributeExists "NameOfGearGrp" $PuGroup[0]`) 
+			{ addAttr -ln NameOfGearGrp -dt "string" $PuGroup[0];}
+		       setAttr -l 1 -k 0 -type "string" ($PuGroup[0] + ".NameOfGearGrp") $PuGroup[0];
+
+		if (!`attributeExists "BeltType" $PuGroup[0]`) 
+			{ addAttr -ln Type -dt "string" $PuGroup[0];}
+		       setAttr -l 1 -k 0 -type "string" ($PuGroup[0] + ".Type") "Flat";
+			   
+		if (!`attributeExists "BeltWidth" $PuGroup[0]`) 
+			{ addAttr -ln BeltWidth -at double $PuGroup[0];}
+		       setAttr -l 1 -k 0 ($PuGroup[0] + ".BeltWidth") $Width;
+			   
+		if (!`attributeExists "BeltThick" $PuGroup[0]`) 
+			{ addAttr -ln BeltThick -at double $PuGroup[0];}
+		       setAttr -l 1 -k 0 ($PuGroup[0] + ".BeltThick") $BTh;
+
+		if (!`attributeExists "Grp_No_" $PuGroup[0]`)
+			{ addAttr -ln Grp_No_ -at short $PuGroup[0];}
+		      setAttr -l 1 -k 0 ($PuGroup[0] + ".Grp_No_") $E;
+*/			  
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+	
+
+			$OD = `floatField -q -v ("BFloatField_" + $i + "1")`;
+			$ShD = `floatField -q -v ("BFloatField_" + $i + "3")`;
+			$FlThick = `floatField -q -v ("BFloatField_" + $i + "7")`;
+			$FlOD = `floatField -q -v ("BFloatField_" + $i + "9")`;
+//			$Material = `optionMenu -q -v DVY_FlatMaterial`;
+			$PType = `optionMenu -q -sl ("DVY_PuFlat0" + ($i+1))`;
+			$PStyle = `optionMenu -q -sl ("DVY_FlFlat0" + ($i+1))`;
+	
+			print ("$PuName is " + $PuName + "\n");
+			print ("Flat Pulley OD is " + $OD + " . © Davvey..\n");
+			print ("Flat Pulley Shaft Diameter is " + $ShD + ". © Davvey..\n");
+			print ("Flat Pulley Width is " + $Width + ". © Davvey..\n");
+			print ("Flat Pulley Flange Thickness is " + $FlThick + ". © Davvey..\n");
+			print ("Flat Pulley Flange OD is " + $FlOD + ". © Davvey..\n");
+			print ("Flat Belt Thickness $BTh is " + $BTh + ". © Davvey..\n");
+			print ("Flat Pulley material is " + $Material + ". © Davvey..\n");
+
+// -------------------------------------------------------------------------------- //
+	
+// ******************************************************************************** //	
+			
+		$Pos[0] = $Width * 0.5;	$Pos[1] = $BTh;
+		
+		
+		
+		
+		
+		
+/*		
+		$Temp = `polyCreateFacet -ch 0 -s 1 -p $Pos[0] ($Pos[1] * -0.5) 0
+											-p $Pos[0] ($Pos[1] * 0.5) 0
+											-p ($Pos[0] * -1) ($Pos[1] * 0.5) 0 
+											-p ($Pos[0] * -1) ($Pos[1] * -0.5) 0 `;	
+		
+		move - r 0 (-5 - $BTh *0.5 * $DVYUnit) 0 $Temp[0];
+		
+		scale $DVYUnit $DVYUnit $DVYUnit $Temp[0];
+			
+			
+*/			
+			
+}

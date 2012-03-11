@@ -1,0 +1,126 @@
+// Copyright (C) 2000-2002 Michael Bazhutkin
+// www.geocites.com/bazhutkin
+// bazhutkin@mail.ru
+//
+//  Import Cluster Weights 1.0
+//  Script File
+//  MODIFY THIS AT YOUR OWN RISK
+//
+//	Creation Date:	November 5, 2002
+//	Fix Date:	November 19, 2002
+//
+//  Description:
+//	Import cluster weights of selected object form file
+//
+//	Select object (polygon or NURBS)
+//	and cluster node in Channel Box
+//	if cluster deformer is not single for this object
+//
+//	Call importClusterWeights
+
+global proc importClusterWeightsGetFileName ( string $fileName, string $fileType )
+{
+	global string $importClusterWeightsFileName;
+	$importClusterWeightsFileName = $fileName;
+}
+
+global proc int importClusterWeights ( )
+{
+	global string $importClusterWeightsFileName;
+		
+	string $list[] = `ls -sl -type transform`;
+	string $objectName = $list[0];
+
+	if (size($list) < 1) error ("No selected object");
+	if (size($list) > 1) error ("More than one object selected");
+
+	$list = `ls -sl -type cluster`;
+
+	if (size($list) < 1)
+	{
+		$list = `listHistory $objectName`;
+		$list = `ls -type cluster $list`;
+	}
+
+	string $clusterName = $list[0];
+
+	if (size($list) < 1) error ("No cluster deformer for selected object");
+	if (size($list) > 1) error ("More than one cluster deformer for selected object. Select cluster node in Channel Box.");
+	
+	string $shapeName[] = `ls -dag -s $objectName`;
+	string $history[] = `listHistory $objectName`;
+	string $clustersName[] = `ls -type cluster $history`;
+	
+	int $flag;
+	for ($clusterMember in $clustersName)
+		if ($clusterMember == $clusterName) $flag++;
+	if ($flag == 0) error ("`" + $clusterName + "` is not deformer for `" + $objectName + "`");
+	
+	int $sizeInputArr = `getAttr -size ($clusterName + ".input")`;
+	
+	int $indexInputArr;
+	string $input[];
+	string $future[];
+	for ($i = 0; $i < $sizeInputArr; $i++)
+	{
+		$input = `listConnections ($clusterName + ".input[" + $i + "].inputGeometry")`;
+		if ($input[0] != "")
+		{	$future = `listHistory -future 1 $input[0]`;
+			for ($node in $future)
+				if ($shapeName[0] == $node) $indexInputArr = $i;
+		}
+	}
+	
+	// Get file name
+	
+	$importClusterWeightsFileName = "";
+	fileBrowser ("importClusterWeightsGetFileName", "Import", "", 0);
+
+	string $fileName = $importClusterWeightsFileName;
+		
+	if ($fileName == "") return 0;
+	
+	$flag = `filetest -r $fileName`;
+	if (!$flag) error("Unable to open the file: " + $fileName);
+	
+	// Import weights
+	
+	waitCursor -state 1;
+	
+	string $pointsArray[];
+	
+	$fileId = `fopen $fileName "r"`;
+	string $nextLine = `fgetline $fileId`;
+	
+	int $line;
+	while (size($nextLine) > 0)
+	{	
+		$pointsArray[$line] = $nextLine;
+		$nextLine = `fgetline $fileId`;
+		$line++;
+	}
+	fclose $fileId;
+	
+	if ($pointsArray[0] != "N\tWeights\n")
+	{	waitCursor -state 0;
+		error ("Incorrect file format.");
+	}
+		
+	string $pointLine[];
+	float $pointValue;
+	int $pointNumber;
+	int $sizeArray = `getAttr -size ($objectName + ".cp")`;
+	
+	for ($i = 2; $i < size($pointsArray); $i++)
+	{
+		tokenize(substring($pointsArray[$i], 1, size($pointsArray[$i]) - 1), $pointLine);
+		$pointNumber = $pointLine[0];
+		$pointValue = $pointLine[1];
+		if ($pointNumber < $sizeArray)
+			setAttr ($clusterName + ".weightList[" + $indexInputArr + "].w[" + $pointNumber + "]") $pointValue;
+	}
+
+	waitCursor -state 0;
+
+	return 1;
+}

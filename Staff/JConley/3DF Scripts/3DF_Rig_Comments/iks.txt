@@ -1,0 +1,4 @@
+A
+The IKs have been drawn with the correct SC and RP solvers and attached correctly to the curves.
+F
+The IKs have not been drawn with the correct solvers and/or not attached correctly to the curves.

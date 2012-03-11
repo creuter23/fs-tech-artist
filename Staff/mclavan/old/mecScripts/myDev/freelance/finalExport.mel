@@ -1,0 +1,303 @@
+ global proc string stripText ( string $unstripped )
+{
+string $stripped = `match "[^\[]*$" $unstripped`;
+$stripped = `match "[0-9]+" $stripped`;
+
+return $stripped;
+}
+
+
+global proc string[] faceOrder( string $face )
+{
+// An array to store our result
+string $vertexOrder[];
+
+
+
+// Use polyListComponentConversion to get .vtxFace components
+string $vtxFace[] = `polyListComponentConversion -fromFace -toVertexFace $face`;
+$vtxFace = `filterExpand -sm 70 -expand true $vtxFace`;
+
+for ( $vf in $vtxFace )
+    {
+    // Get vertex for this vtxFace
+    string $vertex[] = `polyListComponentConversion -fromVertexFace -toVertex $vf`;
+
+    // And append to our result
+    $vertexOrder[ size($vertexOrder) ] = stripText( $vertex[0] );
+    }
+
+return $vertexOrder;
+}
+
+
+proc string[] getShapes( string $xform )
+{
+   string $shapes[];
+
+   $shapes[0] = $xform;
+
+   if ( "transform" == `nodeType $xform` )
+   // If given node is not a transform, assume it is a shape
+   // and pass it through
+   {
+      $shapes = `listRelatives  -shapes $xform`;
+   }
+
+   return $shapes;
+}
+
+global proc float[] getVFNormal ( string $mesh, int $vert, int $face )
+{
+string $vertexFace = $mesh + ".vtxFace[" + $vert + "][" + $face + "]";
+  float $vertpos[] = `polyNormalPerVertex -q -xyz $vertexFace`;
+return $vertpos;
+}
+
+global proc string[] myGetNum (string $vertName)
+{
+//shape node
+string $Shapenodes[] = getShapes($vertName);
+// Result: bob.vtx[0] //
+string $vertlistC[] = `polyListComponentConversion -tv $Shapenodes[0]`;
+// Result: bob.vtx[0] //
+string $vertlist[] = `filterExpand -sm 31 $vertlistC`;
+// Result: 0 //
+int $vertNumber = `stripText $vertlist[0]`;
+// Result: -24.506507 -24.506507 24.506507 //
+float $vertpos[] = `pointPosition -w $vertlist[0]`;
+// Result: bob.map[0] bob.map[8] //
+string $uvC[] = `polyListComponentConversion -tuv $Shapenodes[0]`;
+// Result: bob.map[0] bob.map[8] //
+string $uvlist[] = `filterExpand -sm 35 $uvC`;
+// Result: 0.375 0 //
+float $uvpos[] = `polyEditUV -query $uvlist[0]`;
+
+//convert postion of vert to a single string
+string $myVertPos =  ($vertpos[0] + " " + $vertpos[1] + " " + $vertpos[2]);
+//convert the position of uv to a single string
+string $myUvPos = ($uvpos[0] + " " + $uvpos[1]);
+
+//declare the return array and add items to it
+string $myReturn[];
+$myReturn[0] = $myUvPos;
+$myReturn[1] = $myVertPos;
+
+//return an array containing the uv position and the vert position as strings
+return $myReturn;
+}
+
+//global proc knhMeshExport()
+global proc knhMeshExport(string $myInPath)
+{
+//file name and path
+//$fileName = "C:\\exporter\\kenMesh.xsf";
+$fileName = $myInPath;
+//open file for writting
+$fileId = `fopen $fileName "w"`;
+//list selection
+string $selectionlist[] =`ls -sl`;
+//find out how many VERTS in selected object
+int $myNumVerts1[] = `polyEvaluate -v $selectionlist[0]`;
+//find out how many FACES in selected object
+int $myNumFace[] = `polyEvaluate -f $selectionlist[0]`;
+int $myNumUvs[] = `polyEvaluate -v $selectionlist[0]`;
+//print out header to the file
+/*
+print  "\<HEADER MAGIC\=\"XMF\" VERSION\=\"919\" \/\> \n";
+print ("\<MESH NUMSUBMESH\=\"" + size($selectionlist) + "\"\> \n");
+print (("\t\<SUBMESH NUMVERTICES\=\"") + $myNumVerts1[0]+ ("\" NUMFACES\=\"") +
+$myNumFace[0] + ("\" NUMLODSTEPS\=\"0\" NUMSPRINGS\=\"0\" NUMMORPHS\=\"0\" NUMTEXCOORDS\=\"1\" MATERIAL\=\"1\"\> \n \n"));
+ */
+
+fprint $fileId "\<HEADER MAGIC\=\"XMF\" VERSION\=\"919\" \/\> \n";
+fprint $fileId ("\<MESH NUMSUBMESH\=\"" + size($selectionlist) + "\"\> \n");
+fprint $fileId (("\t\<SUBMESH NUMVERTICES\=\"") + $myNumUvs[0]+ ("\" NUMFACES\=\"") +
+$myNumFace[0] + ("\" NUMLODSTEPS\=\"0\" NUMSPRINGS\=\"0\" NUMMORPHS\=\"0\" NUMTEXCOORDS\=\"1\" MATERIAL\=\"1\"\> \n"));
+
+//store the names of the vertices into an array
+string $mySel[] = `ls -sl`;
+string $allMyVerts[];
+string $myVertFace[];
+clear $myVertFace;
+for($i = 0; $i <$myNumUvs[0];$i++)
+{
+$allMyVerts[$i] = ($mySel[0] + ".vtx[" + $i + "]");
+//print ($allMyVerts[$i] + "<------------------\n");
+}
+
+//go through each vert and pull out the normal information based off vertex face and store into new array
+for ($current in $allMyVerts)
+{
+// Result: bob.vtxFace[5][1:2] bob.vtxFace[5][4] //
+string $plcc[] = `polyListComponentConversion -fv -tvf $current`;
+// Result: bob.vtxFace[5][1] bob.vtxFace[5][2] bob.vtxFace[5][4] //
+$plcc = `filterExpand -sm 70 -ex true $plcc`;
+
+//clear $myVertFace;
+for ( $vtxFace in $plcc )
+{
+  string $myTest = $vtxFace;
+  string $myBank[];
+  string $myBank2[];
+  tokenize $myTest "]" $myBank;
+  tokenize $myBank[1] "[" $myBank2;
+  int $myInt = $myBank2[0];
+  //print ($myBank2[0] + "\n");
+  // Get the per-vertex per-face normal for this component
+  float $normal[3] = `polyNormalPerVertex -q -xyz $vtxFace`;
+  //$myVertFace[] =  {$normal[0],$normal[1],$normal[2]};
+  //print(  $vtxFace + ": { " + $normal[0] + ", " + $normal[1] + ", " + $normal[2] + " }\n" );
+  string $myConv = ($normal[0] + " " + $normal[1] + " " + $normal[2]);
+  //print $myConv;
+//  $myVertFace[$myInt] = ($normal[0] + " " + $normal[1] + " " + $normal[2]);
+  $myVertFace[$myInt] = $myConv;
+  //print ($myTest +"<--------------=< Pre-Tokenized Vert. \n");
+  //print ($myVertFace[$myInt] +"<--------------=< Vert Face. \n");
+  //print ($myInt +"<--------------=< Vert Tokenized. \n");
+  //print (size($myVertFace));
+  //if($myInt ==  $vertNumber) print ("I FOUND THE DAMN THING!\n");
+  //print ("Current Vert: " + $myInt + "\n");
+  //print ("Current Normal: " + $normal[0] + " " + $normal[1] + " " + $normal[2] + "\n");
+}
+}
+//print ("This is the size of the normal array: " + (size($myVertFace)) );
+
+/*
+for($i = 0; $i < size($myVertFace); $i++)
+{
+print ("This value " + $myVertFace[$i] + " in this spot in the array [" + $i + "].");
+}
+*/
+
+
+
+for($i = 0; $i<$myNumUvs[0]; $i++)
+{
+select -r ($selectionlist[0] + ".vtx[" + $i +"]");
+string $mySel[] = `ls -sl`;
+
+string $myGetPos[] = `myGetNum $mySel[0]`;
+
+float $myColors[] = `polyColorPerVertex -q -r -g -b $mySel[0]`;
+
+string $firstLine = ("\t\t\<VERTEX NUMINFLUENCES\=\"1\" ID\=\"" + $i + "\"\>\n");
+ /*
+print $firstLine;
+print ("\t\t\t\<POS\>" + $myGetPos[1] + "\</POS\>\n");
+print ("\t\t\t\<NORM\>" +  $myVertFace[$i] + "\</NORM\>\n");
+print ("\t\t\t\<COLOR\>" +  $myColors[0] + " " + $myColors[1] + " " + $myColors[2] + "\</COLOR\>\n");
+print ("\t\t\t\<TEXCOORD\>" +  $myGetPos[0] + "\</TEXCOORD\>\n");
+print "\t\t\</VERTEX\>\n";
+*/
+
+fprint $fileId $firstLine;
+fprint $fileId ("\t\t\t\<POS\>" + $myGetPos[1] + "\</POS\>\n");
+fprint $fileId ("\t\t\t\<NORM\>" +  $myVertFace[$i] + "\</NORM\>\n");
+fprint $fileId ("\t\t\t\<COLOR\>" +  $myColors[0] + " " + $myColors[1] + " " + $myColors[2] + "\</COLOR\>\n");
+fprint $fileId ("\t\t\t\<TEXCOORD\>" +  $myGetPos[0] + "\</TEXCOORD\>\n");
+fprint $fileId ("\t\t\t\<INFLUENCE ID\=\"0" + "\"\>"+  "1" + "\</INFLUENCE\>\n");
+fprint $fileId "\t\t\</VERTEX\>\n";
+
+}
+ //    <INFLUENCE ID="0">1</INFLUENCE>
+  //(("\<FACE VERTEXID\=\""))  (("\"\ /\>"))
+for ($mesh in $selectionlist)
+    {
+
+    string $Shapenodes[] = getShapes($mesh);
+
+
+    for ($shape in $Shapenodes)
+        {
+         string $vertlistC[] = `polyListComponentConversion -tv $shape`;
+         //fprint $fileId  $vertlistC;
+
+         //giving us vert position
+         string $vertlist[] = `filterExpand -sm 31 $vertlistC`;
+         string $uvC[] = `polyListComponentConversion -tuv $shape`;
+
+
+          //faces --numbering for faces start at 0 and obj starts at 1---
+          string $faceC[] = `polyListComponentConversion -tf $shape`;
+          string $facelist[] = `filterExpand -sm 34 $faceC`;
+          for ($face in $facelist)
+              {
+
+string $vtxFace[] = `polyListComponentConversion -fromFace -toVertexFace $face`;
+
+
+// An array to store our result
+string $vertexOrder[];
+ clear $vertexOrder;
+// Use filterExpand to individualize each .vtxFace component in $vtxFace
+$vtxFace = `filterExpand -sm 70 -expand true $vtxFace`;
+
+
+for ( $vf in $vtxFace )
+{
+  // Get vertex for this vtxFace
+  string $vertex[] = `polyListComponentConversion -fromVertexFace -toVertex $vf`;
+
+  // And append to our result
+  $vertexOrder[ size($vertexOrder) ] = $vertex[0];
+}
+
+
+
+
+  		fprint $fileId  "\t";
+
+                  fprint $fileId (("\<FACE VERTEXID\=\""));
+              for ( $vert in $vertexOrder )
+                  {
+                   int $vertNumber = `stripText $vert`;
+                  fprint $fileId $vertNumber ;
+                  // spacing thelast face might be a problem ......KN
+                  fprint $fileId  " ";
+
+
+
+                    }
+                    fprint $fileId (("\"\ /\>"));
+                    fprint $fileId "\n";
+              }
+
+        }
+         fprint $fileId (("\</SUBMESH>"));
+          fprint $fileId "\n";
+          fprint $fileId (("\</MESH>"));
+
+
+    }
+
+select -r  $selectionlist[0] ;
+fclose $fileId;
+}
+//knhMeshExport;
+global proc imvuGui (){
+
+   string $defaultPath ="C:\\exporter\\kenMesh.xmf";
+
+//----------------------------------------------------------------------
+//Create the setup Gui window:
+   if(`window -ex imvuWin`) deleteUI imvuWin;
+   window -t "IMVU Exporter" imvuWin;
+//----------------------------------------------------------------------
+   string $layout = `columnLayout -p imvuWin`;
+//----------------------------------------------------------------------
+
+   text -w 400 -p $layout -fn "smallBoldLabelFont" -al "left"
+          -l "Path for Export:";
+//----------------------------------------------------------------------
+   textField -w 300 -p $layout -tx $defaultPath imvuPathField;
+//----------------------------------------------------------------------
+   button -w 300 -p $layout  -l "exportMesh"
+            -en 1 -c ("string $myNewPath = `textField -q -tx imvuPathField`; knhMeshExport $myNewPath") imvuExportButton;
+//button -w 300 -p $layout  -l "exportMesh"
+//           -en 1 -c " knhMeshExport "imvuExportButton;
+    window -e  -topLeftCorner 50 50 imvuWin;
+   showWindow imvuWin;
+
+}
+imvuGui;

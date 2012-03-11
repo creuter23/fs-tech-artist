@@ -1,0 +1,10 @@
+A
+Your joints were placed in a way that correlates to the movement of the geometry in an appropriate manner.
+F
+Your joints are not place in a way that correlates to the movement of the geometry.
+Straight Joints
+The joints are too straight. There should be a slight bend, or a stronger one in the knee or arm to allow for better movement.
+Back Placement
+The back pivot points are set up incorrectly, which is causing the spine to behave abnormally. The joints should be placed from where the corresponding geometry should move.
+Overlap in Back
+The pivot placement for the back could have been better. When animating the rig into a back bend, the geometry overlaps. This could have been corrected by drawing the spine joints closer to the back geometry. Right now the bones are too central.

@@ -1,0 +1,35 @@
+'''
+Finding information on attributes different ways.
+mecAttrInfo_test.py
+
+
+import mecAttrInfo_test
+reload(mecAttrInfo_test)
+
+I need to be able to get all the attribute of a given nodes.
+- I need to have it return only specific nodes that pop up in the channelbox.
+
+
+- Check attribute query
+'''
+
+
+# This is giving me some weird results.
+
+import maya.cmds as cmds
+
+keyAttrs = cmds.listAttr( 'ball', k=True )
+print(keyAttrs)
+
+# Get the blend shape attributes
+# [u'envelope', u'a', u'b', u'c', u'd']
+# envelope
+blendAttrs = cmds.listAttr('ball', multi=True, k=True )
+blendAttrs.remove('envelope')
+print(blendAttrs)
+
+# Create sliders based on the blend shape nodes
+
+# Reset blendshapes
+
+# Create 

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<props>
+    <prop id='1' name='Street Light' model='John Car' txt='John Car' setup='Michael Clavan'>wtf
+    </prop>
+    <prop id='2' name='Mail Box 1' model='John Doe' txt='John Doe' setup='Jennifer Conley'>ahhh
+    </prop>
+    <prop id='2' name='Mail Box 2' model='Jone Doe' txt='John Doe' setup='Seth Freemans'>
+    </prop>      
+</props>
+<!--
+    Start off small.
+        1) Basic details for each prop.
+        2) File path to mov file
+        3) File paths to seperate states of each asset.
+            a) Modeled
+            b) Textured - No rig
+            c) Rigged - No texture
+            d) Final - Everything merged
+            - Students can take the assets in different stats to work on them.
+            - this might not be needed
+            
+            
+ <html>
+<body>
+<h1>W3Schools Internal Note</h1>
+<div>
+<b>To:</b> <span id="to"></span><br />
+<b>From:</b> <span id="from"></span><br />
+<b>Message:</b> <span id="message"></span>
+</div>
+           
+ <script type="text/javascript">
+if (window.XMLHttpRequest)
+  {// code for IE7+, Firefox, Chrome, Opera, Safari
+  xmlhttp=new XMLHttpRequest();
+  }
+else
+  {// code for IE6, IE5
+  xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+  }
+xmlhttp.open("GET","note.xml",false);
+xmlhttp.send();
+xmlDoc=xmlhttp.responseXML;
+
+document.getElementById("to").innerHTML=
+xmlDoc.getElementsByTagName("to")[0].childNodes[0].nodeValue;
+document.getElementById("from").innerHTML=
+xmlDoc.getElementsByTagName("from")[0].childNodes[0].nodeValue;
+document.getElementById("message").innerHTML=
+xmlDoc.getElementsByTagName("body")[0].childNodes[0].nodeValue;
+</script>           
+          
+          
+          
+          
+ xmlDoc=loadXMLDoc("books.xml");
+
+x=xmlDoc.getElementsByTagName("title");
+
+for (i=0;i<x.length;i++)
+  {
+  document.write(x[i].childNodes[0].nodeValue);
+  document.write("<br />");
+  }           
+-->

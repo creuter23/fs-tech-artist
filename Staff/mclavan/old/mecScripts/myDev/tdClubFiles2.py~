@@ -1,0 +1,128 @@
+'''
+TDClub Meeting
+Files Part 2
+Paths 
+Practical Example
+
+Description:
+	The script shows how to get and manipulate file paths.
+	
+	
+import tdClubFiles2
+reload(tdClubFiles2)
+tdClubFiles2.gui()
+
+'''
+
+
+'''
+Dynamic GUI creation
+'''
+import maya.cmds as cmds
+import os, os.path, glob
+
+# Main
+
+# Tabs
+
+# Frames
+
+# Files
+
+win = "tdClubWin"
+winWidth = 300
+winHeight = 300
+
+# Main
+def gui():
+	'''
+	Gui element for getting the desired path.
+	'''
+	
+	global mainCol
+	
+	if( cmds.window(win,q=True, ex=True) ):
+		cmds.deleteUI(win)
+		
+	cmds.window( win, w=winWidth, h=winHeight)
+	# mainCol = cmds.columnLayout()
+	mainCol = cmds.rowColumnLayout( nc=1, w=winWidth, h=winHeight, cw=[1,winWidth+10])	
+	# Get proper directory.
+	# Focus on a directory in the maya folder
+	scriptDir = cmds.internalVar(userAppDir=True)
+	scriptDir = os.path.join(scriptDir, "testDir") # Result: C:/Documents and Settings/mclavan/My Documents/maya/scripts # 
+	
+	# Does the directory exists?
+	# If it does then execute the script.
+	if(os.path.exists(scriptDir)):
+		print("Run Script")
+		#print(scriptDir)
+		#print(os.walk(scriptDir).next()[0])
+		tabDirs = os.walk(scriptDir).next()[1]
+		tdTab(scriptDir, tabDirs, mainCol )
+		
+	else:
+		print("Directory doesn't exists.")
+		
+	cmds.showWindow(win)
+def tdTab(myPath, myDirs, parent):
+	'''
+	Depending upon how many directory are located in the folder,
+		create tabs for each one.
+	'''
+	print("Create tabs")
+	
+	# On the nuke side this will be the folder that contain the render passes.
+	
+	cmds.setParent(parent)
+	global tabs, mainTab
+	tabs = []
+	mainTab = cmds.tabLayout(w=winWidth, h=winWidth, p=parent)	
+	# Just create the tabs
+	for myDir in myDirs:
+
+		# tabMainCol = cmds.columnLayout()
+		tabMainCol = cmds.rowColumnLayout( nc=1, w=winWidth, h=winHeight, cw=[1,winWidth+10])
+		# tabMainCol = cmds.formLayout()
+		
+		#cmds.text(l="This is tab: %s" %myDir, w=winWidth, h=winHeight)
+		# Call frameLayout function
+		framePath = os.path.join(myPath, myDir)
+		frameDirs = os.walk(framePath).next()[1]
+		#print(framePath)
+		#print(frameDirs)
+		tdFrame(framePath, frameDirs, tabMainCol )		
+		
+		tabs.append(tabMainCol)
+		cmds.tabLayout(mainTab, e=True, tl=[tabMainCol, myDir])
+		cmds.setParent(mainTab)
+		
+	cmds.setParent(parent)
+	return tabs
+	
+def tdFrame(framePath, frameDirs, parent):
+	'''
+	Generates frames for each directory
+	'''
+	print("Create Frames")
+	
+	global frames
+	frames = []
+	# mainTab = cmds.tabLayout(w=winWidth, h=winWidth, p=parent)	
+	# Just create the tabs
+	mainScroll = cmds.scrollLayout(w=winWidth+10, h=winHeight)
+	row = cmds.rowColumnLayout(nc=1, w=winWidth+10, h=winHeight, cw=[1,winWidth-15])
+	for frameDir in frameDirs:
+		
+		tempFrame = cmds.frameLayout(label=frameDir, w=winWidth, cll=True, cl=True)
+		frameCol = cmds.columnLayout(w=winWidth)
+		
+		# Run symbol button creator script
+		cmds.text(label="This is frame: %s" %frameDir, w=winWidth, h=winHeight/3)
+				
+		cmds.setParent(row)
+		frames.append(tempFrame)
+	
+	cmds.setParent(parent)
+	
+		
