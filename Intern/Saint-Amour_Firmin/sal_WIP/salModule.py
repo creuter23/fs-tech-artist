@@ -24,6 +24,7 @@ import pymel.core as pm
 # layout = the formLayout that these GUI components will be attached to
 # total = the total function the function that will run through and add up all the grades
 # command = the onCommand for the radio Buttons
+# control = the control to attach the first component to
 
 class Section():
     def __init__(self, name, layout, command , total, control=''):
