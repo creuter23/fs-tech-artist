@@ -1,3 +1,9 @@
+"""
+testing the seperate pieces that will make up the whole script
+
+"""
+
+
 import pymel.core as pm
 #import EasyDialogs 
 import salModule as sal
@@ -19,7 +25,8 @@ def gui():
     if(pm.windowPref(win, ex = True)):
         pm.windowPref(win, remove = True)
     
-    pm.window(win, title='Testing' , sizeable = False, mnb = True, width = 480, backgroundColor = [.5, .5, .5])
+    pm.window(win, title='Testing' , sizeable = True, mnb = True, width = 480, backgroundColor = [.5, .5, .5])
+    pm.scrollLayout()
     main01 = pm.columnLayout( adjustableColumn=True )
     main02 = pm.columnLayout( adjustableColumn=True )
 
@@ -33,7 +40,7 @@ def gui():
     pm.button( label = 'Open Images' , command = openImage)
     
     pm.setParent(main02)
-    pm.frameLayout( label = 'Grade', cll = True, cl = True , borderStyle = 'etchedIn', w = 480 )
+    pm.frameLayout( label = 'Grade', cll = True, cl = True , h = 900 , borderStyle = 'etchedIn', w = 480 )
     mainLayout = pm.formLayout()
 
     

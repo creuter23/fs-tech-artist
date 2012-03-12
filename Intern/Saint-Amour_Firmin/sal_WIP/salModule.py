@@ -25,6 +25,7 @@ import pymel.core as pm
 # total = the total function the function that will run through and add up all the grades
 # command = the onCommand for the radio Buttons
 # control = the control to attach the first component to
+# Section.class returns teh last component created (self.separator)
 
 class Section():
     def __init__(self, name, layout, command , total, control=''):
