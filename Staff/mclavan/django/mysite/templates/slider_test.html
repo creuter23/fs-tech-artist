@@ -1,0 +1,93 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>Untitled Document</title>
+<script type='text/javascript' src='http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js'></script>
+<script type='text/javascript' src='http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/jquery-ui.min.js'></script>
+<link type='text/css' href='http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.3/themes/base/jquery-ui.css' rel='stylesheet'/>
+<style type="text/css">
+.ui-widget-content {
+			border-width: 1px;
+			background-image: none;
+			background-color: #ffffff;
+		}
+		
+		.ui-widget-header {
+			background-color: #e2e2e2;
+			background-image: none;
+			!important;
+		}
+		
+		.ui-slider-handle {
+			border-width: 1px;
+		}
+		
+		/* Default State */		
+		ui-state-default, .ui-widget-content .ui-state-default, .ui-widget-header .ui-state-default {
+			background-color: #e6e6e6;
+			background-image: none;
+			border-color: #d3d3d3;
+			border-width: 1px;
+			!important;
+		}
+		
+		/* Hover over the button state */
+		.ui-state-hover, .ui-widget-content .ui-state-hover, .ui-widget-header .ui-state-hover, .ui-state-focus, .ui-widget-content .ui-state-focus, .ui-widget-header .ui-state-focus 		{
+			background-color: #dadada;
+			background-image: none;
+			border-color: #999999;
+			border-width: 1px;
+			!important;
+		}
+	
+		/* Active or Selected State */
+		.ui-state-active, .ui-widget-content .ui-state-active, .ui-widget-header .ui-state-active {
+			background-color: #ffffff;
+			background-image: none;
+			border-color: #aaaaaa;
+			border-width: 1px;
+			!important;
+			outline: none;
+		}
+		
+:focus {
+    outline: none;
+}	
+
+:focus {
+    outline-style: none;
+}	
+		
+		/* Corner radius */	
+		.ui-corner-all { -moz-border-radius:2px; -webkit-border-radius:24px; }
+</style>
+</head>
+
+<body>
+<table width="80%" border="0">
+  <tr>
+    <td width="30%"><legend>Default Slider</legend></td>
+    <td width="60%"><div id="jQueryUISlider" class="ui-slider"></div></td>
+    <td><input type="text" id="amount" style="border:0; color:#f6931f; font-weight:bold;" /></td>
+  </tr>
+  <tr>
+    <td width="30%"><legend>Default Slider</legend></td>
+    <td width="60%"><div id="jQueryUISlider2" class="ui-slider"></div></td>
+    <td><input type="text" id="amount2" style="border:0; color:#f6931f; font-weight:bold;" /></td>
+  </tr>  
+</table>
+
+			
+</body>
+<script type="text/javascript">
+jQuery("#jQueryUISlider").slider({
+	value:0, min:0, max:100, step:1,
+	slide: function( event, ui ) { $( "#amount" ).val( "$" + ui.value );}
+});
+jQuery("#jQueryUISlider2").slider({
+	value:0, min:0, max:100, step:1,
+	slide: function( event, ui ) { $( "#amount2" ).val( "$" + ui.value );}
+});
+</script>
+</html>
