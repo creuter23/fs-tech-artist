@@ -27,14 +27,28 @@ import pymel.core as pm
 # control = the control to attach the first component to
 # Section.class returns teh last component created (self.separator)
 
+
+import pymel.core as pm
+
+win = pm.window()
+
+win.show()
+
+
 class Section():
     def __init__(self, name, layout, command , total, control=''):
+	'''
+	
+	'''
         self.name = name
         
         self.control = control
         self.command = command
         self.total = total
         self.layout = layout
+    
+    def current_grade(self):
+	return self.intField.getValue()
         
     def create(self):
         
@@ -42,8 +56,12 @@ class Section():
             
             self.row01 = pm.radioButtonGrp( numberOfRadioButtons = 3, label = '%s (45)' % self.name, labelArray3=['A+ -A', 'B+ -B', 'C+ -C'], onCommand = self.command)
             self.row02 = pm.radioButtonGrp(  numberOfRadioButtons = 2, shareCollection = self.row01, label='', labelArray2=['D', 'F'], onCommand = self.total)
-            pm.formLayout( self.layout , edit=1, attachForm=[[self.row01, "top", 5], [self.row01, "left", 5]])
-            pm.formLayout( self.layout , edit=1, attachForm=[self.row02, "left", 5, ], attachControl=[self.row02, "top", 5, self.row01])
+            
+	    self.layout.attachForm([[self.row01, "top", 5], [self.row01, "left", 5]])
+	    self.layout.attachForm([self.row02, "left", 5, ])
+	    self.layout.attachControl([self.row02, "top", 5, self.row01])
+	    # pm.formLayout( self.layout , edit=1, attachForm=[[self.row01, "top", 5], [self.row01, "left", 5]])
+            # pm.formLayout( self.layout , edit=1, attachForm=[self.row02, "left", 5, ], attachControl=[self.row02, "top", 5, self.row01])
             self.intField = pm.intFieldGrp( numberOfFields = 1, label = 'Grade', changeCommand = self.total)
             self.comments = pm.text( label = 'comments')
             self.scrollList = pm.scrollField( w=200, h=150, wordWrap=1)

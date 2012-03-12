@@ -24,9 +24,14 @@ urlpatterns = patterns('',
     # good/bad gateways... still using?
     (r'^bad_gateway/$', views.bad_gateway),
     (r'^user_access/$', views.login),
-    
+    (r'^main_page/$', views.site_status),
+    (r'^logout/$', views.site_logout),
     # Apply to an art test
     (r'^apply/$', views.apply),   
+    (r'^art_apply/$', views.apply_check),
+    
+    # Test Area
+    (r'^main/$', views.site_status2),
     
     #Panel Review Pages...
     (r'^panels/$', views.panels),
@@ -39,7 +44,7 @@ urlpatterns = patterns('',
     (r'^accounts/login/$', login),
     (r'^accounts/logout/$', logout),
     (r'^accounts/profile/$', views.profile),
-
+    
     # the admin documentation and the admin site itself
     url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
     url(r'^admin/', include(admin.site.urls)),
