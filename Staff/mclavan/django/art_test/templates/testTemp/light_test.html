@@ -1,0 +1,104 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Lightbox Gallery : &lt;default&gt;</title>
+<script type='text/javascript' src='{{ base_path }}/scripts/jquery.js'></script>
+<script type='text/javascript' src='{{ base_path }}/scripts/lightbox.js'></script>
+<link type='text/css' href='{{ base_path }}/css/lightbox.css' rel='stylesheet'/>
+<link type='text/css' href='{{ base_path }}/css/sample_lightbox_layout.css' rel='stylesheet'/>
+<style type="text/css">
+.lbGallery { 
+			/*gallery container settings*/
+			background-color: #cccccc;
+			padding-left: 20px;  
+			padding-top: 20px;  
+			padding-right: 20px;  
+			padding-bottom: 20px;  
+			width: 540px;
+			height: auto;
+			text-align:left;
+		}
+		.lbGallery ul { list-style: none; margin:0;padding:0; }
+		.lbGallery ul li { display: inline;margin:0;padding:0; }
+		.lbGallery ul li a{text-decoration:none;}
+			
+		.lbGallery ul li a img {
+			/*border color, width and margin for the images*/
+			border-color: #3e3e3e;
+			border-left-width: 10px;
+			border-top-width: 10px;
+			border-right-width: 10px;
+			border-bottom-width: 20px;
+			margin-left:5px;
+			margin-right:5px;
+			margin-top:5px;
+			margin-bottom:5px:
+			}
+			
+		.lbGallery ul li a:hover img {	
+			/*background color on hover*/
+			border-color: #ffffff;
+			border-left-width: 10px;
+			border-top-width: 10px;
+			border-right-width: 10px;
+			border-bottom-width: 20px;
+		}
+			
+		#lightbox-container-image-box {
+			border-top: 0px none #ffffff;
+			border-right: 0px none #ffffff;
+			border-bottom: 0px none #ffffff;
+			border-left: 0px none #ffffff;
+			}
+			
+		#lightbox-container-image-data-box { 
+			border-top: 0px;
+			border-right: 0px none #ffffff;
+			border-bottom: 0px none #ffffff;
+			border-left: 0px none #ffffff;
+			}
+</style>
+</head>
+
+<body>
+<h1>Logged Out</h1>
+<a href="http://127.0.0.1:8000/main_page">Log back in?</a>
+<div id="gallery" class="lbGallery">
+			<ul>
+				<li>
+					<a href="{{ base_path }}/images/lightboxdemo1.jpg" title=""><img src="{{ base_path }}/images/lightboxdemo_thumb1.jpg" width="72" height="72" alt="Flower" /></a>
+				</li>
+				<li>
+					<a href="{{ base_path }}/images/lightboxdemo2.jpg" title=""><img src="{{ base_path }}/images/lightboxdemo_thumb2.jpg" width="72" height="72" alt="Tree" /></a>
+				</li>
+				<li>
+					<a href="{{ base_path }}/images/lightboxdemo3.jpg" title=""><img src="{{ base_path }}/images/lightboxdemo_thumb3.jpg" width="72" height="72" alt="" /></a>
+				</li>
+				<li>
+					<a href="{{ base_path }}/images/lightboxdemo4.jpg" title=""><img src="{{ base_path }}/images/lightboxdemo_thumb4.jpg" width="72" height="72" alt="" /></a>
+				</li>
+				<li>
+					<a href="{{ base_path }}/images/lightboxdemo5.jpg" title=""><img src="{{ base_path }}/images/lightboxdemo_thumb5.jpg" width="72" height="72" alt="" /></a>
+				</li>
+			</ul>
+		</div>
+<script type="text/javascript">
+$(function(){
+			$('#gallery a').lightBox({ 
+				imageLoading:			'{{ base_path }}/images/lightbox/lightbox-ico-loading.gif',		// (string) Path and the name of the loading icon
+				imageBtnPrev:			'{{ base_path }}/images/lightbox/lightbox-btn-prev.gif',			// (string) Path and the name of the prev button image
+				imageBtnNext:			'{{ base_path }}/images/lightbox/lightbox-btn-next.gif',			// (string) Path and the name of the next button image
+				imageBtnClose:			'{{ base_path }}/images/lightbox/lightbox-btn-close.gif',		// (string) Path and the name of the close btn
+				imageBlank:				'{{ base_path }}/images/lightbox/lightbox-blank.gif',			// (string) Path and the name of a blank image (one pixel)
+				fixedNavigation:		false,		// (boolean) Boolean that informs if the navigation (next and prev button) will be fixed or not in the interface.
+				containerResizeSpeed:	400,			 // Specify the resize duration of container image. These number are miliseconds. 400 is default.
+				overlayBgColor: 		"#999999",		// (string) Background color to overlay; inform a hexadecimal value like: #RRGGBB. Where RR, GG, and BB are the hexadecimal values for the red, green, and blue values of the color.
+				overlayOpacity:			.6,		// (integer) Opacity value to overlay; inform: 0.X. Where X are number from 0 to 9
+				txtImage:				'Image',				//Default text of image
+				txtOf:					'of'
+			});
+		});
+</script>
+</body>
+</html>
