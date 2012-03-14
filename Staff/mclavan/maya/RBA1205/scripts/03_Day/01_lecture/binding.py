@@ -24,11 +24,11 @@ def gui():
     # Different components simular flags
     # They all have a rectangle bounding box!
     pm.button(w=150, command=work)
-    '''
-    pm.textFieldButtonGrp( label='Float Attribute',
+    global object
+    object = pm.textFieldButtonGrp( label='Float Attribute',
                           buttonLabel='Apply',
                           buttonCommand=work)
-    '''
+    
     
     # Showing a window
     win.show()
@@ -38,7 +38,8 @@ def work(*args):
     Print out what has been done to the scene.
     '''
     print 'Work has been completed.'
- 
+    print object.getValue()
+    
     
 '''
 Notes
