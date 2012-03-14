@@ -1,5 +1,4 @@
-
-# Django settings for mysite project.
+# Django settings for rba project.
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -10,16 +9,28 @@ ADMINS = (
 
 MANAGERS = ADMINS
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'sqlite3', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'accounts.db',                      # Or path to database file if using sqlite3.
-        'USER': '',                      # Not used with sqlite3.
-        'PASSWORD': '',                  # Not used with sqlite3.
-        'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
-        'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
+if DEBUG:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+            'NAME': 'mclavan_rba.db',                      # Or path to database file if using sqlite3.
+            'USER': '',                      # Not used with sqlite3.
+            'PASSWORD': '',                  # Not used with sqlite3.
+            'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
+            'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+            'NAME': 'mclavan_rba.db',                      # Or path to database file if using sqlite3.
+            'USER': 'mclavan_rba',                      # Not used with sqlite3.
+            'PASSWORD': 'FS!@#$%',                  # Not used with sqlite3.
+            'HOST': 'localhost',                      # Set to empty string for localhost. Not used with sqlite3.
+            'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
+        }
+    }
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -84,7 +95,7 @@ STATICFILES_FINDERS = (
 )
 
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = 'f_^+%2c4@a4gb34xtn%4glx0m6b%upnw-sj(g0((epz57r6^dm'
+SECRET_KEY = 'dd$#s*c+91)z0x88ow$1@&a58ei9%%(+%x6_2dhs_l@wnvs3po'
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
@@ -101,11 +112,9 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
 )
 
-ROOT_URLCONF = 'mysite.urls'
-import os.path
+ROOT_URLCONF = 'rba.urls'
+
 TEMPLATE_DIRS = (
-    # 'C:/Users/mclavan/Documents/00_git_projects/fs-tech-artist/Staff/mclavan/django/mysite/templates',
-    os.path.join(os.path.dirname(__file__), 'templates').replace('\\','/'),
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
@@ -116,17 +125,16 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
-    # 'django.contrib.messages',
-    # 'django.contrib.staticfiles',
-    
-    
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+
+    'rba.accounts',
+
     # Uncomment the next line to enable the admin:
     'django.contrib.admin',
-    # 'django.contrib.flapages'
-
     # Uncomment the next line to enable admin documentation:
     'django.contrib.admindocs',
-    'mysite.accounts',
+    
 )
 
 # A sample logging configuration. The only tangible logging

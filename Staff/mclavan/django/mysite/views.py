@@ -17,6 +17,8 @@ import datetime
 # from django.db import connection
 # cursor = connection.cursor()
 
+from accounts.models import Students
+
 class Person():
     def __init__(self, name, id, cur_class):
         self.name = name
