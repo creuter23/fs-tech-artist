@@ -1,20 +1,4 @@
 '''
-Lecture 4 - Data
-
-Description:
-    Lecture 4 consists of developing basic tools.
-    Students will learn how to research and convert commands into python.
-    Students will also learn how to break down complex system and replicate them in code.
-    Topics Covered:
-        - Variables
-        - Lists
-        - Maya Command Anatomy
-        - Automating systems
-        - Functions args and returns statment
-'''
-
-
-'''
 Lecture 5 - Logic
 
 Description:
@@ -30,11 +14,21 @@ Description:
         - loops
         - renaming
         - lock and hide
+
+    What should I know after looking at this script?
+        - You should be able to create different types of if statments.
+        - The difference between = and ==.
+        
+        
+    Questions you should ask yourself:
+        - Is the else statement manditory, when creating an if statment?
+        - What about when the elif statment is used?
+        
 '''
 
 
 # IF Statments
-# Condition are covered in more detain in the book (Chapter ? Mainly the entire chapter.)
+# IF Statments are covered in more detain in the book (Chapter ? Mainly the entire chapter.)
 if condition:
     print 'Condition True'
     
