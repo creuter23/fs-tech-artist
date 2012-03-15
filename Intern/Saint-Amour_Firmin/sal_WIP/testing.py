@@ -12,7 +12,7 @@ import os
 win = 'testingWin'
 
 def command01(* args):
-    pm.select(cl=1)
+    pass
 
 global fileList
 
@@ -25,42 +25,50 @@ def gui():
     if(pm.windowPref(win, ex = True)):
         pm.windowPref(win, remove = True)
     
-    pm.window(win, title='Testing' , sizeable = True, mnb = True, width = 480, backgroundColor = [.5, .5, .5])
+    myWin = pm.window(win, title='Testing' , sizeable = True, mnb = True, width = 480, backgroundColor = [.5, .5, .5])
     pm.scrollLayout()
     main01 = pm.columnLayout( adjustableColumn=True )
     main02 = pm.columnLayout( adjustableColumn=True )
 
     pm.setParent(main02)
-    pm.frameLayout(label = 'Images', cll = True, cl = True , borderStyle = 'etchedIn', w = 480)
+    # file info section
+    pm.frameLayout(label = 'File Info', cll = True, cl = False, borderStyle = 'etchedIn', w = 480)
     global fileField01, fileField02, fileField03, fileField04
-    fileField01 = pm.textFieldButtonGrp( text='image01', buttonLabel='image', bc=addImage01, ed=0, width= 480 )
-    fileField02 = pm.textFieldButtonGrp( text='image02', buttonLabel='image', bc=addImage02, ed=0, width= 480 )
-    fileField03 = pm.textFieldButtonGrp( text='image03', buttonLabel='image', bc=addImage03, ed=0, width= 480 )
-    fileField04 = pm.textFieldButtonGrp( text='image04', buttonLabel='image', bc=addImage04, ed=0, width= 480 )
+    fileField01 = pm.textFieldButtonGrp( text='image01', buttonLabel='Load Image', bc=addImage01, ed=0 )
+    fileField02 = pm.textFieldButtonGrp( text='image02', buttonLabel='Load Image', bc=addImage02, ed=0 )
+    fileField03 = pm.textFieldButtonGrp( text='image03', buttonLabel='Load Image', bc=addImage03, ed=0 )
+    fileField04 = pm.textFieldButtonGrp( text='image04', buttonLabel='Load Image', bc=addImage04, ed=0 )
     pm.button( label = 'Open Images' , command = openImage)
     
     pm.setParent(main02)
-    pm.frameLayout( label = 'Grade', cll = True, cl = True , h = 900 , borderStyle = 'etchedIn', w = 480 )
+    pm.frameLayout( label = 'Grades Total', cll = True, cl = True , borderStyle = 'etchedIn', w = 480 )
+    gradesTotal = sal.UpperSection()
+    gradesTotal.create()
+    print 'show up'
+    
+    pm.setParent(main02)
+    pm.frameLayout( label = 'Grade', cll = True, cl = True , borderStyle = 'etchedIn', w = 480 )
     mainLayout = pm.formLayout()
 
     
+    # first intance of Section for antiAliasing
+    antiAlising = sal.Section( name = 'Anitalias/Noise Qual', layout = mainLayout ,  total = command01)
+    old = antiAlising.create()
     
-    test = sal.Section( name = 'Luke', layout = mainLayout , command = command01, total = command01)
-    old = test.create()
+    # second intance of Section for Composition
+    compFocalLenght = sal.Section( name = 'Comp/Focal Length', layout = mainLayout ,  total = command01, control=old)
+    old01 = compFocalLenght.create()
     
-    
-    
-    test01 = sal.Section( name = 'yeah', layout = mainLayout , command = command01, total = command01, control=old)
-    old01 = test01.create()
-    
-    test02 = sal.Section( name = 'noWay', layout = mainLayout , command = command01, total = command01, control=old01)
-    test02.create()
+    # first intance of Section for proffesionalsim
+    prof = sal.Section( name = 'Professionalism', layout = mainLayout ,  total = command01, control=old01)
+    prof.create()
     
     pm.showWindow()
 
 
 def addImage01(* args):
     global file01
+    print 'this is working'
     file01 = pm.fileDialog()
     newFile = os.path.basename(file01)
     fileField01.setText(newFile)
@@ -70,12 +78,14 @@ def addImage01(* args):
 
 def addImage02(* args):
     global file02
+    
     file02 = pm.fileDialog()
     newFile = os.path.basename(file02)
     fileField02.setText(newFile)
     fileList.append(file02)
     
     print fileList
+    
 
 def addImage03(* args):
     global file03

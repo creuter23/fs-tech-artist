@@ -13,7 +13,7 @@ import maya.cmds as cmds
 import pymel.core as pm
 import maya.mel as mel
 import math
-import com_wid
+import com_wid_v002 as com_wid
 
 
 
@@ -94,7 +94,7 @@ class Widget_Two():
             self.grade_field = cmds.intField(v=0)
             
         cmds.setParent(main)
-        com_wid.Comment_Widget(self.file_name)
+        com_wid.Comment_Widget()
 
         
     def post_summery(self, *args):
