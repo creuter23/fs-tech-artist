@@ -1,5 +1,5 @@
 '''
-# based on Tony's grading script
+* based on Tony's grading script
 
 Author: Firmin Saint-Amour
 
@@ -7,7 +7,7 @@ Description: Module containing reusable pieces specifically for the shading and 
 
 '''
 
-
+import maya.cmds as cmds
 import pymel.core as pm
 
 
@@ -21,26 +21,35 @@ import pymel.core as pm
 # **the second instance must have a control or they will overlap cause i'm using a from layout they need to attach to each other
 
 class Section():
-    def __init__(self, name, layout, total, control=''):
+    def __init__(self, name, layout, updateField, fileRead,  control=''):
         # the label for the first row of radioButtonGrp also the name of the section
         self.name = name
         # the control that the first component will attach to
         self.control = control
-        # the function that will run through and update the final grade as changes happen    
-        self.total = total
-        # the * formLayout that things will be attached tp
+        # updateField is the field in the totals section that the changeCommand of the grade field will update
+        self.updateField = updateField
+        # the  formLayout that components will be attached to
         self.layout = layout
+        # the file the comments will be read from, this will be passed to the commentWidget object
+        self.fileRead = fileRead
         # instancing the CommentWidget which has the commenting system built into it
-        self.scrollField = CommentWidget(200 , 150)
-        
+        self.scrollField = CommentWidget(width = 200 , height = 150, fileName = self.fileRead)
+    
+    
     def radioCommand(self):
         # this command changes the grade based on the selected button
+        if self.row01.getSelect() != 0 or self.row02.getSelect() != 0:
+            self.intField.setBackgroundColor([0,1,0])
         
         if self.row01.getSelect() == 1:
             self.intField.setValue1(100)
             
+            print 'is this working'
+            
         if self.row01.getSelect() == 2:
-            self.intField.setValue1(89)
+            cmds.intFieldGrp( self.intField, edit = 1 , value1 = 89)
+            if self.intField.getValue1() > 0 :
+                self.totalCommand()
             
         if self.row01.getSelect() == 3:
             self.intField.setValue1(79)
@@ -50,21 +59,28 @@ class Section():
             
         if self.row02.getSelect() == 2:
             self.intField.setValue1(69)
+            
+    def totalCommand(self):
+            print 'testing this out 123'
+            value = self.intField.getValue1() 
+            cmds.intFieldGrp(self.updateField , edit = 1 , value1 = value)
         
     def create(self):
+        
         
          # this creates the actual GUI components
          #** returns the last component (the separator) so that the next group can be attached to it
         
         if self.control == '':
             # radioButtonGrp
-            self.row01 = pm.radioButtonGrp( numberOfRadioButtons = 3, label = '%s (45)' % self.name, labelArray3=['A+ -A', 'B+ -B', 'C+ -C'], onCommand = pm.Callback(self.radioCommand))
+            self.row01 = pm.radioButtonGrp( numberOfRadioButtons = 3, label = '%s' % self.name, labelArray3=['A+ -A', 'B+ -B', 'C+ -C'], onCommand = pm.Callback(self.radioCommand))
             self.row02 = pm.radioButtonGrp(  numberOfRadioButtons = 2, shareCollection = self.row01, label='', labelArray2=['D', 'F'], onCommand = pm.Callback(self.radioCommand))
             pm.formLayout( self.layout , edit=1, attachForm=[[self.row01, "top", 5], [self.row01, "left", 5]])
             pm.formLayout( self.layout , edit=1, attachForm=[self.row02, "left", 5, ], attachControl=[self.row02, "top", 5, self.row01])
             
+            
             # intField for Grade
-            self.intField = pm.intFieldGrp( numberOfFields = 1, label = 'Grade', changeCommand = self.total)
+            self.intField = pm.intFieldGrp( numberOfFields = 1, label = 'Grade', changeCommand = pm.Callback(self.totalCommand), backgroundColor = [1,0,0])
             self.comments = pm.text( label = 'comments')
             
             # comment scrollField
@@ -81,13 +97,14 @@ class Section():
         
         else:
             # radioButtonGrp
-            self.row01 = pm.radioButtonGrp( numberOfRadioButtons = 3, label = '%s (45)' % self.name, labelArray3=['A+ -A', 'B+ -B', 'C+ -C'], onCommand = pm.Callback(self.radioCommand))
+            self.row01 = pm.radioButtonGrp( numberOfRadioButtons = 3, label = '%s' % self.name, labelArray3=['A+ -A', 'B+ -B', 'C+ -C'], onCommand = pm.Callback(self.radioCommand))
             self.row02 = pm.radioButtonGrp(  numberOfRadioButtons = 2, shareCollection = self.row01, label='', labelArray2=['D', 'F'], onCommand = pm.Callback(self.radioCommand))
             pm.formLayout( self.layout , edit=1, attachForm=[[self.row01, "top", 5], [self.row01, "left", 5]] , attachControl=[self.row01, "top", 5, self.control])
             pm.formLayout( self.layout , edit=1, attachForm=[self.row02, "left", 5, ], attachControl=[self.row02, "top", 5, self.row01])
             
             # intField for Grade
-            self.intField = pm.intFieldGrp( numberOfFields = 1, label = 'Grade', changeCommand = self.total)
+            self.intField = pm.intFieldGrp( numberOfFields = 1, label = 'Grade', cc = pm.Callback(self.totalCommand)
+                                           , backgroundColor = [1,0,0])
             self.comments = pm.text( label = 'comments')
             
             # comment scrollField
@@ -101,6 +118,7 @@ class Section():
             pm.formLayout( self.layout , edit=1, attachForm=[self.separator, "left", 60], attachControl=[self.separator, "top", 10, scrollField])
         
             return self.separator
+        
         
     
     """
@@ -129,25 +147,49 @@ class Section():
     """
 # commenting system based on Jen's Com_Widget
 class CommentWidget():
-        def __init__(self, width , height):
+        def __init__(self, width , height, fileName):
             self.width = width
             self.height = height
+            self.fileName = fileName
+            
             
         # creates the scrollField
         def create(self):
-            self.scrollField = pm.scrollField( wordWrap = True , width = self.width , height = self.height )
+            self.scrollField = pm.scrollField( wordWrap = True , width = self.width , height = self.height , backgroundColor = [ 1 , 0 , 0 ])
             self.menus()
             
             return self.scrollField
         
         # creates the popUpMenu for the scrollField
         def menus(self):
-            print 'is this working'
+            
             # popUpMenu
             self.popUp = pm.popupMenu( parent = self.scrollField )
-            # menuItems for the popUpMenu
-            pm.menuItem( label = 'testing this')
+            
+            #opening the file
+            self.commentFile = open(self.fileName, 'r')
+            # reading
+            self.comments =  commentFile.readlines()
+            # closing
+            self.commentFile.close()
+            
+            # the label is the first line
+            # the actual comment is after the label
+            # so the pattern is label, comment, label, comment, label, comment
+            label = 0
+            comment = 1
+            
+            while comment != len(self.comments):
+                # menuItems for the popUpMenu
+                pm.menuItem(label = self.comments[label], command = pm.Callback(self.insertText, self.comments[comment]))
+                label += 2
+                comment += 2
+                
         
+        def insertTest(self, comment):
+            self.scrollField.insertText(self.comments[comment])
+
+                
         
         # * need to test with txt files
         # * also create menu items based on text files
@@ -157,28 +199,57 @@ class UpperSection():
     def __init__(self):
         self.columnLayout = pm.columnLayout( adjustableColumn=True )
         self.layout = pm.formLayout()
+       
     
     def updateTotal(self):
-        pm.select(cl=1)
+        self.totalField.setValue1(self.antiField.getValue1() * self.antiField.getValue2() + self.compField.getValue1() * self.compField.getValue2() +
+                                 self.proField.getValue1() * self.proField.getValue2() - self.lateField.getValue1())
+        if self.antiField.getValue2() + self.compField.getValue2() + self.proField.getValue2() != 100:
+            self.warning.setLabel('Error : Total Weighting Must Equal 100')
+            self.warning.setBackgroundColor([1,0,0])
+        else:
+            self.warning.setLabel('')
+            self.warning.setBackgroundColor([.5,.5,.5])
     
     def create(self):
-        print 'i guess so'
-        
-        self.antiField = pm.intFieldGrp( numberOfFields=1, label='Antialias/Noise Quality', changeCommand=self.updateTotal)
-        self.compField = pm.intFieldGrp( numberOfFields=1, label='Composition/Focal Length', changeCommand=self.updateTotal)
-        self.proField = pm.intFieldGrp( numberOfFields=1, label='Professionalism', changeCommand=self.updateTotal)
-        self.lateField = pm.intFieldGrp( numberOfFields=1, label='Late Deduction', changeCommand=self.updateTotal)
-        self.totalField = pm.intFieldGrp( numberOfFields=1, label='Total Grade', changeCommand=self.updateTotal)
+       
+        self.checkBox = pm.checkBox(label = 'Modify Weighting', onCommand = pm.Callback(self.editFields), offCommand = pm.Callback(self.editFields) )
+        self.antiField = pm.intFieldGrp( numberOfFields=2, label='Antialias/Noise Quality', extraLabel = 'Weight %' , value2 = 45 , enable1 = False ,
+                                        enable2 = False,  changeCommand=pm.Callback(self.updateTotal))
+        self.compField = pm.intFieldGrp( numberOfFields=2, label='Composition/Focal Length', extraLabel = 'Weight %' , value2 = 45 , enable1 = False ,
+                                        enable2 = False ,changeCommand=pm.Callback(self.updateTotal))
+        self.proField = pm.intFieldGrp( numberOfFields=2, label='Professionalism', extraLabel = 'Weight %' ,value2 = 10 ,enable1 = False ,
+                                       enable2 = False, changeCommand=pm.Callback(self.updateTotal))
+        self.lateField = pm.intFieldGrp( numberOfFields=1, label='Late Deduction' , changeCommand=pm.Callback(self.updateTotal))
+        self.totalField = pm.intFieldGrp( numberOfFields=1, label='Total Grade',enable1 = False, changeCommand=pm.Callback(self.updateTotal))
     
-        print 'booya'
-        pm.formLayout( self.layout, edit=1, attachForm=[[self.antiField, "left", 40], [self.antiField, "top", 5]])
-        pm.formLayout( self.layout, edit=1, attachOppositeControl=[[self.compField ,"top", 35, self.antiField], [self.compField, "right", 0, self.antiField]])
-        pm.formLayout( self.layout, edit=1, attachOppositeControl=[[self.proField ,"top", 35, self.compField], [self.proField, "right", 0, self.compField]])
-        pm.formLayout( self.layout, edit=1, attachOppositeControl=[[self.lateField ,"top", 35, self.proField], [self.lateField, "right", 0, self.proField]])
-        pm.formLayout( self.layout, edit=1, attachOppositeControl=[[self.totalField ,"top", 35, self.lateField], [self.totalField, "right", 0, self.lateField]])
+        pm.formLayout( self.layout, edit=1, attachForm=[[self.checkBox, "left", 140], [self.checkBox, "top", 5]])
+        pm.formLayout( self.layout, edit=1, attachOppositeControl=[[self.antiField ,"top", 40, self.checkBox], [self.antiField, "right", 10, self.checkBox]])
+        pm.formLayout( self.layout, edit=1, attachOppositeControl=[[self.compField ,"top", 40, self.antiField], [self.compField, "right", 10, self.antiField]])
+        pm.formLayout( self.layout, edit=1, attachOppositeControl=[[self.proField ,"top", 40, self.compField], [self.proField, "right", 10, self.compField]])
+        pm.formLayout( self.layout, edit=1, attachOppositeControl=[[self.lateField ,"top", 40, self.proField], [self.lateField, "left", 0, self.proField]])
+        pm.formLayout( self.layout, edit=1, attachOppositeControl=[[self.totalField ,"top", 40, self.lateField], [self.totalField, "left", 0, self.lateField]])
         
         pm.setParent(self.columnLayout)
+        pm.text(label = '')
+        self.warning = pm.text(label='')
+        pm.text(label = '')
         pm.button( label = 'Output Grade and Comment' )
         
+        self.compList = [self.antiField, self.compField, self.proField]
+        
+        return self.compList
+        
+        
+    def editFields(self):
+        if self.checkBox.getValue() != 0:
+            self.antiField.setEnable2(True)
+            self.compField.setEnable2(True)
+            self.proField.setEnable2(True)
+        
+        else :
+            self.antiField.setEnable2(False)
+            self.compField.setEnable2(False)
+            self.proField.setEnable2(False)
         
         
