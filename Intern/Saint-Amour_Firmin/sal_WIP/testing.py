@@ -76,15 +76,15 @@ def gui():
     
     # first intance of Section for antiAliasing / Noise Quality
     antiAlising = sal.Section( name = 'Anitalias/Noise Qual', layout = mainLayout ,
-                              fileRead =  "/Users/Fearman/Library/Preferences/Autodesk/maya/2011-x64/scriptsproj01_antiAlisaing.txt",updateField = antiField).create()
+                              fileRead =  "/Users/Fearman/Library/Preferences/Autodesk/maya/2011-x64/scripts/proj01_antiAlisaing.txt",updateField = antiField).create()
     
     # second intance of Section for Composition / Focal Lenght
     compFocalLenght = sal.Section( name = 'Comp/Focal Length', layout = mainLayout ,
-                                  fileRead =  "/Users/Fearman/Library/Preferences/Autodesk/maya/2011-x64/scriptsproj01_antiAlisaing.txt", updateField = compField, control=antiAlising).create()
+                                  fileRead =  "/Users/Fearman/Library/Preferences/Autodesk/maya/2011-x64/scripts/proj01_antiAlisaing.txt", updateField = compField, control=antiAlising).create()
     
     # first intance of Section for proffesionalism
     prof = sal.Section( name = 'Professionalism', layout = mainLayout ,
-                       fileRead = "/Users/Fearman/Library/Preferences/Autodesk/maya/2011-x64/scriptsproj01_antiAlisaing.txt", updateField = proField, control=compFocalLenght).create()
+                       fileRead = "/Users/Fearman/Library/Preferences/Autodesk/maya/2011-x64/scripts/proj01_antiAlisaing.txt", updateField = proField, control=compFocalLenght).create()
     
     pm.showWindow()
 
@@ -132,6 +132,9 @@ def addImage04(* args):
 def openImage(* args):
     for files in fileList:
         pm.launchImageEditor(editImageFile=files)
+        
+        # import pymel.internal as pmi
+        # util.shellOutput
         
 def editFields(* args):
         if infoCheckBox.getValue() != 0:

@@ -43,22 +43,24 @@ class Section():
         
         if self.row01.getSelect() == 1:
             self.intField.setValue1(100)
+            self.totalCommand()
             
-            print 'is this working'
             
         if self.row01.getSelect() == 2:
-            cmds.intFieldGrp( self.intField, edit = 1 , value1 = 89)
-            if self.intField.getValue1() > 0 :
-                self.totalCommand()
+            self.intField.setValue1(89)
+            self.totalCommand()
             
         if self.row01.getSelect() == 3:
             self.intField.setValue1(79)
+            self.totalCommand()
             
         if self.row02.getSelect() == 1:
             self.intField.setValue1(72)
+            self.totalCommand()
             
         if self.row02.getSelect() == 2:
             self.intField.setValue1(69)
+            self.totalCommand()
             
     def totalCommand(self):
             print 'testing this out 123'
@@ -165,29 +167,74 @@ class CommentWidget():
             
             # popUpMenu
             self.popUp = pm.popupMenu( parent = self.scrollField )
-            
             #opening the file
             self.commentFile = open(self.fileName, 'r')
             # reading
-            self.comments =  commentFile.readlines()
+            self.comments =  self.commentFile.readlines()
             # closing
             self.commentFile.close()
             
             # the label is the first line
             # the actual comment is after the label
             # so the pattern is label, comment, label, comment, label, comment
+           
             label = 0
+            
             comment = 1
             
-            while comment != len(self.comments):
+            while comment != len(self.comments)-1:
                 # menuItems for the popUpMenu
-                pm.menuItem(label = self.comments[label], command = pm.Callback(self.insertText, self.comments[comment]))
+                write = self.comments[comment]
+                pm.menuItem(label = self.comments[label], command = pm.Callback(self.insertText,  write))
+                
+                
                 label += 2
                 comment += 2
+            
+            pm.menuItem( label = 'Clear' , command = pm.Callback(self.clear))
+            pm.menuItem( label = 'Custom' , command = pm.Callback(self.custom))
+        
                 
         
-        def insertTest(self, comment):
-            self.scrollField.insertText(self.comments[comment])
+        def insertText(self, comment):
+            print 'why?'
+            self.scrollField.insertText(comment)
+            
+            self.scrollField.setBackgroundColor([1,1,0])
+            
+        def clear(self):
+            
+            self.scrollField.setText('')
+            self.scrollField.setBackgroundColor([1,0,0])
+            
+        def custom(self):
+            
+          
+            self.customWin = 'customWindow'
+            
+            if (pm.window(self.customWin, ex=True)):
+                pm.deleteUI(self.customWin)
+            if (pm.windowPref(self.customWin, ex=True)):
+                pm.windowPref(self.customWin, remove = True)
+                
+            myWin = pm.window(self.customWin, title = 'CUSTOM', width = 200, height = 150)
+            pm.columnLayout(adjustableColumn=True)
+            
+            print 'yayayayayayay', self.customWin
+            pm.text(l='Enter custom comment')
+            self.customComment = pm.scrollField(width = 200, height= 150)
+            pm.button(label='create', command=pm.Callback(self.addCustom))
+            myWin.show()
+            
+        def addCustom(self):
+            
+            self.scrollField.insertText(self.customComment.getText())
+            
+            self.scrollField.setBackgroundColor([0,1,0])
+            
+            pm.deleteUI(self.customWin)
+            
+            return 
 
                 
         
