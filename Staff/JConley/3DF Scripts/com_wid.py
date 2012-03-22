@@ -71,7 +71,6 @@ class Comment_Widget():
         self.new_comment_field = cmds.scrollField()
         add = cmds.button(l='Add', c=self.add_comment)
         cmds.showWindow(win_name)
- 
         
     def add_comment(self, *args):
         '''

@@ -32,8 +32,8 @@ class Section():
         self.layout = layout
         # the file the comments will be read from, this will be passed to the commentWidget object
         self.fileRead = fileRead
-        # instancing the CommentWidget which has the commenting system built into it
-        self.scrollField = CommentWidget(width = 200 , height = 150, fileName = self.fileRead)
+        # instancing the CommentWidget which has the commenting system built into it / create() creates it 
+        self.scrollField = CommentWidget(width = 200 , height = 150, fileName = self.fileRead).create()
     
     
     def radioCommand(self):
@@ -86,14 +86,14 @@ class Section():
             self.comments = pm.text( label = 'comments')
             
             # comment scrollField
-            scrollField = self.scrollField.create()
+            #scrollField = self.scrollField.create()
             self.separator = pm.separator( height=15, width=460, style='in' )
             
             # arranging components
             pm.formLayout( self.layout , edit=1, attachForm=[self.intField, "top", 5], attachControl=[self.intField, "top", 10, self.row02])
-            pm.formLayout( self.layout , edit=1, attachForm=[scrollField, "left", 140], attachControl=[scrollField, "top", 10, self.intField])
+            pm.formLayout( self.layout , edit=1, attachForm=[self.scrollField, "left", 140], attachControl=[self.scrollField, "top", 10, self.intField])
             pm.formLayout( self.layout , edit=1, attachForm=[self.comments, "left", 60], attachControl=[self.comments, "top", 10, self.intField])
-            pm.formLayout( self.layout , edit=1, attachForm=[self.separator, "left", 60], attachControl=[self.separator, "top", 10, scrollField])
+            pm.formLayout( self.layout , edit=1, attachForm=[self.separator, "left", 60], attachControl=[self.separator, "top", 10, self.scrollField])
         
             return self.separator
         
@@ -110,44 +110,27 @@ class Section():
             self.comments = pm.text( label = 'comments')
             
             # comment scrollField
-            scrollField = self.scrollField.create()
+            #scrollField = self.scrollField.create()
             self.separator = pm.separator( height=15, width=460, style='in' )
             
             # arranging components
             pm.formLayout( self.layout , edit=1, attachForm=[self.intField, "top", 5], attachControl=[self.intField, "top", 10, self.row02])
-            pm.formLayout( self.layout , edit=1, attachForm=[scrollField, "left", 140], attachControl=[scrollField, "top", 10, self.intField])
+            pm.formLayout( self.layout , edit=1, attachForm=[self.scrollField, "left", 140], attachControl=[self.scrollField, "top", 10, self.intField])
             pm.formLayout( self.layout , edit=1, attachForm=[self.comments, "left", 60], attachControl=[self.comments, "top", 10, self.intField])
-            pm.formLayout( self.layout , edit=1, attachForm=[self.separator, "left", 60], attachControl=[self.separator, "top", 10, scrollField])
+            pm.formLayout( self.layout , edit=1, attachForm=[self.separator, "left", 60], attachControl=[self.separator, "top", 10, self.scrollField])
         
             return self.separator
         
+    def query(self):
+        # this will get the comments from the scrollFields
+        text = self.scrollField.getText()
+        
+        return text
+        
         
     
-    """
-    def menu_item_comments(self, *args):
-        '''
-        Creates the menu items for the comment field
-        '''
-        self.rmc = cmds.popupMenu(parent=self.mainScroll)
-        cmds.menuItem(l='Custom', c=self.create_comment)
-
-                
-        self.comments = open(file_name, 'r')
-        comment_data = self.comments.readlines()
-        self.comments.close()
-        
-        num_lines = len(comment_data)
-        lable = 0
-        x = 1
-        
-        while x < num_lines:
-            cmds.menuItem(l=comment_data[lable], c=pm.Callback(self.adding_text, comment_data[x]))
-
-            lable += 2
-            x += 2
-
-    """
-# commenting system based on Jen's Com_Widget
+ 
+# commenting system based on Jen's Comment_Widget
 class CommentWidget():
         def __init__(self, width , height, fileName):
             self.width = width
@@ -182,7 +165,7 @@ class CommentWidget():
             
             comment = 1
             
-            while comment != len(self.comments)-1:
+            while comment != len(self.comments):
                 # menuItems for the popUpMenu
                 write = self.comments[comment]
                 pm.menuItem(label = self.comments[label], command = pm.Callback(self.insertText,  write))
@@ -197,7 +180,7 @@ class CommentWidget():
                 
         
         def insertText(self, comment):
-            print 'why?'
+            
             self.scrollField.insertText(comment)
             
             self.scrollField.setBackgroundColor([1,1,0])
@@ -220,7 +203,7 @@ class CommentWidget():
             myWin = pm.window(self.customWin, title = 'CUSTOM', width = 200, height = 150)
             pm.columnLayout(adjustableColumn=True)
             
-            print 'yayayayayayay', self.customWin
+            
             pm.text(l='Enter custom comment')
             self.customComment = pm.scrollField(width = 200, height= 150)
             pm.button(label='create', command=pm.Callback(self.addCustom))
@@ -299,4 +282,7 @@ class UpperSection():
             self.compField.setEnable2(False)
             self.proField.setEnable2(False)
         
+class Images():
+    def __init__(self):
+        pm.textFieldButtonGrp( text='', buttonLabel='Load Image', bc=a, ed=0 )
         
