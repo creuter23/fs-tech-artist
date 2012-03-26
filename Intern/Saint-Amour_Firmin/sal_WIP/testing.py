@@ -34,14 +34,18 @@ def gui():
     # file info section
     
     pm.frameLayout(label = 'File Info', cll = True, cl = False, borderStyle = 'etchedIn', w = 480)
+    global fileInfo
+    fileInfo = sal.Images()
+    '''
     global fileField01, fileField02, fileField03, fileField04, openButtons
     fileField01 = pm.textFieldButtonGrp( text='image01', buttonLabel='Load Image', bc=addImage01, ed=0 )
     fileField02 = pm.textFieldButtonGrp( text='image02', buttonLabel='Load Image', bc=addImage02, ed=0 )
     fileField03 = pm.textFieldButtonGrp( text='image03', buttonLabel='Load Image', bc=addImage03, ed=0 )
     fileField04 = pm.textFieldButtonGrp( text='image04', buttonLabel='Load Image', bc=addImage04, ed=0 )
+    '''
     #pm.button( label = 'Open Images' , command = openImage)
     
-    openButtons = pm.radioButtonGrp(numberOfRadioButtons = 2 , columnAlign = [ 1 , 'center' ],label = ' Choose Program ', label1 = 'Preview', label2 = 'Photoshop', changeCommand = openImage)
+    #openButtons = pm.radioButtonGrp(numberOfRadioButtons = 2 , columnAlign = [ 1 , 'center' ],label = ' Choose Program ', label1 = 'Preview', label2 = 'Photoshop', changeCommand = openImage)
     
     pm.setParent(main02)
      # grade total section
@@ -57,7 +61,7 @@ def gui():
     proField = pm.intFieldGrp( numberOfFields=2, label='Professionalism', extraLabel = 'Weight %' ,value2 = 10 ,enable1 = False ,
                                        enable2 = False, changeCommand=updateTotal)
     lateField = pm.intFieldGrp( numberOfFields=1, label='Late Deduction' , changeCommand=updateTotal)
-    totalField = pm.floatFieldGrp( numberOfFields=1, label='Total Grade',enable1 = False, changeCommand=updateTotal)
+    totalField = pm.intFieldGrp( numberOfFields=1, label='Total Grade',enable1 = False, changeCommand=updateTotal)
     
     # attaching the objects to the formLayout
     
@@ -72,7 +76,7 @@ def gui():
     pm.text(label = '')
     warningText = pm.text(label='')
     pm.text(label = '')
-    pm.button( label = 'Output Grade and Comment' )
+    pm.button( label = 'Output Grade and Comment' , command = output)
     
     pm.setParent(main02)
     pm.frameLayout( label = 'Grade', cll = True, cl = True , borderStyle = 'etchedIn', w = 480 )
@@ -80,7 +84,7 @@ def gui():
 
     
     # first intance of Section for antiAliasing / Noise Quality
-    global antiAlising
+    global antiAlising, compFocalLenght, prof
     antiAlising = sal.Section( name = 'Anitalias/Noise Qual', layout = mainLayout ,
                               fileRead =  "/Users/Fearman/Library/Preferences/Autodesk/maya/2011-x64/scripts/proj01_antiAlisaing.txt",updateField = antiField)
     section01 = antiAlising.create()
@@ -129,16 +133,25 @@ def addImage04(* args):
     
 
 def openImage(* args):
+    x = 0
+    blank = ' '
+    new = ''
+    while x < len(fileList):
+    
+        new += str(fileList[x]) + str(blank)
+       
+        x += 1
+        print new
+    
     if openButtons.getSelect() == 2:
-        pm.util.shellOutput(r"open -a Adobe\ Photoshop\ CS4 %s %s %s %s" % (fileList[0],fileList[1], fileList[2], fileList[3]))
+        pm.util.shellOutput(r"open -a Adobe\ Photoshop\ CS4 %s " % str(new))
         
     if openButtons.getSelect() == 1:
-        pm.util.shellOutput(r"open  %s %s %s %s" % (fileList[0],fileList[1], fileList[2], fileList[3]))
+        pm.util.shellOutput(r"open  %s " % str(new))
         
-        print antiAlising.query()
+        print 'is this working'
         
-    else :
-        print 'stuff'
+   
         
         
 def editFields(* args):
@@ -191,9 +204,19 @@ def output(* args):
     sceneFileOutput.write("Overall Grade Total: "+str(totalGradeOutputTotal)+"\r\n")
     sceneFileOutput.close()
     '''
-    outputFile.open('%s.txt' % fileList[0] , 'w')
-    sceneFileOutput.write("Grading for: %S, %s, %s, %s \r\n" % (fileField01.getText(), fileField02.getText(), fileField03.getText(), fileField04.getText()))
-    
+    sceneFileOutput = open('%s.txt' % fileInfo.queryPath(), 'w')
+    sceneFileOutput.write("Grading for: %s\r\n" % fileInfo.queryNames() )
+    sceneFileOutput.write("-----------------------------------\r\n")
+    sceneFileOutput.write("Antialiasing & Noise Quality Comments: %s \r\n" % antiAlising.query())
+    sceneFileOutput.write("Antialiasing & Noise Quality Grade Total: %s \r\n" %antiField.getValue1())
+    sceneFileOutput.write("-----------------------------------\r\n")
+    sceneFileOutput.write("Composition & Focal Length Comments: %s \r\n" % compFocalLenght.query())
+    sceneFileOutput.write("Composition & Focal Length Grade Total: %s \r\n" %compField.getValue1())
+    sceneFileOutput.write("-----------------------------------\r\n")
+    sceneFileOutput.write("Professionalism Comments: %s \r\n" % prof.query())
+    sceneFileOutput.write("Professionalism  Total: %s \r\n" % proField.getValue1())
+    sceneFileOutput.write("Late Deductions: - %s \r\n" % lateField.getValue1())
+    sceneFileOutput.write("Overall Grade Total: %s \r\n" % totalField)
     
 
 

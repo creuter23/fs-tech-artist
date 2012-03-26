@@ -9,6 +9,7 @@ Description: Module containing reusable pieces specifically for the shading and 
 
 import maya.cmds as cmds
 import pymel.core as pm
+import os
 
 
 # Section class
@@ -63,7 +64,6 @@ class Section():
             self.totalCommand()
             
     def totalCommand(self):
-            print 'testing this out 123'
             value = self.intField.getValue1() 
             cmds.intFieldGrp(self.updateField , edit = 1 , value1 = value)
         
@@ -160,25 +160,17 @@ class CommentWidget():
             # the label is the first line
             # the actual comment is after the label
             # so the pattern is label, comment, label, comment, label, comment
-           
             label = 0
-            
             comment = 1
-            
-            while comment != len(self.comments):
+            pm.menuItem( label = 'Clear' , command = pm.Callback(self.clear))
+            pm.menuItem( label = 'Custom' , command = pm.Callback(self.custom))
+            while comment < len(self.comments):
                 # menuItems for the popUpMenu
                 write = self.comments[comment]
                 pm.menuItem(label = self.comments[label], command = pm.Callback(self.insertText,  write))
-                
-                
                 label += 2
                 comment += 2
             
-            pm.menuItem( label = 'Clear' , command = pm.Callback(self.clear))
-            pm.menuItem( label = 'Custom' , command = pm.Callback(self.custom))
-        
-                
-        
         def insertText(self, comment):
             
             self.scrollField.insertText(comment)
@@ -190,40 +182,49 @@ class CommentWidget():
             self.scrollField.setText('')
             self.scrollField.setBackgroundColor([1,0,0])
             
+        
         def custom(self):
-            
-          
             self.customWin = 'customWindow'
-            
             if (pm.window(self.customWin, ex=True)):
                 pm.deleteUI(self.customWin)
+            
             if (pm.windowPref(self.customWin, ex=True)):
                 pm.windowPref(self.customWin, remove = True)
                 
             myWin = pm.window(self.customWin, title = 'CUSTOM', width = 200, height = 150)
             pm.columnLayout(adjustableColumn=True)
-            
-            
+            pm.text(l='Enter label')
+            self.customLabel = pm.textField(editable = True)
             pm.text(l='Enter custom comment')
             self.customComment = pm.scrollField(width = 200, height= 150)
+            self.customFeedback = pm.text(label = '')
+            pm.rowColumnLayout(nc = 2)  # nc = number of rows
             pm.button(label='create', command=pm.Callback(self.addCustom))
+            pm.button(label='add' , command=pm.Callback(self.saveComment))
             myWin.show()
             
+        
         def addCustom(self):
             
             self.scrollField.insertText(self.customComment.getText())
             
             self.scrollField.setBackgroundColor([0,1,0])
             
+            # deleting the window
             pm.deleteUI(self.customWin)
             
-            return 
-
-                
+        def saveComment(self):
+            self.newLabel = self.customLabel.getText()
+            self.newComment = self.customComment.getText()
+            self.writeFile = open(self.fileName , 'a')
+            self.writeFile.write(self.newLabel + '\n')
+            self.writeFile.write(self.newComment + '\n')
+            self.writeFile.close()
+            self.customFeedback.setLabel('%s added to file' % self.newLabel)
+            self.menus()
+            
         
-        # * need to test with txt files
-        # * also create menu items based on text files
-
+        
 # creates the summary section that has all the final grades and the output button
 class UpperSection():
     def __init__(self):
@@ -283,6 +284,89 @@ class UpperSection():
             self.proField.setEnable2(False)
         
 class Images():
+    '''
+    this class will create the upper section for the SAL grading scripts
+    that section opens the images
+    '''
     def __init__(self):
-        pm.textFieldButtonGrp( text='', buttonLabel='Load Image', bc=a, ed=0 )
+        self.mainLayout = pm.columnLayout(adjustableColumn = True)
+        pm.button(label = 'new fields', command = pm.Callback(self.createFields))
+        self.openButtons = pm.radioButtonGrp(numberOfRadioButtons = 2 , columnAlign = [ 1 , 'center' ],label = ' Choose Program ', label1 = 'Preview',label2 = 'Photoshop')
+        pm.button(label = 'open images', command = pm.Callback(self.openImage))
+        pm.button(label = 'open reference', command = pm.Callback(self.openReference))
+        self.layout = pm.rowColumnLayout(nc=2 , cw =[(1, 400) ,(2, 80)])
+        # self.num is a number, which will be used to give unique names to the dynamically created fields
+        self.num = 1
+        # the list of the paths for the images
+        self.imageList = []
+        # this list will have the base name of all the images
+        self.nameList = []
+        
+    def createFields(self):
+        
+        pm.setParent(self.layout)
+        self.textField = pm.textFieldButtonGrp( 'text%s' % self.num , text='image to load', width = 450, buttonLabel='<<<', bc=pm.Callback(self.addImage, 'text%s' % self.num  ), ed=0 )
+        self.button = pm.button('button%s' % self.num , label = 'X', command = pm.Callback(self.delete, 'text%s' % self.num,'button%s' % self.num ))
+        self.num += 1
+    
+    def delete(self, obj1, obj2):
+        pm.deleteUI(obj1)
+        pm.deleteUI(obj2)
+    
+    def addImage(self, field):
+        self.file = pm.fileDialog()
+        self.newFile = os.path.basename(self.file)
+        pm.textFieldButtonGrp('%s' % field, edit = True, text = '%s' % self.newFile )
+        self.imageList.append(self.file)
+        self.nameList.append(self.newFile)
+        
+    def openReference(self):
+        self.ref = pm.fileDialog()
+        if self.openButtons.getSelect() == 2:
+            pm.util.shellOutput(r"open -a Adobe\ Photoshop\ CS4 %s " % self.ref)
+            
+        if self.openButtons.getSelect() == 1:
+            pm.util.shellOutput(r"open  %s " % self.ref)
+            
+    def openImage(self):
+        # this will open the images from the fields
+        # the 'pm.util.shellOutput(r"open -a Adobe\ Photoshop\ CS4 %s " % self.path)' will not take a list only a series of strings with blank space in between
+        # the while loop will create a new string with all the file paths in the 'self.imageList' list
+        # it also adds a blank space between each path in the list
+        x = 0
+        self.blank = ' '
+        self.path = ''
+        
+        while x < len(self.imageList):
+            self.path+= str(self.imageList[x]) + str(self.blank)
+            x += 1
+        
+        # this will check to see which program to open the images with
+        if self.openButtons.getSelect() == 2:
+            pm.util.shellOutput(r"open -a Adobe\ Photoshop\ CS4 %s " % self.path)
+            
+        if self.openButtons.getSelect() == 1:
+            pm.util.shellOutput(r"open  %s " % self.path)
+            
+        print self.queryNames()
+            
+    
+    # this is just a way of getting all the names as a long string to use when outputting    
+    def queryNames(self):
+        x = 0
+        self.blankSpace = ','
+        self.name = ''
+        while x < len(self.nameList):
+            self.name += str(self.nameList[x]) + str(self.blankSpace)
+            x += 1
+        return self.name
+    
+    # this give access to the path so the output function can create the comment file in the right place
+    def queryPath(self, index = 0):
+        path = self.imageList[index]
+        
+        return path
+            
+        
+          
         
