@@ -10,21 +10,23 @@ Description: Module containing reusable pieces specifically for the shading and 
 import maya.cmds as cmds
 import pymel.core as pm
 import os
+#import xlrd
+#import xlwt
+#import openpyxl
 
 
-# Section class
-# name = what will be displayed in that grading section
-# layout = the formLayout that these GUI components will be attached to
-# total = the function the function that will run through and add up all the grades 
-#----------------------------------------------------------------------
-# control = the control to attach the first component of the secion to
-# **if nothing is given than the first component (radioButtonGrp) will attach to the parent (frameLayout)
-# **the second instance must have a control or they will overlap cause i'm using a from layout they need to attach to each other
 
 class Section():
-    def __init__(self, name, layout, updateField, fileRead,  control=''):
+    '''
+    this creates the grading section for the SAL scripts
+    it uses the comment widget class as the commenting system
+    '''
+    
+    def __init__(self, name, layout, updateField, fileRead, updateCommand, control=''):
         # the label for the first row of radioButtonGrp also the name of the section
         self.name = name
+        # this the outside command that this section will call to update the total grade section
+        self.updateCommand = updateCommand
         # the control that the first component will attach to
         self.control = control
         # updateField is the field in the totals section that the changeCommand of the grade field will update
@@ -45,27 +47,32 @@ class Section():
         if self.row01.getSelect() == 1:
             self.intField.setValue1(100)
             self.totalCommand()
+            self.updateCommand.updateTotal()
             
             
         if self.row01.getSelect() == 2:
             self.intField.setValue1(89)
             self.totalCommand()
+            self.updateCommand.updateTotal()
             
         if self.row01.getSelect() == 3:
             self.intField.setValue1(79)
             self.totalCommand()
+            self.updateCommand.updateTotal()
             
         if self.row02.getSelect() == 1:
             self.intField.setValue1(72)
             self.totalCommand()
+            self.updateCommand.updateTotal()
             
         if self.row02.getSelect() == 2:
             self.intField.setValue1(69)
             self.totalCommand()
+            self.updateCommand.updateTotal()
             
     def totalCommand(self):
             value = self.intField.getValue1() 
-            cmds.intFieldGrp(self.updateField , edit = 1 , value1 = value)
+            self.updateField.setValue1(value)
         
     def create(self):
         
@@ -212,29 +219,33 @@ class CommentWidget():
             
             # deleting the window
             pm.deleteUI(self.customWin)
-            
+           
+        # this will add the comment to the selected file 
         def saveComment(self):
-            self.newLabel = self.customLabel.getText()
-            self.newComment = self.customComment.getText()
+            self.customFeedback.setLabel('%s added to file' % self.customLabel.getText())
             self.writeFile = open(self.fileName , 'a')
-            self.writeFile.write(self.newLabel + '\n')
-            self.writeFile.write(self.newComment + '\n')
+            print self.customLabel.getText()
+            self.writeFile.write(self.customLabel.getText() + '\n')
+            print self.customComment.getText()
+            self.writeFile.write(self.customComment.getText() + '\n')
             self.writeFile.close()
-            self.customFeedback.setLabel('%s added to file' % self.newLabel)
             self.menus()
             
         
         
-# creates the summary section that has all the final grades and the output button
+
 class UpperSection():
+    '''
+    creates the summary section that has all the final grades and the output button
+    '''
     def __init__(self):
-        self.columnLayout = pm.columnLayout( adjustableColumn=True )
+        self.columnLayout = pm.columnLayout( adjustableColumn=True , width= 480 )
         self.layout = pm.formLayout()
        
-    
+    # this updates the fields and does some calculations
     def updateTotal(self):
-        self.totalField.setValue1(self.antiField.getValue1() * self.antiField.getValue2() + self.compField.getValue1() * self.compField.getValue2() +
-                                 self.proField.getValue1() * self.proField.getValue2() - self.lateField.getValue1())
+        self.totalField.setValue1(self.antiField.getValue1() / float(100) * self.antiField.getValue2() + self.compField.getValue1() /  float(100) * self.compField.getValue2() +
+                                 self.proField.getValue1() /  float(100)  * self.proField.getValue2() - self.lateField.getValue1())
         if self.antiField.getValue2() + self.compField.getValue2() + self.proField.getValue2() != 100:
             self.warning.setLabel('Error : Total Weighting Must Equal 100')
             self.warning.setBackgroundColor([1,0,0])
@@ -253,25 +264,24 @@ class UpperSection():
                                        enable2 = False, changeCommand=pm.Callback(self.updateTotal))
         self.lateField = pm.intFieldGrp( numberOfFields=1, label='Late Deduction' , changeCommand=pm.Callback(self.updateTotal))
         self.totalField = pm.intFieldGrp( numberOfFields=1, label='Total Grade',enable1 = False, changeCommand=pm.Callback(self.updateTotal))
-    
+        
+        # attaching the controls
         pm.formLayout( self.layout, edit=1, attachForm=[[self.checkBox, "left", 140], [self.checkBox, "top", 5]])
         pm.formLayout( self.layout, edit=1, attachOppositeControl=[[self.antiField ,"top", 40, self.checkBox], [self.antiField, "right", 10, self.checkBox]])
         pm.formLayout( self.layout, edit=1, attachOppositeControl=[[self.compField ,"top", 40, self.antiField], [self.compField, "right", 10, self.antiField]])
         pm.formLayout( self.layout, edit=1, attachOppositeControl=[[self.proField ,"top", 40, self.compField], [self.proField, "right", 10, self.compField]])
         pm.formLayout( self.layout, edit=1, attachOppositeControl=[[self.lateField ,"top", 40, self.proField], [self.lateField, "left", 0, self.proField]])
         pm.formLayout( self.layout, edit=1, attachOppositeControl=[[self.totalField ,"top", 40, self.lateField], [self.totalField, "left", 0, self.lateField]])
-        
+       
         pm.setParent(self.columnLayout)
         pm.text(label = '')
         self.warning = pm.text(label='')
         pm.text(label = '')
-        pm.button( label = 'Output Grade and Comment' )
+        #pm.button( label = 'Output Grade and Comment' , width = 480)
+        return None 
         
-        self.compList = [self.antiField, self.compField, self.proField]
-        
-        return self.compList
-        
-        
+    
+    # this allows the percentage to be changed    
     def editFields(self):
         if self.checkBox.getValue() != 0:
             self.antiField.setEnable2(True)
@@ -282,6 +292,27 @@ class UpperSection():
             self.antiField.setEnable2(False)
             self.compField.setEnable2(False)
             self.proField.setEnable2(False)
+
+   # this section will give access to the different fields so another section of the script can update them or getThem()
+    def queryAnti(self):
+        print 'testing'
+        return self.antiField
+    
+    def queryComp(self):
+        print 'testing'
+        return self.compField
+    
+    def queryPro(self):
+        print 'testing'
+        return self.proField
+    
+    def queryLate(self):
+        print 'testing'
+        return self.lateField
+    
+    def queryTotal(self):
+        print 'testing'
+        return self.totalField
         
 class Images():
     '''

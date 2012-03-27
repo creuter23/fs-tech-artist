@@ -1,8 +1,11 @@
 """
-testing the seperate pieces that will make up the whole script
+testing the seperate pieces that will make up the whole grading Script
 
 """
 
+#import xlrd
+#import xlwt
+#import openpyxl
 import maya.cmds as cmds
 import pymel.core as pm
 import salModule as sal
@@ -36,187 +39,71 @@ def gui():
     pm.frameLayout(label = 'File Info', cll = True, cl = False, borderStyle = 'etchedIn', w = 480)
     global fileInfo
     fileInfo = sal.Images()
-    '''
-    global fileField01, fileField02, fileField03, fileField04, openButtons
-    fileField01 = pm.textFieldButtonGrp( text='image01', buttonLabel='Load Image', bc=addImage01, ed=0 )
-    fileField02 = pm.textFieldButtonGrp( text='image02', buttonLabel='Load Image', bc=addImage02, ed=0 )
-    fileField03 = pm.textFieldButtonGrp( text='image03', buttonLabel='Load Image', bc=addImage03, ed=0 )
-    fileField04 = pm.textFieldButtonGrp( text='image04', buttonLabel='Load Image', bc=addImage04, ed=0 )
-    '''
-    #pm.button( label = 'Open Images' , command = openImage)
-    
-    #openButtons = pm.radioButtonGrp(numberOfRadioButtons = 2 , columnAlign = [ 1 , 'center' ],label = ' Choose Program ', label1 = 'Preview', label2 = 'Photoshop', changeCommand = openImage)
-    
     pm.setParent(main02)
      # grade total section
     infoFrame = pm.frameLayout( label = 'Grades Total', cll = True, cl = True , borderStyle = 'etchedIn', w = 480 )
     infoLayout = pm.formLayout()
-    global infoCheckBox, antiField, compField, proField, lateField, totalField, warningText
-    infoCheckBox = pm.checkBox(label = 'Modify Weighting', onCommand = editFields, offCommand = editFields )
-    # the intFields for the different categories
-    antiField = pm.intFieldGrp( numberOfFields=2, label='Antialias/Noise Quality', extraLabel = 'Weight %' , value2 = 45 , enable1 = True ,
-                                        enable2 = False,  changeCommand=updateTotal)
-    compField = pm.intFieldGrp( numberOfFields=2, label='Composition/Focal Length', extraLabel = 'Weight %' , value2 = 45 , enable1 = False ,
-                                        enable2 = False ,changeCommand=updateTotal)
-    proField = pm.intFieldGrp( numberOfFields=2, label='Professionalism', extraLabel = 'Weight %' ,value2 = 10 ,enable1 = False ,
-                                       enable2 = False, changeCommand=updateTotal)
-    lateField = pm.intFieldGrp( numberOfFields=1, label='Late Deduction' , changeCommand=updateTotal)
-    totalField = pm.intFieldGrp( numberOfFields=1, label='Total Grade',enable1 = False, changeCommand=updateTotal)
-    
-    # attaching the objects to the formLayout
-    
-    pm.formLayout( infoLayout, edit=1, attachForm=[[infoCheckBox, "left", 140], [infoCheckBox, "top", 5]])
-    pm.formLayout( infoLayout, edit=1, attachOppositeControl=[[antiField ,"top", 40, infoCheckBox], [antiField, "right", 10, infoCheckBox]])
-    pm.formLayout( infoLayout, edit=1, attachOppositeControl=[[compField ,"top", 40, antiField], [compField, "right", 10, antiField]])
-    pm.formLayout( infoLayout, edit=1, attachOppositeControl=[[proField ,"top", 40, compField], [proField, "right", 10, compField]])
-    pm.formLayout( infoLayout, edit=1, attachOppositeControl=[[lateField ,"top", 40, proField], [lateField, "left", 0, proField]])
-    pm.formLayout( infoLayout, edit=1, attachOppositeControl=[[totalField ,"top", 40, lateField], [totalField, "left", 0, lateField]])
+    # isntancing the total grade section
+    global totalGrades
+    totalGrades = sal.UpperSection()
+    totalGrades.create()
     
     pm.setParent(infoFrame)
-    pm.text(label = '')
-    warningText = pm.text(label='')
-    pm.text(label = '')
-    pm.button( label = 'Output Grade and Comment' , command = output)
+    pm.button( label = 'Output Grade and Comment' , command = checkWeighting)
     
     pm.setParent(main02)
     pm.frameLayout( label = 'Grade', cll = True, cl = True , borderStyle = 'etchedIn', w = 480 )
     mainLayout = pm.formLayout()
-
-    
+   
+    # grading / commenting section
     # first intance of Section for antiAliasing / Noise Quality
     global antiAlising, compFocalLenght, prof
-    antiAlising = sal.Section( name = 'Anitalias/Noise Qual', layout = mainLayout ,
-                              fileRead =  "/Users/Fearman/Library/Preferences/Autodesk/maya/2011-x64/scripts/proj01_antiAlisaing.txt",updateField = antiField)
+    antiAlising = sal.Section( name = 'Anitalias/Noise Qual', layout = mainLayout , updateCommand = totalGrades,
+                              fileRead =  "/Users/Fearman/Library/Preferences/Autodesk/maya/2011-x64/scripts/proj01_antiAlisaing.txt",updateField= totalGrades.queryAnti())
     section01 = antiAlising.create()
     
     # second intance of Section for Composition / Focal Lenght
-    compFocalLenght = sal.Section( name = 'Comp/Focal Length', layout = mainLayout ,
-                                  fileRead =  "/Users/Fearman/Library/Preferences/Autodesk/maya/2011-x64/scripts/proj01_antiAlisaing.txt", updateField = compField, control=section01)
+    compFocalLenght = sal.Section( name = 'Comp/Focal Length', layout = mainLayout , updateCommand = totalGrades,
+                                  fileRead =  "/Users/Fearman/Library/Preferences/Autodesk/maya/2011-x64/scripts/proj01_compFocal.txt", updateField = totalGrades.queryComp(), control=section01)
     section02 = compFocalLenght.create()
     
     # first intance of Section for proffesionalism
-    prof = sal.Section( name = 'Professionalism', layout = mainLayout ,
-                       fileRead = "/Users/Fearman/Library/Preferences/Autodesk/maya/2011-x64/scripts/proj01_antiAlisaing.txt", updateField = proField, control=section02)
+    prof = sal.Section( name = 'Professionalism', layout = mainLayout , updateCommand = totalGrades,
+                       fileRead = "/Users/Fearman/Library/Preferences/Autodesk/maya/2011-x64/scripts/proj01_prof.txt", updateField = totalGrades.queryPro(), control=section02)
     section03 = prof.create()
     
     myWin.show()
-
-
-def addImage01(* args):
-    global file01
-    file01 = pm.fileDialog()
-    newFile = os.path.basename(file01)
-    fileField01.setText(newFile)
-    fileList.append(file01)
     
-def addImage02(* args):
-    global file02
-    file02 = pm.fileDialog()
-    newFile = os.path.basename(file02)
-    fileField02.setText(newFile)
-    fileList.append(file02)
+ 
+def checkWeighting(*args):
+    percent = totalGrades.queryAnti().getValue1() + totalGrades.queryComp().getValue1() + totalGrades.queryPro().getValue1()
     
-def addImage03(* args):
-    global file03
-    file03 = pm.fileDialog()
-    newFile = os.path.basename(file03)
-    fileField03.setText(newFile)
-    fileList.append(file03)
-
-def addImage04(* args):
-    global file04
-    file04 = pm.fileDialog()
-    newFile = os.path.basename(file04)
-    fileField04.setText(newFile)
-    fileList.append(file04)
-    
-    
-
-def openImage(* args):
-    x = 0
-    blank = ' '
-    new = ''
-    while x < len(fileList):
-    
-        new += str(fileList[x]) + str(blank)
-       
-        x += 1
-        print new
-    
-    if openButtons.getSelect() == 2:
-        pm.util.shellOutput(r"open -a Adobe\ Photoshop\ CS4 %s " % str(new))
-        
-    if openButtons.getSelect() == 1:
-        pm.util.shellOutput(r"open  %s " % str(new))
-        
-        print 'is this working'
-        
-   
-        
-        
-def editFields(* args):
-        if infoCheckBox.getValue() != 0:
-            antiField.setEnable2(True)
-            compField.setEnable2(True)
-            proField.setEnable2(True)
-        
-        else :
-            antiField.setEnable2(False)
-            compField.setEnable2(False)
-            proField.setEnable2(False)
-            
-def updateTotal(* args):
-        antitotal = (antiField.getValue1() / float(100)) * antiField.getValue2()
-      
-        comptotal = (compField.getValue1() / float(100)) * compField.getValue2()
-        prototal = (proField.getValue1() / float(100)) * proField.getValue2()
-        gradetotal = ( antitotal + comptotal+ prototal ) - lateField.getValue1()
-        
-        totalField.setValue1(gradetotal)
-        
-        if antiField.getValue2() + compField.getValue2() + proField.getValue2() != 100:
-            warningText.setLabel('Error : Total Weighting Must Equal 100')
-            warningText.setBackgroundColor([1,0,0])
+    if percent != 100 :
+        dialogCheck=pm.confirmDialog( title='Confirm Output', message='percentage not equal 100', button=['override','change'], defaultButton='change', cancelButton='change', dismissString='override' )
+        if dialogCheck == 'change':
+                print ("Output Cancelled")
         else:
-            warningText.setLabel('')
-            warningText.setBackgroundColor([.5,.5,.5])
+            print ("override")
+            output()
+    else:
+        output()
             
 def output(* args):
-    pass
-    '''
-    sceneFileOutput.open(selectedFileName+".txt", 'w')
-    sceneFileOutput.write("Grading for: "+sceneFileName+"\r\n")
-    sceneFileOutput.write("-----------------------------------\r\n")
-    sceneFileOutput.write("Antialiasing & Noise Quality Comments: "+aanqTSListOutput+"\r\n")
-    sceneFileOutput.write("\r\n")
-    sceneFileOutput.write("Antialiasing & Noise Quality Grade Total(45%): "+str(aangGradeOutputTotal)+"\r\n")
-    sceneFileOutput.write("-----------------------------------\r\n")
-    sceneFileOutput.write("Composition & Focal Length Comments: "+cflTSListOutput+"\r\n")
-    sceneFileOutput.write("\r\n")
-    sceneFileOutput.write("Composition & Focal Length Grade Total(45%): "+str(cflGradeOutputTotal)+"\r\n")
-    sceneFileOutput.write("-----------------------------------\r\n")
-    sceneFileOutput.write("Professionalism Comments: "+proTSListOutput+"\r\n")
-    sceneFileOutput.write("\r\n")
-    sceneFileOutput.write("Professionalism Grade Total (10%): "+str(proGradeOutputTotal)+"\r\n")
-    sceneFileOutput.write("-----------------------------------\r\n")
-    sceneFileOutput.write("Late Deductions: -"+str(lateGradeOutputTotal)+"\r\n")
-    sceneFileOutput.write("-----------------------------------\r\n")
-    sceneFileOutput.write("Overall Grade Total: "+str(totalGradeOutputTotal)+"\r\n")
-    sceneFileOutput.close()
-    '''
     sceneFileOutput = open('%s.txt' % fileInfo.queryPath(), 'w')
     sceneFileOutput.write("Grading for: %s\r\n" % fileInfo.queryNames() )
     sceneFileOutput.write("-----------------------------------\r\n")
     sceneFileOutput.write("Antialiasing & Noise Quality Comments: %s \r\n" % antiAlising.query())
-    sceneFileOutput.write("Antialiasing & Noise Quality Grade Total: %s \r\n" %antiField.getValue1())
+    sceneFileOutput.write("Antialiasing & Noise Quality Grade Total: %s \r\n" % totalGrades.queryAnti().getValue1())
     sceneFileOutput.write("-----------------------------------\r\n")
     sceneFileOutput.write("Composition & Focal Length Comments: %s \r\n" % compFocalLenght.query())
-    sceneFileOutput.write("Composition & Focal Length Grade Total: %s \r\n" %compField.getValue1())
+    sceneFileOutput.write("Composition & Focal Length Grade Total: %s \r\n" % totalGrades.queryComp().getValue1())
     sceneFileOutput.write("-----------------------------------\r\n")
     sceneFileOutput.write("Professionalism Comments: %s \r\n" % prof.query())
-    sceneFileOutput.write("Professionalism  Total: %s \r\n" % proField.getValue1())
-    sceneFileOutput.write("Late Deductions: - %s \r\n" % lateField.getValue1())
-    sceneFileOutput.write("Overall Grade Total: %s \r\n" % totalField)
+    sceneFileOutput.write("Professionalism  Grade Total: %s \r\n" % totalGrades.queryPro().getValue1())
+    sceneFileOutput.write("-----------------------------------\r\n")
+    sceneFileOutput.write("Late Deductions: - %s \r\n" % totalGrades.queryLate().getValue1())
+    sceneFileOutput.write("-----------------------------------\r\n")
+    sceneFileOutput.write("Overall Grade Total: %s \r\n" % totalGrades.queryTotal().getValue1())
     
 
 
