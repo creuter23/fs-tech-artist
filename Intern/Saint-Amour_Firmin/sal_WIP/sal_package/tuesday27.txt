@@ -1,0 +1,30 @@
+notes from meeting with Tony
+tuesday 27
+-------------------------------------
+
+for the section that creates the fields:
+
+make it so when a field is deleted it removes the image associated with that field from the imageList
+add annotations so things make more sense
+-------------------------------------
+
+for the profesionalism section:
+
+try to make it automated as much as possible
+check for names, file types, image size
+
+-------------------------------------
+
+for the output section:
+
+give an option to clear or reset everything after the output is done
+
+-------------------------------------
+
+* also fix issues that happen in 2012
+the layouts messing up (specifically for the custom comment section)
+integers not showing up in locked intFields(total grade section)
+
+-------------------------------------
+
+* write the outputs in a better layout
