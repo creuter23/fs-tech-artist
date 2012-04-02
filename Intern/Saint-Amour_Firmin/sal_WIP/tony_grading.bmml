@@ -1,0 +1,269 @@
+<mockup version="1.0" skin="sketch" measuredW="846" measuredH="726" mockupW="719" mockupH="661">
+  <controls>
+    <control controlID="10" controlTypeID="__group__" x="127" y="77" w="366" h="206" measuredW="366" measuredH="206" zOrder="0" locked="false" isInGroup="-1">
+      <groupChildrenDescriptors>
+        <control controlID="0" controlTypeID="com.balsamiq.mockups::FieldSet" x="0" y="0" w="366" h="206" measuredW="200" measuredH="170" zOrder="0" locked="false" isInGroup="10">
+          <controlProperties>
+            <text>Comp%20/%20Focal%20Length</text>
+          </controlProperties>
+        </control>
+        <control controlID="1" controlTypeID="com.balsamiq.mockups::TextArea" x="130" y="36" w="200" h="155" measuredW="200" measuredH="140" zOrder="1" locked="false" isInGroup="10"/>
+        <control controlID="2" controlTypeID="com.balsamiq.mockups::RadioButton" x="22" y="42" w="-1" h="-1" measuredW="74" measuredH="22" zOrder="2" locked="false" isInGroup="10">
+          <controlProperties>
+            <state>selected</state>
+            <text>A+%20to%20A-</text>
+          </controlProperties>
+        </control>
+        <control controlID="3" controlTypeID="com.balsamiq.mockups::RadioButton" x="22" y="64" w="-1" h="-1" measuredW="75" measuredH="22" zOrder="3" locked="false" isInGroup="10">
+          <controlProperties>
+            <text>B+%20to%20B-</text>
+          </controlProperties>
+        </control>
+        <control controlID="4" controlTypeID="com.balsamiq.mockups::RadioButton" x="22" y="86" w="-1" h="-1" measuredW="76" measuredH="22" zOrder="4" locked="false" isInGroup="10">
+          <controlProperties>
+            <text>C+%20to%20C-</text>
+          </controlProperties>
+        </control>
+        <control controlID="5" controlTypeID="com.balsamiq.mockups::RadioButton" x="22" y="108" w="-1" h="-1" measuredW="32" measuredH="22" zOrder="5" locked="false" isInGroup="10">
+          <controlProperties>
+            <text>D</text>
+          </controlProperties>
+        </control>
+        <control controlID="6" controlTypeID="com.balsamiq.mockups::RadioButton" x="22" y="130" w="-1" h="-1" measuredW="31" measuredH="22" zOrder="6" locked="false" isInGroup="10">
+          <controlProperties>
+            <text>F</text>
+          </controlProperties>
+        </control>
+        <control controlID="7" controlTypeID="com.balsamiq.mockups::TextInput" x="77" y="161" w="44" h="-1" measuredW="30" measuredH="26" zOrder="7" locked="false" isInGroup="10">
+          <controlProperties>
+            <text>95</text>
+          </controlProperties>
+        </control>
+        <control controlID="8" controlTypeID="com.balsamiq.mockups::Label" x="21" y="163" w="50" h="21" measuredW="45" measuredH="21" zOrder="8" locked="false" isInGroup="10">
+          <controlProperties>
+            <text>Grade</text>
+          </controlProperties>
+        </control>
+        <control controlID="9" controlTypeID="com.balsamiq.mockups::Label" x="130" y="15" w="193" h="21" measuredW="72" measuredH="21" zOrder="9" locked="false" isInGroup="10">
+          <controlProperties>
+            <align>center</align>
+            <text>Comments</text>
+          </controlProperties>
+        </control>
+        <control controlID="10" controlTypeID="com.balsamiq.mockups::Button" x="333" y="14" w="29" h="185" measuredW="34" measuredH="28" zOrder="10" locked="false" isInGroup="10">
+          <controlProperties>
+            <text>%3E</text>
+          </controlProperties>
+        </control>
+      </groupChildrenDescriptors>
+    </control>
+    <control controlID="11" controlTypeID="__group__" x="127" y="520" w="597" h="206" measuredW="597" measuredH="206" zOrder="1" locked="false" isInGroup="-1">
+      <groupChildrenDescriptors>
+        <control controlID="0" controlTypeID="com.balsamiq.mockups::FieldSet" x="0" y="0" w="597" h="206" measuredW="200" measuredH="170" zOrder="0" locked="false" isInGroup="11">
+          <controlProperties>
+            <text>Professionalism</text>
+          </controlProperties>
+        </control>
+        <control controlID="1" controlTypeID="com.balsamiq.mockups::TextArea" x="130" y="36" w="200" h="155" measuredW="200" measuredH="140" zOrder="1" locked="false" isInGroup="11"/>
+        <control controlID="2" controlTypeID="com.balsamiq.mockups::RadioButton" x="22" y="42" w="-1" h="-1" measuredW="74" measuredH="22" zOrder="2" locked="false" isInGroup="11">
+          <controlProperties>
+            <state>selected</state>
+            <text>A+%20to%20A-</text>
+          </controlProperties>
+        </control>
+        <control controlID="3" controlTypeID="com.balsamiq.mockups::RadioButton" x="22" y="64" w="-1" h="-1" measuredW="75" measuredH="22" zOrder="3" locked="false" isInGroup="11">
+          <controlProperties>
+            <text>B+%20to%20B-</text>
+          </controlProperties>
+        </control>
+        <control controlID="4" controlTypeID="com.balsamiq.mockups::RadioButton" x="22" y="86" w="-1" h="-1" measuredW="76" measuredH="22" zOrder="4" locked="false" isInGroup="11">
+          <controlProperties>
+            <text>C+%20to%20C-</text>
+          </controlProperties>
+        </control>
+        <control controlID="5" controlTypeID="com.balsamiq.mockups::RadioButton" x="22" y="108" w="-1" h="-1" measuredW="32" measuredH="22" zOrder="5" locked="false" isInGroup="11">
+          <controlProperties>
+            <text>D</text>
+          </controlProperties>
+        </control>
+        <control controlID="6" controlTypeID="com.balsamiq.mockups::RadioButton" x="22" y="130" w="-1" h="-1" measuredW="31" measuredH="22" zOrder="6" locked="false" isInGroup="11">
+          <controlProperties>
+            <text>F</text>
+          </controlProperties>
+        </control>
+        <control controlID="7" controlTypeID="com.balsamiq.mockups::TextInput" x="77" y="161" w="44" h="-1" measuredW="30" measuredH="26" zOrder="7" locked="false" isInGroup="11">
+          <controlProperties>
+            <text>95</text>
+          </controlProperties>
+        </control>
+        <control controlID="8" controlTypeID="com.balsamiq.mockups::Label" x="21" y="163" w="50" h="21" measuredW="45" measuredH="21" zOrder="8" locked="false" isInGroup="11">
+          <controlProperties>
+            <text>Grade</text>
+          </controlProperties>
+        </control>
+        <control controlID="9" controlTypeID="com.balsamiq.mockups::Label" x="130" y="15" w="193" h="21" measuredW="72" measuredH="21" zOrder="9" locked="false" isInGroup="11">
+          <controlProperties>
+            <align>center</align>
+            <text>Comments</text>
+          </controlProperties>
+        </control>
+        <control controlID="11" controlTypeID="com.balsamiq.mockups::Button" x="561" y="20" w="29" h="185" measuredW="33" measuredH="28" zOrder="10" locked="false" isInGroup="11">
+          <controlProperties>
+            <text>%3C</text>
+          </controlProperties>
+        </control>
+      </groupChildrenDescriptors>
+    </control>
+    <control controlID="12" controlTypeID="__group__" x="508" y="65" w="338" h="423" measuredW="338" measuredH="423" zOrder="2" locked="false" isInGroup="-1">
+      <groupChildrenDescriptors>
+        <control controlID="0" controlTypeID="com.balsamiq.mockups::FieldSet" x="0" y="0" w="338" h="423" measuredW="200" measuredH="170" zOrder="0" locked="false" isInGroup="12">
+          <controlProperties>
+            <text>Professionalism</text>
+          </controlProperties>
+        </control>
+        <control controlID="1" controlTypeID="com.balsamiq.mockups::TextArea" x="130" y="35" w="200" h="155" measuredW="200" measuredH="140" zOrder="1" locked="false" isInGroup="12">
+          <controlProperties>
+            <color>11982760</color>
+          </controlProperties>
+        </control>
+        <control controlID="2" controlTypeID="com.balsamiq.mockups::RadioButton" x="22" y="41" w="-1" h="-1" measuredW="74" measuredH="22" zOrder="2" locked="false" isInGroup="12">
+          <controlProperties>
+            <state>selected</state>
+            <text>A+%20to%20A-</text>
+          </controlProperties>
+        </control>
+        <control controlID="3" controlTypeID="com.balsamiq.mockups::RadioButton" x="22" y="63" w="-1" h="-1" measuredW="75" measuredH="22" zOrder="3" locked="false" isInGroup="12">
+          <controlProperties>
+            <text>B+%20to%20B-</text>
+          </controlProperties>
+        </control>
+        <control controlID="4" controlTypeID="com.balsamiq.mockups::RadioButton" x="22" y="85" w="-1" h="-1" measuredW="76" measuredH="22" zOrder="4" locked="false" isInGroup="12">
+          <controlProperties>
+            <text>C+%20to%20C-</text>
+          </controlProperties>
+        </control>
+        <control controlID="5" controlTypeID="com.balsamiq.mockups::RadioButton" x="22" y="107" w="-1" h="-1" measuredW="32" measuredH="22" zOrder="5" locked="false" isInGroup="12">
+          <controlProperties>
+            <text>D</text>
+          </controlProperties>
+        </control>
+        <control controlID="6" controlTypeID="com.balsamiq.mockups::RadioButton" x="22" y="129" w="-1" h="-1" measuredW="31" measuredH="22" zOrder="6" locked="false" isInGroup="12">
+          <controlProperties>
+            <text>F</text>
+          </controlProperties>
+        </control>
+        <control controlID="7" controlTypeID="com.balsamiq.mockups::TextInput" x="77" y="160" w="44" h="-1" measuredW="30" measuredH="26" zOrder="7" locked="false" isInGroup="12">
+          <controlProperties>
+            <color>11982760</color>
+            <text>95</text>
+          </controlProperties>
+        </control>
+        <control controlID="8" controlTypeID="com.balsamiq.mockups::Label" x="21" y="162" w="50" h="21" measuredW="45" measuredH="21" zOrder="8" locked="false" isInGroup="12">
+          <controlProperties>
+            <text>Grade</text>
+          </controlProperties>
+        </control>
+        <control controlID="9" controlTypeID="com.balsamiq.mockups::Label" x="130" y="14" w="193" h="21" measuredW="72" measuredH="21" zOrder="10" locked="false" isInGroup="12">
+          <controlProperties>
+            <align>center</align>
+            <text>Comments</text>
+          </controlProperties>
+        </control>
+        <control controlID="12" controlTypeID="com.balsamiq.mockups::List" x="22" y="237" w="121" h="140" measuredW="100" measuredH="126" zOrder="11" locked="false" isInGroup="12">
+          <controlProperties>
+            <text>File%20Extension%0AFile%20Size</text>
+          </controlProperties>
+        </control>
+        <control controlID="13" controlTypeID="com.balsamiq.mockups::FieldSet" x="12" y="198" w="311" h="217" measuredW="200" measuredH="170" zOrder="9" locked="false" isInGroup="12">
+          <controlProperties>
+            <text>Checker</text>
+          </controlProperties>
+        </control>
+        <control controlID="14" controlTypeID="com.balsamiq.mockups::Button" x="24" y="380" w="-1" h="-1" measuredW="42" measuredH="28" zOrder="12" locked="false" isInGroup="12">
+          <controlProperties>
+            <text>++</text>
+          </controlProperties>
+        </control>
+        <control controlID="15" controlTypeID="com.balsamiq.mockups::Button" x="71" y="380" w="-1" h="-1" measuredW="78" measuredH="28" zOrder="13" locked="false" isInGroup="12">
+          <controlProperties>
+            <text>Remove</text>
+          </controlProperties>
+        </control>
+        <control controlID="16" controlTypeID="com.balsamiq.mockups::List" x="149" y="237" w="161" h="140" measuredW="100" measuredH="126" zOrder="14" locked="false" isInGroup="12">
+          <controlProperties>
+            <text>file_1.jpg%20%28Failed%20Check%29%0Afile_1.jpg%20%28Incorrect%20file%20size%29</text>
+          </controlProperties>
+        </control>
+        <control controlID="17" controlTypeID="com.balsamiq.mockups::Label" x="22" y="216" w="121" h="21" measuredW="66" measuredH="21" zOrder="15" locked="false" isInGroup="12">
+          <controlProperties>
+            <align>center</align>
+            <text>Checkers</text>
+          </controlProperties>
+        </control>
+        <control controlID="18" controlTypeID="com.balsamiq.mockups::Label" x="148" y="215" w="164" h="21" measuredW="53" measuredH="21" zOrder="16" locked="false" isInGroup="12">
+          <controlProperties>
+            <align>center</align>
+            <text>Results</text>
+          </controlProperties>
+        </control>
+      </groupChildrenDescriptors>
+    </control>
+    <control controlID="13" controlTypeID="__group__" x="127" y="283" w="338" h="229" measuredW="338" measuredH="229" zOrder="3" locked="false" isInGroup="-1">
+      <groupChildrenDescriptors>
+        <control controlID="0" controlTypeID="com.balsamiq.mockups::FieldSet" x="0" y="0" w="338" h="229" measuredW="200" measuredH="170" zOrder="0" locked="false" isInGroup="13">
+          <controlProperties>
+            <text>Professionalism</text>
+          </controlProperties>
+        </control>
+        <control controlID="1" controlTypeID="com.balsamiq.mockups::TextArea" x="130" y="35" w="200" h="155" measuredW="200" measuredH="140" zOrder="1" locked="false" isInGroup="13"/>
+        <control controlID="2" controlTypeID="com.balsamiq.mockups::RadioButton" x="22" y="41" w="-1" h="-1" measuredW="74" measuredH="22" zOrder="2" locked="false" isInGroup="13">
+          <controlProperties>
+            <state>selected</state>
+            <text>A+%20to%20A-</text>
+          </controlProperties>
+        </control>
+        <control controlID="3" controlTypeID="com.balsamiq.mockups::RadioButton" x="22" y="63" w="-1" h="-1" measuredW="75" measuredH="22" zOrder="3" locked="false" isInGroup="13">
+          <controlProperties>
+            <text>B+%20to%20B-</text>
+          </controlProperties>
+        </control>
+        <control controlID="4" controlTypeID="com.balsamiq.mockups::RadioButton" x="22" y="85" w="-1" h="-1" measuredW="76" measuredH="22" zOrder="4" locked="false" isInGroup="13">
+          <controlProperties>
+            <text>C+%20to%20C-</text>
+          </controlProperties>
+        </control>
+        <control controlID="5" controlTypeID="com.balsamiq.mockups::RadioButton" x="22" y="107" w="-1" h="-1" measuredW="32" measuredH="22" zOrder="5" locked="false" isInGroup="13">
+          <controlProperties>
+            <text>D</text>
+          </controlProperties>
+        </control>
+        <control controlID="6" controlTypeID="com.balsamiq.mockups::RadioButton" x="22" y="129" w="-1" h="-1" measuredW="31" measuredH="22" zOrder="6" locked="false" isInGroup="13">
+          <controlProperties>
+            <text>F</text>
+          </controlProperties>
+        </control>
+        <control controlID="7" controlTypeID="com.balsamiq.mockups::TextInput" x="77" y="160" w="44" h="-1" measuredW="30" measuredH="26" zOrder="7" locked="false" isInGroup="13">
+          <controlProperties>
+            <text>95</text>
+          </controlProperties>
+        </control>
+        <control controlID="8" controlTypeID="com.balsamiq.mockups::Label" x="21" y="162" w="50" h="21" measuredW="45" measuredH="21" zOrder="8" locked="false" isInGroup="13">
+          <controlProperties>
+            <text>Grade</text>
+          </controlProperties>
+        </control>
+        <control controlID="9" controlTypeID="com.balsamiq.mockups::Label" x="130" y="14" w="193" h="21" measuredW="72" measuredH="21" zOrder="9" locked="false" isInGroup="13">
+          <controlProperties>
+            <align>center</align>
+            <text>Comments</text>
+          </controlProperties>
+        </control>
+        <control controlID="11" controlTypeID="com.balsamiq.mockups::Button" x="7" y="194" w="323" h="27" measuredW="115" measuredH="28" zOrder="10" locked="false" isInGroup="13">
+          <controlProperties>
+            <text>Show%20Checker</text>
+          </controlProperties>
+        </control>
+      </groupChildrenDescriptors>
+    </control>
+  </controls>
+</mockup>
