@@ -35,48 +35,50 @@ def gui(dir_path):
     pm.setParent(main02)
     # file info section
     
-    pm.frameLayout(label = 'Start', cll = True, cl = False, borderStyle = 'etchedIn', w = 480)
-    global start
-    start = sal.Start()
-    start.create()
-    start.preFill()
+    
     
     pm.setParent(main02)
-    pm.frameLayout(label = 'File Info', cll = True, cl = False, borderStyle = 'etchedIn', w = 480)
-    infoColumn = pm.columnLayout()
+    
+    infoColumn = pm.columnLayout(adjustableColumn=True)
     global fileInfo
     
     pm.setParent(main02)
      # grade total section
-    infoFrame = pm.frameLayout( label = 'Grades Total', cll = True, cl = True , borderStyle = 'etchedIn', w = 480 )
-    infoLayout = pm.formLayout()
+    infoFrame = pm.columnLayout(adjustableColumn=True)
+    #infoLayout = pm.formLayout()
     # isntancing the total grade section
     global totalGrades
-    totalGrades = sal.UpperSection()
+    totalGrades = sal.Total_Grades()
     totalGrades.create()
     
-    pm.setParent(infoFrame)
+    #pm.setParent(infoFrame)
     pm.button( label = 'Output Grade and Comment' , command = checkWeighting)
     
     pm.setParent(main02)
-    pm.frameLayout( label = 'Grade', cll = True, cl = True , borderStyle = 'etchedIn', w = 480 )
-    mainLayout = pm.formLayout()
+    #pm.frameLayout( label = 'Grade', cll = True, cl = True , borderStyle = 'etchedIn', w = 480 )
+    #mainLayout = pm.formLayout()
    
     # grading / commenting section
     # first intance of Section for antiAliasing / Noise Quality
-    
-    antiAlising = sal.Section( name = 'Anitalias/Noise Qual', layout = mainLayout , updateCommand = totalGrades,
-                              fileRead =  r"%s/proj01_antiAlisaing.txt" % dir_path,updateField= totalGrades.queryAnti())
+    grading = pm.frameLayout( label= 'Grading', cll = True, cl = True , borderStyle = 'etchedIn', w = 480)
+    pm.setParent(grading)
+    antiAlising = sal.Grading_Section( name = 'Anitalias/Noise Qual', fileName =  r"%s/Comments/proj01_antiAlisaing.txt" % dir_path,
+                                      field = totalGrades.queryAnti(), toUpdate = totalGrades)
     section01 = antiAlising.create()
     
+    pm.setParent(grading)
     # second intance of Section for Composition / Focal Lenght
-    compFocalLenght = sal.Section( name = 'Comp/Focal Length', layout = mainLayout , updateCommand = totalGrades,
-                                  fileRead = r"%s/proj01_compFocal.txt" % dir_path, updateField = totalGrades.queryComp(), control=section01)
+    compFocalLenght = sal.Grading_Section( name = 'Comp/Focal Length', fileName = r"%s/Comments/proj01_compFocal.txt" % dir_path,
+                                          field = totalGrades.queryComp(), toUpdate = totalGrades)
     section02 = compFocalLenght.create()
     
+    pm.setParent(grading)
+    prof = sal.Grading_Prof( name = 'Professionalism', fileName = r"%s/Comments/proj01_prof.txt" % (dir_path),
+                            field = totalGrades.queryPro(), fileStart = r"%s/Startup/proj01_start.db" % (dir_path), toUpdate = totalGrades)
+    prof.create()
     # first intance of Section for proffesionalism
-    prof = sal.Checker( fileName= r"/Users/Fearman/Desktop/sal_package/Sartup/proj01_start")
-    section03 = prof.create()
+    #prof = sal.Checker( fileName= r"/Users/Fearman/Desktop/sal_package/Sartup/proj01_start")
+    #section03 = prof.create()
     
     
     pm.setParent(infoColumn)
@@ -142,7 +144,7 @@ def output(* args):
     sceneFileOutput.write("Late Deductions: - %s \r\n" % totalGrades.queryLate().getValue1())
     sceneFileOutput.write("-----------------------------------\r\n")
     sceneFileOutput.write("Overall Grade Total: %s \r\n" % totalGrades.queryTotal().getValue1())
-    sceneFIleOutput.close()
+    sceneFileOutput.close()
     
     
     pm.util.shellOutput(r"open  %s.txt " % fileInfo.queryPath())

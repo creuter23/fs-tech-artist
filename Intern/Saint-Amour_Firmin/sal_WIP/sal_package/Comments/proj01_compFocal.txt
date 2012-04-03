@@ -1,0 +1,11 @@
+A
+Composition directs the viewers eye to the subject instantaniously. Focal length choice supports the composition.
+B
+Composition directs the viewer's eye to the subject after a second of viewing. Focal length choice supports the composition.
+C
+Composition directs the viewers eye to the subject after a few seconds on viewing. Focal length choice mildly supports the composition.
+D
+Composition does not direct the viewer's eye to subject for over 5 seconds of viewing. Focal length choice vaguely supports the composition.
+F
+Composition does not direct the viewer's eye to the subject. Focal length choice does not support the composition.composition
+

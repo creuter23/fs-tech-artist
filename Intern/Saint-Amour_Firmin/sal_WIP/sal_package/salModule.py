@@ -3,7 +3,8 @@
 
 Author: Firmin Saint-Amour
 
-Description: Module containing reusable pieces specifically for the shading and lighting scripts
+Description: Module containing reusable pieces specifically for the shading
+and lighting scripts
 
 '''
 from PIL import Image # this read metadata from images
@@ -21,175 +22,23 @@ import xlwt
 import openpyxl
 '''
 
-
-# the gradign section for each script
-class Section():
-    '''
-    this creates the grading section for the SAL scripts
-    it uses the comment widget class as the commenting system
-    '''
-    
-    def __init__(self, name, layout, updateField, fileRead, updateCommand, control=''):
-        # the label for the first row of radioButtonGrp also the name of the section
-        self.name = name
-        # this the outside command that this section will call to update the total grade section
-        self.updateCommand = updateCommand
-        # the control that the first component will attach to
-        self.control = control
-        # updateField is the field in the totals section that the changeCommand of the grade field will update
-        self.updateField = updateField
-        # the  formLayout that components will be attached to
-        self.layout = layout
-        # the file the comments will be read from, this will be passed to the commentWidget object
-        self.fileRead = fileRead
-        # instancing the CommentWidget which has the commenting system built into it / create() creates it 
-        self.scrollField = CommentWidget(width = 200 , height = 150, fileName = self.fileRead).create()
-        
-        self.number = 0
-    
-    def write(self, name, format, size1, size2):
-        
-        self.newLayout = pm.columnLayout(adjustableColumn= True)
-        self.nameInfo = pm.text( label= name)
-        self.formatInfo = pm.text( label= format)
-        self.sizeInfo = pm.text('size%s' % self.number, label= '%s X %s' % (size1, size2))
-        
-        
-        
-        if self.number <= 0 :
-            pm.formLayout( self.layout , edit=1, attachForm=[self.newLayout, "left", 60], attachControl=[self.newLayout, "top", 10, self.scrollField])
-            
-        else:
-            pm.formLayout( self.layout , edit=1, attachForm=[self.newLayout, "left", 60], attachControl=[self.newLayout, "top", 10, 'size%s' % self.number])
-            
-        self.number += 1
-            
-    def radioCommand(self):
-        # this command changes the grade based on the selected button
-        if self.row01.getSelect() != 0 or self.row02.getSelect() != 0:
-            self.intField.setBackgroundColor([0,1,0])
-        
-        if self.row01.getSelect() == 1:
-            self.intField.setValue1(100)
-            self.totalCommand()
-            self.updateCommand.updateTotal()
-            
-        if self.row01.getSelect() == 2:
-            self.intField.setValue1(89)
-            self.totalCommand()
-            self.updateCommand.updateTotal()
-            
-        if self.row01.getSelect() == 3:
-            self.intField.setValue1(79)
-            self.totalCommand()
-            self.updateCommand.updateTotal()
-            
-        if self.row02.getSelect() == 1:
-            self.intField.setValue1(72)
-            self.totalCommand()
-            self.updateCommand.updateTotal()
-            
-        if self.row02.getSelect() == 2:
-            self.intField.setValue1(69)
-            self.totalCommand()
-            self.updateCommand.updateTotal()
-            
-    def totalCommand(self):
-            value = self.intField.getValue1() 
-            self.updateField.setValue1(value)
-        
-    def create(self):
-        
-        
-         # this creates the actual GUI components
-         #** returns the last component (the separator) so that the next group can be attached to it
-        
-        if self.control == '':
-            # radioButtonGrp
-            self.row01 = pm.radioButtonGrp( numberOfRadioButtons = 3, label = '%s' % self.name, labelArray3=['A+ -A', 'B+ -B', 'C+ -C'], onCommand = pm.Callback(self.radioCommand))
-            self.row02 = pm.radioButtonGrp(  numberOfRadioButtons = 2, shareCollection = self.row01, label='', labelArray2=['D', 'F'], onCommand = pm.Callback(self.radioCommand))
-            pm.formLayout( self.layout , edit=1, attachForm=[[self.row01, "top", 5], [self.row01, "left", 5]])
-            pm.formLayout( self.layout , edit=1, attachForm=[self.row02, "left", 5, ], attachControl=[self.row02, "top", 5, self.row01])
-            
-            
-            # intField for Grade
-            self.intField = pm.intFieldGrp( numberOfFields = 1, label = 'Grade', changeCommand = pm.Callback(self.totalCommand), backgroundColor = [1,0,0])
-            self.comments = pm.text( label = 'comments')
-            
-            # comment scrollField
-            #scrollField = self.scrollField.create()
-            self.separator = pm.separator( height=15, width=460, style='in' )
-            
-            # arranging components
-            pm.formLayout( self.layout , edit=1, attachForm=[self.intField, "top", 5], attachControl=[self.intField, "top", 10, self.row02])
-            pm.formLayout( self.layout , edit=1, attachForm=[self.scrollField, "left", 140], attachControl=[self.scrollField, "top", 10, self.intField])
-            pm.formLayout( self.layout , edit=1, attachForm=[self.comments, "left", 60], attachControl=[self.comments, "top", 10, self.intField])
-            pm.formLayout( self.layout , edit=1, attachForm=[self.separator, "left", 60], attachControl=[self.separator, "top", 10, self.scrollField])
-        
-            return self.separator
-        
-        else:
-            # radioButtonGrp
-            self.row01 = pm.radioButtonGrp( numberOfRadioButtons = 3, label = '%s' % self.name, labelArray3=['A+ -A', 'B+ -B', 'C+ -C'], onCommand = pm.Callback(self.radioCommand))
-            self.row02 = pm.radioButtonGrp(  numberOfRadioButtons = 2, shareCollection = self.row01, label='', labelArray2=['D', 'F'], onCommand = pm.Callback(self.radioCommand))
-            pm.formLayout( self.layout , edit=1, attachForm=[[self.row01, "top", 5], [self.row01, "left", 5]] , attachControl=[self.row01, "top", 5, self.control])
-            pm.formLayout( self.layout , edit=1, attachForm=[self.row02, "left", 5, ], attachControl=[self.row02, "top", 5, self.row01])
-            
-            # intField for Grade
-            self.intField = pm.intFieldGrp( numberOfFields = 1, label = 'Grade', cc = pm.Callback(self.totalCommand)
-                                           , backgroundColor = [1,0,0])
-            self.comments = pm.text( label = 'comments')
-            
-            # comment scrollField
-            #scrollField = self.scrollField.create()
-            self.separator = pm.separator( height=15, width=460, style='in' )
-            
-            # arranging components
-            pm.formLayout( self.layout , edit=1, attachForm=[self.intField, "top", 5], attachControl=[self.intField, "top", 10, self.row02])
-            pm.formLayout( self.layout , edit=1, attachForm=[self.scrollField, "left", 140], attachControl=[self.scrollField, "top", 10, self.intField])
-            pm.formLayout( self.layout , edit=1, attachForm=[self.comments, "left", 60], attachControl=[self.comments, "top", 10, self.intField])
-            pm.formLayout( self.layout , edit=1, attachForm=[self.separator, "left", 60], attachControl=[self.separator, "top", 10, self.scrollField])
-        
-            return self.separator
-        
-    def query(self):
-        # this will get the comments from the scrollFields
-        text = self.scrollField.getText()
-        
-        return text
-      
-      
-class Pro(Section):
-   
-    number = 0
-    
-    def write(self, name, format, size1, size2):
-        
-        self.newLayout = pm.columnLayout(adjustableColumn= True)
-        self.nameInfo = pm.text( label= name)
-        self.formatInfo = pm.text( label= format)
-        self.sizeInfo = pm.text('size%s' % number, label= '%s X %s' % (size1, size2))
-        
-        
-        
-        if self.number <= 0 :
-            pm.formLayout( self.layout , edit=1, attachForm=[self.newLayout, "left", 60], attachControl=[self.newLayout, "top", 10, self.scrollField])
-            
-        else:
-            pm.formLayout( self.layout , edit=1, attachForm=[self.newLayout, "left", 60], attachControl=[self.newLayout, "top", 10, 'size%s' % number])
-            
-       
+# radioCollection
 class Radio_Collection():
     """
     this class creates the radio buttons for each grading section
     takes one arguement , field = field to update in a different section of the script, type= pymel object intFieldGrp
     
+    field = which field to update
+    toUpdate = the class instance that will be update (the UpperSection class)
+    
+    
     """
-    def __init__(self, field):
+    def __init__(self, field, toUpdate):
         '''
         radioCollection
         '''
         self.field = field
+        self.toUpdate = toUpdate
         
     def create(self):
         layout = pm.columnLayout(width= 90, adjustableColumn= False)
@@ -209,48 +58,70 @@ class Radio_Collection():
     def update(self, value):
         self.gradeField.setValue(value)
         self.field.setValue1(self.gradeField.getValue())
+        self.toUpdate.updateTotal()
         
     def output(self):
-        self.field.setValue1(self.gradeField.getValue())
+        value = self.gradeField.getValue()
+        self.field.setValue1(value)
+        self.toUpdate.updateTotal()
         
     def queryGrade(self):
         return self.gradeField
-        
+   
+# checker options       
 class Checker_Options():
+    '''
+    this will create the section that will hold all the fields for the checker
+    class
+    
+    fileName = the file that it will read when the script runs, so you dont
+    have to refill it each time
+    
+    '''
     def __init__(self, fileName):
         self.fileName = fileName
-        print 'checker initialized'
+        #print 'checker_options'
         
     def create(self):
-        self.mainLayout = pm.columnLayout(adjustableColumn = True)
+        '''
+        creates the gui components
+        '''
+        self.mainLayout = pm.columnLayout(adjustableColumn = True, width= 180)
         #pm.rowColumnLayout(numberOfColumns=2, columnWidth= ([1,40], [2,200]))
         self.name = pm.textFieldGrp( label='Name', changeCommand= pm.Callback(self.writeOut), columnWidth2= (40,140))
         self.format = pm.textFieldGrp( label= 'Format', changeCommand= pm.Callback(self.writeOut), columnWidth2= (40,140))
         self.size = pm.intFieldGrp( label= 'Size', numberOfFields= 2, value1= 720, value2= 486, changeCommand= pm.Callback(self.writeOut),columnWidth3= (40,70,70) )
         
     def writeOut(self):
-        dirPath = os.path.dirname(__file__)
+        '''
+        this will right out to the file so it remembers next time
+        '''
+        #dirPath = os.path.dirname(__file__)
         #self.fileName = 'proj01_start'
-        fullPath = os.path.join(dirPath, self.fileName)
-        
-        startFileOutput = shelve.open('%s' % fullPath , 'n')
+        #fullPath = os.path.join(dirPath, self.fileName)
+        print self.fileName
+        startFileOutput = shelve.open('%s' % self.fileName , 'n')
         startFileOutput['name'] = ('%s' % self.name.getText())
         startFileOutput['format'] = ('%s' % self.format.getText().upper())
         startFileOutput['value1'] = ('%s' % self.size.getValue1())
         startFileOutput['value2'] = ('%s' % self.size.getValue2())
         startFileOutput.sync()
-        print startFileOutput['name']
-        print startFileOutput['format']
-        print startFileOutput['value1']
+        
+        print startFileOutput['name'], startFileOutput['format'], startFileOutput['value1'], startFileOutput['value2']
+        
         startFileOutput.close()
         
     def preFill(self):
-        dirPath = os.path.dirname(__file__)
-        #self.fileName = 'proj01_start.db'
-        fullPath = os.path.join(dirPath, '%s.db' % (self.fileName))
+        '''
+        this will preFill the fields when the script runs
+        '''
         
-        if os.path.exists("%s" % fullPath):
-            startFile = shelve.open('%s' % fullPath, 'r')
+        #dirPath = os.path.dirname(__file__)
+        #self.fileName = 'proj01_start.db'
+        
+        
+        if os.path.exists("%s" % (self.fileName)):
+            startFile = shelve.open('%s' % (self.fileName), 'r')
             print startFile
             print (startFile['name'])
             self.name.setText(str(startFile['name']))
@@ -258,36 +129,56 @@ class Checker_Options():
             self.size.setValue1(int(startFile['value1']))
             self.size.setValue2(int(startFile['value2']))
             startFile.close()
+            
+    
+    # these next functions return references of the fields so other parts
+    # of the script can use them
+    def queryName(self):
+        name = self.name
+        return name
         
+    def queryFormat(self):
+        format = self.format
+        return format
+        
+    def querySize(self):
+        size = self.size
+        return size
+          
+# checker info        
 class Checker_Info():
     def __init__(self):
-        print "stuff testing 123"
+        print "checker_info"
         
     def create(self):    
-        self.layout = pm.columnLayout(width= 300, adjustableColumn= False)
+        self.scroll = pm.scrollField(width= 250, wordWrap= True)
+        self.popup = pm.popupMenu(parent = self.scroll)
+        pm.menuItem( label = 'Clear' , command = pm.Callback(self.clear))
         
-        return self.layout
+        return self.scroll
+    
+    def clear(self):
+        # this will clear the scrollField of any existing text
+        self.scroll.setText('')
+        
     
     def update(self,name, format, size):
-        #self.scroll.insertText(name)
-        #self.scroll.insertText(format)
-        #self.scroll.insertText('%s X %s' % (size[0], size[1]))
+        #if self.scroll.getText != '':
+         #   self.scroll.setText('')
         
-        pm.setParent(self.layout)
-        self.name = pm.text( label= '%s' % (name))
-        self.format = pm.text( label= '%s' % (format))
-        self.size = pm.text( label= '%s X %s' % (size[0], size[1]))
-        
-        return self.layout
-        
-        
+        self.scroll.insertText('%s\r\n' % name)
+        self.scroll.insertText('%s\r\n' % format)
+        self.scroll.insertText('%s X %s\r\n' % (size[0], size[1]))
+        self.scroll.insertText('-----------\r\n')
+               
+# professionalism checker        
 class Checker():
     def __init__(self, fileName):
         self.fileName = fileName
         
         self.main = pm.columnLayout(adjustableColumn= True)
         self.frame = pm.frameLayout(label = 'checker', cll = True, cl = False, borderStyle = 'etchedIn', width = 480)
-        self.layout = pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,180], [2,10], [3,290]))
+        self.layout = pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,185], [2,10], [3,270]))
         
         pm.text(label='Check')
         pm.text( label= '')
@@ -318,29 +209,40 @@ class Checker():
             size = image.size
             name = os.path.basename('%s' % (obj))
             self.feedback.update(name, format, size)
+            
+    def queryName(self):
+        #name = self.check.queryName()
+        return self.check.queryName()
         
+    def queryFormat(self):
+        #format = self.check.queryFormat()
+        return self.check.queryFormat()
         
+    def querySize(self):
+        size = self.check.querySize()
+        return size
         
-
+# grading section        
 class Grading_Section():
     '''
     this creates the grading section which uses the Radio_Collection and Comment_Widget classes
-    name = name of section
+    name = the label for the section 
     field = field to update
     fileName = text file to read from
+    toUpdate = which class instance 's update function will be invoked by the radioButtons
+    or the in fields
+    
     '''
-    
-    
     # grading section
-    def __init__(self, name, field, fileName):
+    def __init__(self, name, field, fileName, toUpdate):
+        self.toUpdate = toUpdate
         self.name = name
         self.field = field
         self.file = fileName
         self.main = pm.columnLayout(adjustableColumn= True)
         self.frame = pm.frameLayout(label = self.name, cll = True, cl = False, borderStyle = 'etchedIn', width = 480)
-        self.layout = pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,90], [2,10], [3,380]))
+        self.layout = pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,95], [2,10], [3,355]))
         #pm.setParent(self.layout)
-        
         
         self.grading = pm.text(label='grading')
         pm.text( label= '')
@@ -349,24 +251,162 @@ class Grading_Section():
         pm.text( label= '')
         pm.text(label= '')
         
-        
-        
-        
-        
     def create(self):
         
-        self.grades = radioCollection(self.field)
+        self.grades = Radio_Collection(self.field, self.toUpdate)
         radio = self.grades.create()
-        
         
         pm.setParent(self.layout)
         pm.text( label= '')
-        self.scrollField = CommentWidget(width= 300, height= 120, fileName= self.file).create()
+        self.scrollField = CommentWidget(width= 280, height= 120, fileName= self.file).create()
        
+    def query(self):
+        return self.scrollField.getText()
+      
+# grading section specifically for Professionliasm
+# uses the Checker Class
+class Grading_Prof():
+    """
+    grading section specifically made for the professionalism section
+    will work with Checker() class and Comment_Widget() class
+    """
+    def __init__(self, name, field, fileName, fileStart, toUpdate):
+        self.toUpdate = toUpdate
+        self.name = name
+        self.field = field
+        self.file = fileName
+        self.fileStart = fileStart
+        #self.objList = objList
+        self.main = pm.columnLayout(adjustableColumn= True)
+        self.frame = pm.frameLayout(label = self.name, cll = True, cl = False, borderStyle = 'etchedIn', width = 480)
+        self.layout = pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,90], [2,10], [3,360]))
+        #pm.setParent(self.layout)
         
-    def getText(self):
-        self.scrollField.getText()
-               
+        self.grading = pm.text(label='grading')
+        pm.text( label= '')
+        self.comments = pm.text(label='comments')
+        pm.text(label= '')
+        pm.text( label= '')
+        pm.text(label= '')
+        
+    def create(self):
+        self.grades = Radio_Collection(self.field, self.toUpdate)
+        radio = self.grades.create()
+        
+        pm.setParent(self.layout)
+        pm.text( label= '')
+        self.scrollField = CommentWidget(width= 280, height= 120, fileName= self.file).create()
+        pm.setParent(self.frame)
+        
+        self.checker = Checker(self.fileStart)
+        self.checker.create()
+        
+    
+    def update(self, objList):
+        '''
+        this function will automatically update the gradeField from
+        the RadioCollection class
+        it will use the chcker class to check for naming, format, and size
+        '''
+        self.grades.queryGrade().setValue(100)
+        
+        self.checker.update(objList)
+        myGrade = 100
+        
+        # this loop checks the name and if it doesnt match the name from 
+        # the checker class it deducts 25
+        # it will stop at the first encounter of something wrong
+        # points from the grading field (Radio_Collection class)    
+        for obj in objList:
+            myImage = Image.open('%s' % obj)
+            # getting the name from the checker
+            myName = self.checker.queryName().getText()
+            
+            
+            if '%s' % (myName) not in '%s' % (obj):
+                myGrade -= 25
+                self.grades.queryGrade().setValue(myGrade)
+                print myName, obj, myGrade
+                break
+        
+        # this loop checks the format and if it doesnt match the format from 
+        # the checker class it deducts 25
+        # it will stop at the first encounter of something wrong
+        # points from the grading field (Radio_Collection class)    
+        for obj in objList:
+            myImage = Image.open('%s' % obj)
+            # getting the format from the checker
+            format = self.checker.queryFormat().getText().upper()
+            #print format
+            
+            myFormat = myImage.format
+            
+            if '%s' % (format) not in myFormat:
+                myGrade -= 25
+                self.grades.queryGrade().setValue(myGrade)
+                print myFormat, obj, myGrade
+                break
+            
+        # this loop checks the size and if it doesnt match the size from 
+        # the checker class it deducts 25
+        # it will stop at the first encounter of something wrong
+        # points from the grading field (Radio_Collection class)    
+        for obj in objList:
+            myImage = Image.open('%s' % obj)
+            # getting the size from the checker
+            size = self.checker.querySize()
+            #print size
+            
+            mySize = myImage.size
+            
+            if size.getValue1() != mySize[0] or size.getValue2() != mySize[1]:
+                myGrade -= 25
+                self.grades.queryGrade().setValue(myGrade)
+                print mySize, obj, myGrade
+                break
+            
+        self.field.setValue1(myGrade)
+        self.toUpdate.updateTotal()
+        
+        # this next section will see if anything doesnt match and
+        # take that info to the scroll field for outputting
+        #
+        for obj in objList:
+            myImage = Image.open('%s' % obj)
+            mySize = myImage.size
+            myFormat = myImage.format
+            # getting the name from the checker
+            myName = self.checker.queryName().getText()
+            size = self.checker.querySize()
+            format = self.checker.queryFormat().getText().upper()
+            
+            
+            if '%s' % (myName) not in '%s' % (obj):
+                self.insertText('wrong name: %s\r\n' % (os.path.basename(obj)) )
+                self.insertText('--------------\r\n')
+                
+            if size.getValue1() != mySize[0] or size.getValue2() != mySize[1]:
+                self.insertText('wrong size: %s\r\n' % (os.path.basename(obj)))
+                self.insertText('expected %s X %s, got %s X %s\r\n' % (size.getValue1(), size.getValue2(), mySize[0], mySize[1]))
+                self.insertText('--------------\r\n')
+                
+            if '%s' % (format) not in myFormat:
+                self.insertText('wrong format: %s\r\n' % (os.path.basename(obj)))
+                self.insertText('expected %s, got %s\r\n' % (format, myFormat))
+                self.insertText('--------------\r\n')
+                
+                
+            
+            
+    def insertText(self, text):
+        # this will get some text and insert it into the scroll field
+        self.scrollField.insertText(text)
+        
+    
+    def query(self):
+        # this will return the text from the scrollField for outputting
+        return self.scrollField.getText()
+      
 # commenting system based on Jen's Comment_Widget
 class CommentWidget():
     '''
@@ -381,12 +421,10 @@ class CommentWidget():
     def create(self):
         self.scrollField = pm.scrollField( wordWrap = True , width = self.width , height = self.height , backgroundColor = [ 1 , 0 , 0 ])
         self.menus()
-        
         return self.scrollField
     
     # creates the popUpMenu for the scrollField
     def menus(self):
-        
         # popUpMenu
         self.popUp = pm.popupMenu( parent = self.scrollField )
         #opening the file
@@ -411,18 +449,19 @@ class CommentWidget():
             comment += 2
         
     def insertText(self, comment):
-        
-        self.scrollField.insertText(comment)
-        
+        self.scrollField.insertText(comment, insertionPosition = 0)
         self.scrollField.setBackgroundColor([1,1,0])
         
     def clear(self):
-        
+        # this will clear the scrollField of any existing text
         self.scrollField.setText('')
         self.scrollField.setBackgroundColor([1,0,0])
         
-    
     def custom(self):
+        '''
+        this will create a window with an existing scrollField
+        for custom commetns
+        '''
         self.customWin = 'customWindow'
         if (pm.window(self.customWin, ex=True)):
             pm.deleteUI(self.customWin)
@@ -442,8 +481,10 @@ class CommentWidget():
         pm.button(label='add' , command=pm.Callback(self.saveComment))
         myWin.show()
         
-    
     def addCustom(self):
+        '''
+        this will add the custom comment to the scrollField
+        '''
         
         self.scrollField.insertText(self.customComment.getText())
         
@@ -452,8 +493,8 @@ class CommentWidget():
         # deleting the window
         pm.deleteUI(self.customWin)
        
-    # this will add the comment to the selected file 
     def saveComment(self):
+        # this will add the comment to the selected file 
         self.customFeedback.setLabel('%s added to file' % self.customLabel.getText())
         self.writeFile = open(self.fileName , 'a')
         print self.customLabel.getText()
@@ -464,11 +505,13 @@ class CommentWidget():
         self.menus()
             
 # the total grade section for each Script
-class UpperSection():
+class Total_Grades():
     '''
     creates the summary section that has all the final grades and the output button
     '''
-    def __init__(self):
+    def __init__(self, width = 480):
+        self.width = width
+        pm.frameLayout(label = 'Total Grades', cll = True, cl = False, borderStyle = 'etchedIn', width = self.width)
         self.columnLayout = pm.columnLayout( adjustableColumn=True , width= 480 )
         self.layout = pm.formLayout()
     
@@ -504,20 +547,20 @@ class UpperSection():
     
     def create(self):
        
-        self.checkBox = pm.checkBox(label = 'Modify Weighting', ann= 'check to change the weighting of each section',onCommand = pm.Callback(self.editFields), offCommand = pm.Callback(self.editFields) )
-        self.antiField = pm.intFieldGrp( numberOfFields=2, label='Antialias/Noise Quality', extraLabel = 'Weight %' , value2 = 45 , enable1 = False ,
-                                        enable2 = False,  changeCommand=pm.Callback(self.updateTotal))
-        self.compField = pm.intFieldGrp( numberOfFields=2, label='Composition/Focal Length', extraLabel = 'Weight %' , value2 = 45 , enable1 = False ,
-                                        enable2 = False ,changeCommand=pm.Callback(self.updateTotal))
-        self.proField = pm.intFieldGrp( numberOfFields=2, label='Professionalism', extraLabel = 'Weight %' ,value2 = 10 ,enable1 = False ,
-                                       enable2 = False, changeCommand=pm.Callback(self.updateTotal))
+        self.text = pm.text(label = '' )
+        self.antiField = pm.intFieldGrp( numberOfFields=2, label='Antialias/Noise Quality', extraLabel = 'Weight %' , value2 = 45 , enable1 = True ,
+                                        enable2 = True,  changeCommand=pm.Callback(self.updateTotal))
+        self.compField = pm.intFieldGrp( numberOfFields=2, label='Composition/Focal Length', extraLabel = 'Weight %' , value2 = 45 , enable1 = True ,
+                                        enable2 = True ,changeCommand=pm.Callback(self.updateTotal))
+        self.proField = pm.intFieldGrp( numberOfFields=2, label='Professionalism', extraLabel = 'Weight %' ,value2 = 10 ,enable1 = True ,
+                                       enable2 = True, changeCommand=pm.Callback(self.updateTotal))
         self.lateField = pm.intFieldGrp( numberOfFields=1, label='Late Deduction' , changeCommand=pm.Callback(self.updateTotal))
-        self.totalField = pm.intFieldGrp( numberOfFields=1, label='Total Grade',enable1 = False, changeCommand=pm.Callback(self.updateTotal))
+        self.totalField = pm.intFieldGrp( numberOfFields=1, label='Total Grade',enable1 = True, changeCommand=pm.Callback(self.updateTotal))
         self.radioButtons = pm.radioButtonGrp(columnWidth3 = [60,60,60] , width = 480, numberOfRadioButtons = 3, labelArray3 = ['1 day', '2 days', '3 days'], onCommand = pm.Callback(self.radioUpdate))
         
         # attaching the controls
-        pm.formLayout( self.layout, edit=1, attachForm=[[self.checkBox, "left", 140], [self.checkBox, "top", 5]])
-        pm.formLayout( self.layout, edit=1, attachOppositeControl=[[self.antiField ,"top", 40, self.checkBox], [self.antiField, "right", 10, self.checkBox]])
+        pm.formLayout( self.layout, edit=1, attachForm=[[self.text, "left", 140], [self.text, "top", 5]])
+        pm.formLayout( self.layout, edit=1, attachOppositeControl=[[self.antiField ,"top", 40, self.text], [self.antiField, "right", 10, self.text]])
         pm.formLayout( self.layout, edit=1, attachOppositeControl=[[self.compField ,"top", 40, self.antiField], [self.compField, "right", 10, self.antiField]])
         pm.formLayout( self.layout, edit=1, attachOppositeControl=[[self.proField ,"top", 40, self.compField], [self.proField, "right", 10, self.compField]])
         pm.formLayout( self.layout, edit=1, attachOppositeControl=[[self.lateField ,"top", 40, self.proField], [self.lateField, "left", 0, self.proField]])
@@ -532,18 +575,6 @@ class UpperSection():
         return None 
         
     
-        
-    # this allows the percentage to be changed    
-    def editFields(self):
-        if self.checkBox.getValue() != 0:
-            self.antiField.setEnable2(True)
-            self.compField.setEnable2(True)
-            self.proField.setEnable2(True)
-        
-        else :
-            self.antiField.setEnable2(False)
-            self.compField.setEnable2(False)
-            self.proField.setEnable2(False)
 
    # this section will give access to the different fields so another section of the script can update them or getThem()
     def queryAnti(self):
@@ -566,18 +597,19 @@ class UpperSection():
         print self.totalField.getValue1()
         return self.totalField
         
-# the open images (file info) for each script
+# this will open images (file info) for each script
 class Images():
     '''
     this class will create the upper section for the SAL grading scripts
     that section opens the images
     '''
-    def __init__(self, update):
-        
+    def __init__(self, update, width = 480):
+        self.width = width
         self.update = update
         
         
         #------------------
+        pm.frameLayout(label = 'File Info', cll = True, cl = False, borderStyle = 'etchedIn', width = self.width)
         self.mainLayout = pm.columnLayout(adjustableColumn = True)
         pm.button(label = 'new image', ann = 'press to add as many images aa you want' , command = pm.Callback(self.createFields))
         self.openButtons = pm.radioButtonGrp(numberOfRadioButtons = 2 , columnAlign = [ 1 , 'center' ],label = ' Choose Program ', label1 = 'Preview',label2 = 'Photoshop')
@@ -643,7 +675,7 @@ class Images():
         self.path = ''
         
         while x < len(self.imageList):
-            self.path+= str(self.imageList[x]) + str(self.blank)
+            self.path += str(self.imageList[x]) + str(self.blank)
             x += 1
         
         # this will check to see which program to open the images with
@@ -653,9 +685,9 @@ class Images():
         if self.openButtons.getSelect() == 1:
             pm.util.shellOutput(r"open  %s " % self.path)
             
-        print self.queryNamesString()
+        print self.queryNamesString(), self.path
         
-        print self.update
+        
         
         self.update.update(self.imageList)
         
@@ -678,90 +710,5 @@ class Images():
         path = self.imageList[index]
         
         return path
-
-        
-# the first section
-class Start():
-    # starting class temp
-    '''
-    stuff
-    
-    '''
-    def __init__(self):
-        self.stuff = 'testing this out'
-        print self.stuff
-        print 'booya'
-        print 'kasha'
-        
-    def create(self):
-        self.mainLayout = pm.columnLayout(adjustableColumn = True)
-        self.name = pm.textFieldGrp( label='Name', changeCommand= pm.Callback(self.writeOut),columnWidth2= (40,140))
-        self.format = pm.textFieldGrp( label= 'Format', changeCommand= pm.Callback(self.writeOut), columnWidth2= (40,140))
-        self.size = pm.intFieldGrp( label= 'Size', numberOfFields= 2, value1= 720, value2= 486, changeCommand= pm.Callback(self.writeOut),columnWidth3= (40,40,40) )
-       
-    def writeOut(self):
-        dirPath = os.path.dirname(__file__)
-        fileName = 'proj01_start'
-        fullPath = os.path.join(dirPath, fileName)
-        
-        startFileOutput = shelve.open('%s' % fullPath , 'n')
-        startFileOutput['name'] = ('%s' % self.name.getText())
-        startFileOutput['format'] = ('%s' % self.format.getText().upper())
-        startFileOutput['value1'] = ('%s' % self.size.getValue1())
-        startFileOutput['value2'] = ('%s' % self.size.getValue2())
-        
-        startFileOutput.sync()
-        
-        print startFileOutput['name']
-        print startFileOutput['format']
-        print startFileOutput['value1']
-        
-        
-        startFileOutput.close()
-        
-        #print self.name.getText(), self.format.getText().upper(), self.size.getValue1(), self.size.getValue2()
-    
-    def preFill(self):
-        dirPath = os.path.dirname(__file__)
-        fileName = 'proj01_start.db'
-        fullPath = os.path.join(dirPath, fileName)
-        
-        if os.path.exists("%s" % fullPath):
-            
-            
-            
-            startFile = shelve.open('%s' % fullPath, 'r')
-            
-            print startFile
-            
-            print (startFile['name'])
-            
-            self.name.setText(str(startFile['name']))
-            self.format.setText(str(startFile['format']))
-            self.size.setValue1(int(startFile['value1']))
-            self.size.setValue2(int(startFile['value2']))
-            
-            startFile.close()
-        
-        
-    
-    def queryName(self):
-        return self.name
-    
-    def queryFormat(self):
-        return self.format
-    
-    def querySize(self):
-        return self.size
-    
-    
-        
-        
-        
-        
-        
-
-
-
 
         
