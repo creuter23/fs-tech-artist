@@ -7,10 +7,10 @@ Description: window contains all the grading scripts
 
 '''
 
-import pymel.core as pm
-import sal_GUI as sal
+import pymel.core as pm # maya pymel
+import sal_GUI as sal # custom
 reload(sal)
-import os
+import os # python module
 
 def gui(path):
     win = 'salwindow'
@@ -39,12 +39,26 @@ def gui(path):
     pm.setParent(tabs)
     fourth = pm.columnLayout(adjustableColumn = True, width = 490)
     proj04 = sal.Project04(path).create()
+    
+    pm.setParent(tabs)
+    fith = pm.columnLayout(adjustableColumn = True, width = 490)
+    proj05 = sal.Project05(path).create()
+    
+    pm.setParent(tabs)
+    sixth = pm.columnLayout(adjustableColumn = True, width = 490)
+    proj06 = sal.Project06(path).create()
+    
+    pm.setParent(tabs)
+    seventh = pm.columnLayout(adjustableColumn = True, width = 490)
+    proj07 = sal.Project07(path).create()
 
 
     
     
     
-    pm.tabLayout( tabs, edit=True, tabLabel=((first, 'Project1'), (second, 'Project2'), (third, 'Project3'), (fourth, 'Project4')) )
+    pm.tabLayout( tabs, edit=True, tabLabel=((first, 'Project1'),
+        (second, 'Project2'), (third, 'Project3'), (fourth, 'Project4'),
+        (fith, 'Project5'), (sixth, 'Project6'), (seventh, 'Project7')) )
     
     
     myWin.show()

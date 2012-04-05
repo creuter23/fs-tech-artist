@@ -1,0 +1,10 @@
+A
+No noise or any signs of black holes.
+B
+Slight noise and no signs of black holes.
+C
+Mild noise, and mild signs of black holes.
+D
+Medium display of noise, and black holes.
+F
+Severe display of noise, and black holes.

@@ -1,0 +1,10 @@
+A
+Renders display student's ability to create exemplary appeal through use of textural & material believable. Materials are appropriate to their objects. Textures are completely beilievable and show no signs of procedural quality.
+B
+Renders display student's ability to create appeal through textural & material believability. Materials and Textures are above satisfactory in their believability and show no signs of procedural quality.
+C
+Renders display student's basic understanding of textural & material believability. Materials and Textures are just satisfactory in their  believability. Textures show mild signs of procedural quality.
+D
+Student needs improvement in the use textural & material believability. Materials and Textures are just below satisfactory in their  believability. Textures show barely acceptable signs of procedural quality.
+F
+Student lacks understanding in the use of textural & material believability. Materials and Textures are un-satisfactory in their  believability. Textures show severe signs of procedural quality.
