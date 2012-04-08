@@ -69,7 +69,7 @@ class Radio_Collection():
         return self.gradeField
    
 class Radio_Collection02(Radio_Collection):
-    '''
+    """
     this is based on Radio_Collection
     the only difference
     is this is in reverse
@@ -77,7 +77,7 @@ class Radio_Collection02(Radio_Collection):
     F = 100
     because it will be used for deduction
     so A would mean 0 deduction
-    '''
+    """
     def create(self):
         layout = pm.columnLayout(width= 90, adjustableColumn= False)
         self.radioCollection = pm.radioCollection()
@@ -92,17 +92,16 @@ class Radio_Collection02(Radio_Collection):
         
         return layout
   
-   
 # checker options       
 class Checker_Options():
-    '''
+    """
     this will create the section that will hold all the fields for the checker
     class
     
     fileName = the file that it will read when the script runs, so ir remembers
     what was in the fields teh last time
     
-    '''
+    """
     def __init__(self, fileName):
         self.fileName = fileName
         #print 'checker_options'
@@ -129,8 +128,8 @@ class Checker_Options():
         startFileOutput['value2'] = ('%s' % self.size.getValue2())
         startFileOutput.sync()
        
-        print self.fileName
-        print startFileOutput['name'], startFileOutput['format'], startFileOutput['value1'], startFileOutput['value2']
+        #print self.fileName
+        #print startFileOutput['name'], startFileOutput['format'], startFileOutput['value1'], startFileOutput['value2']
         startFileOutput.close()
         
     def preFill(self):
@@ -140,8 +139,8 @@ class Checker_Options():
         # checking if the file exist 
         if os.path.exists("%s" % (self.fileName)):
             startFile = shelve.open('%s' % (self.fileName), 'r')
-            print startFile
-            print (startFile['name'])
+            #print startFile
+            #print (startFile['name'])
             self.name.setText(str(startFile['name']))
             self.format.setText(str(startFile['format']))
             self.size.setValue1(int(startFile['value1']))
@@ -200,12 +199,12 @@ class Checker_Info():
                
 # professionalism checker        
 class Checker():
-    '''
+    """
     this combines the classes: Checker_Options and Checker_Info
     to create the checker section for each project
     # fileName = the start file used by the Checker_Info class
     
-    '''
+    """
     def __init__(self, fileName):
         self.fileName = fileName
         
@@ -215,7 +214,7 @@ class Checker():
         
         pm.text(label='Check')
         pm.text( label= '')
-        pm.text(label='result')
+        pm.text(label='Image Log (recently opened)')
         pm.text(label= '')
         pm.text( label= '')
         pm.text(label= '')
@@ -268,7 +267,7 @@ class Checker():
         
 # grading section        
 class Grading_Section():
-    '''
+    """
     this class combines the Radio_Collection and Comment_Widget classes
     to create the Grading_Section class
     
@@ -278,7 +277,7 @@ class Grading_Section():
     toUpdate = which class instance 's update function will be invoked by the radioButtons
     or the integer (grade field) fields
     
-    '''
+    """
     # grading section
     def __init__(self, name, field, fileName, toUpdate):
         self.toUpdate = toUpdate
@@ -315,7 +314,6 @@ class Grading_Section():
         can use it
         '''
         return self.scrollField.getText()
-
 
 class Grading_Section02(Grading_Section):
     '''
@@ -403,7 +401,7 @@ class Grading_Prof():
             if '%s' % (myName) not in '%s' % (obj):
                 myGrade -= 25
                 self.grades.queryGrade().setValue(myGrade)
-                print myName, obj, myGrade
+                #print myName, obj, myGrade
                 break
         
         # this loop checks the format and if it doesnt match the format from 
@@ -422,7 +420,7 @@ class Grading_Prof():
             if '%s' % (format) not in myFormat:
                 myGrade -= 25
                 self.grades.queryGrade().setValue(myGrade)
-                print myFormat, obj, myGrade
+                #print myFormat, obj, myGrade
                 break
             
         # this loop checks the size and if it doesnt match the size from 
@@ -441,7 +439,7 @@ class Grading_Prof():
             if size.getValue1() != mySize[0] or size.getValue2() != mySize[1]:
                 myGrade -= 25
                 self.grades.queryGrade().setValue(myGrade)
-                print mySize, obj, myGrade
+                #print mySize, obj, myGrade
                 break
             
         self.field.setValue1(myGrade)
@@ -533,7 +531,7 @@ class Grading_Prof02(Grading_Prof):
             if '%s' % (myName) not in '%s' % (obj):
                 myGrade += 25
                 self.grades.queryGrade().setValue(myGrade)
-                print myName, obj, myGrade
+                #print myName, obj, myGrade
                 break
         
         # this loop checks the format and if it doesnt match the format from 
@@ -552,7 +550,7 @@ class Grading_Prof02(Grading_Prof):
             if '%s' % (format) not in myFormat:
                 myGrade += 25
                 self.grades.queryGrade().setValue(myGrade)
-                print myFormat, obj, myGrade
+                #print myFormat, obj, myGrade
                 break
             
         # this loop checks the size and if it doesnt match the size from 
@@ -571,7 +569,7 @@ class Grading_Prof02(Grading_Prof):
             if size.getValue1() != mySize[0] or size.getValue2() != mySize[1]:
                 myGrade += 25
                 self.grades.queryGrade().setValue(myGrade)
-                print mySize, obj, myGrade
+                #print mySize, obj, myGrade
                 break
             
         self.field.setValue1(myGrade)
@@ -690,14 +688,16 @@ class CommentWidget():
         
         # deleting the window
         pm.deleteUI(self.customWin)
+        
+        self.menus()
        
     def saveComment(self):
         # this will add the comment to the selected file 
         self.customFeedback.setLabel('%s added to file' % self.customLabel.getText())
         self.writeFile = open(self.fileName , 'a')
-        print self.customLabel.getText()
+        #print self.customLabel.getText()
         self.writeFile.write(self.customLabel.getText() + '\n')
-        print self.customComment.getText()
+        #print self.customComment.getText()
         self.writeFile.write(self.customComment.getText() + '\n')
         self.writeFile.close()
         self.menus()
@@ -783,23 +783,23 @@ class Total_Grades():
 
    # this section will give access to the different fields so another section of the script can update them or getThem()
     def queryAnti(self):
-        print self.antiField.getValue1()
+        #print self.antiField.getValue1()
         return self.antiField
     
     def queryComp(self):
-        print self.compField.getValue1()
+        #print self.compField.getValue1()
         return self.compField
     
     def queryPro(self):
-        print self.proField.getValue1()
+        #print self.proField.getValue1()
         return self.proField
     
     def queryLate(self):
-        print self.lateField.getValue1()
+        #print self.lateField.getValue1()
         return self.lateField
     
     def queryTotal(self):
-        print self.totalField.getValue1()
+        #print self.totalField.getValue1()
         return self.totalField
 
 # this one is for project02 and  project03        
@@ -857,7 +857,7 @@ class Total_Grades02(Total_Grades):
             self.warning.setBackgroundColor([1,0,0])
             self.color01.setBackgroundColor([1,0,0])
             self.color02.setBackgroundColor([1,0,0])
-            print self.lightField.getValue2()
+            #print self.lightField.getValue2()
         else:
             self.warning.setLabel('')
             self.warning.setBackgroundColor([.68,.68,.68])
@@ -865,10 +865,10 @@ class Total_Grades02(Total_Grades):
             self.color02.setBackgroundColor([.68,.68,.68])
             
     def queryLight(self):
-        print self.lightField.getValue1()
+        #print self.lightField.getValue1()
         return self.lightField
 
-# for project04 and project07
+# for project04, project07, and the Final project
 class Total_Grades03(Total_Grades02):
     '''
     based on class Total_Grades02 meant to be used for project04
@@ -925,7 +925,7 @@ class Total_Grades03(Total_Grades02):
             self.warning.setBackgroundColor([1,0,0])
             self.color01.setBackgroundColor([1,0,0])
             self.color02.setBackgroundColor([1,0,0])
-            print self.lightField.getValue2()
+            #print self.lightField.getValue2()
         else:
             self.warning.setLabel('')
             self.warning.setBackgroundColor([.68,.68,.68])
@@ -933,11 +933,11 @@ class Total_Grades03(Total_Grades02):
             self.color02.setBackgroundColor([.68,.68,.68])
             
     def queryLight(self):
-        print self.lightField.getValue1()
+        #print self.lightField.getValue1()
         return self.lightField
     
     def queryMat(self):
-        print self.matField.getValue1()
+       # print self.matField.getValue1()
         return self.matField
 
 # for porject05
@@ -981,7 +981,7 @@ class Total_Grades04(Total_Grades03):
         self.color01 = pm.text(label = '')
         self.warning = pm.text(label='')
         self.color02 = pm.text(label = '')
-        #pm.button( label = 'Output Grade and Comment' , width = 480)
+        
         return None
     
     def updateTotal(self):
@@ -1006,7 +1006,8 @@ class Total_Grades04(Total_Grades03):
             self.warning.setBackgroundColor([1,0,0])
             self.color01.setBackgroundColor([1,0,0])
             self.color02.setBackgroundColor([1,0,0])
-            print self.lightField.getValue2()
+            #print self.lightField.getValue2()
+        
         else:
             self.warning.setLabel('')
             self.warning.setBackgroundColor([.68,.68,.68])
@@ -1014,7 +1015,7 @@ class Total_Grades04(Total_Grades03):
             self.color02.setBackgroundColor([.68,.68,.68])
     
     def queryRay(self):
-        print self.rayField.getValue1()
+        #print self.rayField.getValue1()
         return self.rayField
 
 # for project06
@@ -1060,7 +1061,6 @@ class Total_Grades05(Total_Grades04):
         self.color02 = pm.text(label = '')
         
         return None
-    
     
 # this will open images (file info) for each script
 class Images():
@@ -1137,7 +1137,7 @@ class Images():
         
     def openReference(self):
         # this will open the image from the file dialog with the selected app
-        self.ref = pm.fileDialog()
+        self.ref = pm.fileDialog2(dialogStyle= 2, fileMode= 1)
         
         # button 2 for photoshop
         if self.openButtons.getSelect() == 2:
@@ -1162,7 +1162,7 @@ class Images():
         
         # this will check to see which program to open the images with
         if self.openButtons.getSelect() == 2:
-            pm.util.shellOutput(r"open -a Adobe\ Photoshop\ CS4 %s " % self.path)
+            pm.util.shellOutput(r"open -a Adobe\ Photoshop\ CS5.1 %s " % self.path)
             
         if self.openButtons.getSelect() == 1:
             pm.util.shellOutput(r"open  %s " % self.path)
@@ -1196,4 +1196,121 @@ class Images():
         
         return path
 
+class Images02(Images):
+    '''
+    this class will create the upper section for the SAL grading scripts
+    that section opens the images
+    
+    it takes an object to update
+    it takes speciafically an instance of the  Grading_Prof class
+    it will give it a list of the images it opened
+    so the Checker (checking system) can work
+    
+    * this version will open a reference image from a folder
+    
+    '''
+    def __init__(self, update, image, width = 480):
+        self.width = width
+        self.update = update
+        self.image = image # the image teh reference button will open
+        
+        
+        #------------------
+        pm.frameLayout(label = 'File Info', cll = True, cl = False, borderStyle = 'etchedIn', width = self.width)
+        self.mainLayout = pm.columnLayout(adjustableColumn = True)
+        pm.button(label = 'new image', ann = 'press to add as many images aa you want' , command = pm.Callback(self.createFields))
+        self.openButtons = pm.radioButtonGrp(numberOfRadioButtons = 2 , columnAlign = [ 1 , 'center' ],label = ' Choose Program ', label1 = 'Preview',label2 = 'Photoshop')
+        pm.button(label = 'open images', ann = 'this will open images with the selected programs', command = pm.Callback(self.openImage))
+        pm.button(label = 'open reference', ann= 'this will only open a reference (with the selected program)', command = pm.Callback(self.openReference))
+        pm.text(label= '')
+        self.layout = pm.rowColumnLayout(nc=2 , cw =([1, 430], [2, 50]))
+        
+        # self.num is a number, which will be used to give unique names to the dynamically created fields
+        self.num = 1
+        # the list of the paths for the images
+        self.imageList = []
+        # this list will have the base name of all the images
+        self.nameList = []
+    
+    def openReference(self):
+        # this will open the image from the file dialog with the selected app
+        
+        
+        # button 2 for photoshop
+        if self.openButtons.getSelect() == 2:
+            
+            pm.util.shellOutput(r"open -a Adobe\ Photoshop\ CS5.1 %s" % (self.image))
+            
+        
+        # buttton 1 for preview    
+        if self.openButtons.getSelect() == 1:
+            
+            pm.util.shellOutput(r"open  %s" % (self.image))
+    
+# for the final project   
+class Images03(Images):
+    def __init__(self, update, image01, image02, image03, image04, width = 480):
+        self.width = width
+        self.update = update
+        self.image01 = image01 # the image teh reference button will open
+        self.image02 = image02
+        self.image03 = image03
+        self.image04 = image04
+        
+        
+        #------------------
+        pm.frameLayout(label = 'File Info', cll = True, cl = False, borderStyle = 'etchedIn', width = self.width)
+        self.mainLayout = pm.columnLayout(adjustableColumn = True)
+        pm.button(label = 'new image', ann = 'press to add as many images aa you want' , command = pm.Callback(self.createFields))
+        self.openButtons = pm.radioButtonGrp(numberOfRadioButtons = 2 , columnAlign = [ 1 , 'center' ],
+                            label = ' Choose Program ', label1 = 'Preview',label2 = 'Photoshop')
+        pm.button(label = 'open images', ann = 'this will open images with the selected programs', command = pm.Callback(self.openImage))
+        self.refButtons = pm.radioButtonGrp(numberOfRadioButtons = 4 , columnAlign = [ 1 , 'center' ],
+                    label= 'Choose Reference', label1= 'Museum',label2= 'Bathroom',
+                    label3= 'Sci-fi', label4= 'Staircase', columnWidth5= [120, 90, 90, 90, 90])
+        pm.button(label = 'open reference', ann= 'this will only open a reference (with the selected program)', command = pm.Callback(self.openReference))
+        pm.text(label= '')
+        self.layout = pm.rowColumnLayout(nc=2 , cw =([1, 430], [2, 50]))
+        
+        # self.num is a number, which will be used to give unique names to the dynamically created fields
+        self.num = 1
+        # the list of the paths for the images
+        self.imageList = []
+        # this list will have the base name of all the images
+        self.nameList = []
+        
+    def openReference(self):
+        # this will open the image from the file dialog with the selected app
+        
+        
+        # button 2 for photoshop
+        if self.openButtons.getSelect() == 2:
+            
+            if self.refButtons.getSelect() == 1:
+                pm.util.shellOutput(r"open -a Adobe\ Photoshop\ CS5.1 %s" % (self.image01))
+                
+            if self.refButtons.getSelect() == 2:
+                pm.util.shellOutput(r"open -a Adobe\ Photoshop\ CS5.1 %s" % (self.image02))
+                
+            if self.refButtons.getSelect() == 3:
+                pm.util.shellOutput(r"open -a Adobe\ Photoshop\ CS5.1 %s" % (self.image03))
+                
+            if self.refButtons.getSelect() == 4:
+                pm.util.shellOutput(r"open -a Adobe\ Photoshop\ CS5.1 %s" % (self.image04))
+            
+        
+        # buttton 1 for preview    
+        if self.openButtons.getSelect() == 1:
+            
+            if self.refButtons.getSelect() == 1:
+                pm.util.shellOutput(r"open  %s" % (self.image01))
+                
+            if self.refButtons.getSelect() == 2:
+                pm.util.shellOutput(r"open  %s" % (self.image02))
+                
+            if self.refButtons.getSelect() == 3:
+                pm.util.shellOutput(r"open  %s" % (self.image03))
+                
+            if self.refButtons.getSelect() == 4:
+                pm.util.shellOutput(r"open  %s" % (self.image04))
         

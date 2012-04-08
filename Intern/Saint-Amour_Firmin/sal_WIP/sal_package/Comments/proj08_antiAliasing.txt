@@ -1,0 +1,10 @@
+A
+No signs of aliasing, and shadow and/or material noise.
+B
+Small amount of aliasing, and shadow and/or material noise.
+C
+Moderate amount of aliasing, and shadow and/or material noise.
+D
+Severe amount amount of aliasing, and shadow and/or material noise.
+F
+Unacceptable amount of aliasing, and shadow and/or material noise.

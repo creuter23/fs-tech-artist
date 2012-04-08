@@ -22,7 +22,7 @@ def gui(path):
         
     myWin = pm.window(win, title='SAL_Grading' , sizeable = True, mnb = True, width = 490, height = 900, backgroundColor= [.68,.68,.68])
     main = pm.scrollLayout(width = 490)
-    tabs = pm.tabLayout(innerMarginWidth=5, innerMarginHeight=5)
+    tabs = pm.tabLayout(innerMarginWidth=5, innerMarginHeight=5, width = 490)
     
     pm.setParent(tabs)
     first = pm.columnLayout(adjustableColumn = True, width = 490)
@@ -51,14 +51,21 @@ def gui(path):
     pm.setParent(tabs)
     seventh = pm.columnLayout(adjustableColumn = True, width = 490)
     proj07 = sal.Project07(path).create()
+    
+    pm.setParent(tabs)
+    final = pm.columnLayout(adjustableColumn = True, width = 490)
+    final_proj = sal.Final_Project(path).create()
+    
+    
 
 
     
     
     
-    pm.tabLayout( tabs, edit=True, tabLabel=((first, 'Project1'),
-        (second, 'Project2'), (third, 'Project3'), (fourth, 'Project4'),
-        (fith, 'Project5'), (sixth, 'Project6'), (seventh, 'Project7')) )
+    pm.tabLayout( tabs, edit=True, tabLabel=((first, 'Proj01'),
+        (second, 'Proj02'), (third, 'Proj03 '), (fourth, 'Proj04'),
+        (fith, 'Proj05'), (sixth, 'Proj06'), (seventh, 'Proj07'),
+        (final, '  Final   ')) )
     
     
     myWin.show()

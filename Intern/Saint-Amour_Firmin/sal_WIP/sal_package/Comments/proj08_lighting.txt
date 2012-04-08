@@ -1,0 +1,12 @@
+A
+Renders show exemplary understanding of hard light and shadows. The lighting directs the viewers eye to the subject matter instantaneously. The lighting has a strong style based on cinema reference.
+B
+Renders show an acceptable understanding of hard lighting.  The lighting directs the viewer's eye to the subject after a few seconds of viewing the image. The lighting has a style based on a cinema reference.
+C
+Renders show a basic understanding of hard lighting. The lighting directs the views eye to the subject after a 5 seconds of viewing the image. The lighting has a vague style based on a cinema reference.
+D
+Renders show below average understanding of hard lighting.  The lighting does not direct the viewer's eye to the subject. No lighting style based on cinema reference.
+F
+Renders show unsatisfactory understanding of hard lighting.  A strong lack of appeal of lighting direction and complete lack of style based on cinema reference.
+testing
+lighting final
