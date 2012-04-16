@@ -1,3 +1,22 @@
+"""
+
+Author:
+    Firmin Saint-Amour
+    
+Description:
+    General lighting tool for shortcuts
+    
+How to run:
+    import light_rig
+    light_rig.gui()
+
+
+"""
+
+
+
+
+
 import pymel.core as pm
 
 
