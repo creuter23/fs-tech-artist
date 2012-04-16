@@ -25,7 +25,7 @@ class Value_int():
         
     def create(self):
         current_time = pm.keyframe( '%s' % (self.node) , query=True, index= (self.index, self.index), valueChange= True )[0]
-        self.int_field = pm.floatField(value= int(current_time), changeCommand= pm.Callback(self.change_value))
+        self.int_field = pm.floatField(value= float(current_time), changeCommand= pm.Callback(self.change_value))
         
     def change_value(self):
         pm.keyframe('%s' % (self.node), option='over', index=(int(self.index), int(self.index)), absolute= True, valueChange=float(self.int_field.getValue()))
@@ -38,10 +38,14 @@ class In_Tangent():
         
     def create(self):
         current_type = pm.keyTangent( '%s' % (self.node) , query=True, index= (self.index, self.index), inTangentType= True )[0]
-        self.text_field = pm.textField(text= '%s' % (current_type), enterCommand= pm.Callback(self.change_type))
-        
+        self.text_field = pm.textField(text= '%s' % (current_type),
+            changeCommand= pm.Callback(self.change_type), editable= True,
+                annotation= "Use spline, clamped, linear, flat, step, stepnext,\
+                plateau, fixed or auto.")
+    
     def change_type(self):
         pm.keyTangent('%s' % (self.node), index= (self.index, self.index), inTangentType= '%s' % (self.text_field.getText()))
+        print 'in_tangent', self.node, self.text_field.getText()
         
 
 class Out_Tangent():
@@ -49,12 +53,17 @@ class Out_Tangent():
         self.node = node
         self.index = index
         
+    #Use spline, clamped, linear, flat, step, stepnext, plateau, fixed or auto. # 
     def create(self):
         current_type = pm.keyTangent( '%s' % (self.node) , query=True, index= (self.index, self.index), outTangentType= True )[0]
-        self.text_field = pm.textField(text= '%s' % (current_type), enterCommand= pm.Callback(self.change_type))
+        self.text_field = pm.textField(text= '%s' % (current_type),
+            changeCommand= pm.Callback(self.change_type), editable= True,
+                annotation= "Use spline, clamped, linear, flat, step, stepnext,\
+                plateau, fixed or auto.")
         
     def change_type(self):
         pm.keyTangent('%s' % (self.node), index= (self.index, self.index), outTangentType= '%s' % (self.text_field.getText()))
+        print 'out_tangent', self.node, self.text_field.getText()
        
         
         
