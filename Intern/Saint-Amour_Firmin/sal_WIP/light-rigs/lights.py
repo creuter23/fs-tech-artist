@@ -7,18 +7,16 @@ import pymel.core as pm
 
 class Light_directional():
     
-    def __init__(self, name):
+    def __init__(self, light):
         
-        self.name = name
+        self.light = light
         
     def create(self):
         
-        self.light = pm.shadingNode( 'directionalLight', asLight= True,name= '%s' % (self.name))
-        pm.rename(self.light, self.name)
         
-        main_layout = pm.columnLayout(adjustableColumn= True, width= 400)
+        self.main_layout = pm.columnLayout(adjustableColumn= True, width= 400)
        
-        main_frame = pm.frameLayout( label='%s' % (self.name), collapsable= True)
+        main_frame = pm.frameLayout( label='%s' % (self.light), collapsable= True)
         pm.frameLayout( label='Light Attributes', collapsable= True)
         pm.attrColorSliderGrp( at='%s.color' % (self.light), columnWidth4= [100, 75, 175, 50])
         pm.attrFieldSliderGrp(at='%s.intensity' % (self.light), columnWidth4= [100, 75, 175, 50])
@@ -29,7 +27,7 @@ class Light_directional():
         pm.attrColorSliderGrp( at='%s.shadowColor' % (self.light),
                               columnWidth4= [100, 75, 175, 50])
         self.check_box = pm.checkBox(label= 'Use Ray Trace Shadows',
-                        changeCommand= pm.Callback(self.shadows, self.light))
+                        changeCommand= pm.Callback(self.shadows))
         
         self.light_angle = pm.attrFieldSliderGrp( at='%s.lightAngle' %(self.light),
                                 enable= False, columnWidth4= [100, 75, 175, 50])
@@ -41,16 +39,28 @@ class Light_directional():
                                 enable= False, columnWidth4= [100, 75, 175, 50])
        
         pm.setParent(main_frame)
-        pm.button(label= 'delete', command= pm.Callback(self.delete, main_layout))
-        return main_layout
+        pm.rowColumnLayout(numberOfColumns= 2, columnWidth= [200, 200])
+        pm.button(label= 'Select Light', width= 200, command= pm.Callback(self.select))
+        pm.button(label= 'Delete UI', width= 200, command= pm.Callback(self.delete))
+        pm.button(label= 'Hide', command= pm.Callback(self.hide))
+        pm.button(label= 'Show',  command= pm.Callback(self.show))
+        return self.main_layout
         
+    def delete(self):
+        pm.deleteUI(self.main_layout)
+      
+    def select(self):
+        pm.select('%s' % (self.light))
         
-    def delete(self, layout):
-        pm.deleteUI(layout)
+    def show(self):
+        pm.showHidden('%s' % (self.light))
+
+    def hide(self):
+        pm.hide('%s' % (self.light))
         
-    def shadows(self, light):
+    def shadows(self):
         value = self.check_box.getValue()
-        pm.setAttr('%s.useRayTraceShadows' % (light), int(value))
+        pm.setAttr('%s.useRayTraceShadows' % (self.light), int(value))
         #print '%s.decayRate' % light
         if value == 1:
             self.light_angle.setEnable(True)
@@ -65,12 +75,11 @@ class Light_directional():
 class Light_ambient(Light_directional):
     
    def create(self):
-        self.light = pm.shadingNode( 'ambientLight', asLight= True,name= '%s' % (self.name))
-        pm.rename(self.light, self.name)
         
-        main_layout = pm.columnLayout(adjustableColumn= True, width= 400)
+        
+        self.main_layout = pm.columnLayout(adjustableColumn= True, width= 400)
        
-        main_frame = pm.frameLayout( label='%s' % (self.name), collapsable= True)
+        main_frame = pm.frameLayout( label='%s' % (self.light), collapsable= True)
         pm.frameLayout( label='Light Attributes', collapsable= True)
         pm.attrColorSliderGrp( at='%s.color' % (self.light), columnWidth4= [100, 75, 175, 50])
         pm.attrFieldSliderGrp( at='%s.intensity' % (self.light), columnWidth4= [100, 75, 175, 50])
@@ -82,7 +91,7 @@ class Light_ambient(Light_directional):
         pm.attrColorSliderGrp( at='%s.shadowColor' % (self.light),
                               columnWidth4= [100, 75, 175, 50])
         self.check_box = pm.checkBox(label= 'Use Ray Trace Shadows',
-                        changeCommand= pm.Callback(self.shadows, self.light))
+                        changeCommand= pm.Callback(self.shadows))
         
         self.shadow_radius = pm.attrFieldSliderGrp( at='%s.shadowRadius' %(self.light),
                                 enable= False, columnWidth4= [100, 75, 175, 50])
@@ -94,13 +103,17 @@ class Light_ambient(Light_directional):
                                 enable= False, columnWidth4= [100, 75, 175, 50])
        
         pm.setParent(main_frame)
-        pm.button(label= 'delete', command= pm.Callback(self.delete, main_layout))
-        return main_layout
+        pm.rowColumnLayout(numberOfColumns= 2, columnWidth= [200, 200])
+        pm.button(label= 'Select Light', width= 200, command= pm.Callback(self.select))
+        pm.button(label= 'Delete UI', width= 200, command= pm.Callback(self.delete))
+        pm.button(label= 'Hide', command= pm.Callback(self.hide))
+        pm.button(label= 'Show',  command= pm.Callback(self.show))
+        return self.main_layout
     
-   def shadows(self, light):
+   def shadows(self):
         value = self.check_box.getValue()
-        pm.setAttr('%s.useRayTraceShadows' % (light), int(value))
-        #print '%s.decayRate' % light
+        pm.setAttr('%s.useRayTraceShadows' % (self.light), int(value))
+        
         if value == 1:
             self.shadow_radius.setEnable(True)
             self.shadow_rays.setEnable(True)
@@ -111,42 +124,33 @@ class Light_ambient(Light_directional):
             self.shadow_rays.setEnable(False)
             self.ray_depth.setEnable(False)
         
-        
-    
-
 class Light_spot():
     
-    def __init__(self, name):
+    def __init__(self, light):
         
-        self.name = name
+        self.light = light
         
     def create(self):
         
-        self.light = pm.shadingNode( 'spotLight', asLight= True,name= '%s' % (self.name))
-        pm.rename(self.light, self.name)
         
-        main_layout = pm.columnLayout(adjustableColumn= True, width= 400)
+        
+        self.main_layout = pm.columnLayout(adjustableColumn= True, width= 400)
        
-        main_frame = pm.frameLayout( label='%s' % (self.name), collapsable= True)
+        main_frame = pm.frameLayout( label='%s' % (self.light), collapsable= True)
         pm.frameLayout( label='Light Attributes', collapsable= True)
         pm.attrColorSliderGrp( at='%s.color' % (self.light), columnWidth4= [100, 75, 175, 50])
         pm.attrFieldSliderGrp(at='%s.intensity' % (self.light), columnWidth4= [100, 75, 175, 50])
         pm.attrFieldSliderGrp(at='%s.coneAngle' % (self.light), columnWidth4= [100, 75, 175, 50])
         pm.attrFieldSliderGrp(at='%s.penumbraAngle' % (self.light), columnWidth4= [100, 75, 175, 50])
         pm.attrFieldSliderGrp(at='%s.dropoff' % (self.light), columnWidth4= [100, 75, 175, 50])
-        self.decay_menu = pm.optionMenu( label='Decay Rate',
-                    changeCommand= pm.Callback(self.decay_rate, self.light))
-        pm.menuItem( label='No Decay')
-        pm.menuItem( label='Linear')
-        pm.menuItem( label='Quadratic')
-        pm.menuItem( label='Cubic')
+        pm.attrEnumOptionMenu( label='Decay Rate', attribute='%s.decayRate' % (self.light) )
         
         pm.setParent(main_frame)
         pm.frameLayout(label= 'Shadows', collapsable= True)
         pm.attrColorSliderGrp( at='%s.shadowColor' % (self.light),
                               columnWidth4= [100, 75, 175, 50])
         self.check_box = pm.checkBox(label= 'Use Ray Trace Shadows',
-                        changeCommand= pm.Callback(self.shadows, self.light))
+                        changeCommand= pm.Callback(self.shadows))
         
         self.light_radius = pm.attrFieldSliderGrp( at='%s.lightRadius' % (self.light),
                                 enable= False, columnWidth4= [100, 75, 175, 50])
@@ -158,17 +162,30 @@ class Light_spot():
                                 enable= False, columnWidth4= [100, 75, 175, 50])
        
         pm.setParent(main_frame)
-        pm.button(label= 'delete', command= pm.Callback(self.delete, main_layout))
-        return main_layout
+        pm.rowColumnLayout(numberOfColumns= 2, columnWidth= [200, 200])
+        pm.button(label= 'Select Light', width= 200, command= pm.Callback(self.select))
+        pm.button(label= 'Delete UI', width= 200, command= pm.Callback(self.delete))
+        pm.button(label= 'Hide', command= pm.Callback(self.hide))
+        pm.button(label= 'Show',  command= pm.Callback(self.show))
+        return self.main_layout
         
         
-    def delete(self, layout):
-        pm.deleteUI(layout)
+    def delete(self):
+        pm.deleteUI(self.main_layout)
         
-    def shadows(self, light):
+    def select(self):
+        pm.select('%s' % (self.light))
+        
+    def show(self):
+        pm.showHidden('%s' % (self.light))
+
+    def hide(self):
+        pm.hide('%s' % (self.light))
+        
+    def shadows(self):
         value = self.check_box.getValue()
-        pm.setAttr('%s.useRayTraceShadows' % (light), int(value))
-        #print '%s.decayRate' % light
+        pm.setAttr('%s.useRayTraceShadows' % (self.light), int(value))
+        
         if value == 1:
             self.light_radius.setEnable(True)
             self.shadow_rays.setEnable(True)
@@ -179,47 +196,28 @@ class Light_spot():
             self.shadow_rays.setEnable(False)
             self.ray_depth.setEnable(False)
             
-    def decay_rate(self, light):
-        selected = self.decay_menu.getSelect()
     
-        if selected == 1:
-            pm.setAttr('%s.decayRate' % (light), 0)
-            
-        if selected == 2:
-            pm.setAttr('%s.decayRate' % (light), 1)
-            
-        if selected == 3:
-            pm.setAttr('%s.decayRate' % (light), 2)
-        
-        if selected == 4:
-            pm.setAttr('%s.decayRate' % (light), 3)
             
 class Light_point(Light_spot):
     def create(self):
         
-        self.light = pm.shadingNode( 'pointLight', asLight= True,name= '%s' % (self.name))
-        pm.rename(self.light, self.name)
         
-        main_layout = pm.columnLayout(adjustableColumn= True, width= 400)
+        
+        self.main_layout = pm.columnLayout(adjustableColumn= True, width= 400)
        
         main_frame = pm.frameLayout( label='%s' % (self.name), collapsable= True)
         pm.frameLayout( label='Light Attributes', collapsable= True)
         pm.attrColorSliderGrp( at='%s.color' % (self.light), columnWidth4= [100, 75, 175, 50])
         pm.attrFieldSliderGrp(at='%s.intensity' % (self.light), columnWidth4= [100, 75, 175, 50])
         
-        self.decay_menu = pm.optionMenu( label='Decay Rate',
-                    changeCommand= pm.Callback(self.decay_rate, self.light))
-        pm.menuItem( label='No Decay')
-        pm.menuItem( label='Linear')
-        pm.menuItem( label='Quadratic')
-        pm.menuItem( label='Cubic')
+        pm.attrEnumOptionMenu( label='Decay Rate', attribute='%s.decayRate' % (self.light) )
         
         pm.setParent(main_frame)
         pm.frameLayout(label= 'Shadows', collapsable= True)
         pm.attrColorSliderGrp( at='%s.shadowColor' % (self.light),
                               columnWidth4= [100, 75, 175, 50])
         self.check_box = pm.checkBox(label= 'Use Ray Trace Shadows',
-                        changeCommand= pm.Callback(self.shadows, self.light))
+                        changeCommand= pm.Callback(self.shadows))
         
         self.light_radius = pm.attrFieldSliderGrp( at='%s.lightRadius' % (self.light),
                                 enable= False, columnWidth4= [100, 75, 175, 50])
@@ -231,36 +229,34 @@ class Light_point(Light_spot):
                                 enable= False, columnWidth4= [100, 75, 175, 50])
        
         pm.setParent(main_frame)
-        pm.button(label= 'delete', command= pm.Callback(self.delete, main_layout))
-        return main_layout
+        pm.rowColumnLayout(numberOfColumns= 2, columnWidth= [200, 200])
+        pm.button(label= 'Select Light', width= 200, command= pm.Callback(self.select))
+        pm.button(label= 'Delete UI', width= 200, command= pm.Callback(self.delete))
+        pm.button(label= 'Hide', command= pm.Callback(self.hide))
+        pm.button(label= 'Show',  command= pm.Callback(self.show))
+        return self.main_layout
     
 class Light_area(Light_spot):
     def create(self):
         
-        self.light = pm.shadingNode( 'areaLight', asLight= True,name= '%s' % (self.name))
-        pm.rename(self.light, self.name)
+        
         
         main_layout = pm.columnLayout(adjustableColumn= True, width= 400)
        
-        main_frame = pm.frameLayout( label='%s' % (self.name), collapsable= True)
+        main_frame = pm.frameLayout( label='%s' % (self.light), collapsable= True)
         pm.frameLayout( label='Light Attributes', collapsable= True)
         pm.attrColorSliderGrp( at='%s.color' % (self.light), columnWidth4= [100, 75, 175, 50])
         pm.attrFieldSliderGrp(at='%s.intensity' % (self.light), columnWidth4= [100, 75, 175, 50])
         
         
-        self.decay_menu = pm.optionMenu( label='Decay Rate',
-                    changeCommand= pm.Callback(self.decay_rate, self.light))
-        pm.menuItem( label='No Decay')
-        pm.menuItem( label='Linear')
-        pm.menuItem( label='Quadratic')
-        pm.menuItem( label='Cubic')
+        pm.attrEnumOptionMenu( label='Decay Rate', attribute='decayRate' % (self.light) )
         
         pm.setParent(main_frame)
         pm.frameLayout(label= 'Shadows', collapsable= True)
         pm.attrColorSliderGrp( at='%s.shadowColor' % (self.light),
                               columnWidth4= [100, 75, 175, 50])
         self.check_box = pm.checkBox(label= 'Use Ray Trace Shadows',
-                        changeCommand= pm.Callback(self.shadows, self.light))
+                        changeCommand= pm.Callback(self.shadows))
         
         self.shadow_rays = pm.attrFieldSliderGrp( at='%s.shadowRays' % (self.light),
                                 enable= False, columnWidth4= [100, 75, 175, 50])
@@ -269,12 +265,16 @@ class Light_area(Light_spot):
                                 enable= False, columnWidth4= [100, 75, 175, 50])
        
         pm.setParent(main_frame)
-        pm.button(label= 'delete', command= pm.Callback(self.delete, main_layout))
-        return main_layout
+        pm.rowColumnLayout(numberOfColumns= 2, columnWidth= [200, 200])
+        pm.button(label= 'Select Light', width= 200, command= pm.Callback(self.select))
+        pm.button(label= 'Delete UI', width= 200, command= pm.Callback(self.delete))
+        pm.button(label= 'Hide', command= pm.Callback(self.hide))
+        pm.button(label= 'Show',  command= pm.Callback(self.show))
+        return self.main_layout
     
-    def shadows(self, light):
+    def shadows(self):
         value = self.check_box.getValue()
-        pm.setAttr('%s.useRayTraceShadows' % (light), int(value))
+        pm.setAttr('%s.useRayTraceShadows' % (self.light), int(value))
         #print '%s.decayRate' % light
         if value == 1:
             #self.light_radius.setEnable(True)
@@ -290,29 +290,21 @@ class Light_area(Light_spot):
 class Light_volume(Light_spot):
     def create(self):
         
-        self.light = pm.shadingNode( 'volumeLight', asLight= True,name= '%s' % (self.name))
-        pm.rename(self.light, self.name)
-        
         main_layout = pm.columnLayout(adjustableColumn= True, width= 400)
        
-        main_frame = pm.frameLayout( label='%s' % (self.name), collapsable= True)
+        main_frame = pm.frameLayout( label='%s' % (self.light), collapsable= True)
         pm.frameLayout( label='Light Attributes', collapsable= True)
         pm.attrColorSliderGrp( at='%s.color' % (self.light), columnWidth4= [100, 75, 175, 50])
         pm.attrFieldSliderGrp(at='%s.intensity' % (self.light), columnWidth4= [100, 75, 175, 50])
         
-        self.decay_menu = pm.optionMenu( label='Light Shape',
-                    changeCommand= pm.Callback(self.light_shape, self.light))
-        pm.menuItem( label='Box')
-        pm.menuItem( label='Sphere')
-        pm.menuItem( label='Cylinder')
-        pm.menuItem( label='Cone')
+        pm.attrEnumOptionMenu( label='Light Shape', attribute='%s.lightShape' % (self.light) )
         
         pm.setParent(main_frame)
         pm.frameLayout(label= 'Shadows', collapsable= True)
         pm.attrColorSliderGrp( at='%s.shadowColor' % (self.light),
                               columnWidth4= [100, 75, 175, 50])
         self.check_box = pm.checkBox(label= 'Use Ray Trace Shadows',
-                        changeCommand= pm.Callback(self.shadows, self.light))
+                        changeCommand= pm.Callback(self.shadows))
         
         self.light_angle = pm.attrFieldSliderGrp( at='%s.lightAngle' % (self.light),
                                 enable= False, columnWidth4= [100, 75, 175, 50])
@@ -327,27 +319,18 @@ class Light_volume(Light_spot):
                                 enable= False, columnWidth4= [100, 75, 175, 50])
        
         pm.setParent(main_frame)
-        pm.button(label= 'delete', command= pm.Callback(self.delete, main_layout))
-        return main_layout
+        pm.rowColumnLayout(numberOfColumns= 2, columnWidth= [200, 200])
+        pm.button(label= 'Select Light', width= 200, command= pm.Callback(self.select))
+        pm.button(label= 'Delete UI', width= 200, command= pm.Callback(self.delete))
+        pm.button(label= 'Hide', command= pm.Callback(self.hide))
+        pm.button(label= 'Show',  command= pm.Callback(self.show))
+        return self.main_layout
     
-    def light_shape(self, light):
-        selected = self.decay_menu.getSelect()
     
-        if selected == 1:
-            pm.setAttr('%s.lightShape' % (light), 0)
             
-        if selected == 2:
-            pm.setAttr('%s.lightShape' % (light), 1)
-            
-        if selected == 3:
-            pm.setAttr('%s.lightShape' % (light), 2)
-        
-        if selected == 4:
-            pm.setAttr('%s.lightShape' % (light), 3)
-            
-    def shadows(self, light):
+    def shadows(self):
         value = self.check_box.getValue()
-        pm.setAttr('%s.useRayTraceShadows' % (light), int(value))
+        pm.setAttr('%s.useRayTraceShadows' % (self.light), int(value))
         #print '%s.decayRate' % light
         if value == 1:
             self.light_angle.setEnable(True)

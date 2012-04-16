@@ -14,7 +14,7 @@ How to run:
 '''
 
 
-import pymel.core as pm
+import pymel.core as pm # importing pymel
 
 
 class Node_UI():
@@ -107,7 +107,8 @@ class Node_UI():
             pm.setParent(self.temp_layout)
             TU = Anim_UI(node= '%s_translateU' % (self.node), count = self.count_TU)
             TU.create()
-            # index key
+            
+            # insert key
             pm.setParent('..')
             pm.text(label= 'Insert Key')
             pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,113], [2,113], [3,113]))
@@ -115,7 +116,6 @@ class Node_UI():
             insert_field = pm.intField()
             pm.button(label= 'Insert', command= pm.Callback(self.insert_key,
                attr= '%s.translateU' % (self.node), value= insert_field))
-            
             
             # delete key
             pm.setParent('..')
@@ -126,11 +126,11 @@ class Node_UI():
             pm.button(label= 'Delete', command= pm.Callback(self.delete_key,
                attr= '%s.translateU' % (self.node), index= delete_field))
 
-            
         if self.count_TV >= 1:
             pm.setParent(self.temp_layout)
             TV = Anim_UI(node= '%s_translateV' % (self.node), count = self.count_TV)
             TV.create()
+            
             # insert key
             pm.setParent('..')
             pm.text(label= 'Insert Key')
@@ -139,7 +139,6 @@ class Node_UI():
             insert_field = pm.intField()
             pm.button(label= 'Insert', command= pm.Callback(self.insert_key,
                attr= '%s.translateV' % (self.node), value= insert_field))
-            
             
             # delete key
             pm.setParent('..')
@@ -150,11 +149,11 @@ class Node_UI():
             pm.button(label= 'Delete', command= pm.Callback(self.delete_key,
                attr= '%s.translateV' % (self.node), index= delete_field))
 
-            
         if self.count_RA >= 1:
             pm.setParent(self.temp_layout)
             RA = Anim_UI(node= '%s_rotationAngle' % (self.node), count = self.count_RA)
             RA.create()
+            
             # insert key
             pm.setParent('..')
             pm.text(label= 'Insert Key')
@@ -163,7 +162,6 @@ class Node_UI():
             insert_field = pm.intField()
             pm.button(label= 'Insert', command= pm.Callback(self.insert_key,
                attr= '%s.rotationAngle' % (self.node), value= insert_field))
-            
             
             # delete key
             pm.setParent('..')
@@ -179,7 +177,7 @@ class Node_UI():
             PU = Anim_UI(node= '%s_pivotU' % (self.node), count = self.count_PU)
             PU.create()
             
-            # index key
+            # insertkey
             pm.setParent('..')
             pm.text(label= 'Insert Key')
             pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,113], [2,113], [3,113]))
@@ -202,7 +200,7 @@ class Node_UI():
             PV = Anim_UI(node= '%s_pivotV' % (self.node), count = self.count_PV)
             PV.create()
             
-            # index key
+            # insert key
             pm.setParent('..')
             pm.text(label= 'Insert Key')
             pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,113], [2,113], [3,113]))
@@ -225,7 +223,7 @@ class Node_UI():
             SU = Anim_UI(node= '%s_scaleU' % (self.node), count = self.count_SU)
             SU.create()
             
-            # index key
+            # insert key
             pm.setParent('..')
             pm.text(label= 'Insert Key')
             pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,113], [2,113], [3,113]))
@@ -248,14 +246,14 @@ class Node_UI():
             SV = Anim_UI(node= '%s_scaleV' % (self.node), count = self.count_SV)
             SV.create()
             
-            # index key
+            # insert key
             pm.setParent('..')
             pm.text(label= 'Insert Key')
             pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,113], [2,113], [3,113]))
             pm.text(label= 'Key Position')
             insert_field = pm.intField()
             pm.button(label= 'Insert', command= pm.Callback(self.insert_key,
-               attr= '%s.scaleU' % (self.node), value= insert_field))
+               attr= '%s.scaleV' % (self.node), value= insert_field))
             
             # delete key
             pm.setParent('..')
@@ -402,7 +400,7 @@ class In_Tangent():
         current_type = pm.keyTangent( '%s' % (self.node) , query=True, index= (self.index, self.index), inTangentType= True )[0]
         self.text_field = pm.textField(text= '%s' % (current_type),
             changeCommand= pm.Callback(self.change_type), editable= True,
-                annotation= "Use spline, clamped, linear, flat, step, stepnext,plateau, fixed or auto.")
+                annotation= "Use spline, clamped, linear, flat, step, step, next, plateau, fixed or auto.")
     
     def change_type(self):
         # this changes the in tangent type
@@ -425,7 +423,7 @@ class Out_Tangent():
         current_type = pm.keyTangent( '%s' % (self.node) , query=True, index= (self.index, self.index), outTangentType= True )[0]
         self.text_field = pm.textField(text= '%s' % (current_type),
             changeCommand= pm.Callback(self.change_type), editable= True,
-                annotation= "Use spline, clamped, linear, flat, step, stepnext, plateau, fixed or auto.")
+                annotation= "Use spline, clamped, linear, flat, step, step, next, plateau, fixed or auto.")
         
     def change_type(self):
         # this changes the out tangent type
@@ -459,6 +457,9 @@ def gui():
     pm.text(label= '')
 
     dyn_uis = pm.columnLayout(adjustableColumn= False, width= 340)
+    
+    # listing the nodes at start up
+    list_nodes()
     
     myWin.show()
 
@@ -517,6 +518,8 @@ def create_nodes(* args):
             
         except:
             print '# error'
+            
+        list_nodes()
 
     
     
