@@ -195,9 +195,7 @@ class Light_spot():
             self.light_radius.setEnable(False)
             self.shadow_rays.setEnable(False)
             self.ray_depth.setEnable(False)
-            
-    
-            
+                        
 class Light_point(Light_spot):
     def create(self):
         
@@ -205,7 +203,7 @@ class Light_point(Light_spot):
         
         self.main_layout = pm.columnLayout(adjustableColumn= True, width= 400)
        
-        main_frame = pm.frameLayout( label='%s' % (self.name), collapsable= True)
+        main_frame = pm.frameLayout( label='%s' % (self.light), collapsable= True)
         pm.frameLayout( label='Light Attributes', collapsable= True)
         pm.attrColorSliderGrp( at='%s.color' % (self.light), columnWidth4= [100, 75, 175, 50])
         pm.attrFieldSliderGrp(at='%s.intensity' % (self.light), columnWidth4= [100, 75, 175, 50])
@@ -241,7 +239,7 @@ class Light_area(Light_spot):
         
         
         
-        main_layout = pm.columnLayout(adjustableColumn= True, width= 400)
+        self.main_layout = pm.columnLayout(adjustableColumn= True, width= 400)
        
         main_frame = pm.frameLayout( label='%s' % (self.light), collapsable= True)
         pm.frameLayout( label='Light Attributes', collapsable= True)
@@ -249,7 +247,7 @@ class Light_area(Light_spot):
         pm.attrFieldSliderGrp(at='%s.intensity' % (self.light), columnWidth4= [100, 75, 175, 50])
         
         
-        pm.attrEnumOptionMenu( label='Decay Rate', attribute='decayRate' % (self.light) )
+        pm.attrEnumOptionMenu( label='Decay Rate', attribute='%s.decayRate' % (self.light) )
         
         pm.setParent(main_frame)
         pm.frameLayout(label= 'Shadows', collapsable= True)
@@ -263,6 +261,27 @@ class Light_area(Light_spot):
         
         self.ray_depth = pm.attrFieldSliderGrp( at='%s.rayDepthLimit' % (self.light),
                                 enable= False, columnWidth4= [100, 75, 175, 50])
+        
+        pm.setParent(main_frame)
+        pm.frameLayout(label= 'Mental Ray', collapsable= True)
+        pm.frameLayout(label= 'Area Light', collapsable= True)
+        self.checkbox_shape = pm.checkBox(label= 'Use Light Shape',
+                        changeCommand= pm.Callback(self.use_shape))
+        
+        # setAttr "areaLightShape1.areaType" 1; areaHiSamples areaHiSampleLimit areaLoSamples
+        pm.attrEnumOptionMenu( label='Type', attribute='%s.areaType' % (self.light))
+        # areaVisible
+        pm.attrFieldGrp(attribute='%s.areaHiSamples' % (self.light), enable= False)
+        pm.attrFieldGrp(attribute='%s.areaHiSampleLimit' % (self.light), enable= False)
+        pm.attrFieldGrp(attribute='%s.areaLoSamples' % (self.light), enable= False)
+        # areaShapeIntensity
+        self.checkbox_vis = pm.checkBox(label= 'Visible',
+                        changeCommand= pm.Callback(self.visibility))
+        
+        pm.attrFieldSliderGrp( at='%s.areaShapeIntensity' % (self.light),
+                                enable= False, columnWidth4= [100, 75, 175, 50])
+
+
        
         pm.setParent(main_frame)
         pm.rowColumnLayout(numberOfColumns= 2, columnWidth= [200, 200])
@@ -285,12 +304,11 @@ class Light_area(Light_spot):
             #self.light_radius.setEnable(False)
             self.shadow_rays.setEnable(False)
             self.ray_depth.setEnable(False)
-    
-    
+        
 class Light_volume(Light_spot):
     def create(self):
         
-        main_layout = pm.columnLayout(adjustableColumn= True, width= 400)
+        self.main_layout = pm.columnLayout(adjustableColumn= True, width= 400)
        
         main_frame = pm.frameLayout( label='%s' % (self.light), collapsable= True)
         pm.frameLayout( label='Light Attributes', collapsable= True)
@@ -344,11 +362,9 @@ class Light_volume(Light_spot):
             self.shadow_rays.setEnable(False)
             self.ray_depth.setEnable(False)
         
-    
-    
 class IBL_UI():
     def __init__(self, obj):
-        self.obj = pm.pickWalk(direction= 'down')[0] # getting shape node
+        self.obj = obj
         
         
     def create(self):

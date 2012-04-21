@@ -1,5 +1,4 @@
 """
-
 Author:
     Firmin Saint-Amour
     
@@ -9,16 +8,11 @@ Description:
 How to run:
     import light_rig
     light_rig.gui()
-
-
 """
 
-
-
-
-
 import pymel.core as pm
-
+import lights
+reload(lights)
 
 class Lights_UI():
     """
@@ -168,10 +162,6 @@ class Lights_UI():
         if selected == 4:
             pm.setAttr('%s.decayRate' % (self.light), 3)
     
-    
-    
-    
-    
 def gui():
     win = 'lightingtools'
     if pm.window(win, exists= True):
@@ -184,7 +174,7 @@ def gui():
     my_win = pm.window(win, title= 'Lighting', width= 550, height= 600, sizeable= True)
     pm.scrollLayout(width= 550)
     tabs = pm.tabLayout(innerMarginWidth=5, innerMarginHeight=5, width = 550)
-    global scroll_list, light_row, text_field, light_type, sroll_list, lights_layout, ui_row
+    global scroll_list, light_row, text_field, light_type, sroll_list, lights_layout, ui_row, ibl_layout
     lights_layout = pm.columnLayout(width= 550)
     
     
@@ -207,15 +197,120 @@ def gui():
     pm.setParent(light_row)
     ui_row = pm.columnLayout(width= 400)
     
-    pm.tabLayout( tabs, edit=True, tabLabel=((lights_layout, 'Lights')))
+    pm.setParent(tabs)
+    light_utils = pm.columnLayout(adjustableColumn= True)
+    pm.button(label= 'Duplicate Selected Lights', command= duplicate_light)
+    
+    pm.setParent(tabs)
+    ibl_layout = pm.columnLayout(adjustableColumn= True)
+    pm.button(label= 'Create IBL', command= create_ibl)
+    
+    pm.setParent(tabs)
+    rigs_layout = pm.columnLayout(adjustableColumn= True)
+    pm.button(label= 'Create IBL', command= create_ibl)
+    
+    
+    pm.tabLayout( tabs, edit=True, tabLabel=((lights_layout, 'Lights'),(ibl_layout, 'IBL'), (light_utils, 'Utilities'), (rigs_layout, 'Rigs')))
+    
+    list_lights()
+    list_ibls()
     
     my_win.show()
     
-def create_ui(* args):
-    selected = scroll_list.getSelectItem()
-    pm.setParent(ui_row)
-    light = Lights_UI(light= selected[0]).create()
+def create_ibl(* args):
+    pm.mel.eval('miCreateIbl;')
+    list_ibls()
     
+def list_ibls(* args):
+    pm.setParent(ibl_layout)
+    
+    ibls = pm.ls(exactType= 'mentalrayIblShape')
+    for ibl in ibls:
+        ibl_ui = lights.IBL_UI(ibl).create()
+    
+def duplicate_light(* args):
+    selected = pm.ls(sl= True)
+    print selected                
+    
+    for sel in selected:
+        sel_shape = sel.getShape() # getting the shape node
+        sel_type = pm.nodeType(sel_shape) # getting the node type
+        
+        if 'Light' not in sel_type:
+            print '# wrong object type ', sel
+            continue
+        # creating a new light based on the recieved node type
+        new_light = pm.shadingNode('%s' % (sel_type), asLight= True)
+        new_light = pm.rename(new_light, '%s_copy' % (sel)) # renaming
+        new_shape = new_light.getShape() # getting the shape
+        # listing transform attrs
+        input_attrs = pm.listAttr(sel) 
+        # listing shape attrs
+        shape_attrs = pm.listAttr(sel_shape)
+        
+        for attr in input_attrs:
+            try:
+                value = pm.getAttr('%s.%s' % (sel, attr))
+                pm.setAttr('%s.%s' % (new_light, attr), value)
+                #print '%s.%s' % (new_light, attr), value
+                
+            except:
+                #print '# could not set attr:', attr
+                pass
+                
+                
+                
+                
+        for attr in shape_attrs:
+            try:
+                value = pm.getAttr('%s.%s' % (sel_shape, attr))
+                pm.setAttr('%s.%s' % (new_shape, attr), value)
+                #print '%s.%s' % (new_light, attr), value
+                
+            except:
+                #print '# could not set attr:', attr
+                pass
+        
+def create_ui(* args):
+    selected = scroll_list.getSelectItem()[0]
+    pm.select('%s' % (selected))
+    selected = pm.ls(selection= True)[0]
+    print 'testing :', selected
+    shape = selected.getShape()
+    pm.select('%s' % (shape))
+    obj_type = pm.ls(selection= True, showType= True)[-1]
+    
+    pm.setParent(ui_row)
+    
+    if '%s' % (obj_type) == 'spotLight':
+        light = lights.Light_spot(light= '%s' % (selected))
+        light.create()
+        
+        
+    if '%s' % (obj_type) == 'directionalLight':
+        light = lights.Light_directional(light= '%s' % (selected))
+        light.create()
+        
+        
+    if '%s' % (obj_type) == 'ambientLight':
+        light = lights.Light_ambient(light= '%s' % (selected))
+        light.create()
+        
+        
+    if '%s' % (obj_type) == 'areaLight':
+        light = lights.Light_area(light= '%s' % (selected))
+        light.create()
+        
+        
+    if '%s' % (obj_type) == 'pointLight':
+        light = lights.Light_point(light= '%s' % (selected))
+        light.create()
+        
+        
+    if '%s' % (obj_type) == 'volumeLight':
+        light = lights.Light_volume(light= '%s' % (selected))
+        light.create()
+           
 def create_light(* args):
     selected = light_type.getSelect()
 
@@ -265,6 +360,8 @@ def create_light(* args):
         
          pm.rename(light, '%s' % (text_field.getText()))
          #pm.volumeLight(name= '%s' % (text_field.getText()))
+         
+    list_lights()
 
 def list_lights(* args):
     lights = pm.ls(type= ['volumeLight', 'spotLight', 'directionalLight',
