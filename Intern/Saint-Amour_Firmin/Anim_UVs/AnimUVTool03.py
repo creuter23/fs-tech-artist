@@ -13,7 +13,6 @@ How to run:
     
 '''
 
-
 import pymel.core as pm # importing pymel
 
 
@@ -25,14 +24,17 @@ class Node_UI():
     '''
     def __init__(self, node):
         self.node = node # the polymove UV node
-        
+        # the main frame layout
         self.layout = pm.frameLayout(label= '%s' % (self.node),  width= 340,
                                      collapsable= True, visible= False)
         
-        #pm.button(label= 'Delete UI', command= pm.Callback(self.delete_ui))
+        
 
     
     def toggle_vis(self):
+        '''
+        # this will toggle the visibility of the main frame layout self.layout
+        '''
         value = pm.frameLayout(self.layout, query= True, visible= True)
         if value == True:
             pm.frameLayout(self.layout, edit= True, visible= False)
@@ -81,222 +83,57 @@ class Node_UI():
         this creates the gui components for the node
         '''
         
-        # getting the amount of keys for each attr
-        self.count_TU = pm.keyframe( '%s.translateU' % (self.node) , query=True,
-                                    keyframeCount=True ) # translate U
-        
-        self.count_TV = pm.keyframe( '%s.translateV' % (self.node) , query=True,
-                                    keyframeCount=True ) # translate V
-        
-        self.count_PU = pm.keyframe( '%s.pivotU' % (self.node) , query=True,
-                                    keyframeCount=True ) # pivot U
-        
-        self.count_PV = pm.keyframe( '%s.pivotV' % (self.node) , query=True,
-                                    keyframeCount=True ) # pivot V
-        
-        self.count_SU = pm.keyframe( '%s.scaleU' % (self.node) , query=True,
-                                    keyframeCount=True ) # scale U
-        
-        self.count_SV = pm.keyframe( '%s.scaleV' % (self.node) , query=True,
-                                    keyframeCount=True ) # scale V
-        
-        self.count_R = pm.keyframe( '%s.random' % (self.node) , query=True,
-                                   keyframeCount=True ) # random
-        
-        self.count_RA = pm.keyframe( '%s.rotationAngle' % (self.node) , query=True,
-                                    keyframeCount=True ) # rotation Angle
-        
-        
         pm.setParent(self.layout)
+        # layout for all other frame layouts
         self.temp_layout = pm.columnLayout(adjustableColumn= False, width= 340)
         
-        # if the counts < 1 than the Anim curve node doesnt exist
-        # the if statements just check which nodes exist
+        # this will list all animCurve nodes associated with an object
+        # because anim nodes are named object_attr
+        # but if the object is renamed after it's been keyed the anim node
+        # will still have it's old name
+        # by listing the anim nodes of the object * naming wont be an issue
         
-        if self.count_TU >= 1:
-            pm.setParent(self.temp_layout)
-            TU = Anim_UI(node= '%s_translateU' % (self.node), count = self.count_TU)
-            TU.create()
-            
-            # insert key
-            pm.setParent('..')
-            pm.text(label= 'Insert Key')
-            pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,113], [2,113], [3,113]))
-            pm.text(label= 'Key Position')
-            insert_field = pm.intField()
-            pm.button(label= 'Insert', command= pm.Callback(self.insert_key,
-               attr= '%s.translateU' % (self.node), value= insert_field))
-            
-            # delete key
-            pm.setParent('..')
-            pm.text(label= 'Delete Key')
-            pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,113], [2,113], [3,113]))
-            pm.text(label= 'Key Index')
-            delete_field = pm.intField()
-            pm.button(label= 'Delete', command= pm.Callback(self.delete_key,
-               attr= '%s.translateU' % (self.node), index= delete_field))
+        
+        anim_nodes = pm.keyframe( '%s' % (self.node), query=True, name=True )
 
-        if self.count_TV >= 1:
-            pm.setParent(self.temp_layout)
-            TV = Anim_UI(node= '%s_translateV' % (self.node), count = self.count_TV)
-            TV.create()
+        for anim_node in anim_nodes:
             
-            # insert key
+            pm.setParent(self.temp_layout)
+            # getting the amount of keyframes for the curve node
+            count = pm.keyframe( '%s' % (anim_node) , query=True,
+                                    keyframeCount=True ) # translate U
+        
+            my_ui = Anim_UI(node= '%s' % (anim_node), count = count)
+            my_ui.create()
+            
+            # creating a new string
+            node = '%s' % (anim_node)
+            # getting the attr the curve node is for
+            # the insert and delete key methods need an attr to act on
+            # all anim nodes are named object_attr
+            # so i'm splitting to get just hte attr part
+            node_attr = node.split('_')[-1] 
+            
+            # indsert key
+            # this will build the section for key insertion
             pm.setParent('..')
             pm.text(label= 'Insert Key')
             pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,113], [2,113], [3,113]))
             pm.text(label= 'Key Position')
             insert_field = pm.intField()
             pm.button(label= 'Insert', command= pm.Callback(self.insert_key,
-               attr= '%s.translateV' % (self.node), value= insert_field))
+               attr= '%s.%s' % (self.node, node_attr), value= insert_field))
             
             # delete key
+            # this will build the section for key deletion
             pm.setParent('..')
             pm.text(label= 'Delete Key')
             pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,113], [2,113], [3,113]))
             pm.text(label= 'Key Index')
             delete_field = pm.intField()
             pm.button(label= 'Delete', command= pm.Callback(self.delete_key,
-               attr= '%s.translateV' % (self.node), index= delete_field))
-
-        if self.count_RA >= 1:
-            pm.setParent(self.temp_layout)
-            RA = Anim_UI(node= '%s_rotationAngle' % (self.node), count = self.count_RA)
-            RA.create()
-            
-            # insert key
-            pm.setParent('..')
-            pm.text(label= 'Insert Key')
-            pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,113], [2,113], [3,113]))
-            pm.text(label= 'Key Position')
-            insert_field = pm.intField()
-            pm.button(label= 'Insert', command= pm.Callback(self.insert_key,
-               attr= '%s.rotationAngle' % (self.node), value= insert_field))
-            
-            # delete key
-            pm.setParent('..')
-            pm.text(label= 'Delete Key')
-            pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,113], [2,113], [3,113]))
-            pm.text(label= 'Key Index')
-            delete_field = pm.intField()
-            pm.button(label= 'Delete', command= pm.Callback(self.delete_key,
-               attr= '%s.rotationAngle' % (self.node), index= delete_field))
-
-        if self.count_PU >= 1:
-            pm.setParent(self.temp_layout)
-            PU = Anim_UI(node= '%s_pivotU' % (self.node), count = self.count_PU)
-            PU.create()
-            
-            # insertkey
-            pm.setParent('..')
-            pm.text(label= 'Insert Key')
-            pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,113], [2,113], [3,113]))
-            pm.text(label= 'Key Position')
-            insert_field = pm.intField()
-            pm.button(label= 'Insert', command= pm.Callback(self.insert_key,
-               attr= '%s.pivotU' % (self.node), value= insert_field))
-            
-            # delete key
-            pm.setParent('..')
-            pm.text(label= 'Delete Key')
-            pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,113], [2,113], [3,113]))
-            pm.text(label= 'Key Index')
-            delete_field = pm.intField()
-            pm.button(label= 'Delete', command= pm.Callback(self.delete_key,
-               attr= '%s.pivotU' % (self.node), index= delete_field))
-            
-        if self.count_PV >= 1:
-            pm.setParent(self.temp_layout)
-            PV = Anim_UI(node= '%s_pivotV' % (self.node), count = self.count_PV)
-            PV.create()
-            
-            # insert key
-            pm.setParent('..')
-            pm.text(label= 'Insert Key')
-            pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,113], [2,113], [3,113]))
-            pm.text(label= 'Key Position')
-            insert_field = pm.intField()
-            pm.button(label= 'Insert', command= pm.Callback(self.insert_key,
-               attr= '%s.pivotV' % (self.node), value= insert_field))
-            
-            # delete key
-            pm.setParent('..')
-            pm.text(label= 'Delete Key')
-            pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,113], [2,113], [3,113]))
-            pm.text(label= 'Key Index')
-            delete_field = pm.intField()
-            pm.button(label= 'Delete', command= pm.Callback(self.delete_key,
-               attr= '%s.pivotV' % (self.node), index= delete_field))
-            
-        if self.count_SU >= 1:
-            pm.setParent(self.temp_layout)
-            SU = Anim_UI(node= '%s_scaleU' % (self.node), count = self.count_SU)
-            SU.create()
-            
-            # insert key
-            pm.setParent('..')
-            pm.text(label= 'Insert Key')
-            pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,113], [2,113], [3,113]))
-            pm.text(label= 'Key Position')
-            insert_field = pm.intField()
-            pm.button(label= 'Insert', command= pm.Callback(self.insert_key,
-               attr= '%s.scaleU' % (self.node), value= insert_field))
-            
-            # delete key
-            pm.setParent('..')
-            pm.text(label= 'Delete Key')
-            pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,113], [2,113], [3,113]))
-            pm.text(label= 'Key Index')
-            delete_field = pm.intField()
-            pm.button(label= 'Delete', command= pm.Callback(self.delete_key,
-               attr= '%s.scaleU' % (self.node), index= delete_field))
-            
-        if self.count_SV >= 1:
-            pm.setParent(self.temp_layout)
-            SV = Anim_UI(node= '%s_scaleV' % (self.node), count = self.count_SV)
-            SV.create()
-            
-            # insert key
-            pm.setParent('..')
-            pm.text(label= 'Insert Key')
-            pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,113], [2,113], [3,113]))
-            pm.text(label= 'Key Position')
-            insert_field = pm.intField()
-            pm.button(label= 'Insert', command= pm.Callback(self.insert_key,
-               attr= '%s.scaleV' % (self.node), value= insert_field))
-            
-            # delete key
-            pm.setParent('..')
-            pm.text(label= 'Delete Key')
-            pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,113], [2,113], [3,113]))
-            pm.text(label= 'Key Index')
-            delete_field = pm.intField()
-            pm.button(label= 'Delete', command= pm.Callback(self.delete_key,
-               attr= '%s.scaleV' % (self.node), index= delete_field))
-            
-        if self.count_R >= 1:
-            pm.setParent(self.temp_layout)
-            random = Anim_UI(node= '%s_random' % (self.node), count = self.count_R)
-            random.create()
-            
-            # index key
-            pm.setParent('..')
-            pm.text(label= 'Insert Key')
-            pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,113], [2,113], [3,113]))
-            pm.text(label= 'Key Position')
-            insert_field = pm.intField()
-            pm.button(label= 'Insert', command= pm.Callback(self.insert_key,
-               attr= '%s.random' % (self.node), value= insert_field))
-            
-            # delete key
-            pm.setParent('..')
-            pm.text(label= 'Delete Key')
-            pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,113], [2,113], [3,113]))
-            pm.text(label= 'Key Index')
-            delete_field = pm.intField()
-            pm.button(label= 'Delete', command= pm.Callback(self.delete_key,
-               attr= '%s.random' % (self.node), index= delete_field))
-                 
+               attr= '%s.%s' % (self.node, node_attr), index= delete_field))
+        
 class Anim_UI():
     '''
     # this creates a frame layout for the given Anim curve node
@@ -457,9 +294,10 @@ def gui():
     # global list of all instance of the Node_UI class
     obj_list = []    
         
-    myWin = pm.window(win, title='Anim UV Tool' , sizeable = True, mnb = True, width = 500, height = 400, backgroundColor= [.68,.68,.68])
+    myWin = pm.window(win, title='Anim UV Tool' , sizeable = True, mnb = True, width = 515, height = 400) # , backgroundColor= [.68,.68,.68]
     pm.scrollLayout(width= 500)
-    pm.button(label= 'Creates Nodes', command= create_nodes, width= 500)
+    pm.button(label= 'Creates Nodes For Selected Polygons', command= create_nodes, width= 510)
+    pm.text(label= '')
     
     row_layout = pm.rowColumnLayout(numberOfColumns= 3, columnWidth= [[1, 150], [2, 10], [3, 340]])
     pm.columnLayout(adjustableColumn= False, width=150)
@@ -531,6 +369,11 @@ def create_nodes(* args):
     
 
     for obj in objects:
+        node_type = pm.nodeType(obj.getShape())
+        
+        if node_type != 'mesh':
+            continue
+        
         num_uvs = pm.polyEvaluate(obj, uvcoord= True) # getting all the uvs
         obj_uvs = '%s.map[0:%i]' % (obj, num_uvs)
         

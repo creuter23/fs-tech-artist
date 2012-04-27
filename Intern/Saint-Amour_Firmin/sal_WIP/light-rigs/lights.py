@@ -265,21 +265,21 @@ class Light_area(Light_spot):
         pm.setParent(main_frame)
         pm.frameLayout(label= 'Mental Ray', collapsable= True)
         pm.frameLayout(label= 'Area Light', collapsable= True)
-        self.checkbox_shape = pm.checkBox(label= 'Use Light Shape',
-                        changeCommand= pm.Callback(self.use_shape))
+        #self.checkbox_shape = pm.checkBox(label= 'Use Light Shape',
+         #               changeCommand= pm.Callback(self.use_shape))
         
         # setAttr "areaLightShape1.areaType" 1; areaHiSamples areaHiSampleLimit areaLoSamples
-        pm.attrEnumOptionMenu( label='Type', attribute='%s.areaType' % (self.light))
+        # pm.attrEnumOptionMenu( label='Type', attribute='%s.areaType' % (self.light))
         # areaVisible
-        pm.attrFieldGrp(attribute='%s.areaHiSamples' % (self.light), enable= False)
-        pm.attrFieldGrp(attribute='%s.areaHiSampleLimit' % (self.light), enable= False)
-        pm.attrFieldGrp(attribute='%s.areaLoSamples' % (self.light), enable= False)
+        # pm.attrFieldGrp(attribute='%s.areaHiSamples' % (self.light), enable= False)
+        # pm.attrFieldGrp(attribute='%s.areaHiSampleLimit' % (self.light), enable= False)
+        # pm.attrFieldGrp(attribute='%s.areaLoSamples' % (self.light), enable= False)
         # areaShapeIntensity
-        self.checkbox_vis = pm.checkBox(label= 'Visible',
-                        changeCommand= pm.Callback(self.visibility))
+        # self.checkbox_vis = pm.checkBox(label= 'Visible',
+                        #changeCommand= pm.Callback(self.visibility))
         
-        pm.attrFieldSliderGrp( at='%s.areaShapeIntensity' % (self.light),
-                                enable= False, columnWidth4= [100, 75, 175, 50])
+        #pm.attrFieldSliderGrp( at='%s.areaShapeIntensity' % (self.light),
+                                #enable= False, columnWidth4= [100, 75, 175, 50])
 
 
        
@@ -290,6 +290,12 @@ class Light_area(Light_spot):
         pm.button(label= 'Hide', command= pm.Callback(self.hide))
         pm.button(label= 'Show',  command= pm.Callback(self.show))
         return self.main_layout
+    
+    def use_shape(self):
+        pass
+    
+    def visibility(self):
+        pass
     
     def shadows(self):
         value = self.check_box.getValue()
