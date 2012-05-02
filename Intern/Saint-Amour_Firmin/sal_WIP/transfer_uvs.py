@@ -51,10 +51,11 @@ def transfer_uvs(source_mesh, target_mesh):
         
     except:
         cmds.confirmDialog(title='Error', message='WRONG OBJECT TYPE')
+        return
             
 def button_cmd(* args):
     '''
-    # command fro the button
+    # command for the button
     '''
     targets = get_target_meshes()
     source = get_source_mesh()

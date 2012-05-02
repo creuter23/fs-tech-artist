@@ -395,13 +395,66 @@ class duplicator(object):
                 #pm.setAttr('%s.color' % (new_light), self.color_slider.getRgbValue())
                 new_light.color.set(self.color_slider.getRgbValue())
             
+      
+class Fog_creator(object):
+    # mrCreateCustomNode -asUtility "" physical_light;
+    # // Result: Connected physical_light1.message to fog_lightShape.mentalRayControls.miLightShader. // 
+    def __init__(self):
+        self.light_types = {1: 'spotLight', 2: 'areaLight',
+                            3: 'directionalLight',4: 'pointLight',
+                            5: 'ambientLight', 6: 'volumeLight'}
         
+        self.layout = pm.columnLayout(adjustableColumn= False)
+        self.checkBox = pm.checkBox(label= 'Use Physical Light')
+        self.light_type = pm.optionMenu( label='Light Type', width= 200)
+        pm.menuItem( label='Spot')
+        pm.menuItem( label='Area')
+        pm.menuItem( label='Directional')
+        pm.menuItem( label='Point')
+        pm.menuItem( label='Ambient')
+        pm.menuItem( label='Volume')
+        pm.button(label= 'Create Fog System', width= 500,
+                  command= pm.Callback(self.create_system))
+        
+    def create_system(self):
+        value = self.light_type.getSelect()
+        shader = pm.shadingNode('transmat', asShader= True)
+        volume = pm.polyCube(name= 'fog_volume', width=40,
+                                        height=40, depth=40)[0]
+        
+        pm.hyperShade(volume, assign= shader)
+        
+        parti_volume = pm.mel.eval('mrCreateCustomNode -asShader "" parti_volume;')
+        pm.setAttr('%s.scatter' % (parti_volume), 1,1,1, type= 'double3' )
+        
+        pm.setAttr('%s.min_step_len' % (parti_volume), .03)
+        pm.setAttr('%s.max_step_len' % (parti_volume), .2)
+        
+        pm.connectAttr('%s.outValue' % (parti_volume),
+                       '%sSG.miVolumeShader' % (shader), force= True)
+        
+        light_node = pm.shadingNode('%s' % (self.light_types[value]),
+                                                    asLight= True)
+        light_node.translate.set(0,15,0)
+        light_node.rotate.set(-90,0,0)
+        light = pm.rename(light_node, 'fog_light')
+        
+        pm.connectAttr('%s.message' % (light.getShape()),
+                                '%s.lights[0]' % (parti_volume), force= True)
+        if self.checkBox.getValue() == 1:
+            # mrCreateCustomNode -asUtility "" physical_light;
+            # // Result: Connected physical_light1.message to fog_lightShape.mentalRayControls.miLightShader. // 
+            phys_light = pm.mel.eval('mrCreateCustomNode -asUtility "" physical_light;')
+            
+            pm.connectAttr('%s.message' % (phys_light),
+                     '%s.mentalRayControls.miLightShader' % (light.getShape()))
+            
         
 def gui():
     '''
     # the gui for the tool
     '''
-    #start() # loading mental ray drawing guis for all mental ray tabs
+    load_mr() # loading mental ray drawing guis for all mental ray tabs
     
     win = 'lightingtools'
     if pm.window(win, exists= True):
@@ -439,7 +492,9 @@ def gui():
     
     pm.setParent(tabs)
     light_utils = pm.columnLayout(adjustableColumn= True)
+    pm.frameLayout(label= 'Duplicate Lights')
     duplicator_ui = duplicator()
+    
     
     # pm.button(label= 'Duplicate Selected Lights', command= duplicate_light)
     
@@ -449,15 +504,25 @@ def gui():
     
     pm.setParent(tabs)
     rigs_layout = pm.columnLayout(adjustableColumn= True)
-    pm.frameLayout(label= '3 point light system', collapsable= True)
+    pm.frameLayout(label= 'Three Point System')
+    pm.text(label='')
     three_point = Three_Point_Rig()
+    pm.text(label='')
     pm.setParent(rigs_layout)
-    pm.frameLayout(label= 'simple outdoor', collapsable= True)
-    simple_outdoor = Three_Point_Rig()
+    pm.frameLayout(label= 'Simple Outdoor System')
+    pm.text(label='')
+    pm.button(label='Simple Outdoor', command= simple_outdoor)
+    pm.text(label='')
     pm.setParent(rigs_layout)
-    pm.frameLayout(label= 'complex outdoor', collapsable= True)
-    complex_outdoor = Three_Point_Rig()
-    #pm.button(label= 'Create IBL', command= create_ibl)
+    pm.frameLayout(label= 'Complex Outdoor System')
+    pm.text(label='')
+    pm.button(label='Complex Outdoor', command= complex_outdoor)
+    pm.text(label='')
+    pm.setParent(rigs_layout)
+    pm.frameLayout(label= u'Smoke & Fog')
+    pm.text(label='')
+    smoke_fog = Fog_creator()
+    pm.text(label='')
     
     pm.setParent(tabs)
     presets_layout = pm.columnLayout(adjustableColumn= True)
@@ -519,6 +584,23 @@ def create_ibl(* args):
     '''
     pm.mel.eval('miCreateIbl;')
     list_ibls()
+    
+def simple_outdoor(* args):
+    pm.mel.eval('miCreateIbl;')
+    my_node = pm.shadingNode('directionalLight', asLight= True)
+    pm.rename(my_node, 'Sun')
+    
+def complex_outdoor(* args):
+    pm.mel.eval('miCreateIbl;')
+    my_sun = pm.shadingNode('directionalLight', asLight= True)
+    pm.rename(my_sun, 'Sun')
+    my_sky = pm.shadingNode('areaLight', asLight= True)
+    new_light = pm.rename(my_sky, 'Sky')
+    new_light.translate.set(0,16,0)
+    new_light.rotate.set(-90,0,0)
+    new_light.scale.set(16,16,16)
+    
+
     
 def list_ibls(* args):
     '''
@@ -628,7 +710,7 @@ def list_lights(* args):
         
         scroll_list.append('%s' % (str(my_light))) # appending to the scroll list
         
-def start(* args):
+def load_mr(* args):
     # pm.mel.eval('unifiedRenderGlobalsWindow;')
     mental_ray = pm.pluginInfo('Mayatomr', query= True, loaded= True)
     
@@ -642,20 +724,20 @@ def start(* args):
         
       
     
-    tab_layout = 'unifiedRenderGlobalsWindow|rgMainForm|tabForm|mentalRayTabLayout'
-    indirect = 'unifiedRenderGlobalsWindow|rgMainForm|tabForm|mentalRayTabLayout|mentalRayIndirectLightingTab'
-    features = 'unifiedRenderGlobalsWindow|rgMainForm|tabForm|mentalRayTabLayout|mentalRayFeaturesTab'
-    pm.setAttr('defaultRenderGlobals.currentRenderer', 'mentalRay', type= 'string')
+    #tab_layout = 'unifiedRenderGlobalsWindow|rgMainForm|tabForm|mentalRayTabLayout'
+    #indirect = 'unifiedRenderGlobalsWindow|rgMainForm|tabForm|mentalRayTabLayout|mentalRayIndirectLightingTab'
+    #features = 'unifiedRenderGlobalsWindow|rgMainForm|tabForm|mentalRayTabLayout|mentalRayFeaturesTab'
+    #pm.setAttr('defaultRenderGlobals.currentRenderer', 'mentalRay', type= 'string')
     
     
     
     
-    pm.mel.eval('isDisplayingAllRendererTabs;')
+    #pm.mel.eval('isDisplayingAllRendererTabs;')
     
-    pm.tabLayout(tab_layout, edit= 1, selectTab= indirect)
-    pm.mel.eval('fillSelectedTabForCurrentRenderer;')
+    #pm.tabLayout(tab_layout, edit= 1, selectTab= indirect)
+    #pm.mel.eval('fillSelectedTabForCurrentRenderer;')
     
-    pm.tabLayout(tab_layout, edit= 1, selectTab= features)
-    pm.mel.eval('fillSelectedTabForCurrentRenderer;')
+    #pm.tabLayout(tab_layout, edit= 1, selectTab= features)
+    #pm.mel.eval('fillSelectedTabForCurrentRenderer;')
             
         
