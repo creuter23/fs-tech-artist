@@ -16,6 +16,8 @@ import pymel.core as pm
 import os
 # pickle
 import shelve
+# glob 
+import glob
 '''
 import xlrd
 import xlwt
@@ -1133,15 +1135,50 @@ class Images():
         self.imageList.append(self.file[0])
         self.nameList.append(self.newFile)
         
+    def get_photoshop(self):
+        path = '/Applications'
+        app = 'Adobe Photoshop*'
+        full_path = os.path.join(path, app)
+
+        programs = glob.glob(full_path)[-1] # Result: '/Applications/Adobe Photoshop CS4' # 
+
+
+        photoshop = programs.split('/')[-1] # Result: 'Adobe Photoshop CS4' # 
+
         
+        new = photoshop.split(' ') # Result: ['Adobe', 'Photoshop', 'CS4'] # 
+        string_list = []
+        x = 0
+        
+        # this will add the apropriate '\'
+        while x < len(new):
+            if x < len(new)-1:
+                string = new[x]+ r'%s' % (r'\ ')
+                string_list.append(string)
+                
+            
+            if x == len(new)-1:
+                string_list.append(new[x])
+                
+            x += 1
+            
+        final = string_list[0]+string_list[1]+string_list[2]
+        # Result: 'Adobe\\ Photoshop\\ CS4' # 
+
+        
+        return final
         
     def openReference(self):
         # this will open the image from the file dialog with the selected app
         self.ref = pm.fileDialog2(dialogStyle= 2, fileMode= 1)
         
+        photoshop = self.get_photoshop()
+        
         # button 2 for photoshop
         if self.openButtons.getSelect() == 2:
-            pm.util.shellOutput(r"open -a Adobe\ Photoshop\ CS5.1 %s " % self.ref)
+            
+                        
+            pm.util.shellOutput(r"open -a %s %s " % (photoshop, self.ref))
         
         # buttton 1 for preview    
         if self.openButtons.getSelect() == 1:
@@ -1155,14 +1192,14 @@ class Images():
         x = 0
         self.blank = ' '
         self.path = ''
-        
+        photoshop = self.get_photoshop()
         while x < len(self.imageList):
             self.path += str(self.imageList[x]) + str(self.blank)
             x += 1
         
         # this will check to see which program to open the images with
         if self.openButtons.getSelect() == 2:
-            pm.util.shellOutput(r"open -a Adobe\ Photoshop\ CS5.1 %s " % self.path)
+            pm.util.shellOutput(r"open -a %s %s " % (photoshop, self.path))
             
         if self.openButtons.getSelect() == 1:
             pm.util.shellOutput(r"open  %s " % self.path)
@@ -1225,7 +1262,7 @@ class Images02(Images):
         pm.text(label= '')
         self.layout = pm.rowColumnLayout(nc=2 , cw =([1, 430], [2, 50]))
         
-        # self.num is a number, which will be used to give unique names to the dynamically created fields
+        # self.num is the number, which will be used to give unique names to the dynamically created fields
         self.num = 1
         # the list of the paths for the images
         self.imageList = []
@@ -1235,11 +1272,11 @@ class Images02(Images):
     def openReference(self):
         # this will open the image from the file dialog with the selected app
         
-        
+        photoshop = self.get_photoshop()
         # button 2 for photoshop
         if self.openButtons.getSelect() == 2:
             
-            pm.util.shellOutput(r"open -a Adobe\ Photoshop\ CS5.1 %s" % (self.image))
+            pm.util.shellOutput(r"open -a %s %s" % (photoshop, self.image))
             
         
         # buttton 1 for preview    
@@ -1282,21 +1319,21 @@ class Images03(Images):
     def openReference(self):
         # this will open the image from the file dialog with the selected app
         
-        
+        photoshop = self.get_photoshop()
         # button 2 for photoshop
         if self.openButtons.getSelect() == 2:
             
             if self.refButtons.getSelect() == 1:
-                pm.util.shellOutput(r"open -a Adobe\ Photoshop\ CS5.1 %s" % (self.image01))
+                pm.util.shellOutput(r"open -a %s %s" % (photoshop, self.image01))
                 
             if self.refButtons.getSelect() == 2:
-                pm.util.shellOutput(r"open -a Adobe\ Photoshop\ CS5.1 %s" % (self.image02))
+                pm.util.shellOutput(r"open -a %s %s" % (photoshop, self.image02))
                 
             if self.refButtons.getSelect() == 3:
-                pm.util.shellOutput(r"open -a Adobe\ Photoshop\ CS5.1 %s" % (self.image03))
+                pm.util.shellOutput(r"open -a %s %s" % (photoshop, self.image03))
                 
             if self.refButtons.getSelect() == 4:
-                pm.util.shellOutput(r"open -a Adobe\ Photoshop\ CS5.1 %s" % (self.image04))
+                pm.util.shellOutput(r"open -a %s %s" % (photoshop, self.image04))
             
         
         # buttton 1 for preview    
