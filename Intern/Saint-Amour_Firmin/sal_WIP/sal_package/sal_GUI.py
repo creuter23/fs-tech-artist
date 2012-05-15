@@ -18,7 +18,7 @@ from PIL import Image # this reads metadata from images
 class Project02():
     def __init__(self, path):
         self.path = path
-        print 'project02'
+        #print 'project02'
             
     def create(self):
         self.mainLayout = pm.columnLayout(adjustableColumn=True)
@@ -73,7 +73,7 @@ class Project02():
     def check(self):
         # this check the weighting before outputting
         percent = self.total.queryLight().getValue2() 
-        print percent
+        # print percent
     
         if percent != 100 :
             dialogCheck=pm.confirmDialog( title='Confirm Output', message='percentage not equal 100', button=['override','change'], defaultButton='change', cancelButton='change', dismissString='override' )
@@ -147,7 +147,7 @@ class Project02():
 class Project03(Project02):
     def __init__(self, path):
         self.path = path
-        print 'project02'
+        # print 'project02'
     
     def create(self):
         self.mainLayout = pm.columnLayout(adjustableColumn=True)
@@ -343,7 +343,7 @@ class Project04():
 class Project05():
     def __init__(self, path):
         self.path = path
-        print 'project05'
+        #print 'project05'
     
     def create(self):
         self.mainLayout = pm.columnLayout(adjustableColumn=True)
@@ -410,7 +410,7 @@ class Project05():
     
     def check(self):
         percent = self.total.queryLight().getValue2() + self.total.queryMat().getValue2() + self.total.queryRay().getValue2()
-        print percent
+        #print percent
     
         if percent != 100 :
             dialogCheck=pm.confirmDialog( title='Confirm Output', message='percentage not equal 100', button=['override','change'], defaultButton='change', cancelButton='change', dismissString='override' )
@@ -681,7 +681,7 @@ class Final_Project(Project04):
 class Project01():
     def __init__(self, path):
         self.path = path
-        print 'project01'
+        #print 'project01'
             
     def create(self):
         self.mainLayout = pm.columnLayout(adjustableColumn=True)
@@ -726,7 +726,7 @@ class Project01():
     
     def check(self):
         percent = self.total.queryAnti().getValue2() + self.total.queryComp().getValue2() + self.total.queryPro().getValue2() 
-        print percent
+        #print percent
     
         if percent != 100 :
             dialogCheck=pm.confirmDialog( title='Confirm Output', message='percentage not equal 100', button=['override','change'], defaultButton='change', cancelButton='change', dismissString='override' )

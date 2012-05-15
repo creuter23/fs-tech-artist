@@ -12,6 +12,8 @@ import sal_GUI as sal # custom
 reload(sal)
 import os # python module
 
+print 'Grading Script Initialized'
+
 def gui(path):
     win = 'salwindow'
     if(pm.window(win, ex = True)):
@@ -20,7 +22,9 @@ def gui(path):
     if(pm.windowPref(win, ex = True)):
         pm.windowPref(win, remove = True)
         
-    myWin = pm.window(win, title='SAL_Grading' , sizeable = True, mnb = True, width = 490, height = 900, backgroundColor= [.68,.68,.68])
+    myWin = pm.window(win, title='SAL_Grading' , sizeable = True, mnb = True,
+                      width = 490, height = 900)#backgroundColor= [.68,.68,.68]
+    
     main = pm.scrollLayout(width = 490)
     tabs = pm.tabLayout(innerMarginWidth=5, innerMarginHeight=5, width = 490)
     

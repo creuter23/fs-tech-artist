@@ -1,5 +1,4 @@
 '''
-
 Author:
     Firmin Saint-Amour
     
@@ -8,8 +7,8 @@ Description:
     their animation curve nodes
     
 How to run:
-    import AnimUVTool
-    AnimUVTool.gui()
+    import AnimUVTool03
+    AnimUVTool03.gui()
     
 '''
 
@@ -30,6 +29,11 @@ class Node_UI():
         
         
 
+    def delete_obj(self):
+        '''
+        # deletes the actual object
+        '''
+        del self
     
     def toggle_vis(self):
         '''
@@ -204,13 +208,14 @@ class Time_int():
         '''
         # this function will change the time for the key frame
         '''
-        pm.keyframe('%s' % (self.node), option='over', index=(int(self.index), int(self.index)), absolute= True, timeChange=int(self.int_field.getValue()))
+        pm.keyframe('%s' % (self.node), option='over', index=(int(self.index),
+                    int(self.index)), absolute= True,
+                    timeChange=int(self.int_field.getValue()))
 
 class Value_float():
     '''
     # this creates a float field to display and change the value that was keyed
         on a key frame
-      
     # takes the index of the keyframes, and the node for said keyframe    
     '''
     
@@ -222,13 +227,15 @@ class Value_float():
         '''
         # this creates the float field
         '''
-        current_time = pm.keyframe( '%s' % (self.node) , query=True, index= (self.index, self.index), valueChange= True )[0]
-        self.int_field = pm.floatField(value= float(current_time), annotation= 'change the value for the keyframe',
+        current_time = pm.keyframe( '%s' % (self.node) , query=True,
+                   index= (self.index, self.index), valueChange= True )[0]
+        self.int_field = pm.floatField(value= float(current_time),
+                             annotation= 'change the value for the keyframe',
                                 changeCommand= pm.Callback(self.change_value))
         
     def change_value(self):
         '''
-        this changes the value
+        # this changes the value
         '''
         pm.keyframe('%s' % (self.node), option='over', index=(int(self.index), int(self.index)), absolute= True, valueChange=float(self.int_field.getValue()))
                 
@@ -331,6 +338,7 @@ def create_ui(*args):
         try:
             # deleting the uis
             obj.delete_ui()
+            obj.delete_obj()
             
         except:
             

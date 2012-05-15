@@ -9,7 +9,7 @@ How to run:
     import light_rig
     light_rig.gui()
 """
-
+from maya import cmds
 import pymel.core as pm
 import glob
 import cPickle as pickle
@@ -18,7 +18,253 @@ import lights
 reload(lights)
 
 preset_obj_list = []
+obj_ui_list = []
+lights_dict = {}
 
+
+class IBL_section():
+    def __init__(self):
+        self.uis = [] # list of uis
+        self.main_layout = pm.columnLayout(adjustableColumn= True)
+        pm.button(label= 'Create IBLs', command = pm.Callback(self.create_ibl))
+        self.main_layout = pm.rowColumnLayout(numberOfColumns= 2, columnWidth= [150, 400])
+        pm.columnLayout(width= 150, adjustableColumn=False)
+        self.scroll_list = pm.textScrollList(width= 150, height= 200,
+                                  selectCommand= pm.Callback(self.create_ui),
+                                                    allowMultiSelection= False)
+        pm.button(label= "List IBL's", command= pm.Callback(self.list_ibls),
+                        width= 150)
+        pm.setParent(self.main_layout)
+        self.ui_layout = pm.columnLayout(width= 400)
+    
+    def create_ibl(self):
+        my_ibl = pm.shadingNode('mentalrayIblShape', asLight= True)
+        pm.connectAttr('%s.message' % (my_ibl),
+                   'mentalrayGlobals.imageBasedLighting', force= True)
+        pm.setAttr('%s.primaryVisibility' % (my_ibl), 1)
+        pm.setAttr('%s.visibleInReflections' % (my_ibl), 1)
+        pm.setAttr('%s.visibleInRefractions' % (my_ibl), 1)
+        pm.setAttr('%s.visibleInEnvironment' % (my_ibl), 1)
+        pm.setAttr('%s.visibleInFinalGather' % (my_ibl), 1)
+        
+        scene_objects = pm.ls(type= ['mesh', 'nurbsSurface'])
+
+        bounding_box = pm.exactWorldBoundingBox(scene_objects)
+        bounding_box.sort()
+    
+        ibl_size = bounding_box[-1]
+
+        pm.setAttr('%s.scaleX' % (my_ibl), ibl_size)
+        pm.setAttr('%s.scaleY' % (my_ibl), ibl_size)
+        pm.setAttr('%s.scaleZ' % (my_ibl), ibl_size)
+        
+    def create_ui(self):
+        pm.setParent(self.ui_layout)
+        if len(self.uis) > 1:
+            for ui in self.uis:
+                
+                try:
+                    ui.delete_ui()
+                    self.uis.remove(ui)
+                
+                except:
+                    pass
+        
+        ibl = self.scroll_list.getSelectItem()[0]
+        ui = lights.IBL_UI(ibl).create()
+        self.uis.append(ui)
+        
+    def list_ibls(self):
+        ibls = pm.ls(exactType= 'mentalrayIblShape')
+        for ibl in ibls:
+            self.scroll_list.append('%s' % (ibl))
+
+class Fog_editor(object):
+    '''
+    # class for connecting and disconnecting lights to parti_volume nodes
+    '''
+    def __init__(self):
+        
+        self.parti_nodes = []
+        self.scene_lights = []
+        self.parti_lights = []
+        
+        self.parti_dict = {}
+        self.parti_lights_dict = {}
+        self.scene_lights_dict = {}
+        
+        pm.columnLayout(adjustableColumn= True)
+        main = pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,180],
+            [2, 180], [3,180]))
+        pm.columnLayout(adjustableColumn= True)
+        pm.text(label= 'Parti Volumes')
+        self.parti_scroll = pm.textScrollList(width= 180, height= 125,
+                            selectCommand = pm.Callback(self.get_input_lights))
+        pm.button(label= 'Refresh', command= pm.Callback(self.refresh_nodes))
+        
+        pm.setParent('..')
+        pm.columnLayout(adjustableColumn= True)
+        pm.text(label= 'Parti Lights')
+        self.parti_light_scroll = pm.textScrollList(width= 180, height= 125)
+        pm.rowColumnLayout(numberOfColumns= 2, columnWidth= ([1, 90], [2, 90]))
+        pm.button(label= '+', command= pm.Callback(self.add_light))
+        pm.button(label= '-', command= pm.Callback(self.remove_light))
+        
+        pm.setParent(main)
+        pm.columnLayout(adjustableColumn= True)
+        pm.text(label= 'Scene Lights')
+        self.light_scroll = pm.textScrollList(width= 180, height= 125)
+        pm.button(label= 'Refresh', command= pm.Callback(self.refresh_lights))
+        
+        self.refresh_lights()
+        self.refresh_nodes()
+        
+    def get_input_lights(self):
+        '''
+        # get a list of the input lights
+        # and append them to the related text scroll list
+        '''
+        node = self.parti_scroll.getSelectItem()[0]
+        self.parti_lights = self.parti_dict[node].inputs()
+        self.parti_light_scroll.removeAll()
+        
+        for light in self.parti_lights:
+            self.parti_light_scroll.append('%s' % (light))
+            self.parti_lights_dict['%s' % (light)] = light
+            
+        
+    def add_light(self):
+        '''
+        # connects the selected light to the selected parti_volume node
+        '''
+        light = self.light_scroll.getSelectItem()[0]
+        node = self.parti_dict[self.parti_scroll.getSelectItem()[0]]
+        index = len(self.parti_lights)
+        #inputs = node.inputs()
+        #index_list = []
+        
+       
+        pm.connectAttr('%s.message' % (light),
+                                    '%s.lights[%s]' % (node, str(index)))
+                
+        self.get_input_lights()
+            
+    def reorder_input_lights(self):
+        '''
+        # this will reorder the light connections
+        # so adding the lights will be easier
+        # that way i can just add a light based
+            on the len(self.parti_lights)
+        # connectAttr(light.message, node.lights[len(self.parti_lights)])    
+        '''
+        node = self.parti_scroll.getSelectItem()[0]
+        temp_remove_index = ''
+        
+        # removing the connections
+        for light in self.parti_lights:
+            light_shape = light.getShape()
+            conn = cmds.listConnections('%s' % (light), c= 1, plugs= 1)
+            for c in conn:
+            # checking if there's an attribute named:
+            # '%s.lights' % (parti_volume_node)
+            # if the attributes exist it wil return
+            # '%s.lights[some #]' % (parti_volume_node)
+            # so that way i can konw which index to use to disconnect the light
+                if '%s.lights' % (node) in c:
+                    temp_remove_index = conn[conn.index(c)]
+                    
+                try:
+                    pm.disconnectAttr('%s.message' % (light_shape),
+                                    '%s' % (temp_remove_index))
+                    
+                except:
+                    pass
+                    
+                
+                    
+        # reconnecting everything
+        # but in order
+        i = 0
+        while i < len(self.parti_lights):
+            
+            try:
+                pm.connectAttr('%s.message' % (self.parti_lights[i].getShape()),
+                            '%s.lights[%s]' % (node, str(i)))
+                
+            except:
+                pass
+            
+            i += 1
+                    
+          
+        self.get_input_lights()
+    
+    def remove_light(self):
+        '''
+        # disconnect the selected light from the selected parti_volume node
+        '''
+        node = self.parti_scroll.getSelectItem()[0]
+        light = self.parti_light_scroll.getSelectItem()[0]
+        light_shape = self.parti_lights_dict[light].getShape()
+        # listing the connections
+        conn = cmds.listConnections('%s' % (light_shape), c= 1, plugs= 1)
+        
+        self.remove_index = ''
+        
+        print node, light, light_shape
+        
+        for c in conn:
+            # checking if there's an attribute named:
+            # '%s.lights' % (parti_volume_node)
+            # if the attributes exist it wil return
+            # '%s.lights[some #]' % (parti_volume_node)
+            # so that way i can konw which index to use to disconnect the light
+            if '%s.lights' % (node) in c:
+                self.remove_index = conn[conn.index(c)]
+                print self.remove_index
+                
+                
+        try:
+            pm.disconnectAttr('%s.message' % (light_shape),
+                                    '%s' % (self.remove_index))
+        except:
+            pm.disconnectAttr('%s.message' % (light),
+                                    '%s' % (self.remove_index))
+            
+                    
+        
+        
+        self.get_input_lights()
+        
+        self.reorder_input_lights()
+                
+    def refresh_lights(self):
+        # listing all lights in the scene
+        self.scene_lights = pm.ls(type= ['volumeLight', 'spotLight', 'directionalLight',
+                'areaLight', 'pointLight', 'ambientLight'])
+        
+        self.light_scroll.removeAll()
+        
+        for light in self.scene_lights:
+            try:
+                light = light.getShape()
+                self.scene_lights_dict['%s' % (light)] = light
+                self.light_scroll.append('%s' % (light))
+            except:
+                self.scene_lights_dict['%s' % (light)] = light
+                self.light_scroll.append('%s' % (light))
+    
+    def refresh_nodes(self):
+        '''
+        # this will list all the parti_volume nodes in the scene
+        # and append them to the relating text scroll list
+        '''
+        self.parti_nodes = pm.ls(type= 'parti_volume')
+        self.parti_scroll.removeAll()
+        for node in self.parti_nodes:
+            self.parti_dict['%s' % (node)] = node
+            self.parti_scroll.append('%s' % node)
+            
 class Preset_win():
     '''
     # this creates the window from which presets will be created
@@ -112,16 +358,8 @@ class Preset_win():
         pickle_data = pickle.dump(data, f)
         f.close()
         
-        preset_ui() # this will list wil update the preset section
+        preset_ui() # this will list will update the preset section
             
-        
-            
-            
-    
-        
-    
-    pass
-
 class Light_Preset_UI(object):
     '''
     # creates the ui for each light preset
@@ -395,29 +633,136 @@ class duplicator(object):
                 #pm.setAttr('%s.color' % (new_light), self.color_slider.getRgbValue())
                 new_light.color.set(self.color_slider.getRgbValue())
             
-      
-class Fog_creator(object):
-    # mrCreateCustomNode -asUtility "" physical_light;
-    # // Result: Connected physical_light1.message to fog_lightShape.mentalRayControls.miLightShader. // 
+class Menu_item(object):
+    '''
+    # creates a option menu with menu items
+    '''
     def __init__(self):
-        self.light_types = {1: 'spotLight', 2: 'areaLight',
-                            3: 'directionalLight',4: 'pointLight',
-                            5: 'ambientLight', 6: 'volumeLight'}
-        
-        self.layout = pm.columnLayout(adjustableColumn= False)
-        self.checkBox = pm.checkBox(label= 'Use Physical Light')
-        self.light_type = pm.optionMenu( label='Light Type', width= 200)
+        self.option_menu = pm.optionMenu( label='Light Type', width= 200)
         pm.menuItem( label='Spot')
         pm.menuItem( label='Area')
         pm.menuItem( label='Directional')
         pm.menuItem( label='Point')
         pm.menuItem( label='Ambient')
         pm.menuItem( label='Volume')
+        
+    def get_value(self):
+        '''
+        # gets the the selected menu item
+        '''
+        value = self.option_menu.getSelect()
+        return value
+    
+    def delete_ui(self):
+        '''
+        # deletes the ui and the object
+        '''
+        pm.deleteUI(self.option_menu)
+        del self
+        
+class Fog_creator(object):
+    # mrCreateCustomNode -asUtility "" physical_light;
+    # // Result: Connected physical_light1.message to fog_lightShape.mentalRayControls.miLightShader. // 
+    def __init__(self):
+        self.menu_item_list = []
+        self.light_types = {1: 'spotLight', 2: 'areaLight',
+                            3: 'directionalLight',4: 'pointLight',
+                            5: 'ambientLight', 6: 'volumeLight'}
+        
+        self.layout = pm.columnLayout(adjustableColumn= False)
+        self.checkBox = pm.checkBox(label= 'Use Physical Light')
+        self.slider = pm.intSliderGrp(label= 'Number Of lights', field= True,
+                                min= 0,max= 20,columnWidth3 = [200,75,200],
+                            changeCommand=pm.Callback(self.create_menu_items))
+        self.menu_layout = pm.columnLayout()
+        pm.setParent('..')
+        
         pm.button(label= 'Create Fog System', width= 500,
-                  command= pm.Callback(self.create_system))
+                  command= pm.Callback(self.create_system01))
+        
+    def create_menu_items(self):
+        value = self.slider.getValue()
+        for item in self.menu_item_list:
+            try:
+                item.delete_ui()
+                self.menu_item_list.remove(item)
+            except:
+                print item
+                pass
+           
+            
+        for i in xrange(value):
+            pm.setParent(self.menu_layout)
+            ui = Menu_item()
+            self.menu_item_list.append(ui)
+            
+        print self.menu_item_list
+        
+        
+    def create_system01(self):
+        step = 0
+        index = 0
+        values = []
+        lights_list = []
+        for item in self.menu_item_list:
+            value = item.get_value()
+            values.append(value)
+            
+        for value in values:
+            light_node = pm.shadingNode('%s' % (self.light_types[value]),
+                                                    asLight= True)
+            light_node.translate.set(step,15,0)
+            step += 2
+            light_node.rotate.set(-90,0,0)
+            node_type = pm.nodeType(light_node.getShape())
+            light = pm.rename(light_node, 'fog_%s' % (node_type))
+            lights_list.append(light)
+            
+        if self.checkBox.getValue() == 1:
+            
+            
+            for light in lights_list:
+                
+                phys_light = pm.mel.eval('mrCreateCustomNode -asUtility "" physical_light;')
+            
+                pm.connectAttr('%s.message' % (phys_light),
+                     '%s.mentalRayControls.miLightShader' % (light.getShape()))
+                
+        shader = pm.shadingNode('transmat', asShader= True)
+        volume = pm.polyCube(name= 'fog_volume', width=60,
+                                        height=60, depth=60)[0]
+        
+        pm.hyperShade(volume, assign= shader)
+        
+        parti_volume = pm.mel.eval('mrCreateCustomNode -asShader "" parti_volume;')
+        pm.setAttr('%s.scatter' % (parti_volume), 1,1,1, type= 'double3' )
+        
+        pm.setAttr('%s.min_step_len' % (parti_volume), .03)
+        pm.setAttr('%s.max_step_len' % (parti_volume), .2)
+        
+        pm.connectAttr('%s.outValue' % (parti_volume),
+                       '%sSG.miVolumeShader' % (shader), force= True)
+        
+        
+        for light in lights_list:
+            
+            pm.connectAttr('%s.message' % (light.getShape()),
+                    '%s.lights[%s]' % (parti_volume, str(index)), force= True)
+            
+            index += 1
+                
+        
+            
+        
+            
+            
+            
+        
+        
+        
         
     def create_system(self):
-        value = self.light_type.getSelect()
+        
         shader = pm.shadingNode('transmat', asShader= True)
         volume = pm.polyCube(name= 'fog_volume', width=40,
                                         height=40, depth=40)[0]
@@ -485,7 +830,8 @@ def gui():
     
     light_row = pm.rowColumnLayout(numberOfColumns= 2, columnWidth= [150, 400])
     pm.columnLayout(width= 150, adjustableColumn=False)
-    scroll_list = pm.textScrollList(width= 150, height= 200, selectCommand= pm.Callback(create_ui))
+    scroll_list = pm.textScrollList(width= 150, height= 200,
+        selectCommand= pm.Callback(create_ui), allowMultiSelection= True)
     pm.button(label= 'List Lights', command= pm.Callback(list_lights), width= 150)
     pm.setParent(light_row)
     ui_row = pm.columnLayout(width= 400)
@@ -495,12 +841,17 @@ def gui():
     pm.frameLayout(label= 'Duplicate Lights')
     duplicator_ui = duplicator()
     
+    pm.setParent('..')
+    pm.frameLayout(label= 'Fog Editor')
+    fog_editor_ui = Fog_editor()
+    
     
     # pm.button(label= 'Duplicate Selected Lights', command= duplicate_light)
     
     pm.setParent(tabs)
     ibl_layout = pm.columnLayout(adjustableColumn= True)
-    pm.button(label= 'Create IBL', command= create_ibl)
+    # pm.button(label= 'Create IBL', command= create_ibl)
+    ibls_ui = IBL_section()
     
     pm.setParent(tabs)
     rigs_layout = pm.columnLayout(adjustableColumn= True)
@@ -535,7 +886,7 @@ def gui():
         (ibl_layout, 'IBL'), (light_utils, 'Utilities'), (rigs_layout, 'Rigs'), (presets_layout, 'Presets')))
     
     list_lights()
-    list_ibls()
+    #list_ibls()
     
     preset_ui()
     
@@ -582,16 +933,39 @@ def create_ibl(* args):
     '''
     # creates an ibl
     '''
-    pm.mel.eval('miCreateIbl;')
-    list_ibls()
+    
+    my_ibl = pm.shadingNode('mentalrayIblShape', asLight= True)
+    pm.connectAttr('%s.message' % (my_ibl),
+                   'mentalrayGlobals.imageBasedLighting', force= True)
+    pm.setAttr('%s.primaryVisibility' % (my_ibl), 1)
+    pm.setAttr('%s.visibleInReflections' % (my_ibl), 1)
+    pm.setAttr('%s.visibleInRefractions' % (my_ibl), 1)
+    pm.setAttr('%s.visibleInEnvironment' % (my_ibl), 1)
+    pm.setAttr('%s.visibleInFinalGather' % (my_ibl), 1)
+    
+    scene_objects = pm.ls(type= ['mesh', 'nurbsSurface'])
+
+    bounding_box = pm.exactWorldBoundingBox(scene_objects)
+    bounding_box.sort()
+    
+    ibl_size = bounding_box[-1]
+
+    pm.setAttr('%s.scaleX' % (my_ibl), ibl_size)
+    pm.setAttr('%s.scaleY' % (my_ibl), ibl_size)
+    pm.setAttr('%s.scaleZ' % (my_ibl), ibl_size)
+    
+    return my_ibl
+    
+    
+    
     
 def simple_outdoor(* args):
-    pm.mel.eval('miCreateIbl;')
+    create_ibl()
     my_node = pm.shadingNode('directionalLight', asLight= True)
     pm.rename(my_node, 'Sun')
     
 def complex_outdoor(* args):
-    pm.mel.eval('miCreateIbl;')
+    create_ibl()
     my_sun = pm.shadingNode('directionalLight', asLight= True)
     pm.rename(my_sun, 'Sun')
     my_sky = pm.shadingNode('areaLight', asLight= True)
@@ -619,43 +993,62 @@ def create_ui(* args):
     '''
     # this creates the ui for the selected  light from the scrollField
     '''
-    selected = scroll_list.getSelectItem()[0]
-    pm.select('%s' % (selected))
-    selected = pm.ls(selection= True)[0]
-    print 'testing :', selected
-    shape = selected.getShape()
-    obj_type = pm.nodeType(shape)
+    selected = scroll_list.getSelectItem()
+    global lights_dict
+    global obj_ui_list
     
-    pm.setParent(ui_row)
     
-    if '%s' % (obj_type) == 'spotLight':
-        light = lights.Light_spot(light= '%s' % (selected))
-        light.create()
-        
-        
-    if '%s' % (obj_type) == 'directionalLight':
-        light = lights.Light_directional(light= '%s' % (selected))
-        light.create()
-        
-        
-    if '%s' % (obj_type) == 'ambientLight':
-        light = lights.Light_ambient(light= '%s' % (selected))
-        light.create()
-        
-        
-    if '%s' % (obj_type) == 'areaLight':
-        light = lights.Light_area(light= '%s' % (selected))
-        light.create()
-        
-        
-    if '%s' % (obj_type) == 'pointLight':
-        light = lights.Light_point(light= '%s' % (selected))
-        light.create()
-        
-        
-    if '%s' % (obj_type) == 'volumeLight':
-        light = lights.Light_volume(light= '%s' % (selected))
-        light.create()
+    
+    for obj in obj_ui_list:
+        try:
+            obj.delete()
+            
+        except:
+            pass
+    
+    
+    for sel in selected:
+        pm.setParent(ui_row)
+        #pm.select('%s' % (sel))
+        #node = pm.ls(selection= True)[0]
+        print sel
+        print lights_dict
+        #shape = lights_dict[sel]
+        obj_type = pm.nodeType('%s' % (lights_dict[u'%s' %(str(sel))]))
+        if '%s' % (obj_type) == 'spotLight':
+            light = lights.Light_spot(light= '%s' % (sel))
+            light.create()
+            obj_ui_list.append(light)
+            
+            
+        if '%s' % (obj_type) == 'directionalLight':
+            light = lights.Light_directional(light= '%s' % (sel))
+            light.create()
+            obj_ui_list.append(light)
+            
+            
+        if '%s' % (obj_type) == 'ambientLight':
+            light = lights.Light_ambient(light= '%s' % (sel))
+            light.create()
+            obj_ui_list.append(light)
+            
+            
+        if '%s' % (obj_type) == 'areaLight':
+            light = lights.Light_area(light= '%s' % (sel))
+            light.create()
+            obj_ui_list.append(light)
+            
+            
+        if '%s' % (obj_type) == 'pointLight':
+            light = lights.Light_point(light= '%s' % (sel))
+            light.create()
+            obj_ui_list.append(light)
+            
+            
+        if '%s' % (obj_type) == 'volumeLight':
+            light = lights.Light_volume(light= '%s' % (sel))
+            light.create()
+            obj_ui_list.append(light)
            
 def create_light(* args):
     '''
@@ -700,6 +1093,9 @@ def list_lights(* args):
     # this list all the lights in the scene
     # * does not include ibls
     '''
+    global lights_dict
+    lights_dict = {}
+    print lights_dict
     lights = pm.ls(type= ['volumeLight', 'spotLight', 'directionalLight',
                 'areaLight', 'pointLight', 'ambientLight']) # listing all lights in the scene
     
@@ -707,37 +1103,22 @@ def list_lights(* args):
     
     for light in lights:
         my_light = light.getParent()
+        lights_dict['%s' % (my_light)] = '%s' % (light)
         
-        scroll_list.append('%s' % (str(my_light))) # appending to the scroll list
+        scroll_list.append(my_light) # appending to the scroll list
+        
+    print lights_dict
         
 def load_mr(* args):
-    # pm.mel.eval('unifiedRenderGlobalsWindow;')
     mental_ray = pm.pluginInfo('Mayatomr', query= True, loaded= True)
     
-    # pm.mel.eval('unifiedRenderGlobalsWindow;')
     
-    
-
-
     if mental_ray == 0:
         pm.loadPlugin('Mayatomr')
         
+    pm.setAttr('defaultRenderGlobals.ren', 'mentalRay', type='string')
+        
       
     
-    #tab_layout = 'unifiedRenderGlobalsWindow|rgMainForm|tabForm|mentalRayTabLayout'
-    #indirect = 'unifiedRenderGlobalsWindow|rgMainForm|tabForm|mentalRayTabLayout|mentalRayIndirectLightingTab'
-    #features = 'unifiedRenderGlobalsWindow|rgMainForm|tabForm|mentalRayTabLayout|mentalRayFeaturesTab'
-    #pm.setAttr('defaultRenderGlobals.currentRenderer', 'mentalRay', type= 'string')
     
-    
-    
-    
-    #pm.mel.eval('isDisplayingAllRendererTabs;')
-    
-    #pm.tabLayout(tab_layout, edit= 1, selectTab= indirect)
-    #pm.mel.eval('fillSelectedTabForCurrentRenderer;')
-    
-    #pm.tabLayout(tab_layout, edit= 1, selectTab= features)
-    #pm.mel.eval('fillSelectedTabForCurrentRenderer;')
-            
         

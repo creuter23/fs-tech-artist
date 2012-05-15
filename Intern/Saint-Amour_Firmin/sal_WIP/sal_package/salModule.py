@@ -19,8 +19,8 @@ import shelve
 # glob 
 import glob
 '''
-import xlrd
-import xlwt
+import xlrd # read excel sheets
+import xlwt # write excel sheets
 import openpyxl
 '''
 
@@ -106,7 +106,7 @@ class Checker_Options():
     """
     def __init__(self, fileName):
         self.fileName = fileName
-        #print 'checker_options'
+        ##print 'checker_options'
         
     def create(self):
         '''
@@ -130,8 +130,8 @@ class Checker_Options():
         startFileOutput['value2'] = ('%s' % self.size.getValue2())
         startFileOutput.sync()
        
-        #print self.fileName
-        #print startFileOutput['name'], startFileOutput['format'], startFileOutput['value1'], startFileOutput['value2']
+        ##print self.fileName
+        ##print startFileOutput['name'], startFileOutput['format'], startFileOutput['value1'], startFileOutput['value2']
         startFileOutput.close()
         
     def preFill(self):
@@ -141,8 +141,8 @@ class Checker_Options():
         # checking if the file exist 
         if os.path.exists("%s" % (self.fileName)):
             startFile = shelve.open('%s' % (self.fileName), 'r')
-            #print startFile
-            #print (startFile['name'])
+            ##print startFile
+            ##print (startFile['name'])
             self.name.setText(str(startFile['name']))
             self.format.setText(str(startFile['format']))
             self.size.setValue1(int(startFile['value1']))
@@ -173,7 +173,8 @@ class Checker_Info():
     
     '''
     def __init__(self):
-        print "checker_info"
+        #print "checker_info"
+        pass
         
     # this creates the gui components
     # returns the scrollField so it can be placed
@@ -245,7 +246,7 @@ class Checker():
         self.feedback.clear()
         
         for obj in objList:
-            print obj
+            #print obj
             image = Image.open('%s' % (obj))
             format = image.format
             size = image.size
@@ -403,7 +404,7 @@ class Grading_Prof():
             if '%s' % (myName) not in '%s' % (obj):
                 myGrade -= 25
                 self.grades.queryGrade().setValue(myGrade)
-                #print myName, obj, myGrade
+                ##print myName, obj, myGrade
                 break
         
         # this loop checks the format and if it doesnt match the format from 
@@ -415,14 +416,14 @@ class Grading_Prof():
             myImage = Image.open('%s' % obj)
             # getting the format from the checker
             format = self.checker.queryFormat().getText().upper()
-            #print format
+            ##print format
             
             myFormat = myImage.format
             
             if '%s' % (format) not in myFormat:
                 myGrade -= 25
                 self.grades.queryGrade().setValue(myGrade)
-                #print myFormat, obj, myGrade
+                ##print myFormat, obj, myGrade
                 break
             
         # this loop checks the size and if it doesnt match the size from 
@@ -434,14 +435,14 @@ class Grading_Prof():
             myImage = Image.open('%s' % obj)
             # getting the size from the checker
             size = self.checker.querySize()
-            #print size
+            ##print size
             
             mySize = myImage.size
             
             if size.getValue1() != mySize[0] or size.getValue2() != mySize[1]:
                 myGrade -= 25
                 self.grades.queryGrade().setValue(myGrade)
-                #print mySize, obj, myGrade
+                ##print mySize, obj, myGrade
                 break
             
         self.field.setValue1(myGrade)
@@ -533,7 +534,7 @@ class Grading_Prof02(Grading_Prof):
             if '%s' % (myName) not in '%s' % (obj):
                 myGrade += 25
                 self.grades.queryGrade().setValue(myGrade)
-                #print myName, obj, myGrade
+                ##print myName, obj, myGrade
                 break
         
         # this loop checks the format and if it doesnt match the format from 
@@ -545,14 +546,14 @@ class Grading_Prof02(Grading_Prof):
             myImage = Image.open('%s' % obj)
             # getting the format from the checker
             format = self.checker.queryFormat().getText().upper()
-            #print format
+            ##print format
             
             myFormat = myImage.format
             
             if '%s' % (format) not in myFormat:
                 myGrade += 25
                 self.grades.queryGrade().setValue(myGrade)
-                #print myFormat, obj, myGrade
+                ##print myFormat, obj, myGrade
                 break
             
         # this loop checks the size and if it doesnt match the size from 
@@ -564,14 +565,14 @@ class Grading_Prof02(Grading_Prof):
             myImage = Image.open('%s' % obj)
             # getting the size from the checker
             size = self.checker.querySize()
-            #print size
+            ##print size
             
             mySize = myImage.size
             
             if size.getValue1() != mySize[0] or size.getValue2() != mySize[1]:
                 myGrade += 25
                 self.grades.queryGrade().setValue(myGrade)
-                #print mySize, obj, myGrade
+                ##print mySize, obj, myGrade
                 break
             
         self.field.setValue1(myGrade)
@@ -667,7 +668,8 @@ class CommentWidget():
         if (pm.windowPref(self.customWin, ex=True)):
             pm.windowPref(self.customWin, remove = True)
             
-        myWin = pm.window(self.customWin, title = 'CUSTOM', width = 200, height = 150, backgroundColor=[.68,.68,.68])
+        myWin = pm.window(self.customWin, title = 'CUSTOM', width = 200,
+                          height = 150)#backgroundColor=[.68,.68,.68]
         pm.columnLayout(adjustableColumn=True)
         pm.text(l='Enter label')
         self.customLabel = pm.textField(editable = True)
@@ -697,9 +699,9 @@ class CommentWidget():
         # this will add the comment to the selected file 
         self.customFeedback.setLabel('%s added to file' % self.customLabel.getText())
         self.writeFile = open(self.fileName , 'a')
-        #print self.customLabel.getText()
+        ##print self.customLabel.getText()
         self.writeFile.write(self.customLabel.getText() + '\n')
-        #print self.customComment.getText()
+        ##print self.customComment.getText()
         self.writeFile.write(self.customComment.getText() + '\n')
         self.writeFile.close()
         self.menus()
@@ -742,7 +744,7 @@ class Total_Grades():
             self.warning.setBackgroundColor([1,0,0])
             self.color01.setBackgroundColor([1,0,0])
             self.color02.setBackgroundColor([1,0,0])
-            print self.antiField.getValue2() + self.compField.getValue2() + self.proField.getValue2()
+            #print self.antiField.getValue2() + self.compField.getValue2() + self.proField.getValue2()
         else:
             self.warning.setLabel('')
             self.warning.setBackgroundColor([.68,.68,.68])
@@ -785,23 +787,23 @@ class Total_Grades():
 
    # this section will give access to the different fields so another section of the script can update them or getThem()
     def queryAnti(self):
-        #print self.antiField.getValue1()
+        ##print self.antiField.getValue1()
         return self.antiField
     
     def queryComp(self):
-        #print self.compField.getValue1()
+        ##print self.compField.getValue1()
         return self.compField
     
     def queryPro(self):
-        #print self.proField.getValue1()
+        ##print self.proField.getValue1()
         return self.proField
     
     def queryLate(self):
-        #print self.lateField.getValue1()
+        ##print self.lateField.getValue1()
         return self.lateField
     
     def queryTotal(self):
-        #print self.totalField.getValue1()
+        ##print self.totalField.getValue1()
         return self.totalField
 
 # this one is for project02 and  project03        
@@ -859,7 +861,7 @@ class Total_Grades02(Total_Grades):
             self.warning.setBackgroundColor([1,0,0])
             self.color01.setBackgroundColor([1,0,0])
             self.color02.setBackgroundColor([1,0,0])
-            #print self.lightField.getValue2()
+            ##print self.lightField.getValue2()
         else:
             self.warning.setLabel('')
             self.warning.setBackgroundColor([.68,.68,.68])
@@ -867,7 +869,7 @@ class Total_Grades02(Total_Grades):
             self.color02.setBackgroundColor([.68,.68,.68])
             
     def queryLight(self):
-        #print self.lightField.getValue1()
+        ##print self.lightField.getValue1()
         return self.lightField
 
 # for project04, project07, and the Final project
@@ -927,7 +929,7 @@ class Total_Grades03(Total_Grades02):
             self.warning.setBackgroundColor([1,0,0])
             self.color01.setBackgroundColor([1,0,0])
             self.color02.setBackgroundColor([1,0,0])
-            #print self.lightField.getValue2()
+            ##print self.lightField.getValue2()
         else:
             self.warning.setLabel('')
             self.warning.setBackgroundColor([.68,.68,.68])
@@ -935,11 +937,11 @@ class Total_Grades03(Total_Grades02):
             self.color02.setBackgroundColor([.68,.68,.68])
             
     def queryLight(self):
-        #print self.lightField.getValue1()
+        ##print self.lightField.getValue1()
         return self.lightField
     
     def queryMat(self):
-       # print self.matField.getValue1()
+       # #print self.matField.getValue1()
         return self.matField
 
 # for porject05
@@ -1008,7 +1010,7 @@ class Total_Grades04(Total_Grades03):
             self.warning.setBackgroundColor([1,0,0])
             self.color01.setBackgroundColor([1,0,0])
             self.color02.setBackgroundColor([1,0,0])
-            #print self.lightField.getValue2()
+            ##print self.lightField.getValue2()
         
         else:
             self.warning.setLabel('')
@@ -1017,7 +1019,7 @@ class Total_Grades04(Total_Grades03):
             self.color02.setBackgroundColor([.68,.68,.68])
     
     def queryRay(self):
-        #print self.rayField.getValue1()
+        ##print self.rayField.getValue1()
         return self.rayField
 
 # for project06
@@ -1113,8 +1115,8 @@ class Images():
         toRemove = pm.textFieldButtonGrp(text, query= True, text= True)
         if toRemove in self.nameList:
             nameIndex = self.nameList.index(toRemove)
-            print nameIndex
-            print self.imageList[nameIndex]
+            #print nameIndex
+            #print self.imageList[nameIndex]
             self.imageList.remove(self.imageList[nameIndex])
             self.nameList.remove(toRemove)
         # this will delete the UI elements
@@ -1129,7 +1131,7 @@ class Images():
         # takes a text field button group
         # returns nothing
         self.file = pm.fileDialog2(dialogStyle= 2, fileMode= 1)
-        print self.file[0]
+        #print self.file[0]
         self.newFile = os.path.basename(self.file[0])
         pm.textFieldButtonGrp('%s' % field, edit = True, text = '%s' % self.newFile )
         self.imageList.append(self.file[0])
@@ -1165,7 +1167,7 @@ class Images():
         final = string_list[0]+string_list[1]+string_list[2]
         # Result: 'Adobe\\ Photoshop\\ CS4' # 
 
-        
+        ##print final
         return final
         
     def openReference(self):
@@ -1173,6 +1175,9 @@ class Images():
         self.ref = pm.fileDialog2(dialogStyle= 2, fileMode= 1)
         
         photoshop = self.get_photoshop()
+        
+        ##print photoshop
+        
         
         # button 2 for photoshop
         if self.openButtons.getSelect() == 2:
@@ -1182,7 +1187,7 @@ class Images():
         
         # buttton 1 for preview    
         if self.openButtons.getSelect() == 1:
-            pm.util.shellOutput(r"open  %s " % self.ref)
+            pm.util.shellOutput(r"open  %s " % (self.ref))
             
     def openImage(self):
         # this will open the images from the fields
@@ -1197,14 +1202,18 @@ class Images():
             self.path += str(self.imageList[x]) + str(self.blank)
             x += 1
         
+        ##print self.openButtons.getSelect
         # this will check to see which program to open the images with
         if self.openButtons.getSelect() == 2:
             pm.util.shellOutput(r"open -a %s %s " % (photoshop, self.path))
+            ##print photoshop
             
         if self.openButtons.getSelect() == 1:
             pm.util.shellOutput(r"open  %s " % self.path)
+            ##print photoshop
             
-        print self.queryNamesString(), self.path
+        ##print photoshop
+        
         
         
         
@@ -1222,7 +1231,7 @@ class Images():
     
     # this will return the list of base names
     def queryNamesList(self):
-        print self.nameList
+        ##print self.nameList
         return self.nameList
     
     # this give access to the path so the output function can create the
