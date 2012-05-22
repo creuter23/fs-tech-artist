@@ -21,12 +21,16 @@ import maya.cmds as cmds
 
 class Bound_Geo(object):
     '''
-    # 
+    # class to create a bound object and joint
+    # takes a rigidBody object
     '''
     def __init__(self, rigid_body):
-        self.rigid_body = rigid_body
+        self.rigid_body = rigid_body # rigid body objects
         
     def create_system(self):
+        '''
+        # creates the system
+        '''
         self.duplicate_rigid_body()
         self.create_joint()
         self.position_joint()
@@ -34,83 +38,120 @@ class Bound_Geo(object):
         self.constrain_joint_to_rigid_body()
         
     def duplicate_rigid_body(self):
+        '''
+        # duplicates the rigid body object, and names with _rb
+        '''
         self.bound_geo = pm.duplicate(self.rigid_body,
                                       name= '%s_rb' % (self.rigid_body))[0]
         shape_nodes = self.bound_geo.getShapes()
+        # deleting the rigid body shape on the duplicated object
         for shape_node in shape_nodes:
                 if 'rigidBody' in '%s' % (shape_node):
                     pm.delete(shape_node)
     
     def create_joint(self):
+        '''
+        creates the joint
+        '''
         pm.select(clear= True)
         self.joint = pm.joint(name= '%s_bake' % (self.rigid_body))
         
     def position_joint(self):
+        '''
+        # positions the joint
+        '''
         temp_parent_constraint = pm.parentConstraint(self.bound_geo, self.joint,
                             maintainOffset= False)
         pm.delete(temp_parent_constraint)
         
     def bind_geo(self):
+        '''
+        # binds the duplicated geo to the joint
+        '''
         pm.select(clear= True)
         pm.skinCluster(self.joint, self.bound_geo)
         
     def constrain_joint_to_rigid_body(self):
+        '''
+        # constraint the joint to the original rigid body object
+        '''
         self.parent_constraint = pm.parentConstraint(self.rigid_body,
                                     self.joint, maintainOffset= False)
         
     def delete_rigid_body_to_joint_constraint(self):
+        '''
+        # deletes the rigid body object's constraint
+        '''
         pm.delete(self.parent_constraint)
         
     def get_joint(self):
+        '''
+        # returns the joint
+        '''
         return self.joint
     
     def get_bound_geo(self):
+        '''
+        # returns the duplicated objects
+        '''
         return self.bound_geo
     
     def kill(self):
+        '''
+        # deletes the objects
+        '''
         del self
 
 class Rigid_Body_Manager(object):
     '''
-    # 
+    # this call will manage the instances of the Bound_geo class
+    # it will bake the simulations
     '''
     def __init__(self, rigid_body_objects, root_joint= True, start= 1, end= 100,
                     name= 'rigid_bodies', export= True, delete= True,
                     visibility= True):
-        '''
-        # 
-        '''
         self.bound_geo_instances = []
-        self.rigid_body_objects = rigid_body_objects
-        self.root_joint = root_joint
-        self.name = name
-        self.export = export
-        self.delete = delete
-        self.visibility = visibility
-        self.start_frame = start
-        self.end_frame = end
+        self.rigid_body_objects = rigid_body_objects # rigid body objects
+        self.root_joint = root_joint # bool value for root_joint
+        self.name = name # name of the system
+        self.export = export # bool value for export
+        self.delete = delete # bool value for delete
+        self.visibility = visibilityn # bool value for visibility
+        self.start_frame = start # strart frame for bake
+        self.end_frame = end # end frame for bake
      
     def create_system(self):
+        '''
+        # this creates the system
+        '''
         self.create_bound_geo_instances()
         self.create_root_joint()
         self.group_system()
         self.bake_simulation_to_joints()
     
-    
-    
     def create_bound_geo_instances(self):
+        '''
+        # this creates a Bound_geo instances for each of the given rigid body
+            objects
+        '''
         for rigid_body in self.rigid_body_objects:
             bound_geo_instance = Bound_Geo('%s' % (rigid_body))
             bound_geo_instance.create_system()
             self.bound_geo_instances.append(bound_geo_instance)
        
     def delete_rigid_body_to_joint_constraint(self):
+        '''
+        # this will delete the constraint on the joints
+        # it invokes the 'delete_rigid_body_to_joint_constraint' method
+            for each Bound_geo instance
+        '''
         for bound_geo in self.bound_geo_instances:
                 bound_geo.delete_rigid_body_to_joint_constraint()
                 
-        
-            
     def create_root_joint(self):
+        '''
+        # this creates a joint at [0,0,0]
+        '''
         if self.root_joint == True:
             pm.select(clear= True)
             self.world = pm.joint(name= '%s_master' % (self.name))
@@ -121,17 +162,27 @@ class Rigid_Body_Manager(object):
             pass
     
     def parent_joints_to_root(self):
+        '''
+        # this will parent all the joints to the root_joint
+        '''
         for bound_geo in self.bound_geo_instances:
             joint = bound_geo.get_joint()
             pm.parent('%s' % (joint), self.world)
     
     def group_system(self):
+        '''
+        # this creates a master group for the system
+        '''
         geo_group = self.group_bound_geo()
         joints_group = self.group_joints()
         self.main_group = pm.group(geo_group, joints_group,
                                    name= '%s' % (self.name))
     
     def group_bound_geo(self):
+        '''
+        # this groups all the bound geometry
+        # returns that group
+        '''
         bound_objects = []
         for bound_geo in self.bound_geo_instances:
             geo = bound_geo.get_bound_geo()
@@ -139,9 +190,12 @@ class Rigid_Body_Manager(object):
             
         group = pm.group(bound_objects, name= '%s_geo' % (self.name))
         return group
-  
     
     def group_joints(self):
+        '''
+        # this groups all the joints
+        # returns that group
+        '''
         if self.root_joint == True:
             group = pm.group(self.world, name= '%s_joints' % (self.name))
             return group
@@ -155,8 +209,10 @@ class Rigid_Body_Manager(object):
             group = pm.group(joints, name= '%s_joints' % (self.name))
             return group
         
-        
     def bake_simulation_to_joints(self):
+        '''
+        # this bakes the simulation to the joints
+        '''
         joints = []
         for bound_geo in self.bound_geo_instances:
             joint = bound_geo.get_joint()
@@ -174,6 +230,9 @@ class Rigid_Body_Manager(object):
         self.delete_system()
     
     def visibility_state(self):
+        '''
+        # this will hide the final group if True
+        '''
         if self.visibility == True:
             pass
         
@@ -181,7 +240,9 @@ class Rigid_Body_Manager(object):
             pm.setAttr('%s.visibility' % (self.main_group), 0)
     
     def export_to_ma(self):
-        
+        '''
+        # this exports to a new ma file if True
+        '''
         if self.export == True:
             pm.select(clear= True)
             pm.select(self.main_group)
@@ -200,6 +261,9 @@ class Rigid_Body_Manager(object):
             pass
     
     def delete_system(self):
+        '''
+        # this deletes the system if true
+        '''
         if self.delete == True:
             pm.delete(self.main_group)
             self.kill()
@@ -208,23 +272,27 @@ class Rigid_Body_Manager(object):
             self.kill()
     
     def kill(self):
+        '''
+        # this deletes the object
+        '''
         for bound_geo in self.bound_geo_instances:
             bound_geo.kill()
         del self
-        
-        
+              
 class Options_UI(object):
     '''
-    self, rigid_body_objects, root_joint= True, start= 1, end= 100,
-                    name= 'rigid_bodies', export= True, delete= True,
-                    visibility= True):
-        
+    # this creates a ui which contains options for the manager class
+    # takes a list of rigid body objects and the name for the system
     '''
     def __init__(self, rigid_body_objects, name):
-        self.rigid_body_objects = rigid_body_objects
-        self.name = name
+        self.rigid_body_objects = rigid_body_objects # rigid bpdy objects
+        self.name = name # the name for the system
         
     def create_ui(self):
+        '''
+        # this creates the ui
+        # returns the layout for the gui components
+        '''
         self.layout = pm.columnLayout(adjustableColumn= True)
         self.root_joint = pm.checkBox(label='Create Root Joint')
         self.export = pm.checkBox(label='Export When Finished')
@@ -240,6 +308,10 @@ class Options_UI(object):
         return self.layout
         
     def bake_simulation(self):
+        '''
+        # this creates an instances of the manager class
+        # and ivokes it's create method
+        '''
         start = self.start_end_fields.getValue1()
         end = self.start_end_fields.getValue2()
         root_joint = self.root_joint.getValue()
@@ -256,13 +328,22 @@ class Options_UI(object):
         self.delete_ui()
         
     def delete_ui(self):
+        '''
+        # this deletes the layout with all the components
+        '''
         pm.deleteUI(self.layout)
         self.kill()
         
     def kill(self):
+        '''
+        # this deletes the object
+        '''
         del self
         
 def gui():
+    '''
+    # gui for the script
+    '''
     win = 'rigid_body_win'
     if pm.window(win, exists= True):
         pm.deleteUI(win)
@@ -292,8 +373,7 @@ def gui():
     pm.tabLayout( tab_layout, edit=True, tabLabel=((ui_creator, 'Setup')))
     
     my_win.show()
-        
-        
+            
 def load_objects():
     '''
     # loads the selected objects in the text scroll list
@@ -304,8 +384,6 @@ def load_objects():
     for obj in objs:
         obj_scroll_list.append(obj)
         
-        
-        
 def add_objects():
     '''
     # adds the selected objects in the text scroll list
@@ -314,7 +392,6 @@ def add_objects():
     for obj in objs:
         obj_scroll_list.append(obj)
         
-    
 def remove_objects():
     '''
     # removes the selected objects in the text scroll list
@@ -322,10 +399,11 @@ def remove_objects():
     objs = obj_scroll_list.getSelectItem()
     for obj in objs:
         obj_scroll_list.removeItem(obj)
-        
-        
-        
+               
 def create_baking_system():
+    '''
+    # this creates an Options_ui instances and appends to the tab_layout
+    '''
     pm.setParent(tab_layout)
     rigid_body_objects = obj_scroll_list.getAllItems()
     
