@@ -24,6 +24,31 @@ import xlwt # write excel sheets
 import openpyxl
 '''
 
+
+
+
+def get_photoshop():
+        # this will get the latest version of photoshop
+        # mac only
+        path = '/Applications'
+        psd = 'Adobe Photoshop*'
+        full_path = os.path.join(path, psd)
+        
+        apps = glob.glob(full_path)
+        
+        i = apps[-1].split('/')[-1]
+        
+        j = i.split(' ')
+        k = '%s' % (j[0]+'\ '+j[1]+'\ '+j[2]+'.app')
+        
+        photoshop = '/Applications/%s\ %s\ %s/%s' % (j[0], j[1], j[2], k)
+      
+        return photoshop
+
+my_photoshop = get_photoshop()
+print my_photoshop
+
+
 # radioCollection
 class Radio_Collection():
     """
@@ -669,7 +694,7 @@ class CommentWidget():
             pm.windowPref(self.customWin, remove = True)
             
         myWin = pm.window(self.customWin, title = 'CUSTOM', width = 200,
-                          height = 150)#backgroundColor=[.68,.68,.68]
+                          height = 150, backgroundColor=[.68,.68,.68])
         pm.columnLayout(adjustableColumn=True)
         pm.text(l='Enter label')
         self.customLabel = pm.textField(editable = True)
@@ -1066,6 +1091,7 @@ class Total_Grades05(Total_Grades04):
         
         return None
     
+
 # this will open images (file info) for each script
 class Images():
     '''
@@ -1138,53 +1164,29 @@ class Images():
         self.nameList.append(self.newFile)
         
     def get_photoshop(self):
+        # this will get the latest version of photoshop
         path = '/Applications'
-        app = 'Adobe Photoshop*'
-        full_path = os.path.join(path, app)
-
-        programs = glob.glob(full_path)[-1] # Result: '/Applications/Adobe Photoshop CS4' # 
-
-
-        photoshop = programs.split('/')[-1] # Result: 'Adobe Photoshop CS4' # 
-
+        psd = 'Adobe Photoshop*'
+        full_path = os.path.join(path, psd)
         
-        new = photoshop.split(' ') # Result: ['Adobe', 'Photoshop', 'CS4'] # 
-        string_list = []
-        x = 0
+        apps = glob.glob(full_path)
         
-        # this will add the apropriate '\'
-        while x < len(new):
-            if x < len(new)-1:
-                string = new[x]+ r'%s' % (r'\ ')
-                string_list.append(string)
-                
-            
-            if x == len(new)-1:
-                string_list.append(new[x])
-                
-            x += 1
-            
-        final = string_list[0]+string_list[1]+string_list[2]
-        # Result: 'Adobe\\ Photoshop\\ CS4' # 
-
-        ##print final
-        return final
+        i = apps[-1].split('/')[-1]
+        
+        j = i.split(' ')
+        k = '%s' % (j[0]+'\ '+j[1]+'\ '+j[2]+'.app')
+        
+        photoshop = '/Applications/%s\ %s\ %s/%s' % (j[0], j[1], j[2], k)
+      
+        return photoshop
         
     def openReference(self):
         # this will open the image from the file dialog with the selected app
-        self.ref = pm.fileDialog2(dialogStyle= 2, fileMode= 1)
-        
-        photoshop = self.get_photoshop()
-        
-        ##print photoshop
-        
-        
+        self.ref = pm.fileDialog2(dialogStyle= 2, fileMode= 1)[0]
+        #photoshop = self.get_photoshop()
         # button 2 for photoshop
         if self.openButtons.getSelect() == 2:
-            
-                        
-            pm.util.shellOutput(r"open -a %s %s " % (photoshop, self.ref))
-        
+            pm.util.shellOutput(r"open -a %s %s " % (my_photoshop, self.ref))
         # buttton 1 for preview    
         if self.openButtons.getSelect() == 1:
             pm.util.shellOutput(r"open  %s " % (self.ref))
@@ -1197,26 +1199,19 @@ class Images():
         x = 0
         self.blank = ' '
         self.path = ''
-        photoshop = self.get_photoshop()
+        #photoshop = self.get_photoshop()
         while x < len(self.imageList):
             self.path += str(self.imageList[x]) + str(self.blank)
             x += 1
         
-        ##print self.openButtons.getSelect
         # this will check to see which program to open the images with
         if self.openButtons.getSelect() == 2:
-            pm.util.shellOutput(r"open -a %s %s " % (photoshop, self.path))
-            ##print photoshop
+            pm.util.shellOutput(r"open -a %s %s " % (my_photoshop, self.path))
+            
             
         if self.openButtons.getSelect() == 1:
             pm.util.shellOutput(r"open  %s " % self.path)
-            ##print photoshop
-            
-        ##print photoshop
-        
-        
-        
-        
+
         self.update.update(self.imageList)
         
     # this is just a way of getting all the names as a long string to use when outputting    
@@ -1281,11 +1276,11 @@ class Images02(Images):
     def openReference(self):
         # this will open the image from the file dialog with the selected app
         
-        photoshop = self.get_photoshop()
+        #photoshop = self.get_photoshop()
         # button 2 for photoshop
         if self.openButtons.getSelect() == 2:
             
-            pm.util.shellOutput(r"open -a %s %s" % (photoshop, self.image))
+            pm.util.shellOutput(r"open -a %s %s" % (my_photoshop, self.image))
             
         
         # buttton 1 for preview    
@@ -1328,21 +1323,21 @@ class Images03(Images):
     def openReference(self):
         # this will open the image from the file dialog with the selected app
         
-        photoshop = self.get_photoshop()
+        #photoshop = self.get_photoshop()
         # button 2 for photoshop
         if self.openButtons.getSelect() == 2:
             
             if self.refButtons.getSelect() == 1:
-                pm.util.shellOutput(r"open -a %s %s" % (photoshop, self.image01))
+                pm.util.shellOutput(r"open -a %s %s" % (my_photoshop, self.image01))
                 
             if self.refButtons.getSelect() == 2:
-                pm.util.shellOutput(r"open -a %s %s" % (photoshop, self.image02))
+                pm.util.shellOutput(r"open -a %s %s" % (my_photoshop, self.image02))
                 
             if self.refButtons.getSelect() == 3:
-                pm.util.shellOutput(r"open -a %s %s" % (photoshop, self.image03))
+                pm.util.shellOutput(r"open -a %s %s" % (my_photoshop, self.image03))
                 
             if self.refButtons.getSelect() == 4:
-                pm.util.shellOutput(r"open -a %s %s" % (photoshop, self.image04))
+                pm.util.shellOutput(r"open -a %s %s" % (my_photoshop, self.image04))
             
         
         # buttton 1 for preview    

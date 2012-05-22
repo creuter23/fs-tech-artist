@@ -47,12 +47,14 @@ class IBL_section():
         pm.setAttr('%s.visibleInEnvironment' % (my_ibl), 1)
         pm.setAttr('%s.visibleInFinalGather' % (my_ibl), 1)
         
-        scene_objects = pm.ls(type= ['mesh', 'nurbsSurface'])
+        scene_objects = pm.ls(type= ['mesh', 'nurbsSurface', 'volumeLight',
+                                'spotLight', 'directionalLight','areaLight',
+                                    'pointLight', 'ambientLight'])
 
         bounding_box = pm.exactWorldBoundingBox(scene_objects)
         bounding_box.sort()
     
-        ibl_size = bounding_box[-1]
+        ibl_size = bounding_box[-1] + 15
 
         pm.setAttr('%s.scaleX' % (my_ibl), ibl_size)
         pm.setAttr('%s.scaleY' % (my_ibl), ibl_size)
@@ -728,9 +730,20 @@ class Fog_creator(object):
                 pm.connectAttr('%s.message' % (phys_light),
                      '%s.mentalRayControls.miLightShader' % (light.getShape()))
                 
+        scene_objects = pm.ls(type= ['mesh', 'nurbsSurface', 'volumeLight',
+                                'spotLight', 'directionalLight','areaLight',
+                                    'pointLight', 'ambientLight'])
+
+        bounding_box = pm.exactWorldBoundingBox(scene_objects)
+        bounding_box.sort()
+    
+        volume_size = bounding_box[-1] * 2.5
+        print volume_size, bounding_box[-1], bounding_box
+                
         shader = pm.shadingNode('transmat', asShader= True)
-        volume = pm.polyCube(name= 'fog_volume', width=60,
-                                        height=60, depth=60)[0]
+        volume = pm.polyCube(name= 'fog_volume', width=volume_size,
+                                        height=volume_size, depth=volume_size)[0]
+        
         
         pm.hyperShade(volume, assign= shader)
         
@@ -943,7 +956,9 @@ def create_ibl(* args):
     pm.setAttr('%s.visibleInEnvironment' % (my_ibl), 1)
     pm.setAttr('%s.visibleInFinalGather' % (my_ibl), 1)
     
-    scene_objects = pm.ls(type= ['mesh', 'nurbsSurface'])
+    scene_objects = pm.ls(type= ['mesh', 'nurbsSurface', 'volumeLight',
+                                'spotLight', 'directionalLight','areaLight',
+                                    'pointLight', 'ambientLight'])
 
     bounding_box = pm.exactWorldBoundingBox(scene_objects)
     bounding_box.sort()
@@ -993,12 +1008,21 @@ def create_ui(* args):
     '''
     # this creates the ui for the selected  light from the scrollField
     '''
+    # dictionary for class
+    # the script get the light type each type is a key
+    # and based on that it will pick which class to instance
+    
+    light_classes = {'spotLight': lights.Light_spot,
+            'directionalLight': lights.Light_directional,
+              'ambientLight': lights.Light_ambient,
+              'areaLight': lights.Light_area,
+              'pointLight': lights.Light_point,
+              'volumeLight': lights.Light_volume}
+    
     selected = scroll_list.getSelectItem()
     global lights_dict
     global obj_ui_list
-    
-    
-    
+    # deleteting existing ui objects
     for obj in obj_ui_list:
         try:
             obj.delete()
@@ -1009,46 +1033,14 @@ def create_ui(* args):
     
     for sel in selected:
         pm.setParent(ui_row)
-        #pm.select('%s' % (sel))
-        #node = pm.ls(selection= True)[0]
-        print sel
-        print lights_dict
-        #shape = lights_dict[sel]
+       # getting the node type
         obj_type = pm.nodeType('%s' % (lights_dict[u'%s' %(str(sel))]))
-        if '%s' % (obj_type) == 'spotLight':
-            light = lights.Light_spot(light= '%s' % (sel))
-            light.create()
-            obj_ui_list.append(light)
-            
-            
-        if '%s' % (obj_type) == 'directionalLight':
-            light = lights.Light_directional(light= '%s' % (sel))
-            light.create()
-            obj_ui_list.append(light)
-            
-            
-        if '%s' % (obj_type) == 'ambientLight':
-            light = lights.Light_ambient(light= '%s' % (sel))
-            light.create()
-            obj_ui_list.append(light)
-            
-            
-        if '%s' % (obj_type) == 'areaLight':
-            light = lights.Light_area(light= '%s' % (sel))
-            light.create()
-            obj_ui_list.append(light)
-            
-            
-        if '%s' % (obj_type) == 'pointLight':
-            light = lights.Light_point(light= '%s' % (sel))
-            light.create()
-            obj_ui_list.append(light)
-            
-            
-        if '%s' % (obj_type) == 'volumeLight':
-            light = lights.Light_volume(light= '%s' % (sel))
-            light.create()
-            obj_ui_list.append(light)
+        # using the  ^^ dictionarry to instance the appropritate class
+        light  = light_classes[obj_type](light= '%s' % (sel)).create()
+        # appending that object to the global objects list
+        obj_ui_list.append(light)
+        
+        
            
 def create_light(* args):
     '''

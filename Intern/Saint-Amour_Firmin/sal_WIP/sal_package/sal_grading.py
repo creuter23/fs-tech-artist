@@ -23,7 +23,7 @@ def gui(path):
         pm.windowPref(win, remove = True)
         
     myWin = pm.window(win, title='SAL_Grading' , sizeable = True, mnb = True,
-                      width = 490, height = 900)#backgroundColor= [.68,.68,.68]
+                      width = 490, height = 900, backgroundColor= [.68,.68,.68])
     
     main = pm.scrollLayout(width = 490)
     tabs = pm.tabLayout(innerMarginWidth=5, innerMarginHeight=5, width = 490)

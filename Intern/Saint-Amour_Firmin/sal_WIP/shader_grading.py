@@ -1,6 +1,16 @@
+'''
 
-
-
+Author:
+    Firmin Saint-Amour
+    
+Description:
+    Script to quickly grade shaders
+    
+How to run:
+    import shader_grading
+    shader_grader.gui()
+    
+'''
 
 import pymel.core as pm
 from maya import cmds
@@ -8,7 +18,9 @@ from maya import cmds
 class Shader_sorter(object):
     
     def __init__(self):
-        
+        '''
+        # class to sort and give info on shaders
+        '''
         
         self.layout = pm.rowColumnLayout(numberOfColumns= 3, columnWidth=([1, 150],
                                                 [2, 150], [3, 250]))
@@ -31,21 +43,30 @@ class Shader_sorter(object):
         pm.text(label='Node Info')
         self.info_field = pm.scrollField(wordWrap= True, width= 250, height= 200)
         
+        self.attr_check_box = pm.checkBox(label= 'Show All')
+        
         
         self.update_shader_list()
              
     def update_shader_list(self):
-        
-        
+        '''
+        # updates the shader list and the shader scroll list
+        '''
         self.mat_list = pm.ls(mat= True)
         self.mat_dict = {} # dictionary of material objects
         
         self.shader_list.removeAll()
         for mat in self.mat_list:
             self.mat_dict['%s' % (mat)] = mat
+            if '%s' % (mat) == 'lambert1' or mat == 'shaderGlow1' or \
+                            mat == 'particleCloud1':
+                continue
             self.shader_list.append('%s' % (mat))
             
     def update_connections_list(self):
+        '''
+        # updates the connections for the selected shader
+        '''
         mat = self.shader_list.getSelectItem()[0]
         if self.check_box.getValue() == 1:
             pm.select(mat)
@@ -87,12 +108,7 @@ class Shader_sorter(object):
                                         continue
                                     node_connections.append(i)
                                     self.connections_dict['%s' % (i)] = i
-                            
-                    
-                    
-        #print node_connections
-        #print self.connections_dict
-       
+         
         
         node_connections.sort()
         
@@ -157,7 +173,6 @@ class Shader_sorter(object):
             if '%s.inputs' % (node) in c:
                 return c
         
-    
     def get_layered_texture_attrs(self, node):
         blend_mode = {0:'None', 1:'Over', 2:'In', 3:'Out', 4:'Add',
                       5:'Subtract', 6:'Multiply', 7:'Difference', 8:'Lighten',
@@ -206,18 +221,77 @@ class Shader_sorter(object):
                 self.info_field.insertText('%s\n' % (r) )
                 
         if node_type != 'ramp' and node_type != 'noise':
-            attrs = pm.listAttr('%s' % (node), write= True, settable= True,
-                                keyable= True)
+            if self.attr_check_box.getValue() == 1:
+                attrs = pm.listAttr('%s' % (node), write= True, settable= True,
+                            keyable= True)
+                
+            if self.attr_check_box.getValue() == 0:
+                attrs = pm.listAttr('%s' % (node), write= True, settable= True,
+                            keyable= True, inUse= True)
+                
             for attr in attrs:
                 try:
                     value = pm.getAttr('%s.%s' % (node, attr))
                     self.info_field.insertText('%s: %s\n' % (attr, value))
                 except:
                     pass
-                
+          
+class Lambert_object_button(object):
+    '''
+    # this creates a button for and object
+    # the label of the button is the name of the object
+    # the button selects the objects
+    '''
+    def __init__(self, obj):
+        self.obj = obj.getParent()
+        pm.button(label= '%s' % (self.obj), command= pm.Callback(self.select))
         
+    def select(self):
+        pm.select('%s' % (self.obj))
+
+class Lambert_objects_checker(object):
+    '''
+    # class for objects that have the default lambert material
+    # checks the scene for any polygon or nurbs object with a default lambert
+    '''
+    def __init__(self):
+        
+        self.lambert_objs = []
+        self.main_layout = pm.columnLayout(adjustableColumn= True)
+        self.buttons_layout = pm.rowColumnLayout(numberOfColumns= 3,
+                    columnWidth= ([1,180], [2,180], [3,180]))
+        pm.setParent(self.main_layout)
+        self.layout = pm.columnLayout(adjustableColumn= True)
+        self.scene_objs = pm.ls(type= ['mesh', 'nurbsSurface'])
+        
+        for obj in self.scene_objs:
+            shaders = obj.outputs()
+            for shader in shaders:
+                if '%s' % (shader) == 'initialShadingGroup':
+                    self.lambert_objs.append(obj)
+                    
+        self.create_buttons()
+              
+    def create_buttons(self):
+        '''
+        # this initatializes a Lambert_object_button object for each object
+            with a default lambert
+        '''
+        for obj in self.lambert_objs:
+            pm.setParent(self.buttons_layout)
+            button = Lambert_object_button(obj)
+            
+        pm.setParent(self.layout)
+        pm.button(label= 'Select All', command= pm.Callback(self.select_all),
+                  height= 50)
+        
+    def select_all(self):
+        pm.select(self.lambert_objs)
                 
 def gui():
+    '''
+    # gui for the script
+    '''
     win = 'shader_grading'
     if(pm.window(win, ex = True)):
         pm.deleteUI(win)
@@ -227,7 +301,17 @@ def gui():
     
     my_win = pm.window(win, title= 'shader_grading', width= 550,
                        height= 250)
+    main = pm.columnLayout()
     
     grader = Shader_sorter()
+    
+    pm.setParent(main)
+    
+    pm.text(label= 'Objects With Default Lambert', align= 'center',
+            height= 50, backgroundColor= [1,0,0], width= 550)
+    
+    pm.scrollLayout(width= 560, height= 300)
+    
+    lambert_objs = Lambert_objects_checker()
     
     my_win.show()
