@@ -15,6 +15,153 @@ How to run:
 import pymel.core as pm
 from maya import cmds
 
+class Shader_assign(object):
+    def __init__(self):
+        self.main_layout = pm.columnLayout(adjustableColumn= True)
+        self.layout01 = pm.rowColumnLayout(numberOfColumns= 3, columnWidth=([1,
+                                                    150],[2, 150], [3, 250]))
+        pm.columnLayout()
+        pm.text(label= 'Shaders')
+        self.shader_scroll_list01 = pm.textScrollList(width= 150, height= 200,
+                       selectCommand= pm.Callback(self.get_output_geo))
+        pm.button(label= 'Refresh', width= 150,
+                  command= pm.Callback(self.update_shaders_list))
+        
+        pm.setParent(self.layout01)
+        pm.columnLayout()
+        pm.text(label= 'Shader Geo')
+        self.shader_geo_scroll_list = pm.textScrollList(width= 150, height= 200,
+                                                    allowMultiSelection= True)
+        self.check_box = pm.checkBox(label= 'select node')
+        
+        pm.setParent(self.layout01)
+        pm.columnLayout()
+        pm.text(label= 'Scene Geo')
+        self.scene_geo_scroll_list = pm.textScrollList(width= 250, height= 200,
+                                                    allowMultiSelection= True)
+        pm.button(label= 'Refresh', width= 275,
+                  command= pm.Callback(self.update_scene_geo_list))
+        
+        pm.setParent(self.main_layout)
+        self.layout02 = pm.rowColumnLayout(numberOfColumns= 2, columnWidth=([1,
+                                                    275],[2, 275]))
+        pm.columnLayout()
+        pm.text(label= 'Shaders')
+        self.shader_scroll_list02 = pm.textScrollList(width= 275, height= 200)
+        pm.button(label= 'Assign', width= 275,
+                  command= pm.Callback(self.assign_to_geometry))
+        
+        pm.setParent(self.layout02)
+        pm.columnLayout()
+        pm.text(label= 'Create Shaders')
+        self.option_menu = pm.optionMenu( label='Material Type', width= 200)
+        pm.menuItem( label='Lambert')
+        pm.menuItem( label='Blinn')
+        pm.menuItem( label='Mia X')
+        pm.menuItem( label='Phong')
+        pm.menuItem( label='Ramp')
+        
+        self.text_field = pm.textFieldGrp(label= 'Name',
+                                          columnWidth2= [100, 150])
+        
+        
+        pm.button(label= 'Create and Assign Shader',
+                  command= pm.Callback(self.create_and_assign_shader))
+        
+        self.update_scene_geo_list()
+        self.update_shaders_list()
+        
+    def assign_to_geometry(self):
+        material = self.shader_scroll_list02.getSelectItem()[0]
+        
+        geometry01 = self.shader_geo_scroll_list.getSelectItem()
+        
+        geometry02 = self.scene_geo_scroll_list.getSelectItem()
+        
+        for geometry in geometry01:
+            pm.select(geometry)
+            pm.hyperShade(geometry, assign='%s' % (material))
+            
+            
+        for geometry in geometry02:
+            pm.select(geometry)
+            pm.hyperShade(geometry, assign='%s' % (material))
+        
+        
+    def create_and_assign_shader(self):
+        materials_type = {1:'lambert', 2:'blinn', 3:'mia_material_x',
+                          4:'phong', 5:'rampShader'}
+        shader_name = self.text_field.getText()
+        selected_material = self.option_menu.getSelect()
+        
+        geometry01 = self.shader_geo_scroll_list.getSelectItem()
+        
+        geometry02 = self.scene_geo_scroll_list.getSelectItem()
+        
+        
+        
+        
+        created_shader = pm.shadingNode(materials_type[selected_material],
+                                asShader= True, name= shader_name)
+        
+        
+        
+        for geometry in geometry01:
+            pm.select(geometry)
+            pm.hyperShade(geometry, assign='%s' % (created_shader))
+            
+            
+        for geometry in geometry02:
+            pm.select(geometry)
+            pm.hyperShade(geometry, assign='%s' % (created_shader))
+        
+        
+        
+    def update_shaders_list(self):
+        self.mat_list = pm.ls(mat= True)
+        self.mat_dict = {} # dictionary of material objects
+        
+        self.shader_scroll_list01.removeAll()
+        self.shader_scroll_list02.removeAll()
+        for mat in self.mat_list:
+            
+            if mat == 'lambert1' or mat == 'shaderGlow1' or \
+                            mat == 'particleCloud1':
+                continue
+            self.shader_scroll_list01.append('%s' % (mat))
+            self.shader_scroll_list02.append('%s' % (mat))
+            self.mat_dict['%s' % (mat)] = mat
+    
+    def get_output_geo(self):
+        self.shader_geo_scroll_list.removeAll()
+        selected_material = self.shader_scroll_list01.getSelectItem()[0]
+        my_mat = self.mat_dict[selected_material]
+        
+        
+        shading_engine = my_mat.shadingGroups()[0]
+
+        shading_engine_inputs = shading_engine.inputs()
+        
+        for input in shading_engine_inputs:
+            
+            try:
+                shape_node = input.getShape()
+                node_type = pm.nodeType('%s' % (shape_node))
+                if node_type == 'mesh' or node_type == 'nurbsSurface':
+                    self.shader_geo_scroll_list.append('%s' % (input))
+            except:
+                pass
+        
+        
+        
+    def update_scene_geo_list(self):
+        scene_geometry = pm.ls(type= ['mesh', 'nurbsSurface'])
+        
+        for geometry in scene_geometry:
+            self.scene_geo_scroll_list.append('%s' % (geometry))
+            
+
+
 class Shader_sorter(object):
     
     def __init__(self):
@@ -83,8 +230,6 @@ class Shader_sorter(object):
             node_connections.append(x)
             self.connections_dict['%s' % (x)] = x
             inputs = x.inputs()
-            
-            
             
             if inputs > 0:
                 for i in inputs:
@@ -303,9 +448,19 @@ def gui():
                        height= 250)
     main = pm.columnLayout()
     
+    tab_layout = pm.tabLayout()
+    sorter = pm.columnLayout()
     grader = Shader_sorter()
     
-    pm.setParent(main)
+    pm.setParent(tab_layout)
+    assigner_layout = pm.columnLayout()
+    assigner = Shader_assign()
+    
+    pm.setParent(sorter)
+    
+    pm.tabLayout( tab_layout, edit=True,
+                 tabLabel=((sorter, 'Grade'), (assigner_layout, 'Assign'))) 
+    
     
     pm.text(label= 'Objects With Default Lambert', align= 'center',
             height= 50, backgroundColor= [1,0,0], width= 550)

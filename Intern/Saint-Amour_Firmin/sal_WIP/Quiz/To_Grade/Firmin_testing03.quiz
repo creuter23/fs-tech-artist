@@ -1,0 +1,37 @@
+(lp1
+(lp2
+S'Which parameter in the ramp allows you to change the way the colors blend?\n'
+p3
+aS'Color Blend'
+p4
+aS'False\n'
+p5
+aa(lp6
+S'How does the scale of the light affect a Mental Ray Area Light?\n'
+p7
+aS'The larger the scale, the brighter the light.'
+p8
+aS'False\n'
+p9
+aa(lp10
+S'In a bump map, what color means no bump?\n'
+p11
+aS'50% gray'
+p12
+aS'True\n'
+p13
+aa(lp14
+S'Which Final Gather setting controls the number of Final Gather points initially shot into the scene?\n'
+p15
+aS'Accuracy'
+p16
+aS'True\n'
+p17
+aa(lp18
+S'Which of these objects is a helix?\n'
+p19
+aS'helix'
+p20
+aS'True\n'
+p21
+aa.

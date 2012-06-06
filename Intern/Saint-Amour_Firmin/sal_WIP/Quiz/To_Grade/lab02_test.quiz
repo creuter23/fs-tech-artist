@@ -1,0 +1,92 @@
+(lp1
+(lp2
+S'What node provides a Photoshop-like layering system within Maya?\n'
+p3
+aS'Color Remap Node'
+p4
+aS'False\n'
+p5
+aa(lp6
+S'Which parameter in the ramp allows you to change the way the colors blend?\n'
+p7
+aS'Type'
+p8
+aS'False\n'
+p9
+aa(lp10
+S'In a bump map, what color means no bump?\n'
+p11
+aS'50% gray'
+p12
+aS'True\n'
+p13
+aa(lp14
+S'Which setting in your spotlight blurs the outer edge of the light shape?\n'
+p15
+aS'Dropoff'
+p16
+aS'True\n'
+p17
+aa(lp18
+S'In maya, which number equals white?\n'
+p19
+aS'1'
+aS'True\n'
+p20
+aa(lp21
+S'In a 2d procedural texture, where do you go to change the scale of the texture?\n'
+p22
+aS'attribute editor-- Texture Scale'
+p23
+aS'True\n'
+p24
+aa(lp25
+S'By default, a direct light creates hard-edged shadows. When using Raytrace Shadows, which setting allows you to soften the edge of the shadow?\n'
+p26
+aS'Ray Depth Limit'
+p27
+aS'False\n'
+p28
+aa(lp29
+S'Which tab in the render settings allows you to change the resolution of your render?\n'
+p30
+aS'Features'
+p31
+aS'False\n'
+p32
+aa(lp33
+S'Which diffuse setting in the mia_material_x must you increase if you want to make a surface look powdery?\n'
+p34
+aS'Color'
+p35
+aS'False\n'
+p36
+aa(lp37
+S'What setting should you first change when trying to get rid of noise in your Mental Ray Area light?\n'
+p38
+aS'Low Samples'
+p39
+aS'False\n'
+p40
+aa(lp41
+S'When using the mia_material_x, in what channel do you place a spec map?\n'
+p42
+aS'Reflection Color'
+p43
+aS'False\n'
+p44
+aa(lp45
+S'Which Final Gather setting controls the number of Final Gather points initially shot into the scene?\n'
+p46
+aS'Accuracy'
+p47
+aS'True\n'
+p48
+aa(lp49
+S'Which of these objects is a helix?\n'
+p50
+aS'helix'
+p51
+aS'True\n'
+p52
+aa.

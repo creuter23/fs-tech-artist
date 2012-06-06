@@ -1,0 +1,30 @@
+(lp1
+(lp2
+S'What setting should you first change when trying to get rid of noise in your Mental Ray Area light?\n'
+p3
+aS'Noise Sample'
+p4
+aS'False\n'
+p5
+aa(lp6
+S'How does the scale of the light affect a Mental Ray Area Light?\n'
+p7
+aS'The larger the scale, the softer the light.'
+p8
+aS'True\n'
+p9
+aa(lp10
+S'When using the mia_material_x, in what channel do you place a spec map?\n'
+p11
+aS'Reflection Color'
+p12
+aS'False\n'
+p13
+aa(lp14
+S'Which of these objects is a helix?\n'
+p15
+aS'helix'
+p16
+aS'True\n'
+p17
+aa.

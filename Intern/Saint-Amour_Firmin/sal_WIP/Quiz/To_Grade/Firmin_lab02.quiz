@@ -1,0 +1,65 @@
+(lp1
+(lp2
+S'In a bump map, what color means no bump?\n'
+p3
+aS'50% gray'
+p4
+aS'True\n'
+p5
+aa(lp6
+S'What setting should you first change when trying to get rid of noise in your Mental Ray Area light?\n'
+p7
+aS'High Sample Limit'
+p8
+aS'False\n'
+p9
+aa(lp10
+S'By default, a direct light creates hard-edged shadows. When using Raytrace Shadows, which setting allows you to soften the edge of the shadow?\n'
+p11
+aS'Shadow Rays'
+p12
+aS'True\n'
+p13
+aa(lp14
+S'In maya, which number equals white?\n'
+p15
+aS'-100'
+p16
+aS'False\n'
+p17
+aa(lp18
+S'Which setting in your spotlight blurs the outer edge of the light shape?\n'
+p19
+aS'Cone Angle'
+p20
+aS'False\n'
+p21
+aa(lp22
+S'When using the mia_material_x, in what channel do you place a spec map?\n'
+p23
+aS'Spec Color'
+p24
+aS'False\n'
+p25
+aa(lp26
+S'Which diffuse setting in the mia_material_x must you increase if you want to make a surface look powdery?\n'
+p27
+aS'Weight'
+p28
+aS'False\n'
+p29
+aa(lp30
+S'What node provides a Photoshop-like layering system within Maya?\n'
+p31
+aS'Layered Texture Node'
+p32
+aS'True\n'
+p33
+aa(lp34
+S'Which of these objects is a helix?\n'
+p35
+aS'cone'
+p36
+aS'False\n'
+p37
+aa.
