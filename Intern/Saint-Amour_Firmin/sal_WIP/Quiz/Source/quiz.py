@@ -7,7 +7,7 @@ Description:
     Shading and Lighting quiz script
 
 '''
-
+from __future__ import division
 import random
 import os
 import pymel.core as pm
@@ -40,6 +40,7 @@ class Icon_Radio_Button(object):
         dir_path = os.path.dirname(__file__)
         self.label = info[0]
         self.image = os.path.join(dir_path, 'Images', info[1])
+        
         #print self.image
         self.state = info[2]
         self.radio_button = pm.iconTextRadioButton(style='iconOnly',
@@ -58,13 +59,13 @@ class Icon_Radio_Button(object):
         return self.label
         
 class Question(object):
-    def __init__(self, info):
+    def __init__(self, info, parent):
         self.radio_objects = []
         self.question = info[0]
         self.radio_buttons = info[1:5]
         
         random.shuffle(self.radio_buttons)
-        
+        pm.setParent(parent)
         self.layout = pm.columnLayout(adjustableColumn= True)
         pm.scrollField(wordWrap= True, width= 400, text= self.question,
                           height= 75)
@@ -101,13 +102,13 @@ class Question(object):
         return output
     
 class Icon_Question(Question):
-    def __init__(self, info):
+    def __init__(self, info, parent):
         self.radio_objects = []
         self.question = info[0]
         self.radio_buttons = info[1:5]
         
         random.shuffle(self.radio_buttons)
-        
+        pm.setParent(parent)
         self.layout = pm.columnLayout(adjustableColumn= True)
         pm.scrollField(wordWrap= True, width= 400, text= self.question,
                           height= 75)
@@ -120,13 +121,25 @@ class Icon_Question(Question):
     
 class Quiz(object):
     def __init__(self, questions_list):
+        self.path = None
         self.question_instances = []
-        self.questions = questions_list
+        self.questions = []
         self.icon_question_info = []
         self.question_info = []
         self.file_info = []
-    
-        #i = 0
+        random_amount = questions_list[0]
+        core_questions = questions_list[1]
+        random_questions = questions_list[2]
+        for core in core_questions:
+            self.questions.append(core)
+        random.shuffle(random_questions)
+        random.shuffle(random_questions)
+        random_copy = random_questions[0:random_amount]
+        for r in random_copy:
+            self.questions.append(r)
+
+        random.shuffle(self.questions)
+
         for question in self.questions:
             try:
                 temp = question[1].split('==')
@@ -140,36 +153,48 @@ class Quiz(object):
         
         self.create_questions()
         
-            
+    def get_path(self):
+        self.path = pm.fileDialog2(fileMode= 3)[0]
+        self.path_field.setText(self.path)
+        
+
     def create_questions(self):
         self.layout = pm.columnLayout(adjustableColumn= True)
+        self.path_field = pm.textFieldButtonGrp(label= 'Quiz Path', 
+                buttonCommand= pm.Callback(self.get_path), buttonLabel= '<<<',
+                text= '/User/', columnWidth3= [100, 200, 100])
         self.name_field = pm.textFieldGrp(label= 'Name', columnWidth2=
-                                          [200,200])
-        for info in  self.question_info:
-            obj = Question(info)
-            self.question_instances.append(obj)
-            
+                                          [100,200])
+        
         for info in  self.icon_question_info:
-            obj = Icon_Question(info)
+            #print info
+            obj = Icon_Question(info, self.layout)
             self.question_instances.append(obj)
                 
+        for info in  self.question_info:
+            obj = Question(info, self.layout)
+            self.question_instances.append(obj)
         
     def get_info(self):
         output = []
+        right = 0
+        amount = len(self.questions)-1
         
         for question in self.question_instances:
             output.append(question.get_info())
             
         #print output
         file_name = self.name_field.getText() + '.quiz'
-        dir_path = os.path.dirname(__file__)
-        full_path = os.path.join(dir_path, file_name)
+        full_path = os.path.join(self.path, file_name)
         
         
         f = open(full_path, 'w')
         pickle_data = pickle.dump(output, f)
         f.close()
         return output
+    
+        
+            
         
 def gui():
     
@@ -205,7 +230,8 @@ def gui():
     
 def get_result():
     #print quiz
-    quiz.get_info()
+    output = quiz.get_info()
+    return output
     
 def check():
     dialogCheck=pm.confirmDialog( title='Are you sure?',
@@ -216,12 +242,16 @@ def check():
     if dialogCheck == 'Yes':
             pass
     else:
-        get_result()
-        dialogCheck=pm.confirmDialog( title='Thanks',
-                                 message='Thanks',
-                                 button=['cancel',"cancel"],
-                                 defaultButton='cancel', cancelButton= "cancel",
-                                 dismissString="cancel" )
+        output = get_result()
+        amount = len(output)
+        percentage = amount / 100
+        right = 0
+        for data in output:
+            if 'Correct' in data[-1]:
+                right += 1
+        dialogCheck=pm.confirmDialog( title='RESULTS',
+                        message='You got %s right out of %s\n' % (right, amount)
+                        + 'Final score %s' % float((float(right / amount))* 100))
     
     
     

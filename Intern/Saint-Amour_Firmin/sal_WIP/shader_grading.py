@@ -32,7 +32,7 @@ class Shader_assign(object):
         pm.text(label= 'Shader Geo')
         self.shader_geo_scroll_list = pm.textScrollList(width= 150, height= 200,
                                                     allowMultiSelection= True)
-        self.check_box = pm.checkBox(label= 'select node')
+        #self.check_box = pm.checkBox(label= 'select node')
         
         pm.setParent(self.layout01)
         pm.columnLayout()
@@ -45,21 +45,24 @@ class Shader_assign(object):
         pm.setParent(self.main_layout)
         self.layout02 = pm.rowColumnLayout(numberOfColumns= 2, columnWidth=([1,
                                                     275],[2, 275]))
-        pm.columnLayout()
+        pm.columnLayout(adjustableColumn= True)
         pm.text(label= 'Shaders')
         self.shader_scroll_list02 = pm.textScrollList(width= 275, height= 200)
         pm.button(label= 'Assign', width= 275,
                   command= pm.Callback(self.assign_to_geometry))
         
         pm.setParent(self.layout02)
-        pm.columnLayout()
+        pm.columnLayout(adjustableColumn= True)
         pm.text(label= 'Create Shaders')
         self.option_menu = pm.optionMenu( label='Material Type', width= 200)
-        pm.menuItem( label='Lambert')
-        pm.menuItem( label='Blinn')
-        pm.menuItem( label='Mia X')
-        pm.menuItem( label='Phong')
-        pm.menuItem( label='Ramp')
+        pm.menuItem( label='mia_material_x')
+        pm.menuItem( label='blinn')
+        pm.menuItem( label='lambert')
+        pm.menuItem( label='phong')
+        pm.menuItem( label='rampShader')
+        pm.menuItem( label='anisotropic')
+        pm.menuItem( label='phongE')
+        pm.menuItem( label='useBackground')
         
         self.text_field = pm.textFieldGrp(label= 'Name',
                                           columnWidth2= [100, 150])
@@ -89,8 +92,9 @@ class Shader_assign(object):
         
         
     def create_and_assign_shader(self):
-        materials_type = {1:'lambert', 2:'blinn', 3:'mia_material_x',
-                          4:'phong', 5:'rampShader'}
+        materials_type = {1:'mia_material_x', 2:'blinn', 3:'lambert',
+                          4:'phong', 5:'rampShader', 6:'anisotropic',
+                          7:'phongE', 8:'useBackground'}
         shader_name = self.text_field.getText()
         selected_material = self.option_menu.getSelect()
         

@@ -261,6 +261,23 @@ class Light_spot():
         
         self.ray_depth = pm.attrFieldSliderGrp( at='%s.rayDepthLimit' % (self.light),
                                 enable= False, columnWidth4= [100, 75, 175, 50])
+
+        pm.setParent(main_frame)
+        pm.frameLayout(label= 'Decay Regions', collapsable= True)
+        # useDecayRegions
+        decay_regions_value = pm.getAttr('%s.useDecayRegions' % (self.light))
+        self.decay_check_box = pm.checkBox(label= 'Use Decay Regions',
+                        value= decay_regions_value, 
+                    changeCommand= pm.Callback(self.chane_decay_regions))
+
+        pm.attrControlGrp(attribute= '%s.startDistance1' % (self.light))
+        pm.attrControlGrp(attribute= '%s.endDistance1' % (self.light))
+
+        pm.attrControlGrp(attribute= '%s.startDistance2' % (self.light))
+        pm.attrControlGrp(attribute= '%s.endDistance2' % (self.light))
+
+        pm.attrControlGrp(attribute= '%s.startDistance3' % (self.light))
+        pm.attrControlGrp(attribute= '%s.endDistance3' % (self.light))
        
         pm.setParent(main_frame)
         pm.rowColumnLayout(numberOfColumns= 2, columnWidth= [200, 200])
@@ -269,7 +286,9 @@ class Light_spot():
         pm.button(label= 'Hide', command= pm.Callback(self.hide))
         pm.button(label= 'Show',  command= pm.Callback(self.show))
         return self.main_layout
-    
+    def chane_decay_regions(self):
+        value = self.decay_check_box.getValue()
+        pm.setAttr('%s.useDecayRegions' % (self.light), value)
     def preset(self):
         path = os.path.dirname(__file__)
         full_path = os.path.join(path, 'Light_Presets')

@@ -49,6 +49,7 @@ class Vertex_Checker(object):
     
     
     def paint_weights(self, position, skin_cluster, mesh):
+        output = []
         #print position
         x = 0
         while x < len(position):
@@ -67,9 +68,13 @@ class Vertex_Checker(object):
                    #print position[x]
                    pm.skinPercent( skin_cluster, '%s.vtx[%s]'
                                 % (mesh,x), transformValue=[self.joint, 1])
+                   output.append(position[x])
                    #self.positions.remove(temp_position)
+                   print 'match', position[x]
                 i += 1
             x += 1
+        
+        return output
 
 class Bound_Geo(object):
     '''
@@ -476,10 +481,19 @@ class Combined_Manager(Rigid_Body_Manager):
         #print self.skin_cluster
         #print self.vertex_checkers
         for vert_checker in self.vertex_checkers:
-            print vert_checker
-            vert_checker.paint_weights(self.vertex_positions,
+            #print vert_checker
+            output = vert_checker.paint_weights(self.vertex_positions,
                                 self.skin_cluster, self.combined_object)
-            print 'painting weights .....'
+            print 'painting weights ..........................'
+            '''
+            for o in output:
+                try:
+                    self.vertex_positions.remove(o)
+                    print 'removed ', o
+                except:
+                    print 'could not remove ', o
+            '''
+                
             
             
     '''            
@@ -584,6 +598,7 @@ class Combined_Manager(Rigid_Body_Manager):
                 except:
                     pm.exportSelected(new_scene_name, force= True, channels= True,
                                   type=  'mayaBinary')
+
 class Options_UI(object):
     '''
     # this creates a ui which contains options for the manager class
@@ -607,8 +622,8 @@ class Options_UI(object):
         self.combine = pm.checkBox(label='Combine Meshes', value= 0,
                             changeCommand= pm.Callback(self.enable_tollerance))
         self.tollerance = pm.floatSliderGrp(label= 'Tollerance',
-                        value= .000000000, field= True,
-                        minValue= 0, step= .000000005,
+                        value= .000000000, field= True, maxValue= 10,
+                        minValue= -10, step= .000000005,
                                         columnWidth3= [90, 90, 105])
         self.tollerance.setEnable(False)
         self.start_end_fields = pm.intFieldGrp( numberOfFields=2,

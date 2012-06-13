@@ -1,0 +1,72 @@
+(lp1
+(lp2
+S'Which of these objects is a helix?\n'
+p3
+aS'helix'
+p4
+aS'True\n'
+p5
+aa(lp6
+S'Which diffuse setting in the mia_material_x must you increase if you want to make a surface look powdery?\n'
+p7
+aS'Glossiness'
+p8
+aS'False\n'
+p9
+aa(lp10
+S'In the mia_material_x, what setting must you increase in order to eliminate noise in your shader caused by the glossiness?\n'
+p11
+aS'Index of Refraction'
+p12
+aS'False\n'
+p13
+aa(lp14
+S'What setting should you first change when trying to get rid of noise in your Mental Ray Area light?\n'
+p15
+aS'High Samples'
+p16
+aS'True\n'
+p17
+aa(lp18
+S'In a bump map, what color means no bump?\n'
+p19
+aS'50% gray'
+p20
+aS'True\n'
+p21
+aa(lp22
+S'How does the scale of the light affect a Mental Ray Area Light?\n'
+p23
+aS'Scale does not affect the light.'
+p24
+aS'False'
+p25
+aa(lp26
+S'Which setting in your spotlight blurs the outer edge of the light shape?\n'
+p27
+aS'Cone Angle'
+p28
+aS'False\n'
+p29
+aa(lp30
+S'In maya, which number equals white?\n'
+p31
+aS'100'
+p32
+aS'True\n'
+p33
+aa(lp34
+S'By default, a direct light creates hard-edged shadows. When using Raytrace Shadows, which setting allows you to soften the edge of the shadow?\n'
+p35
+aS'Softness'
+p36
+aS'True\n'
+p37
+aa(lp38
+S'`What node provides a Photoshop-like layering system within Maya?\n'
+p39
+aS'Color Remap Node'
+p40
+aS'False\n'
+p41
+aa.

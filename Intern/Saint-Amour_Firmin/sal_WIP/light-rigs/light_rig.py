@@ -26,7 +26,7 @@ class IBL_section():
     def __init__(self):
         self.uis = [] # list of uis
         self.main_layout = pm.columnLayout(adjustableColumn= True)
-        pm.button(label= 'Create IBLs', command = pm.Callback(self.create_ibl))
+        #pm.button(label= 'Create IBLs', command = pm.Callback(self.create_ibl))
         self.main_layout = pm.rowColumnLayout(numberOfColumns= 2, columnWidth= [150, 400])
         pm.columnLayout(width= 150, adjustableColumn=False)
         self.scroll_list = pm.textScrollList(width= 150, height= 200,
@@ -1109,7 +1109,12 @@ def load_mr(* args):
         pm.loadPlugin('Mayatomr')
         
     pm.setAttr('defaultRenderGlobals.ren', 'mentalRay', type='string')
-        
+    '''
+    if pm.objExists('mentalrayGlobals'):
+        pass
+    else:
+        pm.createNode('mentalrayGlobals')
+    '''    
       
     
     
