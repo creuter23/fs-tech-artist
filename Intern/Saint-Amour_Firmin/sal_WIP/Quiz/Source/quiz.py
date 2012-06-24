@@ -162,9 +162,9 @@ class Quiz(object):
         self.layout = pm.columnLayout(adjustableColumn= True)
         self.path_field = pm.textFieldButtonGrp(label= 'Quiz Path', 
                 buttonCommand= pm.Callback(self.get_path), buttonLabel= '<<<',
-                text= '/User/', columnWidth3= [100, 200, 100])
-        self.name_field = pm.textFieldGrp(label= 'Name', columnWidth2=
-                                          [100,200])
+                text= '/Users/', columnWidth3= [100, 200, 100])
+        self.name_field = pm.textFieldGrp(label= 'Name', 
+            columnWidth2= [100,200], text= 'Student_Name')
         
         for info in  self.icon_question_info:
             #print info
@@ -183,9 +183,9 @@ class Quiz(object):
         for question in self.question_instances:
             output.append(question.get_info())
             
-        #print output
+        new_path = self.path_field.getText()
         file_name = self.name_field.getText() + '.quiz'
-        full_path = os.path.join(self.path, file_name)
+        full_path = os.path.join(new_path, file_name)
         
         
         f = open(full_path, 'w')
@@ -193,9 +193,6 @@ class Quiz(object):
         f.close()
         return output
     
-        
-            
-        
 def gui():
     
     file_path = os.path.dirname(__file__)

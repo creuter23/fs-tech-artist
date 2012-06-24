@@ -60,7 +60,7 @@ class Project02():
                 fileName = r"%s/Comments/proj02_prof.txt" % (self.path),
                 field = self.total.queryPro(),
                 fileStart = r"%s/Startup/proj02_start.db" % (self.path),
-                toUpdate = self.total)
+                toUpdate = self.total, infoParent= self.infoLayout)
         self.pro.create()
         
         # the Images info section
@@ -188,7 +188,7 @@ class Project03(Project02):
                 fileName = r"%s/Comments/proj03_prof.txt" % (self.path),
                 field = self.total.queryPro(),
                 fileStart = r"%s/Startup/proj03_start.db" % (self.path),
-                toUpdate = self.total)
+                toUpdate = self.total, infoParent= self.infoLayout)
         self.pro.create()
         
         pm.setParent(self.infoLayout)
@@ -249,7 +249,7 @@ class Project04():
                 fileName = r"%s/Comments/proj04_prof.txt" % (self.path),
                 field = self.total.queryPro(),
                 fileStart = r"%s/Startup/proj04_start.db" % (self.path),
-                toUpdate = self.total)
+                toUpdate = self.total, infoParent= self.infoLayout)
         self.pro.create()
         
         pm.setParent(self.infoLayout)
@@ -400,7 +400,7 @@ class Project05():
                 fileName = r"%s/Comments/proj05_prof.txt" % (self.path),
                 field = self.total.queryPro(),
                 fileStart = r"%s/Startup/proj05_start.db" % (self.path),
-                toUpdate = self.total)
+                toUpdate = self.total, infoParent= self.infoLayout)
         self.pro.create()
         
         pm.setParent(self.infoLayout)
@@ -550,7 +550,7 @@ class Project06(Project05):
                 fileName = r"%s/Comments/proj06_prof.txt" % (self.path),
                 field = self.total.queryPro(),
                 fileStart = r"%s/Startup/proj06_start.db" % (self.path),
-                toUpdate = self.total)
+                toUpdate = self.total, infoParent= self.infoLayout)
         self.pro.create()
         
         pm.setParent(self.infoLayout)
@@ -608,7 +608,7 @@ class Project07(Project04):
                 fileName = r"%s/Comments/proj07_prof.txt" % (self.path),
                 field = self.total.queryPro(),
                 fileStart = r"%s/Startup/proj07_start.db" % (self.path),
-                toUpdate = self.total)
+                toUpdate = self.total, infoParent= self.infoLayout)
         self.pro.create()
         
         pm.setParent(self.infoLayout)
@@ -665,7 +665,7 @@ class Final_Project(Project04):
                 fileName = r"%s/Comments/proj08_prof.txt" % (self.path),
                 field = self.total.queryPro(),
                 fileStart = r"%s/Startup/proj08_start.db" % (self.path),
-                toUpdate = self.total)
+                toUpdate = self.total, infoParent= self.infoLayout)
         self.pro.create()
         
         pm.setParent(self.infoLayout)
@@ -676,8 +676,7 @@ class Final_Project(Project04):
                 image04 = r"%s/Reference_Images/final04_ref.tga" % (self.path))
         
         return self.layout
-    
-            
+           
 class Project01():
     def __init__(self, path):
         self.path = path
@@ -715,7 +714,7 @@ class Project01():
                 fileName = r"%s/Comments/proj01_prof.txt" % (self.path),
                 field = self.total.queryPro(),
                 fileStart = r"%s/Startup/proj01_start.db" % (self.path),
-                toUpdate = self.total)
+                toUpdate = self.total, infoParent= self.infoLayout)
         self.pro.create()
         
         pm.setParent(self.infoLayout)

@@ -15,7 +15,6 @@ try:
 except:
     import pickle
     
-
 class Error01(object):
     '''
     # creates a warning window
@@ -43,6 +42,7 @@ class Error01(object):
     def close(self):
         pm.deleteUI(self.window)
         del self
+
 class Error02(Error01):
 
     def __init__(self):
@@ -314,10 +314,8 @@ class Quiz_Maker(object):
         questions_info = self.get_question_info()
         images_paths = self.get_images()
         quiz_name = self.name_field.getText()
-        print 'booya kasha arshztrjy'
-        print self.path
+        print 'quiz made at ', self.path
         new_directory = os.path.join(self.path, quiz_name)
-        print 'booya kasha'
         os.makedirs(new_directory)
         images_dir = os.path.join(new_directory, 'Images')
         os.makedirs(images_dir)
@@ -330,14 +328,17 @@ class Quiz_Maker(object):
         pickle_data = pickle.dump(info_to_pickle, f)
         f.close()
         
-        source_init_file = os.path.join(file_path, 'Source', '__init__.py')
-        source_quiz_file = os.path.join(file_path, 'Source', 'quiz.py')
+        source_init_file = os.path.join(file_path, 'Source', '__init__.pyc')
+        source_quiz_file = os.path.join(file_path, 'Source', 'quiz.pyc')
         
         shutil.copy(source_init_file, new_directory)
         shutil.copy(source_quiz_file, new_directory)
         #print 'about to copy'
         #print images_paths
         self.copy_images(images_paths, images_dir)
+
+        dialogCheck=pm.confirmDialog( title='Quiz Created',
+                        message='quiz saved to %s' % (self.path)) 
         
     def list_questions(self):
         x = 1
@@ -363,3 +364,4 @@ def gui():
     main_layout = pm.columnLayout()
     maker = Quiz_Maker(file_path)
     my_win.show()
+

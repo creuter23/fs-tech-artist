@@ -1,0 +1,45 @@
+Student Name: Student_Name
+
+------------------------
+Which of these objects is a helix?
+helix  -Correct
+
+------------------------
+In a 2d procedural texture, where do you go to change the scale of the texture?
+2d texture node-- offset  -Incorrect
+
+------------------------
+By default, a direct light creates hard-edged shadows. When using Raytrace Shadows, which setting allows you to soften the edge of the shadow?
+Softness  -Correct
+
+------------------------
+When using the mia_material_x, in what channel do you place a spec map?
+Diffuse Color  -Correct
+
+------------------------
+Which diffuse setting in the mia_material_x must you increase if you want to make a surface look powdery?
+Color  -Incorrect
+
+------------------------
+What node provides a Photoshop-like layering system within Maya?
+Ramp Node  -Incorrect
+
+------------------------
+In maya, which number equals white?
+100  -Correct
+
+------------------------
+What setting should you first change when trying to get rid of noise in your Mental Ray Area light?
+Noise Sample  -Incorrect
+
+------------------------
+In the mia_material_x, what setting must you increase in order to eliminate noise in your shader caused by the glossiness?
+Index of Refraction  -Incorrect
+
+------------------------
+In a bump map, what color means no bump?
+Black  -Incorrect
+
+------------------------
+Got 4 right of 10
+Final Score: 40.0

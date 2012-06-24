@@ -1,0 +1,45 @@
+Student Name: Demo_Quiz
+
+------------------------
+Which diffuse setting in the mia_material_x must you increase if you want to make a surface look powdery?
+Reflectivity  -Incorrect
+
+------------------------
+Which tab in the render settings allows you to change the resolution of your render?
+Common  -Incorrect
+
+------------------------
+By default, a direct light creates hard-edged shadows. When using Raytrace Shadows, which setting allows you to soften the edge of the shadow?
+Shadow Rays  -Correct
+
+------------------------
+Which parameter in the ramp allows you to change the way the colors blend?
+Type  -Incorrect
+
+------------------------
+When using the mia_material_x, in what channel do you place a spec map?
+Reflectivity  -Incorrect
+
+------------------------
+What node provides a Photoshop-like layering system within Maya?
+Layered Texture Node  -Correct
+
+------------------------
+In the mia_material_x, what setting must you increase in order to eliminate noise in your shader caused by the glossiness?
+Noise Samples  -Incorrect
+
+------------------------
+In a mia_material_x, what setting allows you to control the reflection based on the viewing angle?
+Glossiness  -Incorrect
+
+------------------------
+What setting should you first change when trying to get rid of noise in your Mental Ray Area light?
+Low Samples  -Incorrect
+
+------------------------
+In a bump map, what color means no bump?
+50% gray  -Correct
+
+------------------------
+Got 3 right of 10
+Final Score: 30.0

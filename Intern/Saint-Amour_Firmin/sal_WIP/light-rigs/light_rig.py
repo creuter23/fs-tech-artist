@@ -806,8 +806,7 @@ class Fog_creator(object):
             
             pm.connectAttr('%s.message' % (phys_light),
                      '%s.mentalRayControls.miLightShader' % (light.getShape()))
-            
-        
+               
 def gui():
     '''
     # the gui for the tool
@@ -971,16 +970,13 @@ def create_ibl(* args):
     
     return my_ibl
     
-    
-    
-    
 def simple_outdoor(* args):
-    create_ibl()
+    #create_ibl()
     my_node = pm.shadingNode('directionalLight', asLight= True)
     pm.rename(my_node, 'Sun')
     
 def complex_outdoor(* args):
-    create_ibl()
+    #create_ibl()
     my_sun = pm.shadingNode('directionalLight', asLight= True)
     pm.rename(my_sun, 'Sun')
     my_sky = pm.shadingNode('areaLight', asLight= True)
@@ -988,8 +984,6 @@ def complex_outdoor(* args):
     new_light.translate.set(0,16,0)
     new_light.rotate.set(-90,0,0)
     new_light.scale.set(16,16,16)
-    
-
     
 def list_ibls(* args):
     '''
@@ -1003,7 +997,6 @@ def list_ibls(* args):
     for ibl in ibls:
         ibl_ui = lights.IBL_UI(ibl).create()
     
-       
 def create_ui(* args):
     '''
     # this creates the ui for the selected  light from the scrollField
@@ -1039,9 +1032,7 @@ def create_ui(* args):
         light  = light_classes[obj_type](light= '%s' % (sel)).create()
         # appending that object to the global objects list
         obj_ui_list.append(light)
-        
-        
-           
+               
 def create_light(* args):
     '''
     # this will created a light based on what's picked from the option menu

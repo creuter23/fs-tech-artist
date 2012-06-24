@@ -17,64 +17,6 @@ import os
 import pymel.core as pm
 import maya.cmds as cmds
 
-class Vertex_Checker(object):
-    
-    def __init__(self, joint, mesh, tollerance):
-        self.positions = []
-        self.joint = joint
-        self.mesh = mesh
-        self.tollerance = tollerance
-        self.vertex_objects = []
-        self.create_vertex_objects()
-        self.get_vertex_positions()
-        print tollerance
-        
-    def create_vertex_objects(self):
-        vertex_number = pm.polyEvaluate(self.mesh, vertex= 1)
-        i = 0
-        while i != vertex_number:
-            temp_vert_obj = pm.MeshVertex(u'%s.vtx[%i]' % (self.mesh, i))
-            
-            self.vertex_objects.append(temp_vert_obj)
-            #print temp_vert_obj
-            
-            i += 1
-            
-    def get_vertex_positions(self):
-        for vert in self.vertex_objects:
-            vert_position = vert.getPosition(space= 'world')
-            #print vert_position
-            ouput = [vert_position[0], vert_position[1], vert_position[2]]
-            self.positions.append(ouput)
-    
-    
-    def paint_weights(self, position, skin_cluster, mesh):
-        output = []
-        #print position
-        x = 0
-        while x < len(position):
-            i = 0
-            while i < len(self.positions):
-                temp_position = self.positions[i]
-                max_pos = [temp_position[0]+ self.tollerance,
-                           temp_position[1]+ self.tollerance,
-                           temp_position[2]+ self.tollerance]
-                
-                min_pos = [temp_position[0]- self.tollerance,
-                           temp_position[1]- self.tollerance,
-                           temp_position[2]- self.tollerance]
-                
-                if (position[x] >= min_pos) and (position[x] <= max_pos): 
-                   #print position[x]
-                   pm.skinPercent( skin_cluster, '%s.vtx[%s]'
-                                % (mesh,x), transformValue=[self.joint, 1])
-                   output.append(position[x])
-                   #self.positions.remove(temp_position)
-                   print 'match', position[x]
-                i += 1
-            x += 1
-        
-        return output
 
 class Bound_Geo(object):
     '''
@@ -96,6 +38,11 @@ class Bound_Geo(object):
             self.bind_geo()
         self.constrain_joint_to_rigid_body()
         
+    def get_verts(self):
+        verts = len(self.bound_geo.vtx[:])
+        return verts
+
+
     def duplicate_rigid_body(self):
         '''
         # duplicates the rigid body object, and names with _rb
@@ -113,7 +60,7 @@ class Bound_Geo(object):
         creates the joint
         '''
         pm.select(clear= True)
-        self.joint = pm.joint(name= '%s_bake' % (self.rigid_body))
+        self.joint = cmds.joint(name= '%s_bake' % (self.rigid_body))
         
     def position_joint(self):
         '''
@@ -153,7 +100,7 @@ class Bound_Geo(object):
         '''
         # returns the duplicated objects
         '''
-        return self.bound_geo
+        return '%s' % (str(self.bound_geo))
     
     def kill(self):
         '''
@@ -384,7 +331,7 @@ class Rigid_Body_Manager(object):
 class Combined_Manager(Rigid_Body_Manager):
     def __init__(self, rigid_body_objects, root_joint= True, start= 1, end= 100,
                     name= 'rigid_bodies', export= True, delete= True,
-                    visibility= True, group= True, tollerance= .05):
+                    visibility= True, group= True):
         self.bound_geo_instances = []
         self.rigid_body_objects = rigid_body_objects # rigid body objects
         self.root_joint = root_joint # bool value for root_joint
@@ -395,21 +342,15 @@ class Combined_Manager(Rigid_Body_Manager):
         self.start_frame = start # strart frame for bake
         self.end_frame = end # end frame for bake
         self.group = group # bool value for grouping
-        self.tollerance = tollerance
-        self.vertex_objects = []
-        self.vertex_checkers = []
-        self.vertex_positions = []
+        self.number = 0
+        
     def create_system(self):
         '''
         # this creates the system
         '''
         self.create_bound_geo_instances()
-        self.create_vertex_checkers()
         self.combine_meshes()
-        self.create_vertex_objects()
-        self.get_vertex_positions()
-        self.bind_geo()
-        self.paint_weights()
+        #self.paint_weights()
         print 'geo bound'
         self.create_root_joint()
         
@@ -417,13 +358,8 @@ class Combined_Manager(Rigid_Body_Manager):
             self.group_system()
         self.bake_simulation_to_joints()
         
-    def create_vertex_checkers(self):
-        for bound_geo in self.bound_geo_instances:
-            geo = bound_geo.get_bound_geo()
-            joint = bound_geo.get_joint()
-            vertex_checker = Vertex_Checker(joint, geo, self.tollerance)
-            #print vertex_checker
-            self.vertex_checkers.append(vertex_checker)
+        
+   
     
     def create_bound_geo_instances(self):
         '''
@@ -436,78 +372,51 @@ class Combined_Manager(Rigid_Body_Manager):
             self.bound_geo_instances.append(bound_geo_instance)
             
     def combine_meshes(self):
+        x = 0
+        verts = []
+        self.joints = []
         bound_objects = []
         for bound_geo in self.bound_geo_instances:
             geo = bound_geo.get_bound_geo()
+            joint = bound_geo.get_joint()
+            vert = bound_geo.get_verts()
             bound_objects.append(geo)
+            self.joints.append(joint)
+            verts.append(vert)
             
         self.combined_object = pm.polyUnite(bound_objects,
                         name= '%s_mesh' % (self.name), ch= False)[0]
         
+        self.bind_geo()
+        #pm.skinPercent( 'skinCluster1', vert, transformValue=['joint1', 1])
+        print verts, self.joints
+        while x < len(verts):
+            #self.number = None
+            if x > 0:
+                pm.skinPercent( '%s' % (self.skin_cluster), 
+                    '%s.vtx[%s:%s]' % (self.combined_object, self.number,
+                    self.number+verts[x]), transformValue=['%s' % (self.joints[x]), 1])
+                self.number += verts[x]
+                print verts[x], self.number
+            if x == 0:
+                pm.skinPercent( '%s' % (self.skin_cluster),
+                     '%s.vtx[0:%s]' % (self.combined_object, verts[x]), 
+                    transformValue=['%s' % (self.joints[x]), 1])
+                self.number = verts[x]
+                print self.number, 'first'
+            x += 1
+        
+
         return self.combined_object
     
-    def create_vertex_objects(self):
-        vertex_number = pm.polyEvaluate(self.combined_object, vertex= 1)
-        i = 0
-        while i != vertex_number:
-            temp_vert_obj = pm.MeshVertex(u'%s.vtx[%i]' %
-                                          (self.combined_object, i))
-            
-            self.vertex_objects.append(temp_vert_obj)
-            #print temp_vert_obj
-            
-            i += 1
-            
-    def get_vertex_positions(self):
-        for vert in self.vertex_objects:
-            vert_position = vert.getPosition(space= 'world')
-            #print vert_position
-            ouput = [vert_position[0], vert_position[1], vert_position[2]]
-            self.vertex_positions.append(ouput)
     
     def bind_geo(self):
-        joints = []
-        pm.select(clear= True)
-        for bound_geo in self.bound_geo_instances:
-            joint = bound_geo.get_joint()
-            joints.append(joint)
-        self.skin_cluster = pm.skinCluster(joints, self.combined_object,
+        
+        self.skin_cluster = pm.skinCluster(self.joints, self.combined_object,
                     skinMethod= 0, dropoffRate= 1, normalizeWeights= 1)
         
-        #self.paint_weights()
+        return self.skin_cluster
     
-    def paint_weights(self):
-        print 'painting weights', self.skin_cluster
-        #print self.skin_cluster
-        #print self.vertex_checkers
-        for vert_checker in self.vertex_checkers:
-            #print vert_checker
-            output = vert_checker.paint_weights(self.vertex_positions,
-                                self.skin_cluster, self.combined_object)
-            print 'painting weights ..........................'
-            '''
-            for o in output:
-                try:
-                    self.vertex_positions.remove(o)
-                    print 'removed ', o
-                except:
-                    print 'could not remove ', o
-            '''
-                
-            
-            
-    '''            
-    def check_verts(self, vert):
-        for vert_checker in self.vertex_checkers:
-            print vert
-            value = vert_checker.check(vert)
-            if value == True:
-                print value
-                return value
-                break
-            else:
-                continue
-    '''
     
     def group_bound_geo(self):
         '''
@@ -522,12 +431,9 @@ class Combined_Manager(Rigid_Body_Manager):
         '''
         # this bakes the simulation to the joints
         '''
-        joints = []
-        for bound_geo in self.bound_geo_instances:
-            joint = bound_geo.get_joint()
-            joints.append('%s' % (joint))
+       
         
-        pm.bakeResults(joints, simulation= True,
+        pm.bakeResults(self.joints, simulation= True,
                 time= (self.start_frame, self.end_frame), sampleBy= 1,
                 disableImplicitControl= True, preserveOutsideKeys= True,
                sparseAnimCurveBake= False, removeBakedAttributeFromLayer= False,
@@ -546,14 +452,9 @@ class Combined_Manager(Rigid_Body_Manager):
                 pm.delete(self.main_group)
                 self.kill()
             if self.group == False:
-                joints = []
-                #geometry = []
-                for bound_geo in self.bound_geo_instances:
-                    joint = bound_geo.get_joint()
-                    joints.append('%s' % (joint))
-                    
                 
-                pm.delete(joints, self.combined_object)
+                
+                pm.delete(self.joints, self.combined_object)
                 self.kill()
             if self.root_joint == True:
                 try:
@@ -619,13 +520,8 @@ class Options_UI(object):
         self.delete = pm.checkBox(label='Delete When Finished')
         self.visibility = pm.checkBox(label='Visibility State', value= 1)
         self.group = pm.checkBox(label='Group System', value= 1)
-        self.combine = pm.checkBox(label='Combine Meshes', value= 0,
-                            changeCommand= pm.Callback(self.enable_tollerance))
-        self.tollerance = pm.floatSliderGrp(label= 'Tollerance',
-                        value= .000000000, field= True, maxValue= 10,
-                        minValue= -10, step= .000000005,
-                                        columnWidth3= [90, 90, 105])
-        self.tollerance.setEnable(False)
+        self.combine = pm.checkBox(label='Combine Meshes', value= 0)
+        
         self.start_end_fields = pm.intFieldGrp( numberOfFields=2,
                         label=u'Start & End Frames', value1=0, value2=100,
                         columnWidth3= [105,90,90])
@@ -635,12 +531,7 @@ class Options_UI(object):
         
         return self.layout
         
-    def enable_tollerance(self):
-        if self.combine.getValue() == 1:
-            self.tollerance.setEnable(True)
-            
-        else:
-            self.tollerance.setEnable(False)
+    
     
     def bake_simulation(self):
         '''
@@ -655,13 +546,13 @@ class Options_UI(object):
         visibility = self.visibility.getValue()
         group = self.group.getValue()
         combine = self.combine.getValue()
-        tollerance = self.tollerance.getValue()
+        
         
         if combine == 1:
             manager = Combined_Manager(rigid_body_objects= self.rigid_body_objects,
                         root_joint= root_joint, start= start, end= end,
                         export= export, delete= delete, visibility= visibility,
-                        name= self.name, group= group, tollerance= tollerance)
+                        name= self.name, group= group)
         else:
             manager = Rigid_Body_Manager(rigid_body_objects= self.rigid_body_objects,
                             root_joint= root_joint, start= start, end= end,

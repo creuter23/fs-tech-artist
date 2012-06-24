@@ -1,0 +1,45 @@
+Student Name: Testing_thursday01
+
+------------------------
+Which of these objects is a helix?
+helix  -Correct
+
+------------------------
+In maya, which number equals white?
+1  -Correct
+
+------------------------
+In a mia_material_x, what setting allows you to control the reflection based on the viewing angle?
+Metal Material  -Incorrect
+
+------------------------
+Which diffuse setting in the mia_material_x must you increase if you want to make a surface look powdery?
+Reflectivity  -Incorrect
+
+------------------------
+Which setting in your spotlight blurs the outer edge of the light shape?
+Cone Angle  -Incorrect
+
+------------------------
+In the mia_material_x, what setting must you increase in order to eliminate noise in your shader caused by the glossiness?
+Glossy Samples  -Incorrect
+
+------------------------
+In a bump map, what color means no bump?
+50% gray  -Correct
+
+------------------------
+What setting should you first change when trying to get rid of noise in your Mental Ray Area light?
+Low Samples  -Incorrect
+
+------------------------
+By default, a direct light creates hard-edged shadows. When using Raytrace Shadows, which setting allows you to soften the edge of the shadow?
+Light Angle  -Incorrect
+
+------------------------
+What node provides a Photoshop-like layering system within Maya?
+Layered Texture Node  -Correct
+
+------------------------
+Got 4 right of 10
+Final Score: 40.0

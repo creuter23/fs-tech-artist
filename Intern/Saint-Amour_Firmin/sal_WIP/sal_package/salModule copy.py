@@ -192,7 +192,7 @@ class Checker_Options():
 # checker info        
 class Checker_Info():
     '''
-    this will create the second half of the checker
+    this will create the second have of the checker
     which is a scrollField
     the scroll field will keep a log of all the images that where opened
     
@@ -233,32 +233,29 @@ class Checker():
     # fileName = the start file used by the Checker_Info class
     
     """
-    def __init__(self, fileName, infoParent= None, logParent= None):
+    def __init__(self, fileName):
         self.fileName = fileName
-        self.infoParent = infoParent
-        self.logParent = logParent
+        
         self.main = pm.columnLayout(adjustableColumn= True)
-        #self.frame = pm.frameLayout(label = 'checker', cll = True, cl = False, borderStyle = 'etchedIn', width = 480)
-        #self.layout = pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,185], [2,10], [3,270]))
-        '''
+        self.frame = pm.frameLayout(label = 'checker', cll = True, cl = False, borderStyle = 'etchedIn', width = 480)
+        self.layout = pm.rowColumnLayout(numberOfColumns= 3, columnWidth= ([1,185], [2,10], [3,270]))
+        
         pm.text(label='Check')
         pm.text( label= '')
         pm.text(label='Image Log (recently opened)')
         pm.text(label= '')
         pm.text( label= '')
         pm.text(label= '')
-        '''
         
     # creating the GUI components
     # returns none
     def create(self):
-        pm.setParent(self.infoParent)
-        pm.text(label='Checker Options')
+        
         self.check = Checker_Options(self.fileName)
         self.check.create()
         self.check.preFill()
-        pm.setParent(self.logParent)
-        pm.text(label='Image Log (recently opened)')
+        pm.setParent(self.layout)
+        pm.text(label= '')
         
         #pm.text(label='')
         self.feedback = Checker_Info()
@@ -372,14 +369,12 @@ class Grading_Prof():
     grading section one-off specifically made for the professionalism section
     it will add the Checker class to itself. and work with it
     """
-    def __init__(self, name, field, fileName, fileStart, toUpdate, infoParent):
+    def __init__(self, name, field, fileName, fileStart, toUpdate):
         self.toUpdate = toUpdate
         self.name = name
         self.field = field
         self.file = fileName
         self.fileStart = fileStart
-        self.infoParent = infoParent
-        
         #self.objList = objList
         self.main = pm.columnLayout(adjustableColumn= True)
         self.frame = pm.frameLayout(label = self.name, cll = True, cl = False, borderStyle = 'etchedIn', width = 480)
@@ -404,7 +399,7 @@ class Grading_Prof():
         self.scrollField = CommentWidget(width= 280, height= 120, fileName= self.file).create()
         pm.setParent(self.frame)
         
-        self.checker = Checker(self.fileStart, self.infoParent, self.frame)
+        self.checker = Checker(self.fileStart)
         self.checker.create()
         
         
@@ -536,7 +531,7 @@ class Grading_Prof02(Grading_Prof):
         self.scrollField = CommentWidget(width= 280, height= 120, fileName= self.file).create()
         pm.setParent(self.frame)
         
-        self.checker = Checker(self.fileStart, self.infoParent, self.frame)
+        self.checker = Checker(self.fileStart)
         self.checker.create()
         
     def update(self, objList):
@@ -1117,10 +1112,8 @@ class Images():
         #------------------
         pm.frameLayout(label = 'File Info', cll = True, cl = False, borderStyle = 'etchedIn', width = self.width)
         self.mainLayout = pm.columnLayout(adjustableColumn = True)
-        #pm.button(label = 'new image', ann = 'press to add as many images aa you want' , command = pm.Callback(self.createFields))
-        self.openButtons = pm.radioButtonGrp(numberOfRadioButtons = 2 , columnAlign = [ 1 , 'center' ],
-                    label = ' Choose Program ', label1 = 'Preview',label2 = 'Photoshop',
-                    select= 1)
+        pm.button(label = 'new image', ann = 'press to add as many images aa you want' , command = pm.Callback(self.createFields))
+        self.openButtons = pm.radioButtonGrp(numberOfRadioButtons = 2 , columnAlign = [ 1 , 'center' ],label = ' Choose Program ', label1 = 'Preview',label2 = 'Photoshop')
         pm.button(label = 'open images', ann = 'this will open images with the selected programs', command = pm.Callback(self.openImage))
         pm.button(label = 'open reference', ann= 'this will only open a reference (with the selected program)', command = pm.Callback(self.openReference))
         pm.text(label= '')
@@ -1188,14 +1181,10 @@ class Images():
         return photoshop
         
     def openReference(self):
-        self.blank = ' '
-        self.ref = ''
-        x = 0
         # this will open the image from the file dialog with the selected app
-        images = pm.fileDialog2(dialogStyle= 1, fileMode= 4)
-        while x < len(images):
-            self.ref += str(images[x]) + str(self.blank)
-            x += 1
+        self.ref = pm.fileDialog2(dialogStyle= 2, fileMode= 1)[0]
+        #photoshop = self.get_photoshop()
+        # button 2 for photoshop
         if self.openButtons.getSelect() == 2:
             pm.util.shellOutput(r"open -a %s %s " % (my_photoshop, self.ref))
         # buttton 1 for preview    
@@ -1211,12 +1200,10 @@ class Images():
         self.blank = ' '
         self.path = ''
         #photoshop = self.get_photoshop()
-       
-        self.imageList = pm.fileDialog2(dialogStyle= 1, fileMode= 4)
-
         while x < len(self.imageList):
             self.path += str(self.imageList[x]) + str(self.blank)
             x += 1
+        
         # this will check to see which program to open the images with
         if self.openButtons.getSelect() == 2:
             pm.util.shellOutput(r"open -a %s %s " % (my_photoshop, self.path))
@@ -1224,7 +1211,7 @@ class Images():
             
         if self.openButtons.getSelect() == 1:
             pm.util.shellOutput(r"open  %s " % self.path)
-        print self.imageList, self.path
+
         self.update.update(self.imageList)
         
     # this is just a way of getting all the names as a long string to use when outputting    
@@ -1272,10 +1259,8 @@ class Images02(Images):
         #------------------
         pm.frameLayout(label = 'File Info', cll = True, cl = False, borderStyle = 'etchedIn', width = self.width)
         self.mainLayout = pm.columnLayout(adjustableColumn = True)
-        #pm.button(label = 'new image', ann = 'press to add as many images aa you want' , command = pm.Callback(self.createFields))
-        self.openButtons = pm.radioButtonGrp(numberOfRadioButtons = 2 , columnAlign = [ 1 , 'center' ],
-                    label = ' Choose Program ', label1 = 'Preview',label2 = 'Photoshop',
-                    select= 1)
+        pm.button(label = 'new image', ann = 'press to add as many images aa you want' , command = pm.Callback(self.createFields))
+        self.openButtons = pm.radioButtonGrp(numberOfRadioButtons = 2 , columnAlign = [ 1 , 'center' ],label = ' Choose Program ', label1 = 'Preview',label2 = 'Photoshop')
         pm.button(label = 'open images', ann = 'this will open images with the selected programs', command = pm.Callback(self.openImage))
         pm.button(label = 'open reference', ann= 'this will only open a reference (with the selected program)', command = pm.Callback(self.openReference))
         pm.text(label= '')
@@ -1317,13 +1302,12 @@ class Images03(Images):
         #------------------
         pm.frameLayout(label = 'File Info', cll = True, cl = False, borderStyle = 'etchedIn', width = self.width)
         self.mainLayout = pm.columnLayout(adjustableColumn = True)
-        #pm.button(label = 'new image', ann = 'press to add as many images aa you want' , command = pm.Callback(self.createFields))
+        pm.button(label = 'new image', ann = 'press to add as many images aa you want' , command = pm.Callback(self.createFields))
         self.openButtons = pm.radioButtonGrp(numberOfRadioButtons = 2 , columnAlign = [ 1 , 'center' ],
-                    label = ' Choose Program ', label1 = 'Preview',label2 = 'Photoshop',
-                    select= 1)
+                            label = ' Choose Program ', label1 = 'Preview',label2 = 'Photoshop')
         pm.button(label = 'open images', ann = 'this will open images with the selected programs', command = pm.Callback(self.openImage))
         self.refButtons = pm.radioButtonGrp(numberOfRadioButtons = 4 , columnAlign = [ 1 , 'center' ],
-                    label= 'Choose Reference', label1= 'Museum',label2= 'Bathroom', select= 1,
+                    label= 'Choose Reference', label1= 'Museum',label2= 'Bathroom',
                     label3= 'Sci-fi', label4= 'Staircase', columnWidth5= [120, 90, 90, 90, 90])
         pm.button(label = 'open reference', ann= 'this will only open a reference (with the selected program)', command = pm.Callback(self.openReference))
         pm.text(label= '')
